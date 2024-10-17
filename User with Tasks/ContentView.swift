@@ -1,19 +1,17 @@
-//
-//  ContentView.swift
-//  User with Tasks
-//
-//  Created by Sharul M. Shah on 10/10/24.
-//
-
+import FirebaseCore
+import FirebaseAuth
+import GoogleSignIn
 import SwiftUI
 
 struct ContentView: View {
+    @State var text = ""
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            
+            // User login
+            // Create a new user if it's new
+            // Every user has a list of tasks to do
+            
         }
         .padding()
     }
