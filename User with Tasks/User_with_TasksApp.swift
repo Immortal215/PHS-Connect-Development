@@ -1,6 +1,7 @@
 import FirebaseCore
 import FirebaseAuth
 import GoogleSignIn
+import GoogleSignInSwift
 import SwiftUI
 
 class AppDelegate: NSObject, UIApplicationDelegate {
