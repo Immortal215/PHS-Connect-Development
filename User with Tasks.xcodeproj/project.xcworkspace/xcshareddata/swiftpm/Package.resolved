@@ -1,5 +1,5 @@
 {
-  "originHash" : "7ed78cec4688813732ed048994a6c24c5c081e333197fce4007040cea0ee7d0c",
+  "originHash" : "17f3b71c2ff25153e12a801b3fc5d69e45b8b848afb34797aaaced3999da3457",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "c89ed571ae140f8eb1142735e6e23d7bb8c34cb2",
         "version" : "1.7.5"
+      }
+    },
+    {
+      "identity" : "drops",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/omaralbeik/Drops.git",
+      "state" : {
+        "revision" : "a183ee6f79f21c940092a19c2cba756555422371",
+        "version" : "1.7.0"
       }
     },
     {

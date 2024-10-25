@@ -3,9 +3,22 @@ import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
+import Drops
+
+struct GoogleSignInResultModel {
+    let idToken : String
+    let accessToken: String
+    let name: String?
+    let email: String?
+    let image: URL?
+    
+}
 
 @MainActor
 final class AuthenticationViewModel: ObservableObject {
+    var userEmail: String?
+    var userName: String?
+    var userImage: URL?
     
     func signInGoogle() async throws {
         guard let topVC = Utilities.shared.topViewController() else {
@@ -19,9 +32,16 @@ final class AuthenticationViewModel: ObservableObject {
         }
         
         let accesssToken = gidSignInResult.user.accessToken.tokenString
+        let name = gidSignInResult.user.profile?.name
+        let email = gidSignInResult.user.profile?.email
+        let image = gidSignInResult.user.profile?.imageURL(withDimension: 100)
         
-        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accesssToken)
+        self.userEmail = email
+        self.userName = name
+        self.userImage = image
         
+        let tokens = GoogleSignInResultModel(idToken: idToken, accessToken: accesssToken, name: name, email: email, image: image)
+        try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
         
     }
 }
@@ -30,15 +50,42 @@ final class AuthenticationViewModel: ObservableObject {
 struct ContentView: View {
     @State var text = ""
     @StateObject var viewModel = AuthenticationViewModel()
+    @State var showSignInView = true
     
     var body: some View {
         VStack {
-            GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
-                
+            if showSignInView {
+                GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
+                    Task {
+                        do {
+                            try await viewModel.signInGoogle()
+                            showSignInView = false
+                        } catch {
+                            print(error)
+                        }
+                    }
+                }
+            } else {
+                VStack {
+                    Settings(viewModel: viewModel, showSignInView: $showSignInView)
+                }
+                .onChange(of: showSignInView) {
+                    let drop = Drop(
+                        title: "Logged Out",
+                        icon: UIImage(systemName: "user"),
+                        action: .init {
+                            print("Drop tapped")
+                            Drops.hideCurrent()
+                        },
+                        position: .top,
+                        duration: 10.0,
+                        accessibility: "Alert: Title, Subtitle"
+                    )
+                    Drops.show(drop)
+                }
+
             }
             
-            // User login
-            // Create a new user if it's new
             // Every user has a list of tasks to do
             
         }
@@ -46,24 +93,9 @@ struct ContentView: View {
     }
 }
 
-struct AuthDataResultModel {
-    let uid: String
-    let email: String?
-    let photoUrl: String?
-}
 
-final class AuthenticationManager {
-    static let shared = AuthenticationManager
-}
-// Sign in with SSO
-extension AuthenticationManger {
-    func signInWithGoogle(credential: AuthCredential) async throws -> AuthDataResultModel {
-        let authDataresult = try await Auth.auth().signin(with: credential)
-        return Auth
-    }
-}
-
-
+//
+//
 #Preview {
     ContentView()
 }

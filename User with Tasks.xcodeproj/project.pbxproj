@@ -33,6 +33,7 @@
 		B861A88A2CB81714006AF254 /* FirebaseVertexAI-Preview in Frameworks */ = {isa = PBXBuildFile; productRef = B861A8892CB81714006AF254 /* FirebaseVertexAI-Preview */; };
 		B8A6DF642CC14F600014B5F8 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B8A6DF632CC14F600014B5F8 /* GoogleSignIn */; };
 		B8A6DF662CC14F600014B5F8 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B8A6DF652CC14F600014B5F8 /* GoogleSignInSwift */; };
+		B8BEC6202CCBE5DA00991A38 /* Drops in Frameworks */ = {isa = PBXBuildFile; productRef = B8BEC61F2CCBE5DA00991A38 /* Drops */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +74,7 @@
 				B861A8602CB81714006AF254 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				B861A87A2CB81714006AF254 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				B861A8682CB81714006AF254 /* FirebaseAuthCombine-Community in Frameworks */,
+				B8BEC6202CCBE5DA00991A38 /* Drops in Frameworks */,
 				B861A86C2CB81714006AF254 /* FirebaseCrashlytics in Frameworks */,
 				B861A87E2CB81714006AF254 /* FirebaseMLModelDownloader in Frameworks */,
 				B861A8862CB81714006AF254 /* FirebaseStorage in Frameworks */,
@@ -146,6 +148,7 @@
 				B861A8892CB81714006AF254 /* FirebaseVertexAI-Preview */,
 				B8A6DF632CC14F600014B5F8 /* GoogleSignIn */,
 				B8A6DF652CC14F600014B5F8 /* GoogleSignInSwift */,
+				B8BEC61F2CCBE5DA00991A38 /* Drops */,
 			);
 			productName = "User with Tasks";
 			productReference = B861A8472CB811A0006AF254 /* User with Tasks.app */;
@@ -178,6 +181,7 @@
 			packageReferences = (
 				B861A85A2CB81714006AF254 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				B8A6DF622CC14F600014B5F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				B8BEC61E2CCBE5DA00991A38 /* XCRemoteSwiftPackageReference "Drops" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B861A8482CB811A0006AF254 /* Products */;
@@ -427,6 +431,14 @@
 				minimumVersion = 8.0.0;
 			};
 		};
+		B8BEC61E2CCBE5DA00991A38 /* XCRemoteSwiftPackageReference "Drops" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/omaralbeik/Drops.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.7.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -559,6 +571,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B8A6DF622CC14F600014B5F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		B8BEC61F2CCBE5DA00991A38 /* Drops */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B8BEC61E2CCBE5DA00991A38 /* XCRemoteSwiftPackageReference "Drops" */;
+			productName = Drops;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
