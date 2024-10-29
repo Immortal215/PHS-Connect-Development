@@ -16,13 +16,11 @@ struct Settings: View {
                 ZStack {
                     Circle()
                         .foregroundStyle(.gray)
-                    Text("Loading...")
+                    ProgressView("Loading...")
                 }
                 .frame(width: 100)
                 
             })
-            
-            
             
             
             Text(viewModel.userName ?? "No name")
