@@ -126,7 +126,7 @@ struct ContentView: View {
                     Drops.hideCurrent()
                 },
                 position: .top,
-                duration: 10.0,
+                duration: 5.0,
                 accessibility: "Alert: Title, Subtitle"
             )
             Drops.show(drop)
