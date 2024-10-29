@@ -51,37 +51,63 @@ struct ContentView: View {
     @State var text = ""
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
+    @State var selectedTab = 1
     
     var body: some View {
         VStack {
             if showSignInView {
-                GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
-                    Task {
-                        do {
-                            try await viewModel.signInGoogle()
-                            showSignInView = false
-                        } catch {
-                            print(error)
-                        }
+                Text("User With Tasks")
+                    .font(.title)
+                    .fontWeight(.bold)
+                Spacer()
+                VStack {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(lineWidth: 3)
+                        
+                        Text("Sign In")
+                            .font(.title)
+                            .fontWeight(.semibold)
+                            .padding()
                     }
+                    .fixedSize()
+                    
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(lineWidth: 3)
+                        
+                        
+                        GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .icon, state: .normal)) {
+                            Task {
+                                do {
+                                    try await viewModel.signInGoogle()
+                                    showSignInView = false
+                                } catch {
+                                    print(error)
+                                }
+                            }
+                        }
+                        .padding()
+                    }
+                    .fixedSize()
+                    .padding()
                 }
+                Spacer()
             } else {
                 VStack {
-                    Settings(viewModel: viewModel, showSignInView: $showSignInView)
-                }
-                .onChange(of: showSignInView) {
-                    let drop = Drop(
-                        title: "Logged Out",
-                        icon: UIImage(systemName: "user"),
-                        action: .init {
-                            print("Drop tapped")
-                            Drops.hideCurrent()
-                        },
-                        position: .top,
-                        duration: 10.0,
-                        accessibility: "Alert: Title, Subtitle"
-                    )
-                    Drops.show(drop)
+                    TabView(selection: $selectedTab) {
+                        Tasks(viewModel: viewModel)
+                            .tabItem {
+                                Image(systemName: "list.bullet.clipboard")
+                            }
+                            .tag(0)
+                        Settings(viewModel: viewModel, showSignInView: $showSignInView)
+                            .tabItem {
+                                Image(systemName: "gearshape")
+                            }
+                            .tag(1)
+
+                    }
                 }
 
             }
@@ -90,6 +116,21 @@ struct ContentView: View {
             
         }
         .padding()
+        .onChange(of: showSignInView) {
+            Drops.hideAll()
+            let drop = Drop(
+                title: showSignInView ? "Logged Out" : "Logged In",
+                icon: UIImage(systemName: "user"),
+                action: .init {
+                    print("Drop tapped")
+                    Drops.hideCurrent()
+                },
+                position: .top,
+                duration: 10.0,
+                accessibility: "Alert: Title, Subtitle"
+            )
+            Drops.show(drop)
+        }
     }
 }
 

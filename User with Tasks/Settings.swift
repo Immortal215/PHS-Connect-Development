@@ -10,17 +10,25 @@ struct Settings: View {
     var body: some View {
         ScrollView {
             AsyncImage(url: viewModel.userImage, content: { Image in
-                Image
-                    .clipShape(Circle())
+                ZStack {
+                    Image
+                        .clipShape(Circle())
+                    
+                    Circle()
+                        .stroke(lineWidth: 3)
+                }
+                .fixedSize()
+                
             }, placeholder: {
                 ZStack {
                     Circle()
-                        .foregroundStyle(.gray)
+                        .stroke(.gray)
                     ProgressView("Loading...")
                 }
                 .frame(width: 100)
                 
             })
+            .padding()
             
             
             Text(viewModel.userName ?? "No name")
@@ -28,7 +36,8 @@ struct Settings: View {
                 .bold()
             
             Text("\(viewModel.userEmail ?? "No name")")
-
+            
+            
             
             Button {
                 do { try AuthenticationManager.shared.signOut()
@@ -38,9 +47,17 @@ struct Settings: View {
                 }
                 
             } label: {
-                Text("Logout")
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(lineWidth: 3)
+                    Text("Logout")
+                        .padding()
+                }
+                .fixedSize()
+                .foregroundStyle(.red)
             }
+            .padding()
         }
-
+        
     }
 }
