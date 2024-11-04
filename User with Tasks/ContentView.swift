@@ -1,4 +1,5 @@
 import FirebaseCore
+import FirebaseDatabaseInternal
 import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
@@ -96,11 +97,12 @@ struct ContentView: View {
             } else {
                 VStack {
                     TabView(selection: $selectedTab) {
-                        Tasks(viewModel: viewModel)
+                        Tasks()
                             .tabItem {
                                 Image(systemName: "list.bullet.clipboard")
                             }
                             .tag(0)
+                        
                         Settings(viewModel: viewModel, showSignInView: $showSignInView)
                             .tabItem {
                                 Image(systemName: "gearshape")
@@ -133,11 +135,3 @@ struct ContentView: View {
         }
     }
 }
-
-
-//
-//
-#Preview {
-    ContentView()
-}
-
