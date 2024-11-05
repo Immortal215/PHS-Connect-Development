@@ -10,7 +10,6 @@ struct ClubView: View {
     @State var screenWidth = UIScreen.main.bounds.width
     @State var screenHeight = UIScreen.main.bounds.height
     @State var shownInfo = -1
-    @State var memberClicked = ""
     @State var searchText = ""
     
     var viewModel : AuthenticationViewModel
@@ -25,6 +24,15 @@ struct ClubView: View {
                 return clubs.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
             }
             
+        }
+        
+        // logic for checking who is allowed to see what information about each club
+        var whoCanSeeWhat: Bool {
+            if clubs[shownInfo].showDataWho != "members" {
+                return !viewModel.isGuestUser && clubs[shownInfo].showDataWho == "all"
+            } else {
+                return clubs[shownInfo].members.contains(viewModel.userEmail ?? "")
+            }
         }
         
         VStack {
@@ -101,69 +109,54 @@ struct ClubView: View {
                 // clubs data
                 ScrollView {
                     if shownInfo != -1 {
-                        VStack(alignment: .leading, spacing: 16) {
-                            // Club Name
-                            Text(clubs[shownInfo].name)
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                            
-                            // Club Description
-                            Text(clubs[shownInfo].abstract)
-                                .font(.body)
-                                .foregroundColor(.gray)
-                            
-                            // Club Photo
-                            AsyncImage(url: URL(string: clubs[shownInfo].clubPhoto ?? "https://schoology.d214.org/sites/all/themes/schoology_theme/images/group-default.svg?0"), content: { Image in
-                                ZStack {
-                                    Image
-                                        .resizable()
-                                        .clipShape(Rectangle())
+                        VStack (alignment:.leading, spacing: 8) {
+                            VStack (alignment: .center) {
+                                // Club Name
+                                Text(clubs[shownInfo].name)
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                
+                                // Club Description
+                                Text(clubs[shownInfo].abstract)
+                                    .font(.body)
+                                    .foregroundColor(.gray)
+                                
+                                // Club Photo
+                                AsyncImage(url: URL(string: clubs[shownInfo].clubPhoto ?? "https://schoology.d214.org/sites/all/themes/schoology_theme/images/group-default.svg?0"), content: { Image in
+                                    ZStack {
+                                        Image
+                                            .resizable()
+                                            .clipShape(Rectangle())
+                                        
+                                        
+                                        Rectangle()
+                                            .stroke(.black, lineWidth: 3)
+                                    }
+                                    .frame(width: screenWidth/5, height: screenHeight/5)
                                     
+                                }, placeholder: {
+                                    ZStack {
+                                        Rectangle()
+                                            .stroke(.gray)
+                                        ProgressView("Loading \(clubs[shownInfo].name) Image")
+                                    }
                                     
-                                    Rectangle()
-                                        .stroke(.black, lineWidth: 3)
-                                }
+                                })
+                                .padding()
                                 .frame(width: screenWidth/5, height: screenHeight/5)
-                                
-                            }, placeholder: {
-                                ZStack {
-                                    Rectangle()
-                                        .stroke(.gray)
-                                    ProgressView("Loading \(clubs[shownInfo].name) Image")
-                                }
-                                
-                            })
-                            .padding()
-                            .frame(width: screenWidth/5, height: screenHeight/5)
-                            
+                            }
                             
                             // Leaders
                             if !clubs[shownInfo].leaders.isEmpty {
                                 Text("Leaders:")
                                     .font(.headline)
-                                ForEach(clubs[shownInfo].leaders, id: \.self) { member in
-                                    HStack {
-                                        Text(member)
-                                            .font(.subheadline)
-                                        
-                                        Button {
-                                            memberClicked = ""
-                                            UIPasteboard.general.string = member
-                                            memberClicked = member
-                                            dropper(title: "Email Copied", subtitle: "", icon: UIImage(systemName: "checkmark")!)
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                memberClicked = ""
-                                            }
-                                        } label: {
-                                            Image(systemName: memberClicked == member ? "checkmark" :"doc.on.doc" )
-                                                .foregroundColor(.blue)
-                                        }
-                                    }
+                                ForEach(clubs[shownInfo].leaders, id: \.self) { leader in
+                                    CodeSnippetView(code: leader)
                                     
                                 }
                             }
                             
-                            if !viewModel.isGuestUser {
+                            if whoCanSeeWhat {
                                 
                                 // Members
                                 if !clubs[shownInfo].members.isEmpty {
@@ -173,24 +166,8 @@ struct ClubView: View {
                                     Text("Members:")
                                         .font(.headline)
                                     
-                                        HStack {
-                                            Text(mem)
-                                                .font(.subheadline)
-                                            
-                                            Button {
-                                                memberClicked = ""
-                                                UIPasteboard.general.string = mem
-                                                memberClicked = mem
-                                                dropper(title: "Email\(clubs[shownInfo].members.count > 1 ? "s" : "") Copied", subtitle: "", icon: UIImage(systemName: "checkmark")!)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                    memberClicked = ""
-                                                }
-                                            } label: {
-                                                Image(systemName: memberClicked == mem ? "checkmark" :"doc.on.doc" )
-                                                    .foregroundColor(.blue)
-                                            }
-                                        }
-                                    
+                                    CodeSnippetView(code: mem)
+
                                 }
                                 
                                 // Meeting Times
@@ -227,23 +204,8 @@ struct ClubView: View {
                             
                             // Schoology Code
                             HStack {
-                                Text("Schoology Code: \(clubs[shownInfo].schoologyCode)")
-                                    .font(.subheadline)
-                                
-                                Button {
-                                    memberClicked = ""
-                                    UIPasteboard.general.string = clubs[shownInfo].schoologyCode
-                                    memberClicked = "school"
-                                    
-                                    dropper(title: "Schoology Code Copied", subtitle: "", icon: UIImage(systemName: "checkmark")!)
-                                    
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                        memberClicked = ""
-                                    }
-                                } label: {
-                                    Image(systemName: memberClicked == "school" ? "checkmark" : "doc.on.doc")
-                                        .foregroundColor(.blue)
-                                }
+                                Text("Schoology Code: ")
+                                CodeSnippetView(code: clubs[shownInfo].schoologyCode)
                             }
                             
                         }

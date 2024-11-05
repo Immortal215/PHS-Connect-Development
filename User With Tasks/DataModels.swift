@@ -12,6 +12,7 @@ struct Club: Codable {
     var genres: [String]?
     var clubPhoto: String?
     var abstract: String
+    var showDataWho: String
 }
 
 struct Personal: Codable {

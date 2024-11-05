@@ -72,3 +72,42 @@ struct CustomSearchBar: View {
         .padding(.vertical, 8) 
     }
 }
+
+struct CodeSnippetView: View {
+    let code: String
+   @State var clicked = false
+    
+    var body: some View {
+        HStack {
+            Text(code)
+                .font(.subheadline)
+                .padding()
+                .background(Color(UIColor.systemGray6))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                )
+            
+            Button(action: {
+                UIPasteboard.general.string = code
+                dropper(title: "Copied!", subtitle: "", icon: UIImage(systemName: "checkmark"))
+                clicked = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    clicked = false
+                }
+            }) {
+                HStack {
+                    Image(systemName: clicked ? "checkmark" : "doc.on.doc")
+                    Text("Copy")
+                }
+                .font(.caption)
+                .padding(8)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+            }
+        }
+    }
+}
