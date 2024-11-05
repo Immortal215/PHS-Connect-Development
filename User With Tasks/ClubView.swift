@@ -87,10 +87,11 @@ struct ClubView: View {
                                     Text(club.description)
                                         .font(.caption)
                                     
-                                    Text("Genres : \(club.genres!.joined(separator: ", "))")
+                                    if let genres = club.genres, !genres.isEmpty{
+                                        Text("Genres : \(genres.joined(separator: ", "))")
                                             .font(.footnote)
                                             .foregroundStyle(.blue)
-                                    
+                                    }
                                 }
                                 .padding()
                                 Button {
