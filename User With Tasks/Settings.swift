@@ -37,7 +37,9 @@ struct Settings: View {
                 .font(.largeTitle)
                 .bold()
             
-            Text("\(viewModel.userEmail ?? "No name")")
+            Text("\(viewModel.userEmail ?? "No Name")")
+            
+            Text("User Type: \(viewModel.userType ?? "Not Found")")
             
             
             
