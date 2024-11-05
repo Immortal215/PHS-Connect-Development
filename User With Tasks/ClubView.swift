@@ -5,25 +5,19 @@ import GoogleSignInSwift
 import SwiftUI
 import FirebaseDatabase
 
-struct ClubsView: View {
-    var readModel  = ReadViewModel()
+struct ClubView: View {
     
     var body: some View {
-        ScrollView {
-            Text("Display value here")
-                .padding()
+        VStack {
+            Text("Clubs")
+                .font(.title)
             
-            Button {
+            ScrollView {
+                Box("Club 1")
                 
-            } label: {
-                Text("Get Data")
+                Box("Club 2")
             }
+            
         }
     }
-}
-
-class ReadViewModel: ObservableObject {
-    
-    @Published
-    var value: String? = nil
 }

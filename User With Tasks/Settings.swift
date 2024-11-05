@@ -9,27 +9,28 @@ struct Settings: View {
     @Binding var showSignInView : Bool
     var body: some View {
         ScrollView {
-            AsyncImage(url: viewModel.userImage, content: { Image in
-                ZStack {
-                    Image
-                        .clipShape(Circle())
+            if !viewModel.isGuestUser {
+                AsyncImage(url: viewModel.userImage, content: { Image in
+                    ZStack {
+                        Image
+                            .clipShape(Circle())
+                        
+                        Circle()
+                            .stroke(lineWidth: 3)
+                    }
+                    .fixedSize()
                     
-                    Circle()
-                        .stroke(lineWidth: 3)
-                }
-                .fixedSize()
-                
-            }, placeholder: {
-                ZStack {
-                    Circle()
-                        .stroke(.gray)
-                    ProgressView("Loading...")
-                }
-                .frame(width: 100)
-                
-            })
-            .padding()
-            
+                }, placeholder: {
+                    ZStack {
+                        Circle()
+                            .stroke(.gray)
+                        ProgressView("Loading...")
+                    }
+                    .frame(width: 100)
+                    
+                })
+                .padding()
+            }
             
             Text(viewModel.userName ?? "No name")
                 .font(.largeTitle)

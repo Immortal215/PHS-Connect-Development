@@ -1,8 +1,13 @@
 import SwiftUI
 
-struct : View {
+struct CalendarView: View {
     var body: some View {
-        Text("Hello, World!")
+        VStack {
+            Text("Calendar")
+                .font(.title)
+            
+            
+        }
     }
 }
 

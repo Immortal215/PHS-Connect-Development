@@ -37,13 +37,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B861A8472CB811A0006AF254 /* User with Tasks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "User with Tasks.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B861A8472CB811A0006AF254 /* PHS Connect.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PHS Connect.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B861A8492CB811A0006AF254 /* User with Tasks */ = {
+		B861A8492CB811A0006AF254 /* User With Tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "User with Tasks";
+			path = "User With Tasks";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -89,7 +89,7 @@
 		B861A83E2CB811A0006AF254 = {
 			isa = PBXGroup;
 			children = (
-				B861A8492CB811A0006AF254 /* User with Tasks */,
+				B861A8492CB811A0006AF254 /* User With Tasks */,
 				B861A8482CB811A0006AF254 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -97,7 +97,7 @@
 		B861A8482CB811A0006AF254 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B861A8472CB811A0006AF254 /* User with Tasks.app */,
+				B861A8472CB811A0006AF254 /* PHS Connect.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -105,9 +105,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B861A8462CB811A0006AF254 /* User with Tasks */ = {
+		B861A8462CB811A0006AF254 /* PHS Connect */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "User with Tasks" */;
+			buildConfigurationList = B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect" */;
 			buildPhases = (
 				B861A8432CB811A0006AF254 /* Sources */,
 				B861A8442CB811A0006AF254 /* Frameworks */,
@@ -118,9 +118,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				B861A8492CB811A0006AF254 /* User with Tasks */,
+				B861A8492CB811A0006AF254 /* User With Tasks */,
 			);
-			name = "User with Tasks";
+			name = "PHS Connect";
 			packageProductDependencies = (
 				B861A85B2CB81714006AF254 /* FirebaseAnalytics */,
 				B861A85D2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion */,
@@ -151,7 +151,7 @@
 				B8BEC61F2CCBE5DA00991A38 /* Drops */,
 			);
 			productName = "User with Tasks";
-			productReference = B861A8472CB811A0006AF254 /* User with Tasks.app */;
+			productReference = B861A8472CB811A0006AF254 /* PHS Connect.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -169,7 +169,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "User with Tasks" */;
+			buildConfigurationList = B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -188,7 +188,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B861A8462CB811A0006AF254 /* User with Tasks */,
+				B861A8462CB811A0006AF254 /* PHS Connect */,
 			);
 		};
 /* End PBXProject section */
@@ -394,7 +394,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "User with Tasks" */ = {
+		B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B861A8532CB811A1006AF254 /* Debug */,
@@ -403,7 +403,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "User with Tasks" */ = {
+		B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B861A8562CB811A1006AF254 /* Debug */,

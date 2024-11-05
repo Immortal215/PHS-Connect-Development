@@ -20,6 +20,14 @@ final class AuthenticationViewModel: ObservableObject {
     var userEmail: String?
     var userName: String?
     var userImage: URL?
+    @Published var isGuestUser: Bool = false
+    
+    func signInAsGuest() {
+        self.userName = "Guest Account"
+        self.userEmail = "Explore!"
+        self.userImage = nil
+        self.isGuestUser = true
+    }
     
     func signInGoogle() async throws {
         guard let topVC = Utilities.shared.topViewController() else {
@@ -40,11 +48,13 @@ final class AuthenticationViewModel: ObservableObject {
         self.userEmail = email
         self.userName = name
         self.userImage = image
+        self.isGuestUser = false
         
         let tokens = GoogleSignInResultModel(idToken: idToken, accessToken: accesssToken, name: name, email: email, image: image)
         try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
         
     }
+    
 }
 
 
@@ -52,66 +62,120 @@ struct ContentView: View {
     @State var text = ""
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
-    @State var selectedTab = 1
+    @AppStorage("selectedTab") var selectedTab = 3
+    @State var screenWidth = UIScreen.main.bounds.width
     
     var body: some View {
         VStack {
             if showSignInView {
-                Text("User With Tasks")
+                Text("PHS Connect")
                     .font(.title)
                     .fontWeight(.bold)
                 Spacer()
                 VStack {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(lineWidth: 3)
+
                         
                         Text("Sign In")
                             .font(.title)
                             .fontWeight(.semibold)
                             .padding()
-                    }
-                    .fixedSize()
                     
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(lineWidth: 3)
+            
                         
-                        
-                        GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .icon, state: .normal)) {
-                            Task {
-                                do {
-                                    try await viewModel.signInGoogle()
-                                    showSignInView = false
-                                } catch {
-                                    print(error)
+                        VStack {
+                            GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
+                                Task {
+                                    do {
+                                        try await viewModel.signInGoogle()
+                                        showSignInView = false
+                                    } catch {
+                                        print(error)
+                                    }
                                 }
                             }
+                            
+                            Button {
+                                viewModel.signInAsGuest()
+                                showSignInView = false
+                            } label: {
+                                HStack {
+                                    Image(systemName: "person.fill")
+                                    Text("Continue as Guest")
+                                }
+                            }
+                            .padding()
+                            .background(.gray.opacity(0.2))
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                            
                         }
                         .padding()
-                    }
-                    .fixedSize()
-                    .padding()
+                        .frame(maxWidth: screenWidth/3)
+                    
                 }
                 Spacer()
             } else {
-                VStack {
+                ZStack {
                     TabView(selection: $selectedTab) {
-                        Tasks()
+                        HomeView()
                             .tabItem {
-                                Image(systemName: "list.bullet.clipboard")
+                                Image(systemName: "rectangle.3.group.bubble")
                             }
                             .tag(0)
+                        
+                        ClubView()
+                            .tabItem {
+                                Image(systemName: "person.3.sequence")
+                            }
+                            .tag(1)
+                        
+                        CalendarView()
+                            .tabItem {
+                                Image(systemName: "calendar")
+                            }
+                            .tag(2)
                         
                         Settings(viewModel: viewModel, showSignInView: $showSignInView)
                             .tabItem {
                                 Image(systemName: "gearshape")
                             }
-                            .tag(1)
-
+                            .tag(3)
+                        
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    
+                    // tab bar view
+                    VStack {
+                        Spacer()
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(height: 60)
+                                .foregroundStyle(.gray)
+                                .shadow(color:.gray, radius: 5)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .opacity(0.8)
+                            
+                            HStack {
+                                
+                                TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
+                                    .padding(.horizontal, 100)
+                                
+                                TabBarButton(image: "person.3.sequence", index: 1, labelr: "Home")
+                                    .padding(.horizontal, 100)
+                                
+                                TabBarButton(image: "calendar", index: 2, labelr: "Home")
+                                    .padding(.horizontal, 100)
+                                
+                                
+                                TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                    .padding(.horizontal, 100)
+                            }
+                            
+                        }
+                        .padding()
                     }
                 }
-
+                
             }
             
             // Every user has a list of tasks to do

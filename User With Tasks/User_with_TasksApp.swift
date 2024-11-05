@@ -21,6 +21,7 @@ struct User_with_TasksApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.light)
         }
     }
 }
