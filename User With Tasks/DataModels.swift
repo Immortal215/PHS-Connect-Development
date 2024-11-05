@@ -17,7 +17,7 @@ struct Club: Codable {
     var genres: [String]?
     var clubPhoto: String?
     var abstract: String // club abstract (basically a longer description)
-    var showDataWho: String // all, allNonGuest, onlyMembers, onlyLeaders
+    var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
 }
 
 struct Personal: Codable {

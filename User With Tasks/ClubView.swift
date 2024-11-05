@@ -11,7 +11,6 @@ struct ClubView: View {
     @State var screenHeight = UIScreen.main.bounds.height
     @State var shownInfo = -1
     @State var searchText = ""
-    
     var viewModel : AuthenticationViewModel
     
     var body: some View {
@@ -31,11 +30,11 @@ struct ClubView: View {
             switch clubs[shownInfo].showDataWho {
                 case "all": return true
                     
-                case "allNonGuest": return (!viewModel.isGuestUser && clubs[shownInfo].showDataWho == "allNonGuest")
+            case "allNonGuest": return (!viewModel.isGuestUser && clubs[shownInfo].showDataWho == "allNonGuest")
                     
-                case "onlyMembers": return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") || clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
+            case "onlyMembers": return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") || clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
                     
-                case "onlyLeaders": return clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
+            case "onlyLeaders": return clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
                     
                 default: return false
                 
@@ -87,6 +86,11 @@ struct ClubView: View {
                                         .font(.callout)
                                     Text(club.description)
                                         .font(.caption)
+                                    
+                                    Text("Genres : \(club.genres!.joined(separator: ", "))")
+                                            .font(.footnote)
+                                            .foregroundStyle(.blue)
+                                    
                                 }
                                 .padding()
                                 Button {
@@ -115,7 +119,9 @@ struct ClubView: View {
                 
                 // clubs data
                 ScrollView {
-                    if shownInfo != -1 {
+                    
+                    if shownInfo >= 0  {
+                        
                         VStack (alignment:.leading, spacing: 8) {
                             VStack (alignment: .center) {
                                 // Club Name
@@ -155,7 +161,7 @@ struct ClubView: View {
                             
                             // Leaders
                             if !clubs[shownInfo].leaders.isEmpty {
-                                Text("Leaders:")
+                                Text("Leaders (\(clubs[shownInfo].leaders.count)):")
                                     .font(.headline)
                                 ForEach(clubs[shownInfo].leaders, id: \.self) { leader in
                                     CodeSnippetView(code: leader)
@@ -170,7 +176,7 @@ struct ClubView: View {
                                     
                                     var mem = clubs[shownInfo].members.joined(separator: ", ")
                                     
-                                    Text("Members:")
+                                    Text("Members (\(clubs[shownInfo].members.count)):")
                                         .font(.headline)
                                     
                                     CodeSnippetView(code: mem)

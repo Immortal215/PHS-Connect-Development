@@ -19,7 +19,14 @@ struct ContentView: View {
                 Text("PHS Connect")
                     .font(.title)
                     .fontWeight(.bold)
-                Spacer()
+
+                AsyncImage(url: URL(string: "https://www.d214.org/cms/lib/IL50000680/Centricity/Template/GlobalAssets/images///Prospect/PHS%20logo_229px.png")) { Image in
+                    Image
+                } placeholder: {
+                  ProgressView()
+                }
+                .offset(x: -25)
+
                 VStack {
                     
                     Text("Sign In")
