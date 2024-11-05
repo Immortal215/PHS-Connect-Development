@@ -62,6 +62,8 @@ struct Settings: View {
                 .foregroundStyle(.red)
             }
             .padding()
+            
+            FeatureReportButton()
         }
         
     }

@@ -28,10 +28,17 @@ struct ClubView: View {
         
         // logic for checking who is allowed to see what information about each club
         var whoCanSeeWhat: Bool {
-            if clubs[shownInfo].showDataWho != "members" {
-                return !viewModel.isGuestUser && clubs[shownInfo].showDataWho == "all"
-            } else {
-                return clubs[shownInfo].members.contains(viewModel.userEmail ?? "") || clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
+            switch clubs[shownInfo].showDataWho {
+                case "all": return true
+                    
+                case "allNonGuest": return (!viewModel.isGuestUser && clubs[shownInfo].showDataWho == "allNonGuest")
+                    
+                case "onlyMembers": return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") || clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
+                    
+                case "onlyLeaders": return clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
+                    
+                default: return false
+                
             }
         }
         
@@ -167,7 +174,7 @@ struct ClubView: View {
                                         .font(.headline)
                                     
                                     CodeSnippetView(code: mem)
-
+                                    
                                 }
                                 
                                 // Meeting Times
