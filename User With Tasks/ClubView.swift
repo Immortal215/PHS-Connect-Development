@@ -31,7 +31,7 @@ struct ClubView: View {
             if clubs[shownInfo].showDataWho != "members" {
                 return !viewModel.isGuestUser && clubs[shownInfo].showDataWho == "all"
             } else {
-                return clubs[shownInfo].members.contains(viewModel.userEmail ?? "")
+                return clubs[shownInfo].members.contains(viewModel.userEmail ?? "") || clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
             }
         }
         
