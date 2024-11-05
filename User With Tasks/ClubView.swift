@@ -167,28 +167,30 @@ struct ClubView: View {
                                 
                                 // Members
                                 if !clubs[shownInfo].members.isEmpty {
+                                    
+                                    var mem = clubs[shownInfo].members.joined(separator: ", ")
+                                    
                                     Text("Members:")
                                         .font(.headline)
-                                    ForEach(clubs[shownInfo].members, id: \.self) { member in
+                                    
                                         HStack {
-                                            
-                                            Text(member)
+                                            Text(mem)
                                                 .font(.subheadline)
                                             
                                             Button {
                                                 memberClicked = ""
-                                                UIPasteboard.general.string = member
-                                                memberClicked = member
-                                                dropper(title: "Email Copied", subtitle: "", icon: UIImage(systemName: "checkmark")!)
+                                                UIPasteboard.general.string = mem
+                                                memberClicked = mem
+                                                dropper(title: "Email\(clubs[shownInfo].members.count > 1 ? "s" : "") Copied", subtitle: "", icon: UIImage(systemName: "checkmark")!)
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                                                     memberClicked = ""
                                                 }
                                             } label: {
-                                                Image(systemName: memberClicked == member ? "checkmark" :"doc.on.doc" )
+                                                Image(systemName: memberClicked == mem ? "checkmark" :"doc.on.doc" )
                                                     .foregroundColor(.blue)
                                             }
                                         }
-                                    }
+                                    
                                 }
                                 
                                 // Meeting Times
