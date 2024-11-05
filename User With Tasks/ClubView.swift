@@ -5,7 +5,7 @@ import GoogleSignInSwift
 import SwiftUI
 import FirebaseDatabase
 
-struct Tasks: View {
+struct ClubsView: View {
     var readModel  = ReadViewModel()
     
     var body: some View {
