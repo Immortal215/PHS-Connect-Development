@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    var viewModel : AuthenticationViewModel
+
     var body: some View {
         VStack {
             Text("Home")

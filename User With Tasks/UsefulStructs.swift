@@ -44,7 +44,7 @@ struct Box: View {
                 .foregroundColor(.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 15)
-                        .stroke(.black, lineWidth: 2)
+                        .stroke(.black, lineWidth: 3)
                 )
                 .shadow(radius: 5)
                 .scaleEffect(0.9)
@@ -52,5 +52,23 @@ struct Box: View {
             Text(text)
                 .padding()
         }
+    }
+}
+
+
+struct CustomSearchBar: View {
+    @Binding var text: String
+    var placeholder: String
+
+    var body: some View {
+        HStack {
+            TextField(placeholder, text: $text)
+                .padding(7)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                
+        }
+        .padding(.vertical, 8) 
     }
 }

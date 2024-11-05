@@ -7,6 +7,7 @@ import SwiftUI
 struct Settings: View {
     var viewModel : AuthenticationViewModel
     @Binding var showSignInView : Bool
+    
     var body: some View {
         ScrollView {
             if !viewModel.isGuestUser {
@@ -51,8 +52,11 @@ struct Settings: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(lineWidth: 3)
-                    Text("Logout")
-                        .padding()
+                    HStack {
+                        Image(systemName: "person")
+                        Text("Logout")
+                    }
+                    .padding()
                 }
                 .fixedSize()
                 .foregroundStyle(.red)

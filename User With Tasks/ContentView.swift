@@ -22,6 +22,16 @@ final class AuthenticationViewModel: ObservableObject {
     var userImage: URL?
     @Published var isGuestUser: Bool = false
     
+    
+    init() {
+        if let user = Auth.auth().currentUser {
+            self.userEmail = user.email
+            self.userName = user.displayName
+            self.userImage = user.photoURL
+            self.isGuestUser = false
+        }
+    }
+    
     func signInAsGuest() {
         self.userName = "Guest Account"
         self.userEmail = "Explore!"
@@ -59,7 +69,6 @@ final class AuthenticationViewModel: ObservableObject {
 
 
 struct ContentView: View {
-    @State var text = ""
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
     @AppStorage("selectedTab") var selectedTab = 3
@@ -73,63 +82,60 @@ struct ContentView: View {
                     .fontWeight(.bold)
                 Spacer()
                 VStack {
-
-                        
-                        Text("Sign In")
-                            .font(.title)
-                            .fontWeight(.semibold)
-                            .padding()
                     
-            
+                    Text("Sign In")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                    
+                    VStack {
                         
-                        VStack {
-                            GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
-                                Task {
-                                    do {
-                                        try await viewModel.signInGoogle()
-                                        showSignInView = false
-                                    } catch {
-                                        print(error)
-                                    }
+                        GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
+                            Task {
+                                do {
+                                    try await viewModel.signInGoogle()
+                                    showSignInView = false
+                                } catch {
+                                    print(error)
                                 }
                             }
-                            
-                            Button {
-                                viewModel.signInAsGuest()
-                                showSignInView = false
-                            } label: {
-                                HStack {
-                                    Image(systemName: "person.fill")
-                                    Text("Continue as Guest")
-                                }
-                            }
-                            .padding()
-                            .background(.gray.opacity(0.2))
-                            .cornerRadius(10)
-                            .padding(.horizontal)
-                            
                         }
                         .padding()
-                        .frame(maxWidth: screenWidth/3)
+                        .padding(.horizontal)
+                        .frame(width: screenWidth/3)
+                        
+                        Button {
+                            viewModel.signInAsGuest()
+                            showSignInView = false
+                        } label: {
+                            HStack {
+                                Image(systemName: "person.fill")
+                                Text("Continue as Guest")
+                            }
+                        }
+                        .padding()
+                        .background(.gray.opacity(0.2))
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                    }
                     
                 }
                 Spacer()
             } else {
                 ZStack {
                     TabView(selection: $selectedTab) {
-                        HomeView()
+                        HomeView(viewModel: viewModel)
                             .tabItem {
                                 Image(systemName: "rectangle.3.group.bubble")
                             }
                             .tag(0)
                         
-                        ClubView()
+                        ClubView(viewModel: viewModel)
                             .tabItem {
                                 Image(systemName: "person.3.sequence")
                             }
                             .tag(1)
                         
-                        CalendarView()
+                        CalendarView(viewModel: viewModel)
                             .tabItem {
                                 Image(systemName: "calendar")
                             }
@@ -177,25 +183,35 @@ struct ContentView: View {
                 }
                 
             }
-            
-            // Every user has a list of tasks to do
-            
         }
         .padding()
         .onChange(of: showSignInView) {
-            Drops.hideAll()
-            let drop = Drop(
-                title: showSignInView ? "Logged Out" : "Logged In",
-                icon: UIImage(systemName: "user"),
-                action: .init {
-                    print("Drop tapped")
-                    Drops.hideCurrent()
-                },
-                position: .top,
-                duration: 5.0,
-                accessibility: "Alert: Title, Subtitle"
-            )
-            Drops.show(drop)
+            dropper(title: showSignInView ? "Logged Out" : "Logged In", subtitle: "", icon: UIImage(systemName: "person"))
+        }
+        .onAppear {
+            if viewModel.userEmail != nil {
+                showSignInView = false
+            } else {
+                print("NO")
+            }
         }
     }
+}
+
+func dropper(title: String, subtitle: String, icon: UIImage?) {
+    Drops.hideAll()
+    
+    let drop = Drop(
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+        action: .init {
+            print("Drop tapped")
+            Drops.hideCurrent()
+        },
+        position: .top,
+        duration: 5.0,
+        accessibility: "Alert: Title, Subtitle"
+    )
+    Drops.show(drop)
 }
