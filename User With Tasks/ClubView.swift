@@ -7,9 +7,9 @@ import FirebaseDatabase
 
 struct ClubView: View {
     @State var clubs: [Club] = []
-    @State var screenWidth = UIScreen.main.bounds.width
-    @State var screenHeight = UIScreen.main.bounds.height
-    @State var shownInfo = -1
+     var screenWidth = UIScreen.main.bounds.width
+     var screenHeight = UIScreen.main.bounds.height
+    @AppStorage("shownInfo") var shownInfo = -1
     @State var searchText = ""
     var viewModel : AuthenticationViewModel
     
@@ -66,7 +66,7 @@ struct ClubView: View {
                                         Rectangle()
                                             .stroke(.black, lineWidth: 3)
                                     }
-                                    .frame(width: screenWidth/5, height: screenHeight/5)
+                                    .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
                                     
                                 }, placeholder: {
                                     ZStack {
@@ -77,7 +77,7 @@ struct ClubView: View {
                                     
                                 })
                                 .padding()
-                                .frame(width: screenWidth/5, height: screenHeight/5)
+                               // .frame(width: screenWidth/5, height: screenHeight/5)
                                 
                                 Spacer()
                                 
@@ -86,7 +86,7 @@ struct ClubView: View {
                                         .font(.callout)
                                     Text(club.description)
                                         .font(.caption)
-                                    
+                                    Spacer()
                                     if let genres = club.genres, !genres.isEmpty{
                                         Text("Genres : \(genres.joined(separator: ", "))")
                                             .font(.footnote)
@@ -94,6 +94,8 @@ struct ClubView: View {
                                     }
                                 }
                                 .padding()
+                                
+                            
                                 Button {
                                     shownInfo = index
                                 } label : {
@@ -105,7 +107,6 @@ struct ClubView: View {
                             }
                         }
                         .padding()
-                        
                     }
                     
                     if filteredItems.isEmpty {
@@ -114,14 +115,15 @@ struct ClubView: View {
                     
                     
                 }
-                .frame(maxWidth: screenWidth/2)
-                .fixedSize()
+                .frame(width: screenWidth/2)
+                .padding(.leading)
+                //.fixedSize()
                 
                 
                 // clubs data
                 ScrollView {
                     
-                    if shownInfo >= 0  {
+                    if shownInfo >= 0 && shownInfo < clubs.count {
                         
                         VStack (alignment:.leading, spacing: 8) {
                             VStack (alignment: .center) {
@@ -232,7 +234,7 @@ struct ClubView: View {
                     Color.white
                         .frame(height: screenHeight/3)
                 }
-                .frame(maxWidth: screenWidth/2)
+                .frame(width: screenWidth/2)
                 
             }
         }
