@@ -49,7 +49,8 @@ struct ClubView: View {
                 
                 // each club
                 ScrollView {
-                    CustomSearchBar(text: $searchText, placeholder: "Search for a club")
+                    CustomSearchBar(text: $searchText, placeholder: "Search for a club name")
+                    
                     ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
                         ZStack {
                             Rectangle()
