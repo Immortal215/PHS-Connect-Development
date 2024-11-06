@@ -142,6 +142,8 @@ struct ContentView: View {
                 } else {
                     print("NO")
                 }
+                
+                // infinite loop to check if the ipad is connected to wifi
                 let timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
                     let _ = networkMonitor.isConnected
                 }
