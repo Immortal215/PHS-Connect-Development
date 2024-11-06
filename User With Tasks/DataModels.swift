@@ -18,12 +18,14 @@ struct Club: Codable, Equatable {
     var clubPhoto: String?
     var abstract: String // club abstract (basically a longer description)
     var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
+    var pendingMemberRequests: [String] // emails
 }
 
-struct Personal: Codable {
+struct Users: Codable, Equatable {
     var favoritedClubs: [String]
     var subjectPreferences: [String]
-    var clubsAPartOf: [String]
+    var clubsAPartOf: [String] 
+    var pendingClubRequests: [String] // Club IDs
 }
 
 @MainActor
