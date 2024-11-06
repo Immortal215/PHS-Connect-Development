@@ -46,7 +46,7 @@ final class AuthenticationViewModel: ObservableObject {
             self.isGuestUser = false
             self.uid = user.uid
             if let email = user.email {
-                self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Unknown User"
+                self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
             }
             if user.uid != "" {
                 self.createUserNodeIfNeeded(userID: user.uid)
