@@ -4,9 +4,12 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 import FirebaseDatabase
+import Pow
+
 
 struct ClubView: View {
     @State var clubs: [Club] = []
+    @State var favoriteClubs: [Club] = []
      var screenWidth = UIScreen.main.bounds.width
      var screenHeight = UIScreen.main.bounds.height
     @AppStorage("shownInfo") var shownInfo = -1
@@ -17,11 +20,23 @@ struct ClubView: View {
         
         // code to search club
         var filteredItems: [Club] {
-            if searchText.isEmpty {
-                return clubs
-            } else {
-                return clubs.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-            }
+                if searchText.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        
+                        clubs = clubs.sorted { favoriteClubs.contains($0) && !favoriteClubs.contains($1) }
+                    }
+                    return clubs
+                    
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        
+                        clubs = clubs.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+                        clubs = clubs.sorted { favoriteClubs.contains($0) && !favoriteClubs.contains($1) }
+                    }
+                        return clubs
+                    
+                }
+            
             
         }
         
@@ -49,6 +64,7 @@ struct ClubView: View {
                 
                 // each club
                 ScrollView {
+                
                     CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
                     
                     ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
@@ -96,11 +112,42 @@ struct ClubView: View {
                                 }
                                 .padding()
                                 
-                            
-                                Button {
-                                    shownInfo = index
-                                } label : {
-                                    Image(systemName : club.leaders.contains(viewModel.userEmail!) ? "pencil.circle" : "info.circle")
+                                VStack {
+                                    Button {
+                                        shownInfo = index
+                                    } label : {
+                                        Image(systemName : club.leaders.contains(viewModel.userEmail!) ? "pencil.circle" : "info.circle")
+                                    }
+                                    
+                                    if !viewModel.isGuestUser {
+                                        Button {
+                                            getClubIDByName(clubName: clubs[index].name) { clubID in
+                                                guard let clubID = clubID else {
+                                                    print("Club ID not found.")
+                                                    return
+                                                }
+                                                
+                                                if let existingIndex = favoriteClubs.firstIndex(where: { $0.name == clubs[index].name }) {
+                                                    
+                                                    removeClubFromFavorites(for: viewModel.uid ?? "", clubID: clubID)
+                                                    favoriteClubs.remove(at: existingIndex)
+                                                    
+                                                } else {
+                                                    addClubToFavorites(for: viewModel.uid ?? "", clubID: clubID)
+                                                    favoriteClubs.append(club)
+                                                }
+                                            }
+                                        } label: {
+                                            if favoriteClubs.contains(club) {
+                                                Image(systemName: "heart.fill")
+                                                    .transition(.movingParts.pop(.blue))
+                                            } else {
+                                                Image(systemName: "heart")
+                                                    .transition(.identity)
+                                            }
+                                        }
+                                        .padding(.top)
+                                    }
                                 }
                                 .padding()
                                 .padding(.bottom, screenWidth/10)
@@ -227,7 +274,7 @@ struct ClubView: View {
                             
                         }
                         .padding()
-                        
+                       
                     } else {
                         Text("Choose a Club!")
                     }
@@ -237,11 +284,17 @@ struct ClubView: View {
                 }
                 .frame(width: screenWidth/2)
                 
+                
             }
         }
         .onAppear {
             fetchClubs { fetchedClubs in
                 self.clubs = fetchedClubs
+            }
+            if !viewModel.isGuestUser {
+                    fetchUserFavoriteClubs(userID: viewModel.uid ?? "") { favoredClubs in
+                        self.favoriteClubs = favoredClubs
+                    }
             }
         }
         

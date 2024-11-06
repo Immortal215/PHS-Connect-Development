@@ -1,4 +1,5 @@
 import SwiftUI
+import Pow
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3
@@ -99,14 +100,22 @@ struct CodeSnippetView: View {
                 }
             }) {
                 HStack {
-                    Image(systemName: clicked ? "checkmark" : "doc.on.doc")
+                    if clicked {
+                        Image(systemName: "checkmark")
+                            .transition(.movingParts.pop(.white))
+                    } else {
+                        Image(systemName: "doc.on.doc")
+                            .transition(.identity)
+                    }
+                        
                     Text("Copy")
                 }
                 .font(.caption)
                 .padding(8)
-                .background(Color.blue)
+                .background(.blue)
                 .foregroundColor(.white)
                 .cornerRadius(8)
+                
             }
         }
     }

@@ -7,6 +7,7 @@ import SwiftUI
 struct Settings: View {
     var viewModel : AuthenticationViewModel
     @Binding var showSignInView : Bool
+    @State var clubs: [Club] = []
     
     var body: some View {
         ScrollView {
@@ -40,9 +41,12 @@ struct Settings: View {
             Text("\(viewModel.userEmail ?? "No Name")")
             
             Text("User Type: \(viewModel.userType ?? "Not Found")")
-            
-            
-            
+                
+            if !viewModel.isGuestUser && !clubs.isEmpty {
+                Text("Favorited Clubs: \(clubs.map(\.name).joined(separator: ", "))")
+                    .font(.footnote)
+            }
+    
             Button {
                 do { try AuthenticationManager.shared.signOut()
                     showSignInView = true
@@ -66,6 +70,14 @@ struct Settings: View {
             .padding()
             
             FeatureReportButton()
+        }
+        .onAppear {
+            if !viewModel.isGuestUser {
+                    fetchUserFavoriteClubs(userID: viewModel.uid ?? "") { fetchedClubs in
+                        self.clubs = fetchedClubs
+                    }
+                
+            }
         }
         
     }

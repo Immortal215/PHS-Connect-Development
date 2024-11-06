@@ -5,8 +5,8 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-struct Club: Codable {
-    var leaders: [String] // emails 
+struct Club: Codable, Equatable {
+    var leaders: [String] // emails
     var members: [String] // emails
     var inviteOnly: Bool // can I join the club or do I have to request to join
     var announcements: [String: String]? // each announcement time will be in this form of Date : Body
@@ -33,6 +33,7 @@ final class AuthenticationViewModel: ObservableObject {
     var userImage: URL?
     @Published var isGuestUser: Bool = false
     var userType: String?
+    var uid: String?
     
     
     init() {
@@ -41,8 +42,41 @@ final class AuthenticationViewModel: ObservableObject {
             self.userName = user.displayName
             self.userImage = user.photoURL
             self.isGuestUser = false
+            self.uid = user.uid
             if let email = user.email {
                 self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Unknown User"
+            }
+            if user.uid != "" {
+                self.createUserNodeIfNeeded(userID: user.uid)
+            }
+            
+        }
+    }
+    
+    
+    func createUserNodeIfNeeded(userID: String) {
+        let reference = Database.database().reference()
+        let userReference = reference.child("users").child(userID)
+        
+        userReference.observeSingleEvent(of: .value) { snapshot in
+            
+            // only create node if it doesn't already exist
+            if !snapshot.exists() {
+                let newUser = [
+                    "clubsAPartOf": [" "],
+                    "favoritedClubs": [" "],
+                    "subjectPreferences": [" "]
+                ] as [String : Any]
+                
+                userReference.setValue(newUser) { error, _ in
+                    if let error = error {
+                        print("Error creating user node: \(error)")
+                    } else {
+                        print("User node created successfully")
+                    }
+                }
+            } else {
+                print("User node already exists")
             }
         }
     }
@@ -53,6 +87,7 @@ final class AuthenticationViewModel: ObservableObject {
         self.userImage = nil
         self.isGuestUser = true
         self.userType = "Guest"
+        self.uid = ""
     }
     
     func signInGoogle() async throws {
@@ -70,11 +105,15 @@ final class AuthenticationViewModel: ObservableObject {
         let name = gidSignInResult.user.profile?.name
         let email = gidSignInResult.user.profile?.email
         let image = gidSignInResult.user.profile?.imageURL(withDimension: 100)
-        
+        let uid = gidSignInResult.user.userID!
+
         self.userEmail = email
         self.userName = name
         self.userImage = image
         self.isGuestUser = false
+        self.uid = uid
+        self.createUserNodeIfNeeded(userID: uid)
+        
         if let email = email {
             self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Unknown User"
         }
