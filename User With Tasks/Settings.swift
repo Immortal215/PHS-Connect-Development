@@ -5,32 +5,27 @@ import GoogleSignInSwift
 import SwiftUI
 
 struct Settings: View {
-    var viewModel : AuthenticationViewModel
-    @Binding var showSignInView : Bool
-    @State var clubs: [Club] = []
+    var viewModel: AuthenticationViewModel
+    @Binding var showSignInView: Bool
+    @State var users: [Personal] = []
+    @State var favoriteText = ""
     
     var body: some View {
         ScrollView {
             if !viewModel.isGuestUser {
-                AsyncImage(url: viewModel.userImage, content: { Image in
+                AsyncImage(url: viewModel.userImage) { image in
+                    image
+                        .resizable()
+                        .clipShape(Circle())
+                        .frame(width: 100, height: 100)
+                        .overlay(Circle().stroke(lineWidth: 3))
+                } placeholder: {
                     ZStack {
-                        Image
-                            .clipShape(Circle())
-                        
-                        Circle()
-                            .stroke(lineWidth: 3)
-                    }
-                    .fixedSize()
-                    
-                }, placeholder: {
-                    ZStack {
-                        Circle()
-                            .stroke(.gray)
+                        Circle().stroke(.gray)
                         ProgressView("Loading...")
                     }
-                    .frame(width: 100)
-                    
-                })
+                    .frame(width: 100, height: 100)
+                }
                 .padding()
             }
             
@@ -38,22 +33,22 @@ struct Settings: View {
                 .font(.largeTitle)
                 .bold()
             
-            Text("\(viewModel.userEmail ?? "No Name")")
+            Text(viewModel.userEmail ?? "No Email")
             
             Text("User Type: \(viewModel.userType ?? "Not Found")")
-                
-            if !viewModel.isGuestUser && !clubs.isEmpty {
-                Text("Favorited Clubs: \(clubs.map(\.name).joined(separator: ", "))")
-                    .font(.footnote)
+            
+            
+            if !viewModel.isGuestUser {
+                Text(favoriteText)
             }
-    
+            
             Button {
-                do { try AuthenticationManager.shared.signOut()
+                do {
+                    try AuthenticationManager.shared.signOut()
                     showSignInView = true
                 } catch {
-                    print("error")
+                    print("Error signing out: \(error.localizedDescription)")
                 }
-                
             } label: {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
@@ -64,21 +59,29 @@ struct Settings: View {
                     }
                     .padding()
                 }
-                .fixedSize()
-                .foregroundStyle(.red)
+                .foregroundColor(.red)
             }
             .padding()
+            .fixedSize()
             
             FeatureReportButton()
         }
         .onAppear {
             if !viewModel.isGuestUser {
-                    fetchUserFavoriteClubs(userID: viewModel.uid ?? "") { fetchedClubs in
-                        self.clubs = fetchedClubs
+                fetchUsers { fetchedUsers in
+                    self.users = fetchedUsers
+                    
+                    if let user = users.first(where: { $0.userID == viewModel.uid }) {
+                        if !user.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
+                            getFavoritedClubNames(from: user.favoritedClubs) { clubNames in
+                                favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
+                            }
+                        } else {
+                            favoriteText = "Favorited Clubs: None"
+                        }
                     }
-                
+                }
             }
         }
-        
     }
 }

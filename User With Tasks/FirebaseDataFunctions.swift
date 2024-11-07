@@ -1,8 +1,8 @@
 import FirebaseDatabase
 
-func addClub(clubID: String, club: Club) {
+func addClub(club: Club) {
     let refrence = Database.database().reference()
-    let clubRefrence = refrence.child("clubs").child(clubID)
+    let clubRefrence = refrence.child("clubs").child(club.clubID)
     
     do {
         let data = try JSONEncoder().encode(club)
@@ -47,36 +47,22 @@ func addClubToUser(userID: String, clubID: String) {
     }
 }
 
-func fetchUserFavoriteClubs(userID: String, completion: @escaping ([Club]) -> Void) {
-    let reference = Database.database().reference()
-    let userClubsRef = reference.child("users").child(userID).child("favoritedClubs")
-    let clubsRef = reference.child("clubs")
+func fetchUsers(completion: @escaping ([Personal]) -> Void) {
+    let refrence = Database.database().reference().child("users")
     
-    userClubsRef.observeSingleEvent(of: .value) { snapshot in
-        guard let clubIDs = snapshot.value as? [String] else {
-            completion([])
-            return
-        }
+    refrence.observeSingleEvent(of: .value) { snapshot in
+        var users: [Personal] = []
         
-        var clubs: [Club] = []
-        let dispatchGroup = DispatchGroup()
-        
-        for clubID in clubIDs {
-            dispatchGroup.enter()
-            
-            clubsRef.child(clubID).observeSingleEvent(of: .value) { clubSnapshot in
-                if let value = clubSnapshot.value as? [String: Any],
-                   let jsonData = try? JSONSerialization.data(withJSONObject: value),
-                   let club = try? JSONDecoder().decode(Club.self, from: jsonData) {
-                    clubs.append(club)
-                }
-                dispatchGroup.leave()
+        for child in snapshot.children {
+            if let snap = child as? DataSnapshot,
+               let value = snap.value as? [String: Any],
+               let jsonData = try? JSONSerialization.data(withJSONObject: value),
+               let user = try? JSONDecoder().decode(Personal.self, from: jsonData) {
+                users.append(user)
             }
         }
         
-        dispatchGroup.notify(queue: .main) {
-            completion(clubs)
-        }
+        completion(users)
     }
 }
 
@@ -141,5 +127,38 @@ func getClubIDByName(clubName: String, completion: @escaping (String?) -> Void) 
             }
         }
         
+    }
+}
+
+func getClubNameByID(clubID: String, completion: @escaping (String?) -> Void) {
+    let reference = Database.database().reference().child("clubs").child(clubID)
+
+    reference.observeSingleEvent(of: .value) { snapshot in
+        guard let clubData = snapshot.value as? [String: Any],
+              let clubName = clubData["name"] as? String else {
+            completion(nil)
+            return
+        }
+        completion(clubName)
+    }
+}
+
+func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([String]) -> Void) {
+    var clubNames: [String] = []
+    let group = DispatchGroup()
+
+    // Start from index 1
+    for clubID in clubIDs {
+        group.enter() // Enter the group for each async call
+        getClubNameByID(clubID: clubID) { clubName in
+            if let name = clubName {
+                clubNames.append(name)
+            }
+            group.leave()
+        }
+    }
+
+    group.notify(queue: .main) {
+        completion(clubNames)
     }
 }

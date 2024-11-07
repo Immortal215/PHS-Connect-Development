@@ -18,14 +18,16 @@ struct Club: Codable, Equatable {
     var clubPhoto: String?
     var abstract: String // club abstract (basically a longer description)
     var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
-    var pendingMemberRequests: [String] // emails
+    var pendingMemberRequests: [String]? // emails
+    var clubID: String
 }
 
-struct Users: Codable, Equatable {
-    var favoritedClubs: [String]
+struct Personal: Codable {
+    var userID : String
+    var favoritedClubs: [String] // clubIDs
     var subjectPreferences: [String]
     var clubsAPartOf: [String] 
-    var pendingClubRequests: [String] // Club IDs
+    var pendingClubRequests: [String]? // Club IDs
 }
 
 @MainActor
@@ -49,6 +51,7 @@ final class AuthenticationViewModel: ObservableObject {
                 self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
             }
             if user.uid != "" {
+                print("userID: \(user.uid)")
                 self.createUserNodeIfNeeded(userID: user.uid)
             }
             
@@ -65,6 +68,7 @@ final class AuthenticationViewModel: ObservableObject {
             // only create node if it doesn't already exist
             if !snapshot.exists() {
                 let newUser = [
+                    "userID" : self.uid,
                     "clubsAPartOf": [" "],
                     "favoritedClubs": [" "],
                     "subjectPreferences": [" "]
