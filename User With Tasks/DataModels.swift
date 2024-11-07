@@ -8,7 +8,6 @@ import SwiftUI
 struct Club: Codable, Equatable {
     var leaders: [String] // emails
     var members: [String] // emails
-    var inviteOnly: Bool // can I join the club or do I have to request to join
     var announcements: [String: String]? // each announcement time will be in this form of Date : Body
     var meetingTimes: [String: [String]]? // each meeting time will be in this form of Date : [Title, Body]
     var description: String // short description to catch viewers
@@ -42,23 +41,16 @@ final class AuthenticationViewModel: ObservableObject {
     
     
     // do not get rid of, may be important
-//    init() {
-//        if let user = Auth.auth().currentUser {
-//            self.userEmail = user.email
-//            self.userName = user.displayName
-//            self.userImage = user.photoURL
-//            self.isGuestUser = false
-//            self.uid = user.uid
-//            if let email = user.email {
-//                self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
-//            }
-//            if user.uid != "" {
-//                print("userID: \(user.uid)")
-//                self.createUserNodeIfNeeded(userID: user.uid)
-//            }
-//            
-//        }
-//    }
+    init() {
+        if let user = Auth.auth().currentUser {
+            self.userEmail = user.email
+            self.userName = user.displayName
+            self.userImage = user.photoURL
+            self.isGuestUser = false
+            self.uid = user.uid
+            
+        }
+    }
     
     
     func createUserNodeIfNeeded(userID: String) {
