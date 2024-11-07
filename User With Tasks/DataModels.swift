@@ -20,6 +20,7 @@ struct Club: Codable, Equatable {
     var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
     var pendingMemberRequests: [String]? // emails
     var clubID: String
+    var location: String
 }
 
 struct Personal: Codable {
@@ -40,23 +41,24 @@ final class AuthenticationViewModel: ObservableObject {
     var uid: String?
     
     
-    init() {
-        if let user = Auth.auth().currentUser {
-            self.userEmail = user.email
-            self.userName = user.displayName
-            self.userImage = user.photoURL
-            self.isGuestUser = false
-            self.uid = user.uid
-            if let email = user.email {
-                self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
-            }
-            if user.uid != "" {
-                print("userID: \(user.uid)")
-                self.createUserNodeIfNeeded(userID: user.uid)
-            }
-            
-        }
-    }
+    // do not get rid of, may be important
+//    init() {
+//        if let user = Auth.auth().currentUser {
+//            self.userEmail = user.email
+//            self.userName = user.displayName
+//            self.userImage = user.photoURL
+//            self.isGuestUser = false
+//            self.uid = user.uid
+//            if let email = user.email {
+//                self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
+//            }
+//            if user.uid != "" {
+//                print("userID: \(user.uid)")
+//                self.createUserNodeIfNeeded(userID: user.uid)
+//            }
+//            
+//        }
+//    }
     
     
     func createUserNodeIfNeeded(userID: String) {
@@ -121,7 +123,7 @@ final class AuthenticationViewModel: ObservableObject {
         self.createUserNodeIfNeeded(userID: uid)
         
         if let email = email {
-            self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Unknown User"
+            self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
         }
         
         let tokens = GoogleSignInResultModel(idToken: idToken, accessToken: accesssToken, name: name, email: email, image: image)

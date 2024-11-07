@@ -231,6 +231,12 @@ struct ClubView: View {
                                     .foregroundStyle(.blue)
                             }
                             
+                            Text("Location:")
+                                .font(.headline)
+                            Text(clubs[shownInfo].location)
+                                .font(.subheadline)
+                                .foregroundStyle(.blue)
+                            
                             HStack {
                                 Text("Schoology Code: ")
                                 CodeSnippetView(code: clubs[shownInfo].schoologyCode)
