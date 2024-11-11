@@ -47,24 +47,26 @@ func addClubToUser(userID: String, clubID: String) {
     }
 }
 
-func fetchUsers(completion: @escaping ([Personal]) -> Void) {
-    let refrence = Database.database().reference().child("users")
+func fetchUser(for userID: String, completion: @escaping (Personal?) -> Void) {
+    let reference = Database.database().reference().child("users").child(userID)
     
-    refrence.observeSingleEvent(of: .value) { snapshot in
-        var users: [Personal] = []
-        
-        for child in snapshot.children {
-            if let snap = child as? DataSnapshot,
-               let value = snap.value as? [String: Any],
-               let jsonData = try? JSONSerialization.data(withJSONObject: value),
-               let user = try? JSONDecoder().decode(Personal.self, from: jsonData) {
-                users.append(user)
+    reference.observeSingleEvent(of: .value) { snapshot in
+        if let value = snapshot.value as? [String: Any] {
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: value)
+                let user = try JSONDecoder().decode(Personal.self, from: jsonData)
+                completion(user)
+            } catch {
+                print("Error decoding user data: \(error)")
+                completion(nil)
             }
+        } else {
+            print("No user found for userID: \(userID)")
+            completion(nil)
         }
-        
-        completion(users)
     }
 }
+
 
 func addClubToFavorites(for userID: String, clubID: String) {
     let reference = Database.database().reference()

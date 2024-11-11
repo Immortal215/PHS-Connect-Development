@@ -6,10 +6,11 @@ import SwiftUI
 
 struct Settings: View {
     var viewModel: AuthenticationViewModel
+    @State var userInfo: Personal? = nil
     @Binding var showSignInView: Bool
-    @State var users: [Personal] = []
     @State var favoriteText = ""
-    
+    @AppStorage("selectedTab") var selectedTab = 3
+
     var body: some View {
         ScrollView {
             if !viewModel.isGuestUser {
@@ -66,21 +67,31 @@ struct Settings: View {
             
             FeatureReportButton()
         }
-        .onAppear {
+        .onChange(of: selectedTab) {
             if !viewModel.isGuestUser {
-                fetchUsers { fetchedUsers in
-                    self.users = fetchedUsers
-                    
-                    if let user = users.first(where: { $0.userID == viewModel.uid }) {
-                        if !user.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
-                            getFavoritedClubNames(from: user.favoritedClubs) { clubNames in
-                                favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
+                
+                if !viewModel.isGuestUser {
+                    if let userInfoer = userInfo {
+                        
+                        if let UserID = viewModel.uid {
+                            fetchUser(for: UserID) { user in
+                                 userInfo = user
+                                
+                                if !userInfoer.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
+                                    getFavoritedClubNames(from: userInfoer.favoritedClubs) { clubNames in
+                                        favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
+                                    }
+                                }
                             }
-                        } else {
-                            favoriteText = "Favorited Clubs: None"
                         }
                     }
+                    
+                    
+                } else {
+                    favoriteText = "Favorited Clubs: None"
                 }
+                
+                
             }
         }
     }

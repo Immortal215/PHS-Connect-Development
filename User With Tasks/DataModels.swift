@@ -20,6 +20,7 @@ struct Club: Codable, Equatable {
     var pendingMemberRequests: [String]? // emails
     var clubID: String
     var location: String
+    
 }
 
 struct Personal: Codable {
@@ -28,6 +29,7 @@ struct Personal: Codable {
     var subjectPreferences: [String]
     var clubsAPartOf: [String] 
     var pendingClubRequests: [String]? // Club IDs
+ 
 }
 
 @MainActor

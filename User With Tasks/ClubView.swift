@@ -8,28 +8,28 @@ import Pow
 
 struct ClubView: View {
     @State var clubs: [Club] = []
-    @State var users: [Personal] = []
+    @State var userInfo: Personal? = nil
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @AppStorage("shownInfo") var shownInfo = -1
     @State var searchText = ""
     var viewModel: AuthenticationViewModel
+    @AppStorage("selectedTab") var selectedTab = 3
     
     var body: some View {
-        var user = users.first { $0.userID == viewModel.uid }
         
         var filteredItems: [Club] {
             if searchText.isEmpty {
                 return clubs.sorted {
-                    user?.favoritedClubs.contains($0.clubID) ?? false &&
-                    !(user?.favoritedClubs.contains($1.clubID) ?? false)
+                    userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                    !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                 }
             } else {
                 return clubs
                     .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
                     .sorted {
-                        user?.favoritedClubs.contains($0.clubID) ?? false &&
-                        !(user?.favoritedClubs.contains($1.clubID) ?? false)
+                        userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                        !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
             }
         }
@@ -111,26 +111,30 @@ struct ClubView: View {
                                     
                                     if !viewModel.isGuestUser {
                                         Button {
-                                            if user?.favoritedClubs.contains(club.clubID) ?? false {
+                                            if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                                 removeClubFromFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                                    fetchUsers { users in
-                                                        self.users = users
-                                                    }
-                                                } else {
-                                                    addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                                    fetchUsers { users in
-                                                        self.users = users
+                                                if let UserID = viewModel.uid {
+                                                    fetchUser(for: UserID) { user in
+                                                        userInfo = user
                                                     }
                                                 }
+                                            } else {
+                                                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                                if let UserID = viewModel.uid {
+                                                    fetchUser(for: UserID) { user in
+                                                        userInfo = user
+                                                    }
+                                                }
+                                            }
                                             
                                         } label: {
-                                            if user?.favoritedClubs.contains(club.clubID) ?? false {
-                                                    Image(systemName: "heart.fill")
-                                                        .transition(.movingParts.pop(.blue))
-                                                } else {
-                                                    Image(systemName: "heart")
-                                                        .transition(.identity)
-                                                }
+                                            if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                                Image(systemName: "heart.fill")
+                                                    .transition(.movingParts.pop(.blue))
+                                            } else {
+                                                Image(systemName: "heart")
+                                                    .transition(.identity)
+                                            }
                                             
                                         }
                                         .padding(.top)
@@ -257,9 +261,12 @@ struct ClubView: View {
             fetchClubs { fetchedClubs in
                 self.clubs = fetchedClubs
             }
+            
             if !viewModel.isGuestUser {
-                fetchUsers { users in
-                    self.users = users
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
+                    }
                 }
             }
         }
