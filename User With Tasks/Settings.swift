@@ -69,23 +69,19 @@ struct Settings: View {
         }
         .onChange(of: selectedTab) {
             if !viewModel.isGuestUser {
-                
-                if !viewModel.isGuestUser {
-                    if let userInfoer = userInfo {
                         
                         if let UserID = viewModel.uid {
                             fetchUser(for: UserID) { user in
                                  userInfo = user
-                                
-                                if !userInfoer.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
-                                    getFavoritedClubNames(from: userInfoer.favoritedClubs) { clubNames in
+                                 
+                                if !userInfo!.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
+                                    getFavoritedClubNames(from: userInfo!.favoritedClubs) { clubNames in
                                         favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
                                     }
                                 }
                             }
-                        }
-                    }
-                    
+                        
+                
                     
                 } else {
                     favoriteText = "Favorited Clubs: None"

@@ -20,9 +20,7 @@ struct ClubView: View {
         
         var filteredItems: [Club] {
             if searchText.isEmpty {
-                return clubs.sorted {
-                    userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-                    !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                return clubs.sorted { userInfo?.favoritedClubs.contains($0.clubID) ?? false && !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                 }
             } else {
                 return clubs
