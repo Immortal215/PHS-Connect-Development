@@ -27,7 +27,7 @@ struct ClubView: View {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
-    
+                
             } else {
                 return clubs
                     .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
@@ -66,96 +66,114 @@ struct ClubView: View {
                     CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
                     
                     ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
-                        ZStack {
-                            Rectangle()
-                                .stroke(.black, lineWidth: 3)
-                            
-                            HStack {
-                                AsyncImage(url: URL(string: club.clubPhoto ?? "https://schoology.d214.org/sites/all/themes/schoology_theme/images/group-default.svg?0"), content: { Image in
-                                    ZStack {
-                                        Image
-                                            .resizable()
-                                            .clipShape(Rectangle())
-                                        
-                                        Rectangle()
-                                            .stroke(.black, lineWidth: 3)
-                                    }
-                                    .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
-                                    
-                                }, placeholder: {
-                                    ZStack {
-                                        Rectangle()
-                                            .stroke(.gray)
-                                        ProgressView("Loading \(club.name) Image")
-                                    }
-                                })
-                                .padding()
-                                
-                                Spacer()
-                                
-                                VStack {
-                                    Text(club.name)
-                                        .font(.callout)
-                                    Text(club.description)
-                                        .font(.caption)
-                                    Spacer()
-                                    if let genres = club.genres, !genres.isEmpty {
-                                        Text("Genres: \(genres.joined(separator: ", "))")
-                                            .font(.footnote)
-                                            .foregroundStyle(.blue)
-                                    }
-                                }
-                                .padding()
-                                
-                                VStack {
-                                    
-                                    // info button
-                                    Button {
-                                       // shownInfo = index
-                                        
-                                        shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                    } label: {
-                                        Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
-                                    }
-                                    
-                                    
-                                    // favorite button
-                                    if !viewModel.isGuestUser {
-                                        Button {
-                                            if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                                removeClubFromFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                                if let UserID = viewModel.uid {
-                                                    fetchUser(for: UserID) { user in
-                                                        userInfo = user
-                                                    }
-                                                }
-                                            } else {
-                                                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                                if let UserID = viewModel.uid {
-                                                    fetchUser(for: UserID) { user in
-                                                        userInfo = user
-                                                    }
-                                                }
-                                            }
-                                            
-                                        } label: {
-                                            if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                                Image(systemName: "heart.fill")
-                                                    .transition(.movingParts.pop(.blue))
-                                            } else {
-                                                Image(systemName: "heart")
-                                                    .transition(.identity)
-                                            }
-                                            
-                                        }
-                                        .padding(.top)
-                                    }
-                                }
-                                .padding()
-                                .padding(.bottom, screenWidth/10)
+                        Button {
+                            if shownInfo != clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1 {
+                                shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                            } else {
+                                shownInfo = -1
                             }
+                           
+                        } label : {
+                            
+                            // each club
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(.black, lineWidth: 3)
+                                
+                                HStack {
+                                    AsyncImage(url: URL(string: club.clubPhoto ?? "https://schoology.d214.org/sites/all/themes/schoology_theme/images/group-default.svg?0"), content: { Image in
+                                        ZStack {
+                                            Image
+                                                .resizable()
+                                                .clipShape(Rectangle())
+                                            
+                                            Rectangle()
+                                                .stroke(.black, lineWidth: 3)
+                                        }
+                                        .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
+                                        
+                                    }, placeholder: {
+                                        ZStack {
+                                            Rectangle()
+                                                .stroke(.gray)
+                                            ProgressView("Loading \(club.name) Image")
+                                        }
+                                    })
+                                    .padding()
+                                    
+                                    Spacer()
+                                    
+                                    VStack {
+                                        Text(club.name)
+                                            .font(.callout)
+                                        Text(club.description)
+                                            .font(.caption)
+                                        Spacer()
+                                        if let genres = club.genres, !genres.isEmpty {
+                                            Text("Genres: \(genres.joined(separator: ", "))")
+                                                .font(.footnote)
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .padding()
+                                    
+                                    VStack {
+                                        
+                                        // info button
+                                        Button {
+                                            // shownInfo = index
+                                            
+                                            shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                        } label: {
+                                            Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
+                                        }
+                                        
+                                        
+                                        // favorite button
+                                        if !viewModel.isGuestUser {
+                                            Button {
+                                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                                    removeClubFromFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                                    if let UserID = viewModel.uid {
+                                                        fetchUser(for: UserID) { user in
+                                                            userInfo = user
+                                                        }
+                                                    }
+                                                } else {
+                                                    addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                                    if let UserID = viewModel.uid {
+                                                        fetchUser(for: UserID) { user in
+                                                            userInfo = user
+                                                        }
+                                                    }
+                                                }
+                                                
+                                            } label: {
+                                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                                    Image(systemName: "heart.fill")
+                                                        .transition(.movingParts.pop(.blue))
+                                                } else {
+                                                    Image(systemName: "heart")
+                                                        .transition(.identity)
+                                                }
+                                                
+                                            }
+                                            .padding(.top)
+                                        }
+                                    }
+                                    .padding()
+                                    .padding(.bottom, screenWidth/10)
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 3)
                         }
-                        .padding()
+                        .conditionalEffect(
+                            .pushDown,
+                            condition: shownInfo == clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                        )
+
+                       
                     }
                     
                     if filteredItems.isEmpty {
@@ -283,5 +301,8 @@ struct ClubView: View {
                 }
             }
         }
+        .onPencilDoubleTap(perform: { PencilDoubleTapGestureValue in
+            shownInfo = -1
+        })
     }
 }
