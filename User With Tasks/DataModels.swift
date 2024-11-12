@@ -34,22 +34,21 @@ struct Personal: Codable {
 
 @MainActor
 final class AuthenticationViewModel: ObservableObject {
-    var userEmail: String?
-    var userName: String?
-    var userImage: URL?
+    @AppStorage("userEmail") var userEmail: String?
+    @AppStorage("userName") var userName: String?
+    @AppStorage("userImage") var userImage: String?
     @Published var isGuestUser: Bool = false
-    var userType: String?
-    var uid: String?
-    
+    @AppStorage("userType") var userType: String?
+    @AppStorage("uid") var uid: String?
     
     // do not get rid of, may be important
     init() {
         if let user = Auth.auth().currentUser {
-            self.userEmail = user.email
-            self.userName = user.displayName
-            self.userImage = user.photoURL
+            self.userEmail = userEmail
+            self.userName = userName
+            self.userImage = userImage
             self.isGuestUser = false
-            self.uid = user.uid
+            self.uid = uid
             
         }
     }
@@ -64,7 +63,7 @@ final class AuthenticationViewModel: ObservableObject {
             // only create node if it doesn't already exist
             if !snapshot.exists() {
                 let newUser = [
-                    "userID" : self.uid,
+                    "userID" : self.uid!,
                     "clubsAPartOf": [" "],
                     "favoritedClubs": [" "],
                     "subjectPreferences": [" "]
@@ -111,7 +110,7 @@ final class AuthenticationViewModel: ObservableObject {
 
         self.userEmail = email
         self.userName = name
-        self.userImage = image
+        self.userImage = image?.absoluteString
         self.isGuestUser = false
         self.uid = uid
         self.createUserNodeIfNeeded(userID: uid)

@@ -149,7 +149,7 @@ struct ClubView: View {
                         Text("No Clubs Found for \"\(searchText)\"")
                     }
                 }
-                .frame(width: screenWidth/2)
+                .frame(maxWidth: screenWidth/2)
                 .padding(.leading)
                 
                 ScrollView {
@@ -252,7 +252,8 @@ struct ClubView: View {
                     Color.white
                         .frame(height: screenHeight/3)
                 }
-                .frame(width: screenWidth/2)
+                .frame(maxWidth: screenWidth/2)
+                .padding(.trailing)
             }
         }
         .onAppear {

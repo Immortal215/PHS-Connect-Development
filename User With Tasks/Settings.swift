@@ -10,11 +10,11 @@ struct Settings: View {
     @Binding var showSignInView: Bool
     @State var favoriteText = ""
     @AppStorage("selectedTab") var selectedTab = 3
-
+    
     var body: some View {
         ScrollView {
             if !viewModel.isGuestUser {
-                AsyncImage(url: viewModel.userImage) { image in
+                AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
                     image
                         .resizable()
                         .clipShape(Circle())
@@ -67,27 +67,23 @@ struct Settings: View {
             
             FeatureReportButton()
         }
-        .onChange(of: selectedTab) {
+        .onAppear {
             if !viewModel.isGuestUser {
+                
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
                         
-                        if let UserID = viewModel.uid {
-                            fetchUser(for: UserID) { user in
-                                 userInfo = user
-                                 
-                                if !userInfo!.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
-                                    getFavoritedClubNames(from: userInfo!.favoritedClubs) { clubNames in
-                                        favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
-                                    }
-                                }
+                        if !userInfo!.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
+                            getFavoritedClubNames(from: userInfo!.favoritedClubs) { clubNames in
+                                favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
                             }
-                        
-                
-                    
-                } else {
-                    favoriteText = "Favorited Clubs: None"
+                        } else {
+                            favoriteText = "Favorited Clubs: None"
+                            
+                        }
+                    }
                 }
-                
-                
             }
         }
     }
