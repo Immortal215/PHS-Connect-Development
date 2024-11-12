@@ -12,7 +12,7 @@ struct TabBarButton: View {
             selectedTab = index
         } label: {
             ZStack {
-              
+                
                 VStack {
                     Image(systemName: image)
                         .font(.system(size: 24))
@@ -60,7 +60,7 @@ struct Box: View {
 struct CustomSearchBar: View {
     @Binding var text: String
     var placeholder: String
-
+    
     var body: some View {
         HStack {
             TextField(placeholder, text: $text)
@@ -68,15 +68,15 @@ struct CustomSearchBar: View {
                 .background(Color(.systemGray6))
                 .cornerRadius(10)
                 .padding(.horizontal)
-                
+            
         }
-        .padding(.vertical, 8) 
+        .padding(.vertical, 8)
     }
 }
 
 struct CodeSnippetView: View {
     let code: String
-   @State var clicked = false
+    @State var clicked = false
     
     var body: some View {
         HStack {
@@ -107,7 +107,7 @@ struct CodeSnippetView: View {
                         Image(systemName: "doc.on.doc")
                             .transition(.identity)
                     }
-                        
+                    
                     Text("Copy")
                 }
                 .font(.caption)
@@ -118,5 +118,66 @@ struct CodeSnippetView: View {
                 
             }
         }
+    }
+}
+
+struct CreateClubView: View {
+    @State var userEmail = ""
+    @State var clubTitle = ""
+    @State var clubDesc = ""
+    @State var clubAbstract = ""
+    @State var schoology = ""
+    @State var clubId = ""
+    @State var location = ""
+    @State var leaders: [String] = []
+    @State var members: [String] = []
+    @State var clubPhoto = ""
+    var viewCloser: (() -> Void)?
+    
+    @State var CreatedClub = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
+    
+    var body: some View {
+        VStack {
+            TextField("Club Name", text: $clubTitle)
+                .padding()
+            TextField("Club Description", text: $clubDesc)
+                .padding()
+            TextField("Club Abstract", text: $clubAbstract)
+                .padding()
+            TextField("Schoology Code", text: $schoology)
+                .padding()
+            TextField("Club ID (Choose a unique ID, will not be able to be changed later)", text: $clubId)
+                .padding()
+            TextField("Club Location", text: $location)
+                .padding()
+            TextField("Club Photo URL (Optional)", text: $clubPhoto)
+                .padding()
+            
+            if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && clubId != "" && location != "") {
+                Button("Create Club") {
+                    leaders.append(userEmail)
+                    members.append(userEmail)
+                    
+                    CreatedClub.clubID = clubId
+                    CreatedClub.schoologyCode = schoology
+                    CreatedClub.name = clubTitle
+                    CreatedClub.description = clubDesc
+                    CreatedClub.abstract = clubAbstract
+                    CreatedClub.location = location
+                    CreatedClub.leaders = leaders
+                    CreatedClub.members = members
+                    
+                    
+                    // optional additions, needed to keep optional
+                    if clubPhoto != "" {
+                        CreatedClub.clubPhoto = clubPhoto
+                    }
+                    
+                    addClub(club: CreatedClub)
+                    viewCloser?()
+                }
+            }
+        }
+        .textFieldStyle(.roundedBorder)
     }
 }

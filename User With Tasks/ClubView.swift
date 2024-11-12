@@ -15,6 +15,7 @@ struct ClubView: View {
     @State var searchText = ""
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
+    @State var createClubToggler = false
     
     var body: some View {
         
@@ -63,7 +64,23 @@ struct ClubView: View {
             HStack {
                 // clubs view
                 ScrollView {
-                    CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
+                    HStack {
+                        CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
+                        if viewModel.userEmail == "sharul.shah2008@gmail.com" {
+                            Button {
+                                createClubToggler = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .foregroundStyle(.green)
+                            }
+                            .sheet(isPresented: $createClubToggler) {
+                                CreateClubView(userEmail: viewModel.userEmail!, viewCloser: {
+                                    createClubToggler = false
+                                })
+                            }
+                        }
+                    }
+                    
                     
                     ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
                         Button {
@@ -81,11 +98,22 @@ struct ClubView: View {
                                     .stroke(.black, lineWidth: 3)
                                 
                                 HStack {
-                                    AsyncImage(url: URL(string: club.clubPhoto ?? "https://schoology.d214.org/sites/all/themes/schoology_theme/images/group-default.svg?0"), content: { Image in
+                                    AsyncImage(url: URL(string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"), content: { Image in
                                         ZStack {
                                             Image
                                                 .resizable()
                                                 .clipShape(Rectangle())
+                                            
+                                            if club.clubPhoto == nil {
+                                                ZStack {
+                                                    RoundedRectangle(cornerRadius: 5)
+                                                    
+                                                    Text(club.name)
+                                                        .padding()
+                                                        .foregroundStyle(.white)
+                                                }
+                                                .fixedSize()
+                                            }
                                             
                                             Rectangle()
                                                 .stroke(.black, lineWidth: 3)
@@ -116,6 +144,8 @@ struct ClubView: View {
                                         }
                                     }
                                     .padding()
+                                    .foregroundStyle(.black)
+                                    .frame(width: screenWidth/6)
                                     
                                     VStack {
                                         
@@ -180,8 +210,8 @@ struct ClubView: View {
                         Text("No Clubs Found for \"\(searchText)\"")
                     }
                 }
-                .frame(maxWidth: screenWidth/2)
-                .padding(.leading)
+                .frame(width: screenWidth/2)
+                .padding()
                 
                 // club info view
                 ScrollView {
@@ -196,11 +226,23 @@ struct ClubView: View {
                                     .font(.body)
                                     .foregroundColor(.gray)
                                 
-                                AsyncImage(url: URL(string: clubs[shownInfo].clubPhoto ?? "https://schoology.d214.org/sites/all/themes/schoology_theme/images/group-default.svg?0"), content: { Image in
+                                AsyncImage(url: URL(string: clubs[shownInfo].clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"), content: { Image in
                                     ZStack {
                                         Image
                                             .resizable()
                                             .clipShape(Rectangle())
+                                        
+                                        if clubs[shownInfo].clubPhoto == nil {
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 5)
+                                                    .foregroundStyle(.blue)
+                                                
+                                                Text(clubs[shownInfo].name)
+                                                    .padding()
+                                                    .foregroundStyle(.white)
+                                            }
+                                            .fixedSize()
+                                        }
                                         
                                         Rectangle()
                                             .stroke(.black, lineWidth: 3)
