@@ -175,6 +175,7 @@ struct ClubView: View {
                                                                 userInfo = user
                                                             }
                                                         }
+                                                        dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
                                                     } else {
                                                         addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
                                                         if let UserID = viewModel.uid {
@@ -182,6 +183,8 @@ struct ClubView: View {
                                                                 userInfo = user
                                                             }
                                                         }
+                                                        dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
+                                                        
                                                     }
                                                     
                                                 } label: {
