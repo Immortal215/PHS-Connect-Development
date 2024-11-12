@@ -24,6 +24,7 @@ struct ClubView: View {
             // add other filter stuff like clickable buttons for genres
             if searchText.isEmpty {
                 return clubs
+                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                     .sorted {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
@@ -32,6 +33,7 @@ struct ClubView: View {
             } else {
                 return clubs
                     .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                     .sorted {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
@@ -62,8 +64,8 @@ struct ClubView: View {
                 .font(.title)
             
             HStack {
-                // clubs view
-                ScrollView {
+                
+                VStack {
                     HStack {
                         CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
                         if viewModel.userEmail == "sharul.shah2008@gmail.com" {
@@ -81,137 +83,147 @@ struct ClubView: View {
                         }
                     }
                     
-                    
-                    ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
-                        Button {
-                            if shownInfo != clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1 {
-                                shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                            } else {
-                                shownInfo = -1
-                            }
-                           
-                        } label : {
-                            
-                            // each club
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 5)
-                                    .stroke(.black, lineWidth: 3)
-                                
-                                HStack {
-                                    AsyncImage(url: URL(string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"), content: { Image in
-                                        ZStack {
-                                            Image
-                                                .resizable()
-                                                .clipShape(Rectangle())
-                                            
-                                            if club.clubPhoto == nil {
-                                                ZStack {
-                                                    RoundedRectangle(cornerRadius: 5)
-                                                    
-                                                    Text(club.name)
-                                                        .padding()
-                                                        .foregroundStyle(.white)
-                                                }
-                                                .fixedSize()
-                                            }
-                                            
-                                            Rectangle()
-                                                .stroke(.black, lineWidth: 3)
-                                        }
-                                        .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
-                                        
-                                    }, placeholder: {
-                                        ZStack {
-                                            Rectangle()
-                                                .stroke(.gray)
-                                            ProgressView("Loading \(club.name) Image")
-                                        }
-                                    })
-                                    .padding()
-                                    
-                                    Spacer()
-                                    
-                                    VStack {
-                                        Text(club.name)
-                                            .font(.callout)
-                                        Text(club.description)
-                                            .font(.caption)
-                                        Spacer()
-                                        if let genres = club.genres, !genres.isEmpty {
-                                            Text("Genres: \(genres.joined(separator: ", "))")
-                                                .font(.footnote)
-                                                .foregroundStyle(.blue)
-                                        }
-                                    }
-                                    .padding()
-                                    .foregroundStyle(.black)
-                                    .frame(width: screenWidth/6)
-                                    
-                                    VStack {
-                                        
-                                        // info button
-                                        Button {
-                                            // shownInfo = index
-                                            
-                                            shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                        } label: {
-                                            Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
-                                        }
-                                        
-                                        
-                                        // favorite button
-                                        if !viewModel.isGuestUser {
-                                            Button {
-                                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                                    removeClubFromFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                                    if let UserID = viewModel.uid {
-                                                        fetchUser(for: UserID) { user in
-                                                            userInfo = user
-                                                        }
-                                                    }
-                                                } else {
-                                                    addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                                    if let UserID = viewModel.uid {
-                                                        fetchUser(for: UserID) { user in
-                                                            userInfo = user
-                                                        }
-                                                    }
-                                                }
-                                                
-                                            } label: {
-                                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                                    Image(systemName: "heart.fill")
-                                                        .transition(.movingParts.pop(.blue))
-                                                } else {
-                                                    Image(systemName: "heart")
-                                                        .transition(.identity)
-                                                }
-                                                
-                                            }
-                                            .padding(.top)
-                                        }
-                                    }
-                                    .padding()
-                                    .padding(.bottom, screenWidth/10)
+                    // clubs view
+                    ScrollView {
+                        
+                        
+                        
+                        ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
+                            Button {
+                                if shownInfo != clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1 {
+                                    shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                } else {
+                                    shownInfo = -1
                                 }
+                                
+                            } label : {
+                                
+                                // each club
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(.black, lineWidth: 3)
+                                    
+                                    HStack {
+                                        AsyncImage(url: URL(string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"), content: { Image in
+                                            ZStack {
+                                                Image
+                                                    .resizable()
+                                                    .clipShape(Rectangle())
+                                                
+                                                if club.clubPhoto == nil {
+                                                    ZStack {
+                                                        RoundedRectangle(cornerRadius: 5)
+                                                        
+                                                        Text(club.name)
+                                                            .padding()
+                                                            .foregroundStyle(.white)
+                                                    }
+                                                    .fixedSize()
+                                                }
+                                                
+                                                Rectangle()
+                                                    .stroke(.black, lineWidth: 3)
+                                            }
+                                            .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
+                                            
+                                        }, placeholder: {
+                                            ZStack {
+                                                Rectangle()
+                                                    .stroke(.gray)
+                                                ProgressView("Loading \(club.name) Image")
+                                            }
+                                        })
+                                        .padding()
+                                        
+                                        Spacer()
+                                        
+                                        VStack {
+                                            Text(club.name)
+                                                .font(.callout)
+                                            Text(club.description)
+                                                .font(.caption)
+                                            Spacer()
+                                            if let genres = club.genres, !genres.isEmpty {
+                                                Text("Genres: \(genres.joined(separator: ", "))")
+                                                    .font(.footnote)
+                                                    .foregroundStyle(.blue)
+                                            }
+                                        }
+                                        .padding()
+                                        .foregroundStyle(.black)
+                                        .frame(width: screenWidth/6)
+                                        
+                                        VStack {
+                                            
+                                            // info button
+                                            Button {
+                                                // shownInfo = index
+                                                
+                                                shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                            } label: {
+                                                Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
+                                            }
+                                            
+                                            
+                                            // favorite button
+                                            if !viewModel.isGuestUser {
+                                                Button {
+                                                    if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                                        removeClubFromFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                                        if let UserID = viewModel.uid {
+                                                            fetchUser(for: UserID) { user in
+                                                                userInfo = user
+                                                            }
+                                                        }
+                                                    } else {
+                                                        addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                                        if let UserID = viewModel.uid {
+                                                            fetchUser(for: UserID) { user in
+                                                                userInfo = user
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                } label: {
+                                                    if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                                        Image(systemName: "heart.fill")
+                                                            .transition(.movingParts.pop(.blue))
+                                                    } else {
+                                                        Image(systemName: "heart")
+                                                            .transition(.identity)
+                                                    }
+                                                    
+                                                }
+                                                .padding(.top)
+                                            }
+                                        }
+                                        .padding()
+                                        .padding(.bottom, screenWidth/10)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 3)
                             }
-                            .padding(.horizontal)
-                            .padding(.vertical, 3)
+                            .conditionalEffect(
+                                .pushDown,
+                                condition: shownInfo == clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                            )
+                            
+                            
                         }
-                        .conditionalEffect(
-                            .pushDown,
-                            condition: shownInfo == clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                        )
-
-                       
+                        
+                        if filteredItems.isEmpty {
+                            Text("No Clubs Found for \"\(searchText)\"")
+                        }
+                        
+                        
+                        Text("Search for Other Clubs! 🙃")
+                            .frame(height: screenHeight/3, alignment: .top)
+                        
                     }
-                    
-                    if filteredItems.isEmpty {
-                        Text("No Clubs Found for \"\(searchText)\"")
-                    }
+                    .frame(width: screenWidth/2)
+                    .padding()
                 }
-                .frame(width: screenWidth/2)
-                .padding()
                 
                 // club info view
                 ScrollView {
