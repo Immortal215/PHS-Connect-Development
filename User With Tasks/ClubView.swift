@@ -19,9 +19,15 @@ struct ClubView: View {
     var body: some View {
         
         var filteredItems: [Club] {
+            
+            // add other filter stuff like clickable buttons for genres
             if searchText.isEmpty {
-                return clubs.sorted { userInfo?.favoritedClubs.contains($0.clubID) ?? false && !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                }
+                return clubs
+                    .sorted {
+                        userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                        !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                    }
+    
             } else {
                 return clubs
                     .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
@@ -55,6 +61,7 @@ struct ClubView: View {
                 .font(.title)
             
             HStack {
+                // clubs view
                 ScrollView {
                     CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
                     
@@ -101,12 +108,18 @@ struct ClubView: View {
                                 .padding()
                                 
                                 VStack {
+                                    
+                                    // info button
                                     Button {
-                                        shownInfo = index
+                                       // shownInfo = index
+                                        
+                                        shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                     } label: {
                                         Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
                                     }
                                     
+                                    
+                                    // favorite button
                                     if !viewModel.isGuestUser {
                                         Button {
                                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
@@ -152,6 +165,7 @@ struct ClubView: View {
                 .frame(maxWidth: screenWidth/2)
                 .padding(.leading)
                 
+                // club info view
                 ScrollView {
                     if shownInfo >= 0 && shownInfo < clubs.count {
                         VStack(alignment: .leading, spacing: 8) {
