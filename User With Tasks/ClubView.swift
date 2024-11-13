@@ -29,7 +29,6 @@ struct ClubView: View {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
-                
             } else {
                 return clubs
                     .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
@@ -68,6 +67,7 @@ struct ClubView: View {
                 VStack {
                     HStack {
                         CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
+                        
                         if viewModel.userEmail == "sharul.shah2008@gmail.com" {
                             Button {
                                 createClubToggler = true
@@ -311,7 +311,7 @@ struct ClubView: View {
                                     Text("Announcements:")
                                         .font(.headline)
                                     ForEach(announcements.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                                        Text("\(key): \(value)")
+                                        Text("\(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened)): \(value)")
                                             .font(.subheadline)
                                     }
                                 }
