@@ -1,7 +1,14 @@
+import FirebaseCore
+import FirebaseDatabaseInternal
+import FirebaseAuth
+import GoogleSignIn
+import GoogleSignInSwift
 import SwiftUI
+import SwiftUIX
 
 struct HomeView: View {
     var viewModel : AuthenticationViewModel
+    @State var isEditMenuVisible = false
 
     var body: some View {
         VStack {
@@ -18,6 +25,19 @@ struct HomeView: View {
                     Box("NASA APP meeting thursday")
                     
                     Box("Come to service club")
+               
+                    Text("Hello, world!")
+                        .onTapGesture {
+                            isEditMenuVisible.toggle()
+                        }
+                        .editMenu(isVisible: $isEditMenuVisible) {
+                            EditMenuItem("Copy") {
+                                // Perform copy action
+                            }
+                            EditMenuItem("Paste") {
+                                // Perform paste action
+                            }
+                        }
                 }
             }
             

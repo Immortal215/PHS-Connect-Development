@@ -5,6 +5,7 @@ import GoogleSignInSwift
 import SwiftUI
 import FirebaseDatabase
 import Pow
+import SwiftUIX
 
 struct ClubView: View {
     @State var clubs: [Club] = []
@@ -16,7 +17,8 @@ struct ClubView: View {
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var createClubToggler = false
-    
+    @State var isSearching = false
+
     var body: some View {
         
         var filteredItems: [Club] {
@@ -65,9 +67,12 @@ struct ClubView: View {
             HStack {
                 
                 VStack {
-                    HStack {
-                        CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
-                        
+                    HStack {                        
+                        SearchBar("Search all clubs", text: $searchText, isEditing: $isSearching)
+                            .showsCancelButton(isSearching)
+                            .onCancel { print("Canceled!") }
+                            .padding()
+
                         if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                             Button {
                                 createClubToggler = true

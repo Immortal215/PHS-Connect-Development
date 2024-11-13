@@ -16,13 +16,13 @@ struct TabBarButton: View {
                 VStack {
                     Image(systemName: image)
                         .font(.system(size: 24))
-                        .rotationEffect(.degrees(selectedTab == index ? 10.0 : 0.0))
+                      //  .rotationEffect(.degrees(selectedTab == index ? 10.0 : 0.0))
                     
                     Text(labelr)
                         .font(.caption)
-                        .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
+                       // .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
                 }
-                .offset(y: selectedTab == index ? -20 : 0.0 )
+              //  .offset(y: selectedTab == index ? -20 : 0.0 )
                 .foregroundColor(selectedTab == index ? .blue : .white)
             }
         }
@@ -55,25 +55,6 @@ struct Box: View {
         }
     }
 }
-
-
-struct CustomSearchBar: View {
-    @Binding var text: String
-    var placeholder: String
-    
-    var body: some View {
-        HStack {
-            TextField(placeholder, text: $text)
-                .padding(7)
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                .padding(.horizontal)
-            
-        }
-        .padding(.vertical, 8)
-    }
-}
-
 struct CodeSnippetView: View {
     let code: String
     @State var clicked = false

@@ -3,6 +3,7 @@ import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
+import SwiftUIX
 
 class AppDelegate: NSObject, UIApplicationDelegate {
   func application(_ application: UIApplication,

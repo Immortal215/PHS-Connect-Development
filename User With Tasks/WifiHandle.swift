@@ -20,3 +20,4 @@ class NetworkMonitor: ObservableObject {
         monitor.cancel()
     }
 }
+

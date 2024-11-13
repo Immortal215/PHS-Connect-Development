@@ -5,6 +5,7 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 import Drops
+import SwiftUIX
 
 
 struct ContentView: View {
@@ -104,11 +105,14 @@ struct ContentView: View {
                                 Spacer()
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)
-                                        .frame(height: 60)
                                         .foregroundStyle(.gray)
+                                        .frame(height: 60)
                                         .shadow(color:.gray, radius: 5)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .opacity(0.8)
+//                                    VisualEffectBlurView(blurStyle: .systemUltraThinMaterial)
+//                                        .frame(height: 60)
+//                                        .clipShape(RoundedRectangle(cornerRadius: 10))
                                     
                                     HStack {
                                         
