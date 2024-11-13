@@ -68,7 +68,7 @@ struct ClubView: View {
                     HStack {
                         CustomSearchBar(text: $searchText, placeholder: "Search all clubs")
                         
-                        if viewModel.userEmail == "sharul.shah2008@gmail.com" {
+                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                             Button {
                                 createClubToggler = true
                             } label: {
