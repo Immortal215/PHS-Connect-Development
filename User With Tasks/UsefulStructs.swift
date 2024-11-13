@@ -135,7 +135,8 @@ struct CreateClubView: View {
     var viewCloser: (() -> Void)?
     
     @State var CreatedClub = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
-    
+    @State var clubs: [Club] = []
+
     var body: some View {
         VStack {
             TextField("Club Name", text: $clubTitle)
@@ -146,19 +147,18 @@ struct CreateClubView: View {
                 .padding()
             TextField("Schoology Code", text: $schoology)
                 .padding()
-            TextField("Club ID (Choose a unique ID, will not be able to be changed later)", text: $clubId)
-                .padding()
+
             TextField("Club Location", text: $location)
                 .padding()
             TextField("Club Photo URL (Optional)", text: $clubPhoto)
                 .padding()
             
-            if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && clubId != "" && location != "") {
+            if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "") {
                 Button("Create Club") {
                     leaders.append(userEmail)
                     members.append(userEmail)
                     
-                    CreatedClub.clubID = clubId
+                    CreatedClub.clubID = "clubID\(clubs.count + 1)"
                     CreatedClub.schoologyCode = schoology
                     CreatedClub.name = clubTitle
                     CreatedClub.description = clubDesc
@@ -166,6 +166,11 @@ struct CreateClubView: View {
                     CreatedClub.location = location
                     CreatedClub.leaders = leaders
                     CreatedClub.members = members
+                    
+                    // add genre adder 
+                    
+                    // create a picker for this
+                    CreatedClub.showDataWho = "allNonGuest"
                     
                     
                     // optional additions, needed to keep optional

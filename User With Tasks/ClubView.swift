@@ -78,7 +78,7 @@ struct ClubView: View {
                             .sheet(isPresented: $createClubToggler) {
                                 CreateClubView(userEmail: viewModel.userEmail!, viewCloser: {
                                     createClubToggler = false
-                                })
+                                }, clubs: clubs)
                             }
                         }
                     }
@@ -89,9 +89,12 @@ struct ClubView: View {
                         
                         
                         ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
+                            var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                             Button {
-                                if shownInfo != clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1 {
-                                    shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                
+                                if shownInfo != infoRelativeIndex {
+                                    
+                                    shownInfo = infoRelativeIndex
                                 } else {
                                     shownInfo = -1
                                 }
@@ -159,7 +162,7 @@ struct ClubView: View {
                                             Button {
                                                 // shownInfo = index
                                                 
-                                                shownInfo = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                                shownInfo = infoRelativeIndex
                                             } label: {
                                                 Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
                                             }
@@ -209,7 +212,7 @@ struct ClubView: View {
                             }
                             .conditionalEffect(
                                 .pushDown,
-                                condition: shownInfo == clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                condition: shownInfo == infoRelativeIndex
                             )
                             
                             
