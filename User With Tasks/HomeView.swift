@@ -15,6 +15,16 @@ struct HomeView: View {
             Text("Home")
                 .font(.title)
             HStack {
+                Text("School Announcements")
+                    .font(.headline)
+                    .frame(width: .infinity, alignment: .leading)
+                    .padding()
+                Text("Club Announcements")
+                    .font(.headline)
+                    .frame(width: .infinity, alignment: .trailing)
+                    .padding()
+            }
+            HStack {
                 ScrollView {
                     Box("We will have no school")
                     

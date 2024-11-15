@@ -319,6 +319,12 @@ struct ClubView: View {
                                         Text("\(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened)): \(value)")
                                             .font(.subheadline)
                                     }
+                                    Button {
+                                        addAnnouncment(clubID: clubs[shownInfo].clubID, date: "10", title: "Free cheeseburgers", body: "hi")
+                                    } label: {
+                                        Text("Add Announcement +")
+                                            .font(.subheadline)
+                                    }
                                 }
                             }
                             

@@ -7,7 +7,6 @@ import SwiftUI
 import Drops
 import SwiftUIX
 import CUIExpandableButton
-import FloatingButton
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
@@ -117,16 +116,7 @@ struct ContentView: View {
                                     .title("Inbox")
                                     .subtitle("5 unread messages")
                                     .padding()
-                                    
-//                                    FloatingButton(mainButtonView: MainButton(imageName: "person", colorHex: "eb3b5a", width: 60), buttons: [MainButton(imageName: "thermometer", colorHex: "f7b731"), MainButton(imageName: "heart.fill", colorHex: "eb3b5a", width: 60)])
-//                                        .straight()
-//                                        .direction(.top)
-//                                        .alignment(.left)
-//                                        .spacing(10)
-//                                        .initialOffset(x: -1000)
-//                                        .animation(.spring())
-                                }
-                                
+                                                                    
                                 Spacer()
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)

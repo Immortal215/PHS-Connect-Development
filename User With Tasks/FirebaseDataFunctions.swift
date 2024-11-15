@@ -164,3 +164,17 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
         completion(clubNames)
     }
 }
+
+func addAnnouncment(clubID: String, date: String, title: String, body: String) {
+    let reference = Database.database().reference()
+    let announcementRefrence = reference.child("clubs").child(clubID).child("announcements").child(date)
+    
+    announcementRefrence.observeSingleEvent(of: .value) { snapshot in
+        var announcements = snapshot.value as? [String] ?? []
+        
+            announcements.append(title)
+            announcements.append(body)
+            announcementRefrence.setValue(announcements)
+        
+    }
+}

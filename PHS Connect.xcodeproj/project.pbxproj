@@ -7,10 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		714B67F52CE6D32B007AA669 /* CUIExpandableButton in Frameworks */ = {isa = PBXBuildFile; productRef = 714B67F42CE6D32B007AA669 /* CUIExpandableButton */; };
-		714B67F82CE6D5DE007AA669 /* FloatingButton in Frameworks */ = {isa = PBXBuildFile; productRef = 714B67F72CE6D5DE007AA669 /* FloatingButton */; };
+		3D17D1952CE7965A001EC760 /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1942CE7965A001EC760 /* SwiftUIX */; };
+		3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1972CE796A5001EC760 /* CUIExpandableButton */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
-		71FB2C6A2CE55C8E000EC57E /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 71FB2C692CE55C8E000EC57E /* SwiftUIX */; };
 		B861A85C2CB81714006AF254 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85B2CB81714006AF254 /* FirebaseAnalytics */; };
 		B861A85E2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85D2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion */; };
 		B861A8602CB81714006AF254 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85F2CB81714006AF254 /* FirebaseAnalyticsWithoutAdIdSupport */; };
@@ -73,16 +72,15 @@
 				B861A8722CB81714006AF254 /* FirebaseFirestore in Frameworks */,
 				B861A8802CB81714006AF254 /* FirebaseMessaging in Frameworks */,
 				B861A87C2CB81714006AF254 /* FirebaseInstallations in Frameworks */,
-				71FB2C6A2CE55C8E000EC57E /* SwiftUIX in Frameworks */,
+				3D17D1952CE7965A001EC760 /* SwiftUIX in Frameworks */,
 				B861A8782CB81714006AF254 /* FirebaseFunctionsCombine-Community in Frameworks */,
 				B8A6DF642CC14F600014B5F8 /* GoogleSignIn in Frameworks */,
 				B861A8642CB81714006AF254 /* FirebaseAppDistribution-Beta in Frameworks */,
 				B861A8602CB81714006AF254 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				B861A87A2CB81714006AF254 /* FirebaseInAppMessaging-Beta in Frameworks */,
-				714B67F52CE6D32B007AA669 /* CUIExpandableButton in Frameworks */,
+				3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */,
 				B861A8682CB81714006AF254 /* FirebaseAuthCombine-Community in Frameworks */,
 				B8BEC6202CCBE5DA00991A38 /* Drops in Frameworks */,
-				714B67F82CE6D5DE007AA669 /* FloatingButton in Frameworks */,
 				B861A86C2CB81714006AF254 /* FirebaseCrashlytics in Frameworks */,
 				B861A87E2CB81714006AF254 /* FirebaseMLModelDownloader in Frameworks */,
 				B861A8862CB81714006AF254 /* FirebaseStorage in Frameworks */,
@@ -158,9 +156,8 @@
 				B8A6DF652CC14F600014B5F8 /* GoogleSignInSwift */,
 				B8BEC61F2CCBE5DA00991A38 /* Drops */,
 				716022FC2CDB0DEB00E2887B /* Pow */,
-				71FB2C692CE55C8E000EC57E /* SwiftUIX */,
-				714B67F42CE6D32B007AA669 /* CUIExpandableButton */,
-				714B67F72CE6D5DE007AA669 /* FloatingButton */,
+				3D17D1942CE7965A001EC760 /* SwiftUIX */,
+				3D17D1972CE796A5001EC760 /* CUIExpandableButton */,
 			);
 			productName = "User with Tasks";
 			productReference = B861A8472CB811A0006AF254 /* PHS Connect.app */;
@@ -195,9 +192,8 @@
 				B8A6DF622CC14F600014B5F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B8BEC61E2CCBE5DA00991A38 /* XCRemoteSwiftPackageReference "Drops" */,
 				716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */,
-				717799332CE55A9900CC6ED9 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
-				714B67F32CE6D32B007AA669 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */,
-				714B67F62CE6D5DE007AA669 /* XCLocalSwiftPackageReference "../../Downloads/FloatingButton-master" */,
+				3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
+				3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B861A8482CB811A0006AF254 /* Products */;
@@ -430,15 +426,16 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		714B67F62CE6D5DE007AA669 /* XCLocalSwiftPackageReference "../../Downloads/FloatingButton-master" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../Downloads/FloatingButton-master";
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
-		714B67F32CE6D32B007AA669 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */ = {
+		3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftUIX/SwiftUIX.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.3;
+			};
+		};
+		3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/robhasacamera/CUIExpandableButton.git";
 			requirement = {
@@ -452,14 +449,6 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.0.4;
-			};
-		};
-		717799332CE55A9900CC6ED9 /* XCRemoteSwiftPackageReference "SwiftUIX" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SwiftUIX/SwiftUIX";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.2.3;
 			};
 		};
 		B861A85A2CB81714006AF254 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
@@ -489,24 +478,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		714B67F42CE6D32B007AA669 /* CUIExpandableButton */ = {
+		3D17D1942CE7965A001EC760 /* SwiftUIX */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 714B67F32CE6D32B007AA669 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */;
-			productName = CUIExpandableButton;
+			package = 3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */;
+			productName = SwiftUIX;
 		};
-		714B67F72CE6D5DE007AA669 /* FloatingButton */ = {
+		3D17D1972CE796A5001EC760 /* CUIExpandableButton */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = FloatingButton;
+			package = 3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */;
+			productName = CUIExpandableButton;
 		};
 		716022FC2CDB0DEB00E2887B /* Pow */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */;
 			productName = Pow;
-		};
-		71FB2C692CE55C8E000EC57E /* SwiftUIX */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 717799332CE55A9900CC6ED9 /* XCRemoteSwiftPackageReference "SwiftUIX" */;
-			productName = SwiftUIX;
 		};
 		B861A85B2CB81714006AF254 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
