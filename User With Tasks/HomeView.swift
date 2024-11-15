@@ -17,11 +17,11 @@ struct HomeView: View {
             HStack {
                 Text("School Announcements")
                     .font(.headline)
-                    .frame(width: .infinity, alignment: .leading)
+                    .frame(alignment: .leading)
                     .padding()
                 Text("Club Announcements")
                     .font(.headline)
-                    .frame(width: .infinity, alignment: .trailing)
+                    .frame(alignment: .trailing)
                     .padding()
             }
             HStack {

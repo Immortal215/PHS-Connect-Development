@@ -116,7 +116,8 @@ struct ContentView: View {
                                     .title("Inbox")
                                     .subtitle("5 unread messages")
                                     .padding()
-                                                                    
+                                    
+                                }
                                 Spacer()
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)

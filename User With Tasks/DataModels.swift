@@ -20,6 +20,7 @@ struct Club: Codable, Equatable {
     var pendingMemberRequests: [String]? // emails
     var clubID: String
     var location: String
+    var instagram: String? // instagram link (maybe in app web view because of photo showing)
     
 }
 

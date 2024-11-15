@@ -291,6 +291,17 @@ struct ClubView: View {
                                 }
                             }
                             
+                            if let meetingTimes = clubs[shownInfo].meetingTimes {
+                                Text("Meeting Times:")
+                                    .font(.headline)
+                                ForEach(meetingTimes.keys.sorted(), id: \.self) { day in
+                                    if let times = meetingTimes[day] {
+                                        Text("\(day): \(times.joined(separator: ", "))")
+                                            .font(.subheadline)
+                                    }
+                                }
+                            }
+                            
                             if whoCanSeeWhat {
                                 if !clubs[shownInfo].members.isEmpty {
                                     var mem = clubs[shownInfo].members.joined(separator: ", ")
@@ -299,17 +310,6 @@ struct ClubView: View {
                                         .font(.headline)
                                     
                                     CodeSnippetView(code: mem)
-                                }
-                                
-                                if let meetingTimes = clubs[shownInfo].meetingTimes {
-                                    Text("Meeting Times:")
-                                        .font(.headline)
-                                    ForEach(meetingTimes.keys.sorted(), id: \.self) { day in
-                                        if let times = meetingTimes[day] {
-                                            Text("\(day): \(times.joined(separator: ", "))")
-                                                .font(.subheadline)
-                                        }
-                                    }
                                 }
                                 
                                 if let announcements = clubs[shownInfo].announcements {
@@ -325,6 +325,7 @@ struct ClubView: View {
                                         Text("Add Announcement +")
                                             .font(.subheadline)
                                     }
+                                    
                                 }
                             }
                             
