@@ -170,8 +170,10 @@ struct CreateClubView: View {
 
 
 struct AddAnnouncementSheet: View {
-    @Binding var announcementBody: String
-    var onSave: (() -> Void)?
+    @State var announcementBody: String
+    @State var clubID: String
+    @Environment(\.presentationMode) var presentationMode
+    var onSubmit: () -> Void 
 
     var body: some View {
             VStack {
@@ -182,7 +184,7 @@ struct AddAnnouncementSheet: View {
 
                 TextField("Enter announcement details...", text: $announcementBody)
                     .padding()
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textFieldStyle(.roundedBorder)
                     .frame(height: 150)
                     .padding(.horizontal)
 
@@ -190,23 +192,22 @@ struct AddAnnouncementSheet: View {
 
                 HStack {
                     Button("Cancel") {
-                        announcementBody = "" // Optionally reset body
-                        onSave?() // Close the sheet
+                        presentationMode.wrappedValue.dismiss()
                     }
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .padding()
                     .background(Capsule().strokeBorder(Color.gray, lineWidth: 1))
 
                     Spacer()
 
-                    Button("Save") {
+                    Button("Post (Cannot Re-Edit)") {
                         if !announcementBody.isEmpty {
-                            onSave?() // Save and close the sheet
-                        } else {
-                            // Optionally show an error if announcementBody is empty
+                            addAnnouncment(clubID: clubID, date: formattedDate(from: Date()), body: announcementBody)
+                            onSubmit()
+                            presentationMode.wrappedValue.dismiss()
                         }
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .padding()
                     .background(Capsule().fill(Color.blue))
                 }

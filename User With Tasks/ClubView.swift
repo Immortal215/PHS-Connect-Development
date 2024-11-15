@@ -19,7 +19,7 @@ struct ClubView: View {
     @State var createClubToggler = false
     @State var isSearching = false
     @State var showAddAnnouncement = false
-    @State var announcementBody = ""
+    @State var oneMinuteAfter = Date()
 
     var body: some View {
         
@@ -241,7 +241,7 @@ struct ClubView: View {
                 // club info view
                 ScrollView {
                     if shownInfo >= 0 && shownInfo < clubs.count {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 16) {
                             VStack(alignment: .center) {
                                 Text(clubs[shownInfo].name)
                                     .font(.largeTitle)
@@ -290,6 +290,7 @@ struct ClubView: View {
                                     .font(.headline)
                                 ForEach(clubs[shownInfo].leaders, id: \.self) { leader in
                                     CodeSnippetView(code: leader)
+                                        .padding(.top, -8)
                                 }
                             }
                             
@@ -300,6 +301,7 @@ struct ClubView: View {
                                     if let times = meetingTimes[day] {
                                         Text("\(day): \(times.joined(separator: ", "))")
                                             .font(.subheadline)
+                                            .padding(.top, -8)
                                     }
                                 }
                             }
@@ -312,32 +314,58 @@ struct ClubView: View {
                                         .font(.headline)
                                     
                                     CodeSnippetView(code: mem)
+                                        .padding(.top, -8)
                                 }
-                                
+                                                            
+                                if clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "") {
+                                    Button {
+                                        if let announcements = clubs[shownInfo].announcements {
+                                            if formattedDate(from: Date()) > announcements.keys.max()! {
+                                                showAddAnnouncement.toggle()
+                                            } else {
+                                                dropper(title: "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
+                                                       subtitle: "One Announcement Per Minute!",
+                                                       icon: UIImage(systemName: "timer"))
+                                            }
+                                        } else {
+                                            showAddAnnouncement.toggle()
+                                        }
+                                    } label: {
+                                        if let announcements = clubs[shownInfo].announcements {
+                                            if formattedDate(from: Date()) > announcements.keys.max()! {
+                                                Text("Add Announcement +")
+                                                    .font(.subheadline)
+                                            } else {
+                                                Text("Add Announcement + (Waiting)")
+                                                    .font(.subheadline)
+                                            }
+                                        } else {
+                                            Text("Add First Announcement +")
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                    .sheet(isPresented: $showAddAnnouncement) {
+                                        AddAnnouncementSheet(announcementBody: "", clubID: clubs[shownInfo].clubID, onSubmit: {
+                                            oneMinuteAfter = Date().addingTimeInterval(60)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                fetchClubs { fetchedClubs in
+                                                    self.clubs = fetchedClubs
+                                                }
+                                            }
+                                        })
+                                    }
+                                }
+
                                 if let announcements = clubs[shownInfo].announcements {
                                     Text("Announcements:")
                                         .font(.headline)
-                                    ForEach(announcements.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                                    ForEach(announcements.sorted(by: { $0.key > $1.key }),
+                                            id: \.key) { key, value in
                                         Text("\(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened)): \(value)")
                                             .font(.subheadline)
+                                            .padding(.top, -8)
                                     }
-                                    Button {
-                                        addAnnouncment(clubID: clubs[shownInfo].clubID, date: formattedDate(from: Date()), body: announcementBody)
-                                        showAddAnnouncement.toggle()
-                                    } label: {
-                                        Text("Add Announcement +")
-                                            .font(.subheadline)
-                                    }                                    
-                                    .sheet(isPresented: $showAddAnnouncement) {
-//                                        VStack {
-//                                            TextField("Add Body", text: $announcementBody)
-//                                        }
-                                        AddAnnouncementSheet(announcementBody: $announcementBody) {
-                                            showAddAnnouncement = false
-                                        }
-                                    }
-                                }
-                            }
+                                }                            }
                             
                             if let genres = clubs[shownInfo].genres, !genres.isEmpty {
                                 Text("Genres:")
@@ -345,6 +373,7 @@ struct ClubView: View {
                                 Text(genres.joined(separator: ", "))
                                     .font(.subheadline)
                                     .foregroundStyle(.blue)
+                                    .padding(.top, -8)
                             }
                             
                             Text("Location:")
@@ -352,10 +381,14 @@ struct ClubView: View {
                             Text(clubs[shownInfo].location)
                                 .font(.subheadline)
                                 .foregroundStyle(.blue)
+                                .padding(.top, -8)
                             
                             HStack {
                                 Text("Schoology Code: ")
+                                    .font(.headline)
+                                
                                 CodeSnippetView(code: clubs[shownInfo].schoologyCode)
+                                
                             }
                         }
                         .padding()

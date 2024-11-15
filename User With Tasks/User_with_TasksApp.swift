@@ -16,7 +16,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct User_with_TasksApp: App {
-    
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     var body: some Scene {

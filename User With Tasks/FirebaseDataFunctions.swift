@@ -1,4 +1,10 @@
 import FirebaseDatabase
+import FirebaseCore
+import FirebaseDatabaseInternal
+import FirebaseAuth
+import GoogleSignIn
+import GoogleSignInSwift
+import SwiftUI
 
 func addClub(club: Club) {
     let refrence = Database.database().reference()
