@@ -18,6 +18,8 @@ struct ClubView: View {
     @AppStorage("selectedTab") var selectedTab = 3
     @State var createClubToggler = false
     @State var isSearching = false
+    @State var showAddAnnouncement = false
+    @State var announcementBody = ""
 
     var body: some View {
         
@@ -320,12 +322,20 @@ struct ClubView: View {
                                             .font(.subheadline)
                                     }
                                     Button {
-                                        addAnnouncment(clubID: clubs[shownInfo].clubID, date: "10", title: "Free cheeseburgers", body: "hi")
+                                        addAnnouncment(clubID: clubs[shownInfo].clubID, date: formattedDate(from: Date()), body: announcementBody)
+                                        showAddAnnouncement.toggle()
                                     } label: {
                                         Text("Add Announcement +")
                                             .font(.subheadline)
+                                    }                                    
+                                    .sheet(isPresented: $showAddAnnouncement) {
+//                                        VStack {
+//                                            TextField("Add Body", text: $announcementBody)
+//                                        }
+                                        AddAnnouncementSheet(announcementBody: $announcementBody) {
+                                            showAddAnnouncement = false
+                                        }
                                     }
-                                    
                                 }
                             }
                             

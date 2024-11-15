@@ -19,9 +19,10 @@ struct HomeView: View {
                     .font(.headline)
                     .frame(alignment: .leading)
                     .padding()
+           
                 Text("Club Announcements")
                     .font(.headline)
-                    .frame(alignment: .trailing)
+                    .frame(width: 100, alignment: .trailing)
                     .padding()
             }
             HStack {

@@ -167,3 +167,52 @@ struct CreateClubView: View {
         .textFieldStyle(.roundedBorder)
     }
 }
+
+
+struct AddAnnouncementSheet: View {
+    @Binding var announcementBody: String
+    var onSave: (() -> Void)?
+
+    var body: some View {
+            VStack {
+                Text("Add Announcement")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .padding(.top)
+
+                TextField("Enter announcement details...", text: $announcementBody)
+                    .padding()
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(height: 150)
+                    .padding(.horizontal)
+
+                Spacer()
+
+                HStack {
+                    Button("Cancel") {
+                        announcementBody = "" // Optionally reset body
+                        onSave?() // Close the sheet
+                    }
+                    .foregroundColor(.gray)
+                    .padding()
+                    .background(Capsule().strokeBorder(Color.gray, lineWidth: 1))
+
+                    Spacer()
+
+                    Button("Save") {
+                        if !announcementBody.isEmpty {
+                            onSave?() // Save and close the sheet
+                        } else {
+                            // Optionally show an error if announcementBody is empty
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Capsule().fill(Color.blue))
+                }
+                .padding(.horizontal)
+            }
+            .padding()
+        
+    }
+}

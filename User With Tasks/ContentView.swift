@@ -118,6 +118,7 @@ struct ContentView: View {
                                     .padding()
                                     
                                 }
+
                                 Spacer()
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)
