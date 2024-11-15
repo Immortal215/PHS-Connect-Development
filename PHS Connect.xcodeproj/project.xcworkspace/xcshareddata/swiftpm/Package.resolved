@@ -1,5 +1,5 @@
 {
-  "originHash" : "11636c9f3f464c5df2db506dc4e4b5ca3448b0d70339015edc57a16d39af5f70",
+  "originHash" : "8ae1c7e7c64ad5252a6dbf3838aa74a69a2667a1d0db5f82da283c42110eeebc",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -26,6 +26,33 @@
       "state" : {
         "revision" : "c89ed571ae140f8eb1142735e6e23d7bb8c34cb2",
         "version" : "1.7.5"
+      }
+    },
+    {
+      "identity" : "cuiexpandablebutton",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/robhasacamera/CUIExpandableButton.git",
+      "state" : {
+        "revision" : "e209306064df62e5fe15e52ac4dd9a1f37cdda73",
+        "version" : "0.14.0"
+      }
+    },
+    {
+      "identity" : "cuipreviewkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/robhasacamera/CUIPreviewKit.git",
+      "state" : {
+        "revision" : "29e38bf9008919c63e15c84637612e80a47bd62a",
+        "version" : "0.1.2"
+      }
+    },
+    {
+      "identity" : "cuiseparator",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/robhasacamera/CUISeparator.git",
+      "state" : {
+        "revision" : "0dfe344d5bb9afb9dea1e0974995e693001cd569",
+        "version" : "0.3.1"
       }
     },
     {

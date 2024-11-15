@@ -6,7 +6,8 @@ import GoogleSignInSwift
 import SwiftUI
 import Drops
 import SwiftUIX
-
+import CUIExpandableButton
+import FloatingButton
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
@@ -14,7 +15,7 @@ struct ContentView: View {
     @AppStorage("selectedTab") var selectedTab = 3
     @State var screenWidth = UIScreen.main.bounds.width
     @StateObject var networkMonitor = NetworkMonitor()
-    
+    @State var expanded = false
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -23,6 +24,7 @@ struct ContentView: View {
                         Text("PHS Connect")
                             .font(.title)
                             .fontWeight(.bold)
+                        
                         
                         AsyncImage(url: URL(string: "https://www.d214.org/cms/lib/IL50000680/Centricity/Template/GlobalAssets/images///Prospect/PHS%20logo_229px.png")) { Image in
                             Image
@@ -102,6 +104,29 @@ struct ContentView: View {
                             
                             // tab bar view
                             VStack {
+                                HStack {
+                                    Spacer()
+                                    CUIExpandableButton(
+                                        expanded: $expanded,
+                                        sfSymbolName: "envelope.fill"
+                                    ) {
+                                        Text("My content")
+                                            .frame(width: 200)
+                                            .padding(8)
+                                    }
+                                    .title("Inbox")
+                                    .subtitle("5 unread messages")
+                                    .padding()
+                                    
+//                                    FloatingButton(mainButtonView: MainButton(imageName: "person", colorHex: "eb3b5a", width: 60), buttons: [MainButton(imageName: "thermometer", colorHex: "f7b731"), MainButton(imageName: "heart.fill", colorHex: "eb3b5a", width: 60)])
+//                                        .straight()
+//                                        .direction(.top)
+//                                        .alignment(.left)
+//                                        .spacing(10)
+//                                        .initialOffset(x: -1000)
+//                                        .animation(.spring())
+                                }
+                                
                                 Spacer()
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)
@@ -179,4 +204,37 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
         accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)
+}
+
+struct MainButton: View {
+
+    var imageName: String
+    var colorHex: String
+    var width: CGFloat = 50
+
+    var body: some View {
+        ZStack {
+            Color(hex: colorHex)
+                .frame(width: width, height: width)
+                .cornerRadius(width / 2)
+                .shadow(color: Color(hex: colorHex).opacity(0.3), radius: 15, x: 0, y: 15)
+            Image(systemName: imageName)
+                .foregroundColor(.white)
+        }
+    }
+}
+
+extension Color {
+
+    init(hex: String) {
+        let scanner = Scanner(string: hex)
+        var rgbValue: UInt64 = 0
+        scanner.scanHexInt64(&rgbValue)
+
+        let r = (rgbValue & 0xff0000) >> 16
+        let g = (rgbValue & 0xff00) >> 8
+        let b = rgbValue & 0xff
+
+        self.init(red: Double(r) / 0xff, green: Double(g) / 0xff, blue: Double(b) / 0xff)
+    }
 }
