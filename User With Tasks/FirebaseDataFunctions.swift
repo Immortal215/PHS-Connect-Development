@@ -170,10 +170,10 @@ func addAnnouncment(clubID: String, date: String, body: String) {
     let announcementRefrence = reference.child("clubs").child(clubID).child("announcements").child(date)
     
     announcementRefrence.observeSingleEvent(of: .value) { snapshot in
-        var announcements = snapshot.value as? [String] ?? []
+        var announcement = snapshot.value as? String
         
-            announcements.append(body)
-            announcementRefrence.setValue(announcements)
+            announcement = body
+            announcementRefrence.setValue(announcement)
         
     }
 }
