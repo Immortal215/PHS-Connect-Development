@@ -8,7 +8,7 @@ import SwiftUI
 struct Club: Codable, Equatable {
     var leaders: [String] // emails
     var members: [String] // emails
-    var announcements: [String: String]? // each announcement time will be in this form of Date : Body
+    var announcements: [String: String]? // each announcement time will be in this form of Date : [Title, Body, person writing, ClubID of club] need to add this in
     var meetingTimes: [String: [String]]? // each meeting time will be in this form of Date : [Title, Body, Date of end Time]
     var description: String // short description to catch viewers
     var name: String
