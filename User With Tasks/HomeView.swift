@@ -37,16 +37,13 @@ struct HomeView: View {
                     
                     Box("Come to service club")
                
-                    Text("Hello, world!")
+                    Text("Hello, World!")
                         .onTapGesture {
                             isEditMenuVisible.toggle()
                         }
                         .editMenu(isVisible: $isEditMenuVisible) {
                             EditMenuItem("Copy") {
-                                // Perform copy action
-                            }
-                            EditMenuItem("Paste") {
-                                // Perform paste action
+                                UIPasteboard.general.string = "Hello, World!"
                             }
                         }
                 }

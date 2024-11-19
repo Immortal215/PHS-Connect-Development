@@ -88,7 +88,7 @@ struct ContentView: View {
                                 
                                 CalendarView(viewModel: viewModel)
                                     .tabItem {
-                                        Image(systemName: "calendar")
+                                        Image(systemName: "calendar.badge.clock")
                                     }
                                     .tag(2)
                                 
@@ -132,14 +132,13 @@ struct ContentView: View {
 //                                        .clipShape(RoundedRectangle(cornerRadius: 10))
                                     
                                     HStack {
-                                        
                                         TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
                                             .padding(.horizontal, 100)
                                         
                                         TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
                                             .padding(.horizontal, 100)
                                         
-                                        TabBarButton(image: "calendar", index: 2, labelr: "Calendar")
+                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
                                             .padding(.horizontal, 100)
                                         
                                         
