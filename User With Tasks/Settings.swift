@@ -38,6 +38,7 @@ struct Settings: View {
             
             Text("User Type: \(viewModel.userType ?? "Not Found")")
             
+            Text("User UID (ONLY USE FOR TESTING) : \(viewModel.uid ?? "Not Found")")
             
             if !viewModel.isGuestUser {
                 Text(favoriteText)

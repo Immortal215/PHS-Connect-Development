@@ -103,21 +103,20 @@ struct ContentView: View {
                             
                             // tab bar view
                             VStack {
-                                HStack {
-                                    Spacer()
-                                    CUIExpandableButton(
-                                        expanded: $expanded,
-                                        sfSymbolName: "envelope.fill"
-                                    ) {
-                                        Text("My content")
-                                            .frame(width: 200)
-                                            .padding(8)
-                                    }
-                                    .title("Inbox")
-                                    .subtitle("5 unread messages")
-                                    .padding()
-                                    
-                                }
+//                                HStack {
+//                                    CUIExpandableButton(
+//                                        expanded: $expanded,
+//                                        sfSymbolName: "envelope.fill"
+//                                    ) {
+//                                        Text("My content")
+//                                            .frame(width: 200)
+//                                            .padding(8)
+//                                    }
+//                                    .title("Inbox")
+//                                    .subtitle("5 unread messages")
+//                                    .padding()
+//                                    Spacer()
+//                                }
 
                                 Spacer()
                                 ZStack {
