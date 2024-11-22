@@ -12,6 +12,7 @@ struct Club: Codable, Equatable {
     var meetingTimes: [String: [String]]? // each meeting time will be in this form of Date : [Title, Body, Date of end Time]
     var description: String // short description to catch viewers
     var name: String
+    var normalMeetingTime: String?
     var schoologyCode: String
     var genres: [String]?
     var clubPhoto: String?

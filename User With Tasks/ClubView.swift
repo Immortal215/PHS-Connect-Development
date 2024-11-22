@@ -20,23 +20,27 @@ struct ClubView: View {
     @State var isSearching = false
     @State var showAddAnnouncement = false
     @State var oneMinuteAfter = Date()
-
+    
     var body: some View {
-        
         var filteredItems: [Club] {
-            
             // add other filter stuff like clickable buttons for genres
             if searchText.isEmpty {
                 return clubs
-                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                    .sorted {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    }
                     .sorted {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
             } else {
                 return clubs
-                    .filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                    .filter {
+                        $0.name.localizedCaseInsensitiveContains(searchText)
+                    }
+                    .sorted {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    }
                     .sorted {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
@@ -67,14 +71,13 @@ struct ClubView: View {
                 .font(.title)
             
             HStack {
-                
                 VStack {
-                    HStack {                        
-                        SearchBar("Search all clubs", text: $searchText, isEditing: $isSearching)
-                            .showsCancelButton(isSearching)
-                            .onCancel { print("Canceled!") }
-                            .padding()
-
+                    HStack {
+                        SearchBar("Search all clubs",text: $searchText, isEditing: $isSearching)
+                        .showsCancelButton(isSearching)
+                        .onCancel { print("Canceled!") }
+                        .padding()
+                        
                         if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                             Button {
                                 createClubToggler = true
@@ -83,66 +86,63 @@ struct ClubView: View {
                                     .foregroundStyle(.green)
                             }
                             .sheet(isPresented: $createClubToggler) {
-                                CreateClubView(userEmail: viewModel.userEmail!, viewCloser: {
-                                    createClubToggler = false
-                                }, clubs: clubs)
+                                CreateClubView(userEmail: viewModel.userEmail!, viewCloser: { createClubToggler = false }, clubs: clubs)
                             }
                         }
                     }
                     
                     // clubs view
                     ScrollView {
-                        
-                        
-                        
                         ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
                             var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                            
                             Button {
-                                
                                 if shownInfo != infoRelativeIndex {
-                                    
                                     shownInfo = infoRelativeIndex
                                 } else {
                                     shownInfo = -1
                                 }
-                                
-                            } label : {
-                                
+                            } label: {
                                 // each club
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 5)
                                         .stroke(.black, lineWidth: 3)
                                     
                                     HStack {
-                                        AsyncImage(url: URL(string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"), content: { Image in
-                                            ZStack {
-                                                Image
-                                                    .resizable()
-                                                    .clipShape(Rectangle())
-                                                
-                                                if club.clubPhoto == nil {
-                                                    ZStack {
-                                                        RoundedRectangle(cornerRadius: 5)
-                                                        
-                                                        Text(club.name)
-                                                            .padding()
-                                                            .foregroundStyle(.white)
+                                        AsyncImage(
+                                            url: URL(
+                                                string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
+                                            ),
+                                            content: { Image in
+                                                ZStack {
+                                                    Image
+                                                        .resizable()
+                                                        .clipShape(Rectangle())
+                                                    
+                                                    if club.clubPhoto == nil {
+                                                        ZStack {
+                                                            RoundedRectangle(cornerRadius: 5)
+                                                            
+                                                            Text(club.name)
+                                                                .padding()
+                                                                .foregroundStyle(.white)
+                                                        }
+                                                        .fixedSize()
                                                     }
-                                                    .fixedSize()
+                                                    
+                                                    Rectangle()
+                                                        .stroke(.black, lineWidth: 3)
                                                 }
-                                                
-                                                Rectangle()
-                                                    .stroke(.black, lineWidth: 3)
+                                                .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
+                                            },
+                                            placeholder: {
+                                                ZStack {
+                                                    Rectangle()
+                                                        .stroke(.gray)
+                                                    ProgressView("Loading \(club.name) Image")
+                                                }
                                             }
-                                            .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
-                                            
-                                        }, placeholder: {
-                                            ZStack {
-                                                Rectangle()
-                                                    .stroke(.gray)
-                                                ProgressView("Loading \(club.name) Image")
-                                            }
-                                        })
+                                        )
                                         .padding()
                                         
                                         Spacer()
@@ -164,28 +164,31 @@ struct ClubView: View {
                                         .frame(width: screenWidth/6)
                                         
                                         VStack {
-                                            
                                             // info button
                                             Button {
-                                                // shownInfo = index
-                                                
                                                 shownInfo = infoRelativeIndex
                                             } label: {
-                                                Image(systemName: club.leaders.contains(viewModel.userEmail ?? "") ? "pencil.circle" : "info.circle")
+                                                Image(
+                                                    systemName: club.leaders.contains(viewModel.userEmail ?? "") ?
+                                                    "pencil.circle" : "info.circle"
+                                                )
                                             }
-                                            
                                             
                                             // favorite button
                                             if !viewModel.isGuestUser {
                                                 Button {
                                                     if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                                        removeClubFromFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                                        removeClubFromFavorites(
+                                                            for: viewModel.uid ?? "",
+                                                            clubID: club.clubID
+                                                        )
                                                         if let UserID = viewModel.uid {
                                                             fetchUser(for: UserID) { user in
                                                                 userInfo = user
                                                             }
                                                         }
-                                                        dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
+                                                        dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart")
+                                                        )
                                                     } else {
                                                         addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
                                                         if let UserID = viewModel.uid {
@@ -194,9 +197,7 @@ struct ClubView: View {
                                                             }
                                                         }
                                                         dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
-                                                        
                                                     }
-                                                    
                                                 } label: {
                                                     if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                                         Image(systemName: "heart.fill")
@@ -205,7 +206,6 @@ struct ClubView: View {
                                                         Image(systemName: "heart")
                                                             .transition(.identity)
                                                     }
-                                                    
                                                 }
                                                 .padding(.top)
                                             }
@@ -221,18 +221,14 @@ struct ClubView: View {
                                 .pushDown,
                                 condition: shownInfo == infoRelativeIndex
                             )
-                            
-                            
                         }
                         
                         if filteredItems.isEmpty {
                             Text("No Clubs Found for \"\(searchText)\"")
                         }
                         
-                        
                         Text("Search for Other Clubs! 🙃")
                             .frame(height: screenHeight/3, alignment: .top)
-                        
                     }
                     .frame(width: screenWidth/2)
                     .padding()
@@ -251,38 +247,45 @@ struct ClubView: View {
                                     .font(.body)
                                     .foregroundColor(.gray)
                                 
-                                AsyncImage(url: URL(string: clubs[shownInfo].clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"), content: { Image in
-                                    ZStack {
-                                        Image
-                                            .resizable()
-                                            .clipShape(Rectangle())
-                                        
-                                        if clubs[shownInfo].clubPhoto == nil {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 5)
-                                                    .foregroundStyle(.blue)
-                                                
-                                                Text(clubs[shownInfo].name)
-                                                    .padding()
-                                                    .foregroundStyle(.white)
+                                AsyncImage(
+                                    url: URL(
+                                        string: clubs[shownInfo].clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
+                                    ),
+                                    content: { Image in
+                                        ZStack {
+                                            Image
+                                                .resizable()
+                                                .clipShape(Rectangle())
+                                            
+                                            if clubs[shownInfo].clubPhoto == nil {
+                                                ZStack {
+                                                    RoundedRectangle(cornerRadius: 5)
+                                                        .foregroundStyle(.blue)
+                                                    
+                                                    Text(clubs[shownInfo].name)
+                                                        .padding()
+                                                        .foregroundStyle(.white)
+                                                }
+                                                .fixedSize()
                                             }
-                                            .fixedSize()
+                                            
+                                            Rectangle()
+                                                .stroke(.black, lineWidth: 3)
                                         }
-                                        
-                                        Rectangle()
-                                            .stroke(.black, lineWidth: 3)
+                                        .frame(width: screenWidth/5, height: screenHeight/5
+                                        )
+                                    },
+                                    placeholder: {
+                                        ZStack {
+                                            Rectangle()
+                                                .stroke(.gray)
+                                            ProgressView("Loading \(clubs[shownInfo].name) Image")
+                                        }
                                     }
-                                    .frame(width: screenWidth/5, height: screenHeight/5)
-                                    
-                                }, placeholder: {
-                                    ZStack {
-                                        Rectangle()
-                                            .stroke(.gray)
-                                        ProgressView("Loading \(clubs[shownInfo].name) Image")
-                                    }
-                                })
+                                )
                                 .padding()
-                                .frame(width: screenWidth/5, height: screenHeight/5)
+                                .frame(width: screenWidth/5, height: screenHeight/5
+                                )
                             }
                             
                             if !clubs[shownInfo].leaders.isEmpty {
@@ -292,6 +295,15 @@ struct ClubView: View {
                                     CodeSnippetView(code: leader)
                                         .padding(.top, -8)
                                 }
+                            }
+                            
+                            if let meetingTime = clubs[shownInfo].normalMeetingTime {
+                                Text("Normal Meeting Time:")
+                                    .font(.headline)
+                                
+                                Text("\(meetingTime)")
+                                    .font(.subheadline)
+                                    .padding(.top, -8)
                             }
                             
                             if let meetingTimes = clubs[shownInfo].meetingTimes {
@@ -316,16 +328,15 @@ struct ClubView: View {
                                     CodeSnippetView(code: mem)
                                         .padding(.top, -8)
                                 }
-                                                            
+                                
                                 if clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "") {
                                     Button {
                                         if let announcements = clubs[shownInfo].announcements {
                                             if formattedDate(from: Date()) > announcements.keys.max()! {
                                                 showAddAnnouncement.toggle()
                                             } else {
-                                                dropper(title: "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
-                                                       subtitle: "One Announcement Per Minute!",
-                                                       icon: UIImage(systemName: "timer"))
+                                                dropper(title: "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds", subtitle: "One Announcement Per Minute!", icon: UIImage(systemName: "timer")
+                                                )
                                             }
                                         } else {
                                             showAddAnnouncement.toggle()
@@ -346,26 +357,28 @@ struct ClubView: View {
                                     }
                                     .sheet(isPresented: $showAddAnnouncement) {
                                         AddAnnouncementSheet(announcementBody: "", clubID: clubs[shownInfo].clubID, onSubmit: {
-                                            oneMinuteAfter = Date().addingTimeInterval(60)
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                fetchClubs { fetchedClubs in
-                                                    self.clubs = fetchedClubs
+                                                oneMinuteAfter = Date().addingTimeInterval(60)
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                    fetchClubs { fetchedClubs in
+                                                        self.clubs = fetchedClubs
+                                                    }
                                                 }
                                             }
-                                        })
+                                        )
                                     }
                                 }
-
+                                
                                 if let announcements = clubs[shownInfo].announcements {
                                     Text("Announcements:")
                                         .font(.headline)
-                                    ForEach(announcements.sorted(by: { $0.key > $1.key }),
-                                            id: \.key) { key, value in
-                                        Text("\(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened)): \(value)")
-                                            .font(.subheadline)
-                                            .padding(.top, -8)
-                                    }
-                                }                            }
+                                    ForEach(
+                                        announcements.sorted(by: { $0.key > $1.key }), id: \.key) { key, value in
+                                            Text("\(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened)): \(value)")
+                                                .font(.subheadline)
+                                                .padding(.top, -8)
+                                        }
+                                }
+                            }
                             
                             if let genres = clubs[shownInfo].genres, !genres.isEmpty {
                                 Text("Genres:")

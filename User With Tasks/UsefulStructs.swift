@@ -113,6 +113,8 @@ struct CreateClubView: View {
     @State var leaders: [String] = []
     @State var members: [String] = []
     @State var clubPhoto = ""
+    @State var normalMeet = ""
+
     var viewCloser: (() -> Void)?
     
     @State var CreatedClub = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
@@ -122,15 +124,23 @@ struct CreateClubView: View {
         VStack {
             TextField("Club Name", text: $clubTitle)
                 .padding()
+            
             TextField("Club Description", text: $clubDesc)
                 .padding()
+            
             TextField("Club Abstract", text: $clubAbstract)
                 .padding()
+            
+            TextField("Normal Meeting Times", text: $normalMeet)
+                .padding()
+            
             TextField("Schoology Code", text: $schoology)
                 .padding()
 
             TextField("Club Location", text: $location)
                 .padding()
+            
+            
             TextField("Club Photo URL (Optional)", text: $clubPhoto)
                 .padding()
             
@@ -153,10 +163,13 @@ struct CreateClubView: View {
                     // create a picker for this
                     CreatedClub.showDataWho = "allNonGuest"
                     
-                    
                     // optional additions, needed to keep optional
                     if clubPhoto != "" {
                         CreatedClub.clubPhoto = clubPhoto
+                    }
+                    
+                    if normalMeet != "" {
+                        CreatedClub.normalMeetingTime = normalMeet
                     }
                     
                     addClub(club: CreatedClub)
