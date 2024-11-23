@@ -229,6 +229,7 @@ struct CreateClubView: View {
                     Text("Technology").tag("Technology")
                     Text("Physical").tag("Physical")
                     Text("Mental").tag("Mental")
+                    Text("Safe Space").tag("Safe Space")
                 }
                 .padding()
                 
