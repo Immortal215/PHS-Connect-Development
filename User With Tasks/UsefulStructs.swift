@@ -114,14 +114,14 @@ struct CreateClubView: View {
     @State var members: [String] = []
     @State var clubPhoto = ""
     @State var normalMeet = ""
-
+    @State var addLeaderText = ""
     var viewCloser: (() -> Void)?
     
     @State var CreatedClub = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
     @State var clubs: [Club] = []
 
     var body: some View {
-        VStack {
+        ScrollView {
             TextField("Club Name", text: $clubTitle)
                 .padding()
             
@@ -143,10 +143,49 @@ struct CreateClubView: View {
             TextField("Club Photo URL (Optional)", text: $clubPhoto)
                 .padding()
             
-            if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "") {
+            HStack {
+                TextField("Add Leader Email", text: $addLeaderText)
+                    .padding()
+                
+                Button {
+                    if addLeaderText.contains("d214.org") && leaders.contains(addLeaderText) == false {
+                        leaders.append(addLeaderText)
+                        addLeaderText = ""
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundStyle(.green)
+                }
+                .padding()
+
+                Button {
+                        leaders.removeAll()
+                        addLeaderText = ""
+                } label: {
+                    Image(systemName: "minus")
+                        .foregroundStyle(.red)
+                }
+                .padding()
+            }
+            
+            ScrollView {
+                ForEach(leaders, id: \.self) { i in
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(.gray, lineWidth: 3)
+                        
+                        Text("\(i)")
+                            .padding()
+                    }
+                    .fixedSize()
+                }
+            }
+            
+            
+            if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty) {
                 Button("Create Club") {
-                    leaders.append(userEmail)
-                    members.append(userEmail)
+                    //leaders.append(userEmail)
+                    members.append(leaders[0])
                     
                     CreatedClub.clubID = "clubID\(clubs.count + 1)"
                     CreatedClub.schoologyCode = schoology

@@ -152,6 +152,7 @@ struct ClubView: View {
                                                 .font(.callout)
                                             Text(club.description)
                                                 .font(.caption)
+                                                .multilineTextAlignment(.leading)
                                             Spacer()
                                             if let genres = club.genres, !genres.isEmpty {
                                                 Text("Genres: \(genres.joined(separator: ", "))")
@@ -162,6 +163,7 @@ struct ClubView: View {
                                         .padding()
                                         .foregroundStyle(.black)
                                         .frame(width: screenWidth/6)
+                                        
                                         
                                         VStack {
                                             // info button
