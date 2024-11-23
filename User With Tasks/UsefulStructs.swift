@@ -113,7 +113,7 @@ struct CreateClubView: View {
     @State var leaders: [String] = []
     @State var members: [String] = []
     @State var genres: [String] = []
-    @State var genrePicker = ""
+    @State var genrePicker = "Non-Competitive"
     @State var clubPhoto = ""
     @State var normalMeet = ""
     @State var addLeaderText = ""
@@ -219,17 +219,22 @@ struct CreateClubView: View {
                 Picker(selection: $genrePicker) {
                     Text("Competitive").tag("Competitive")
                     Text("Non-Competitive").tag("Non-Competitive")
-                    Text("Fine Arts").tag("Fine Arts")
-                    Text("Math").tag("Math")
-                    Text("Science").tag("Science")
-                    Text("Culturural").tag("Cultural")
-                    Text("Business").tag("Business")
-                    Text("Reading").tag("Reading")
-                    Text("History").tag("History")
-                    Text("Technology").tag("Technology")
-                    Text("Physical").tag("Physical")
-                    Text("Mental").tag("Mental")
-                    Text("Safe Space").tag("Safe Space")
+                    Section("Subjects") {
+                        Text("Math").tag("Math")
+                        Text("Science").tag("Science")
+                        Text("Reading").tag("Reading")
+                        Text("History").tag("History")
+                        Text("Business").tag("Business")
+                        Text("Technology").tag("Technology")
+                        Text("Art").tag("Art")
+                        Text("Fine Arts").tag("Fine Arts")
+                    }
+                    Section("Descriptors") {
+                        Text("Cultural").tag("Cultural")
+                        Text("Physical").tag("Physical")
+                        Text("Mental").tag("Mental")
+                        Text("Safe Space").tag("Safe Space")
+                    }
                 }
                 .padding()
                 
