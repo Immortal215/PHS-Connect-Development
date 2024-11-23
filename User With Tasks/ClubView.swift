@@ -120,6 +120,7 @@ struct ClubView: View {
                                                 ZStack {
                                                     Image
                                                         .resizable()
+                                                        .scaledToFit()
                                                         .clipShape(Rectangle())
                                                     
                                                     if club.clubPhoto == nil {
@@ -130,6 +131,7 @@ struct ClubView: View {
                                                                 .padding()
                                                                 .foregroundStyle(.white)
                                                         }
+                                                        .frame(maxWidth: screenWidth/5.3)
                                                         .fixedSize()
                                                     }
                                                     
@@ -260,6 +262,7 @@ struct ClubView: View {
                                         ZStack {
                                             Image
                                                 .resizable()
+                                                .scaledToFit()
                                                 .clipShape(Rectangle())
                                             
                                             if clubs[shownInfo].clubPhoto == nil {
@@ -271,14 +274,14 @@ struct ClubView: View {
                                                         .padding()
                                                         .foregroundStyle(.white)
                                                 }
+                                                .frame(maxWidth: screenWidth/5.3)
                                                 .fixedSize()
                                             }
                                             
                                             Rectangle()
                                                 .stroke(.black, lineWidth: 3)
                                         }
-                                        .frame(width: screenWidth/5, height: screenHeight/5
-                                        )
+                                        .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
                                     },
                                     placeholder: {
                                         ZStack {
