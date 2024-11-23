@@ -10,7 +10,6 @@
 		3D17D1952CE7965A001EC760 /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1942CE7965A001EC760 /* SwiftUIX */; };
 		3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1972CE796A5001EC760 /* CUIExpandableButton */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
-		71F51FAE2CEEE3520039A653 /* ECWeekView in Frameworks */ = {isa = PBXBuildFile; productRef = 71F51FAD2CEEE3520039A653 /* ECWeekView */; };
 		71F51FB32CF00B8A0039A653 /* CommandLineTool in Frameworks */ = {isa = PBXBuildFile; productRef = 71F51FB22CF00B8A0039A653 /* CommandLineTool */; };
 		B861A85C2CB81714006AF254 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85B2CB81714006AF254 /* FirebaseAnalytics */; };
 		B861A85E2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85D2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion */; };
@@ -72,7 +71,6 @@
 				B861A8622CB81714006AF254 /* FirebaseAppCheck in Frameworks */,
 				B861A8662CB81714006AF254 /* FirebaseAuth in Frameworks */,
 				B861A85C2CB81714006AF254 /* FirebaseAnalytics in Frameworks */,
-				71F51FAE2CEEE3520039A653 /* ECWeekView in Frameworks */,
 				B861A8722CB81714006AF254 /* FirebaseFirestore in Frameworks */,
 				B861A8802CB81714006AF254 /* FirebaseMessaging in Frameworks */,
 				B861A87C2CB81714006AF254 /* FirebaseInstallations in Frameworks */,
@@ -162,7 +160,6 @@
 				716022FC2CDB0DEB00E2887B /* Pow */,
 				3D17D1942CE7965A001EC760 /* SwiftUIX */,
 				3D17D1972CE796A5001EC760 /* CUIExpandableButton */,
-				71F51FAD2CEEE3520039A653 /* ECWeekView */,
 				71F51FB22CF00B8A0039A653 /* CommandLineTool */,
 			);
 			productName = "User with Tasks";
@@ -200,7 +197,6 @@
 				716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */,
 				3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
 				3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */,
-				71F51FAC2CEEE3520039A653 /* XCRemoteSwiftPackageReference "swift-week-view" */,
 				71F51FAF2CF00B8A0039A653 /* XCRemoteSwiftPackageReference "SwiftFormat" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -361,6 +357,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
+				DEVELOPMENT_TEAM = 9SP33R5K89;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
@@ -390,6 +387,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
+				DEVELOPMENT_TEAM = 9SP33R5K89;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
@@ -459,14 +457,6 @@
 				minimumVersion = 1.0.4;
 			};
 		};
-		71F51FAC2CEEE3520039A653 /* XCRemoteSwiftPackageReference "swift-week-view" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/EvanCooper9/swift-week-view.git";
-			requirement = {
-				branch = swiftui;
-				kind = branch;
-			};
-		};
 		71F51FAF2CF00B8A0039A653 /* XCRemoteSwiftPackageReference "SwiftFormat" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/nicklockwood/SwiftFormat";
@@ -516,11 +506,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */;
 			productName = Pow;
-		};
-		71F51FAD2CEEE3520039A653 /* ECWeekView */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 71F51FAC2CEEE3520039A653 /* XCRemoteSwiftPackageReference "swift-week-view" */;
-			productName = ECWeekView;
 		};
 		71F51FB22CF00B8A0039A653 /* CommandLineTool */ = {
 			isa = XCSwiftPackageProductDependency;

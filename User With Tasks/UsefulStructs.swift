@@ -131,7 +131,7 @@ struct CreateClubView: View {
             TextField("Club Abstract", text: $clubAbstract)
                 .padding()
             
-            TextField("Normal Meeting Times", text: $normalMeet)
+            TextField("Normal Meeting Times (Optional)", text: $normalMeet)
                 .padding()
             
             TextField("Schoology Code", text: $schoology)
@@ -139,8 +139,7 @@ struct CreateClubView: View {
 
             TextField("Club Location", text: $location)
                 .padding()
-            
-            
+                        
             TextField("Club Photo URL (Optional)", text: $clubPhoto)
                 .padding()
             

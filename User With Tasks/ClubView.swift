@@ -78,7 +78,7 @@ struct ClubView: View {
                         .onCancel { print("Canceled!") }
                         .padding()
                         
-                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
+                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
                             Button {
                                 createClubToggler = true
                             } label: {
