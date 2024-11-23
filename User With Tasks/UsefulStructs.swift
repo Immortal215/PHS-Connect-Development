@@ -124,22 +124,22 @@ struct CreateClubView: View {
 
     var body: some View {
         ScrollView {
-            TextField("Club Name", text: $clubTitle)
+            TextField("Club Name (Required)", text: $clubTitle)
                 .padding()
             
-            TextField("Club Description", text: $clubDesc)
+            TextField("Club Description (Required)", text: $clubDesc)
                 .padding()
             
-            TextField("Club Abstract", text: $clubAbstract)
+            TextField("Club Abstract (Required)", text: $clubAbstract)
                 .padding()
             
             TextField("Normal Meeting Times (Optional)", text: $normalMeet)
                 .padding()
             
-            TextField("Schoology Code", text: $schoology)
+            TextField("Schoology Code (Required)", text: $schoology)
                 .padding()
 
-            TextField("Club Location", text: $location)
+            TextField("Club Location (Required)", text: $location)
                 .padding()
                         
             TextField("Club Photo URL (Optional)", text: $clubPhoto)
@@ -228,6 +228,7 @@ struct CreateClubView: View {
                     Text("History").tag("History")
                     Text("Technology").tag("Technology")
                     Text("Physical").tag("Physical")
+                    Text("Mental").tag("Mental")
                 }
                 .padding()
                 

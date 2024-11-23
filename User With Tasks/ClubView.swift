@@ -160,14 +160,14 @@ struct ClubView: View {
                                                 .multilineTextAlignment(.leading)
                                             Spacer()
                                             if let genres = club.genres, !genres.isEmpty {
-                                                Text("Genres: \(genres.joined(separator: ", "))")
+                                                Text("Genres: \(genres.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", "))")
                                                     .font(.footnote)
                                                     .foregroundStyle(.blue)
                                             }
                                         }
                                         .padding()
                                         .foregroundStyle(.black)
-                                        .frame(width: screenWidth/6)
+                                        .frame(width: screenWidth/5.6)
                                         
                                         
                                         VStack {
@@ -292,14 +292,13 @@ struct ClubView: View {
                                     }
                                 )
                                 .padding()
-                                .frame(width: screenWidth/5, height: screenHeight/5
-                                )
+                                .frame(width: screenWidth/5, height: screenHeight/5)
                             }
                             
                             if !clubs[shownInfo].leaders.isEmpty {
                                 Text("Leaders (\(clubs[shownInfo].leaders.count)):")
                                     .font(.headline)
-                                ForEach(clubs[shownInfo].leaders, id: \.self) { leader in
+                                ForEach(clubs[shownInfo].leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
                                     CodeSnippetView(code: leader)
                                         .padding(.top, -8)
                                 }
@@ -328,7 +327,7 @@ struct ClubView: View {
                             
                             if whoCanSeeWhat {
                                 if !clubs[shownInfo].members.isEmpty {
-                                    var mem = clubs[shownInfo].members.joined(separator: ", ")
+                                    var mem = clubs[shownInfo].members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
                                     
                                     Text("Members (\(clubs[shownInfo].members.count)):")
                                         .font(.headline)
@@ -391,7 +390,7 @@ struct ClubView: View {
                             if let genres = clubs[shownInfo].genres, !genres.isEmpty {
                                 Text("Genres:")
                                     .font(.headline)
-                                Text(genres.joined(separator: ", "))
+                                Text(genres.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", "))
                                     .font(.subheadline)
                                     .foregroundStyle(.blue)
                                     .padding(.top, -8)
