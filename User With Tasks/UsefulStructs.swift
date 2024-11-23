@@ -186,14 +186,16 @@ struct CreateClubView: View {
                 }
                 .padding()
 
-                Button {
-                        leaders.removeAll()
+                if !leaders.isEmpty {
+                    Button {
+                        leaders.removeLast()
                         addLeaderText = ""
-                } label: {
-                    Image(systemName: "minus")
-                        .foregroundStyle(.red)
+                    } label: {
+                        Image(systemName: "minus")
+                            .foregroundStyle(.red)
+                    }
+                    .padding()
                 }
-                .padding()
             }
             
             ScrollView {
@@ -241,6 +243,7 @@ struct CreateClubView: View {
                     addClub(club: CreatedClub)
                     viewCloser?()
                 }
+                .padding()
             }
         }
         .textFieldStyle(.roundedBorder)
