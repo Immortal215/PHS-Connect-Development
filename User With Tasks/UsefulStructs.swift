@@ -228,6 +228,7 @@ struct CreateClubView: View {
                         Text("Technology").tag("Technology")
                         Text("Art").tag("Art")
                         Text("Fine Arts").tag("Fine Arts")
+                        Text("Speaking").tag("Speaking")
                     }
                     Section("Descriptors") {
                         Text("Cultural").tag("Cultural")

@@ -13,9 +13,6 @@ struct HomeView: View {
     
     var body: some View {
         VStack {
-            Text("Home")
-                .font(.title)
-        
 
             HStack {
                 VStack {
