@@ -150,11 +150,11 @@ struct ClubView: View {
                                         )
                                         .padding()
                                         
-                                        Spacer()
                                         
                                         VStack {
                                             Text(club.name)
                                                 .font(.callout)
+                                                .multilineTextAlignment(.center)
                                             Text(club.description)
                                                 .font(.caption)
                                                 .multilineTextAlignment(.leading)
@@ -163,11 +163,12 @@ struct ClubView: View {
                                                 Text("Genres: \(genres.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", "))")
                                                     .font(.footnote)
                                                     .foregroundStyle(.blue)
+                                                    .multilineTextAlignment(.center)
                                             }
                                         }
                                         .padding()
                                         .foregroundStyle(.black)
-                                        .frame(width: screenWidth/5.6)
+                                        .frame(maxWidth: screenWidth/4)
                                         
                                         
                                         VStack {
