@@ -151,26 +151,26 @@ struct CreateClubView: View {
                     addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
                     if addLeaderText.contains("d214.org") && leaders.contains(addLeaderText) == false {
                         if addLeaderText.contains(",") {
-                            var splitLeaders = addLeaderText.split(separator: ",")
+                            let splitLeaders = addLeaderText.split(separator: ",")
                              for i in splitLeaders {
                                  leaders.append(String(i))
                              }
                              addLeaderText = ""
                             
                         } else if addLeaderText.contains("/") {
-                            var splitLeaders = addLeaderText.split(separator: "/")
+                            let splitLeaders = addLeaderText.split(separator: "/")
                              for i in splitLeaders {
                                  leaders.append(String(i))
                              }
                              addLeaderText = ""
                         } else if addLeaderText.contains(";") {
-                            var splitLeaders = addLeaderText.split(separator: ";")
+                            let splitLeaders = addLeaderText.split(separator: ";")
                              for i in splitLeaders {
                                  leaders.append(String(i))
                              }
                              addLeaderText = ""
                         } else if addLeaderText.contains("-") {
-                            var splitLeaders = addLeaderText.split(separator: "-")
+                            let splitLeaders = addLeaderText.split(separator: "-")
                              for i in splitLeaders {
                                  leaders.append(String(i))
                              }
