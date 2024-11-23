@@ -112,6 +112,8 @@ struct CreateClubView: View {
     @State var location = ""
     @State var leaders: [String] = []
     @State var members: [String] = []
+    @State var genres: [String] = []
+    @State var genrePicker = ""
     @State var clubPhoto = ""
     @State var normalMeet = ""
     @State var addLeaderText = ""
@@ -197,6 +199,7 @@ struct CreateClubView: View {
                     .padding()
                 }
             }
+            .padding()
             
             ScrollView {
                 ForEach(leaders, id: \.self) { i in
@@ -210,7 +213,63 @@ struct CreateClubView: View {
                     .fixedSize()
                 }
             }
+            .padding()
             
+            LabeledContent {
+                Picker(selection: $genrePicker) {
+                    Text("Competitive").tag("Competitive")
+                    Text("Non-Competitive").tag("Non-Competitive")
+                    Text("Fine Arts").tag("Fine Arts")
+                    Text("Math").tag("Math")
+                    Text("Science").tag("Science")
+                    Text("Culturural").tag("Cultural")
+                    Text("Business").tag("Business")
+                    Text("Reading").tag("Reading")
+                    Text("History").tag("History")
+                    Text("Technology").tag("Technology")
+                    Text("Physical").tag("Physical")
+                }
+                .padding()
+                
+                Button {
+                    if !genres.contains(genrePicker) && genrePicker != "" {
+                        genres.append(genrePicker)
+                        genrePicker = ""
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundStyle(.green)
+                }
+                .padding()
+
+                if !genres.isEmpty {
+                    Button {
+                        genres.removeLast()
+                        genrePicker = ""
+                    } label: {
+                        Image(systemName: "minus")
+                            .foregroundStyle(.red)
+                    }
+                    .padding()
+                }
+            } label: {
+                Text("Genres")
+            }
+            .padding()
+            
+            ScrollView {
+                ForEach(genres, id: \.self) { i in
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(.gray, lineWidth: 3)
+                        
+                        Text("\(i)")
+                            .padding()
+                    }
+                    .fixedSize()
+                }
+            }
+            .padding()
             
             if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty) {
                 Button("Create Club") {
@@ -226,8 +285,9 @@ struct CreateClubView: View {
                     CreatedClub.leaders = leaders
                     CreatedClub.members = members
                     
-                    // add genre adder 
-                    
+                    if !genres.isEmpty {
+                        CreatedClub.genres = genres
+                    }
                     // create a picker for this
                     CreatedClub.showDataWho = "allNonGuest"
                     
