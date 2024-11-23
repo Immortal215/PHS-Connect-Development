@@ -1,9 +1,11 @@
+import FirebaseDatabase
 import FirebaseCore
 import FirebaseDatabaseInternal
 import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
+
 
 struct Club: Codable, Equatable {
     var leaders: [String] // emails
