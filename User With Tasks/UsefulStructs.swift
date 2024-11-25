@@ -74,7 +74,7 @@ struct CodeSnippetView: View {
             
             Button(action: {
                 UIPasteboard.general.string = code
-                dropper(title: "Copied!", subtitle: "", icon: UIImage(systemName: "checkmark"))
+                dropper(title: "Copied!", subtitle: "\(code)", icon: UIImage(systemName: "checkmark"))
                 clicked = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     clicked = false
