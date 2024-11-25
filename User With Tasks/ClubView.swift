@@ -21,6 +21,7 @@ struct ClubView: View {
     @State var showAddAnnouncement = false
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
+    @State var currentSearchingBy = "name"
     
     var body: some View {
         var filteredItems: [Club] {
@@ -45,7 +46,7 @@ struct ClubView: View {
                     .sorted {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                    }
+                }
             }
         }
         
@@ -74,10 +75,10 @@ struct ClubView: View {
             HStack {
                 VStack {
                     HStack {
-                        SearchBar("Search all clubs",text: $searchText, isEditing: $isSearching)
+                        SearchBar("Search all clubs by \(currentSearchingBy)",text: $searchText, isEditing: $isSearching)
                             .showsCancelButton(isSearching)
-                            .onCancel { print("Canceled!") }
                             .padding()
+                            
                         
                         if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
                             Button {
