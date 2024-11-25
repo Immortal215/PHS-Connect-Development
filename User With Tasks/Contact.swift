@@ -7,7 +7,7 @@ struct FeatureReportButton: View {
     @State private var showAlert = false
     
     // Configuration
-    let recipientEmail = "paul.hennig@d214.org"
+    let recipientEmail = "sharulshah@icloud.com"
     let subject = "Feature Report"
     
     var body: some View {
