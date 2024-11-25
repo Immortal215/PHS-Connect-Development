@@ -253,6 +253,7 @@ struct ClubView: View {
                                     Text(clubs[shownInfo].name)
                                         .font(.largeTitle)
                                         .fontWeight(.bold)
+                                    Spacer()
                                     
                                     if clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "") {
                                         
@@ -313,6 +314,10 @@ struct ClubView: View {
                                 .frame(width: screenWidth/5, height: screenHeight/5)
                             }
                             
+                            if viewModel.userEmail == "sharul.shah2008@gmail.com" {
+                                Text("Club Id (only for devs) : \(clubs[shownInfo].clubID)")
+                            }
+
                             if !clubs[shownInfo].leaders.isEmpty {
                                 Text("Leaders (\(clubs[shownInfo].leaders.count)):")
                                     .font(.headline)

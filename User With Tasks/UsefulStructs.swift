@@ -117,6 +117,10 @@ struct CreateClubView: View {
     @State var normalMeet = ""
     @State var addLeaderText = ""
     @State var addMemberText = ""
+    @State var leaderTextShake = false
+    @State var memberTextShake = false
+    @State var memberDisclosureExpanded = false
+    
     var viewCloser: (() -> Void)?
     
     @State var CreatedClub : Club = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
@@ -148,40 +152,13 @@ struct CreateClubView: View {
             HStack {
                 TextField("Add Leader Email(s) (Required)", text: $addLeaderText)
                     .padding()
+                    .changeEffect(.shake(rate: .fast), value: leaderTextShake)
+                    .onSubmit {
+                        addLeaderFunc()
+                    }
                 
                 Button {
-                    addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
-                    if addLeaderText.contains("d214.org") && leaders.contains(addLeaderText) == false {
-                        if addLeaderText.contains(",") {
-                            let splitLeaders = addLeaderText.split(separator: ",")
-                             for i in splitLeaders {
-                                 leaders.append(String(i))
-                             }
-                             addLeaderText = ""
-                            
-                        } else if addLeaderText.contains("/") {
-                            let splitLeaders = addLeaderText.split(separator: "/")
-                             for i in splitLeaders {
-                                 leaders.append(String(i))
-                             }
-                             addLeaderText = ""
-                        } else if addLeaderText.contains(";") {
-                            let splitLeaders = addLeaderText.split(separator: ";")
-                             for i in splitLeaders {
-                                 leaders.append(String(i))
-                             }
-                             addLeaderText = ""
-                        } else if addLeaderText.contains("-") {
-                            let splitLeaders = addLeaderText.split(separator: "-")
-                             for i in splitLeaders {
-                                 leaders.append(String(i))
-                             }
-                             addLeaderText = ""
-                        } else {
-                            leaders.append(addLeaderText)
-                            addLeaderText = ""
-                        }
-                    }
+                   addLeaderFunc()
                 } label: {
                     Image(systemName: "plus")
                         .foregroundStyle(.green)
@@ -215,55 +192,53 @@ struct CreateClubView: View {
             }
             .padding()
             
-            HStack {
-                TextField("Add Member Email(s) ", text: $addMemberText)
-                    .padding()
-                
-                Button {
-                    addMemberText = addMemberText.replacingOccurrences(of: " ", with: "")
-                    if addMemberText.contains("d214.org") && members.contains(addMemberText) == false {
-                        if addMemberText.contains(",") {
-                            let splitMembers = addMemberText.split(separator: ",")
-                            for i in splitMembers {
-                                 members.append(String(i))
-                             }
-                            addMemberText = ""
-                            
-                        }  else {
-                            members.append(addMemberText)
-                            addMemberText = ""
+            
+            DisclosureGroup("Add Members", isExpanded: $memberDisclosureExpanded) {
+                VStack {
+                    HStack {
+                        TextField("Add Member Email(s) ", text: $addMemberText)
+                            .padding()
+                            .onSubmit {
+                                addMemberFunc()
+                            }
+                            .changeEffect(.shake(rate: .fast), value: memberTextShake)
+                        
+                        Button {
+                            addMemberFunc()
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(.green)
+                        }
+                        .padding()
+                        
+                        if !members.isEmpty {
+                            Button {
+                                members.removeLast()
+                                addMemberText = ""
+                            } label: {
+                                Image(systemName: "minus")
+                                    .foregroundStyle(.red)
+                            }
+                            .padding()
                         }
                     }
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(.green)
-                }
-                .padding()
-
-                if !members.isEmpty {
-                    Button {
-                        members.removeLast()
-                        addMemberText = ""
-                    } label: {
-                        Image(systemName: "minus")
-                            .foregroundStyle(.red)
+                    .padding()
+                    
+                    ScrollView {
+                        ForEach(members, id: \.self) { i in
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(.gray, lineWidth: 3)
+                                
+                                Text("\(i)")
+                                    .padding()
+                            }
+                            .fixedSize()
+                        }
                     }
                     .padding()
                 }
-            }
-            .padding()
-            
-            ScrollView {
-                ForEach(members, id: \.self) { i in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(.gray, lineWidth: 3)
-                        
-                        Text("\(i)")
-                            .padding()
-                    }
-                    .fixedSize()
-                }
+
             }
             .padding()
             
@@ -391,6 +366,62 @@ struct CreateClubView: View {
                 normalMeet = meet
             }
             
+        }
+    }
+    
+    func addLeaderFunc() {
+        addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
+        if addLeaderText.contains("d214.org") && leaders.contains(addLeaderText) == false {
+            if addLeaderText.contains(",") {
+                let splitLeaders = addLeaderText.split(separator: ",")
+                 for i in splitLeaders {
+                     leaders.append(String(i))
+                 }
+                 addLeaderText = ""
+                
+            } else if addLeaderText.contains("/") {
+                let splitLeaders = addLeaderText.split(separator: "/")
+                 for i in splitLeaders {
+                     leaders.append(String(i))
+                 }
+                 addLeaderText = ""
+            } else if addLeaderText.contains(";") {
+                let splitLeaders = addLeaderText.split(separator: ";")
+                 for i in splitLeaders {
+                     leaders.append(String(i))
+                 }
+                 addLeaderText = ""
+            } else if addLeaderText.contains("-") {
+                let splitLeaders = addLeaderText.split(separator: "-")
+                 for i in splitLeaders {
+                     leaders.append(String(i))
+                 }
+                 addLeaderText = ""
+            } else {
+                leaders.append(addLeaderText)
+                addLeaderText = ""
+            }
+        } else {
+            leaderTextShake.toggle()
+        }
+    }
+    
+    func addMemberFunc() {
+        addMemberText = addMemberText.replacingOccurrences(of: " ", with: "")
+        if addMemberText.contains("d214.org") && members.contains(addMemberText) == false {
+            if addMemberText.contains(",") {
+                let splitMembers = addMemberText.split(separator: ",")
+                for i in splitMembers {
+                     members.append(String(i))
+                 }
+                addMemberText = ""
+                
+            }  else {
+                members.append(addMemberText)
+                addMemberText = ""
+            }
+        } else {
+            memberTextShake.toggle()
         }
     }
 }
