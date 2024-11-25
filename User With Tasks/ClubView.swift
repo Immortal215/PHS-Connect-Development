@@ -20,6 +20,7 @@ struct ClubView: View {
     @State var isSearching = false
     @State var showAddAnnouncement = false
     @State var oneMinuteAfter = Date()
+    @State var showEditScreen = false
     
     var body: some View {
         var filteredItems: [Club] {
@@ -74,9 +75,9 @@ struct ClubView: View {
                 VStack {
                     HStack {
                         SearchBar("Search all clubs",text: $searchText, isEditing: $isSearching)
-                        .showsCancelButton(isSearching)
-                        .onCancel { print("Canceled!") }
-                        .padding()
+                            .showsCancelButton(isSearching)
+                            .onCancel { print("Canceled!") }
+                            .padding()
                         
                         if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
                             Button {
@@ -89,7 +90,7 @@ struct ClubView: View {
                                     .foregroundStyle(.green)
                             }
                             .sheet(isPresented: $createClubToggler) {
-                                CreateClubView(userEmail: viewModel.userEmail!, viewCloser: { createClubToggler = false }, clubs: clubs)
+                                CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
                             }
                         }
                     }
@@ -245,12 +246,28 @@ struct ClubView: View {
                 // club info view
                 ScrollView {
                     if shownInfo >= 0 && shownInfo < clubs.count {
+                        
                         VStack(alignment: .leading, spacing: 16) {
                             VStack(alignment: .center) {
-                                Text(clubs[shownInfo].name)
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
-                                
+                                HStack {
+                                    Text(clubs[shownInfo].name)
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+                                    
+                                    if clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "") {
+                                        
+                                        Button {
+                                            showEditScreen.toggle()
+                                        } label: {
+                                            Image(systemName: "gear")
+                                        }
+                                        .sheet(isPresented: $showEditScreen) {
+                                            CreateClubView(viewCloser: { showEditScreen = false }, CreatedClub: clubs[shownInfo])
+                                        }
+                                        .padding()
+                                    }
+                                    
+                                }
                                 Text(clubs[shownInfo].abstract)
                                     .font(.body)
                                     .foregroundColor(.gray)
@@ -365,13 +382,13 @@ struct ClubView: View {
                                     }
                                     .sheet(isPresented: $showAddAnnouncement) {
                                         AddAnnouncementSheet(announcementBody: "", clubID: clubs[shownInfo].clubID, onSubmit: {
-                                                oneMinuteAfter = Date().addingTimeInterval(60)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                    fetchClubs { fetchedClubs in
-                                                        self.clubs = fetchedClubs
-                                                    }
+                                            oneMinuteAfter = Date().addingTimeInterval(60)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                fetchClubs { fetchedClubs in
+                                                    self.clubs = fetchedClubs
                                                 }
                                             }
+                                        }
                                         )
                                     }
                                 }

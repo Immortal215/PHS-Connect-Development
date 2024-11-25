@@ -103,7 +103,6 @@ struct CodeSnippetView: View {
 }
 
 struct CreateClubView: View {
-    @State var userEmail = ""
     @State var clubTitle = ""
     @State var clubDesc = ""
     @State var clubAbstract = ""
@@ -117,9 +116,10 @@ struct CreateClubView: View {
     @State var clubPhoto = ""
     @State var normalMeet = ""
     @State var addLeaderText = ""
+    @State var addMemberText = ""
     var viewCloser: (() -> Void)?
     
-    @State var CreatedClub = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
+    @State var CreatedClub : Club = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
     @State var clubs: [Club] = []
 
     var body: some View {
@@ -146,7 +146,7 @@ struct CreateClubView: View {
                 .padding()
             
             HStack {
-                TextField("Add Leader Email", text: $addLeaderText)
+                TextField("Add Leader Email(s) (Required)", text: $addLeaderText)
                     .padding()
                 
                 Button {
@@ -203,6 +203,58 @@ struct CreateClubView: View {
             
             ScrollView {
                 ForEach(leaders, id: \.self) { i in
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(.gray, lineWidth: 3)
+                        
+                        Text("\(i)")
+                            .padding()
+                    }
+                    .fixedSize()
+                }
+            }
+            .padding()
+            
+            HStack {
+                TextField("Add Member Email(s) ", text: $addMemberText)
+                    .padding()
+                
+                Button {
+                    addMemberText = addMemberText.replacingOccurrences(of: " ", with: "")
+                    if addMemberText.contains("d214.org") && members.contains(addMemberText) == false {
+                        if addMemberText.contains(",") {
+                            let splitMembers = addMemberText.split(separator: ",")
+                            for i in splitMembers {
+                                 members.append(String(i))
+                             }
+                            addMemberText = ""
+                            
+                        }  else {
+                            members.append(addMemberText)
+                            addMemberText = ""
+                        }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundStyle(.green)
+                }
+                .padding()
+
+                if !members.isEmpty {
+                    Button {
+                        members.removeLast()
+                        addMemberText = ""
+                    } label: {
+                        Image(systemName: "minus")
+                            .foregroundStyle(.red)
+                    }
+                    .padding()
+                }
+            }
+            .padding()
+            
+            ScrollView {
+                ForEach(members, id: \.self) { i in
                     ZStack {
                         RoundedRectangle(cornerRadius: 5)
                             .stroke(.gray, lineWidth: 3)
@@ -279,19 +331,26 @@ struct CreateClubView: View {
             }
             .padding()
             
-            if (userEmail != "" && clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty) {
-                Button("Create Club") {
-                    //leaders.append(userEmail)
-                    members.append(leaders[0])
-                    
-                    CreatedClub.clubID = "clubID\(clubs.count + 1)"
+            if (clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty) {
+                Button(clubId == "" ? "Create Club" : "Edit Club") {
+                    if clubId == "" {
+                        CreatedClub.clubID = "clubID\(clubs.count + 1)"
+                    } else {
+                        CreatedClub.clubID = clubId
+                    }
                     CreatedClub.schoologyCode = schoology
                     CreatedClub.name = clubTitle
                     CreatedClub.description = clubDesc
                     CreatedClub.abstract = clubAbstract
                     CreatedClub.location = location
                     CreatedClub.leaders = leaders
-                    CreatedClub.members = members
+                    
+                    if !members.isEmpty {
+                        CreatedClub.members = members
+                    } else {
+                        members.append(leaders[0])
+                        CreatedClub.members = members
+                    }
                     
                     if !genres.isEmpty {
                         CreatedClub.genres = genres
@@ -315,6 +374,24 @@ struct CreateClubView: View {
             }
         }
         .textFieldStyle(.roundedBorder)
+        .onAppear {
+            leaders = CreatedClub.leaders
+            members = CreatedClub.members
+            clubId = CreatedClub.clubID
+            clubTitle = CreatedClub.name
+            clubDesc = CreatedClub.description
+            clubAbstract = CreatedClub.abstract
+            schoology = CreatedClub.schoologyCode
+            location = CreatedClub.location
+            genres = CreatedClub.genres ?? []
+            if let photo = CreatedClub.clubPhoto {
+                clubPhoto = photo
+            }
+            if let meet = CreatedClub.normalMeetingTime {
+                normalMeet = meet
+            }
+            
+        }
     }
 }
 
@@ -323,7 +400,7 @@ struct AddAnnouncementSheet: View {
     @State var announcementBody: String
     @State var clubID: String
     @Environment(\.presentationMode) var presentationMode
-    var onSubmit: () -> Void 
+    var onSubmit: () -> Void
 
     var body: some View {
             VStack {
