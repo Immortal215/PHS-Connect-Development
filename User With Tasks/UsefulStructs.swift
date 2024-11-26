@@ -388,30 +388,30 @@ struct CreateClubView: View {
             if addLeaderText.contains(",") {
                 let splitLeaders = addLeaderText.split(separator: ",")
                  for i in splitLeaders {
-                     leaders.append(String(i))
+                     leaders.append(String(i).lowercased())
                  }
                  addLeaderText = ""
                 
             } else if addLeaderText.contains("/") {
                 let splitLeaders = addLeaderText.split(separator: "/")
                  for i in splitLeaders {
-                     leaders.append(String(i))
+                     leaders.append(String(i).lowerecased())
                  }
                  addLeaderText = ""
             } else if addLeaderText.contains(";") {
                 let splitLeaders = addLeaderText.split(separator: ";")
                  for i in splitLeaders {
-                     leaders.append(String(i))
+                     leaders.append(String(i).lowercased())
                  }
                  addLeaderText = ""
             } else if addLeaderText.contains("-") {
                 let splitLeaders = addLeaderText.split(separator: "-")
                  for i in splitLeaders {
-                     leaders.append(String(i))
+                     leaders.append(String(i).lowercased())
                  }
                  addLeaderText = ""
             } else {
-                leaders.append(addLeaderText)
+                leaders.append(addLeaderText.lowercased())
                 addLeaderText = ""
             }
         } else {
@@ -426,12 +426,12 @@ struct CreateClubView: View {
             if addMemberText.contains(",") {
                 let splitMembers = addMemberText.split(separator: ",")
                 for i in splitMembers {
-                     members.append(String(i))
+                     members.append(String(i).lowercased())
                  }
                 addMemberText = ""
                 
             }  else {
-                members.append(addMemberText)
+                members.append(addMemberText.lowercased())
                 addMemberText = ""
             }
         } else {
