@@ -73,8 +73,8 @@ struct CodeSnippetView: View {
                         .stroke(Color.gray.opacity(0.5), lineWidth: 1)
                 )
             
-            Button(action: {
-                UIPasteboard.general.string = code
+            Button(action: { 
+                UIPasteboard.general.string = code.removingOccurences(of: "-", with: "") then also count and make sure it is staying less than schoology code limit
                 dropper(title: "Copied!", subtitle: "\(code)", icon: UIImage(systemName: "checkmark"))
                 clicked = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
