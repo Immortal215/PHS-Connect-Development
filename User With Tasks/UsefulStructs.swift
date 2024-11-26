@@ -1,5 +1,6 @@
 import SwiftUI
 import Pow
+import SwiftUIX
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3
@@ -120,6 +121,9 @@ struct CreateClubView: View {
     @State var leaderTextShake = false
     @State var memberTextShake = false
     @State var memberDisclosureExpanded = false
+    @State var leaderDisclosureExpanded = false
+    @State var genreDisclosureExpanded = false
+
     
     var viewCloser: (() -> Void)?
     
@@ -137,9 +141,55 @@ struct CreateClubView: View {
             TextField("Club Abstract (Required)", text: $clubAbstract)
                 .padding()
             
-            TextField("Normal Meeting Times (Optional)", text: $normalMeet)
+            DisclosureGroup("Edit Leaders (Required)", isExpanded: $leaderDisclosureExpanded) {
+                
+                HStack {
+                    TextField("Add Leader Email(s) (Required)", text: $addLeaderText)
+                        .padding()
+                        .changeEffect(.shake(rate: .fast), value: leaderTextShake)
+                        .onSubmit {
+                            addLeaderFunc()
+                        }
+                    
+                    Button {
+                        addLeaderFunc()
+                    } label: {
+                        Image(systemName: "plus")
+                            .foregroundStyle(.green)
+                    }
+                    .padding()
+                    
+                    if !leaders.isEmpty {
+                        Button {
+                            leaders.removeLast()
+                            addLeaderText = ""
+                        } label: {
+                            Image(systemName: "minus")
+                                .foregroundStyle(.red)
+                        }
+                        .padding()
+                    }
+                }
                 .padding()
-            
+                
+                ScrollView {
+                    ForEach(leaders, id: \.self) { i in
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(.gray, lineWidth: 3)
+                            
+                            Text("\(i)")
+                                .padding()
+                            
+                        }
+                        .fixedSize()
+                    }
+                }
+                .padding()
+                
+            }
+            .padding()
+        
             TextField("Schoology Code (Required)", text: $schoology)
                 .padding()
 
@@ -149,51 +199,10 @@ struct CreateClubView: View {
             TextField("Club Photo URL (Optional)", text: $clubPhoto)
                 .padding()
             
-            HStack {
-                TextField("Add Leader Email(s) (Required)", text: $addLeaderText)
-                    .padding()
-                    .changeEffect(.shake(rate: .fast), value: leaderTextShake)
-                    .onSubmit {
-                        addLeaderFunc()
-                    }
-                
-                Button {
-                   addLeaderFunc()
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(.green)
-                }
+            TextField("Normal Meeting Times (Optional)", text: $normalMeet)
                 .padding()
-
-                if !leaders.isEmpty {
-                    Button {
-                        leaders.removeLast()
-                        addLeaderText = ""
-                    } label: {
-                        Image(systemName: "minus")
-                            .foregroundStyle(.red)
-                    }
-                    .padding()
-                }
-            }
-            .padding()
             
-            ScrollView {
-                ForEach(leaders, id: \.self) { i in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(.gray, lineWidth: 3)
-                        
-                        Text("\(i)")
-                            .padding()
-                    }
-                    .fixedSize()
-                }
-            }
-            .padding()
-            
-            
-            DisclosureGroup("Add Members", isExpanded: $memberDisclosureExpanded) {
+            DisclosureGroup("Edit Members", isExpanded: $memberDisclosureExpanded) {
                 VStack {
                     HStack {
                         TextField("Add Member Email(s) ", text: $addMemberText)
@@ -242,67 +251,71 @@ struct CreateClubView: View {
             }
             .padding()
             
-            LabeledContent {
-                Picker(selection: $genrePicker) {
-                    Text("Competitive").tag("Competitive")
-                    Text("Non-Competitive").tag("Non-Competitive")
-                    Section("Subjects") {
-                        Text("Math").tag("Math")
-                        Text("Science").tag("Science")
-                        Text("Reading").tag("Reading")
-                        Text("History").tag("History")
-                        Text("Business").tag("Business")
-                        Text("Technology").tag("Technology")
-                        Text("Art").tag("Art")
-                        Text("Fine Arts").tag("Fine Arts")
-                        Text("Speaking").tag("Speaking")
+            DisclosureGroup("Edit Genres", isExpanded: $genreDisclosureExpanded) {
+                
+                LabeledContent {
+                    Picker(selection: $genrePicker) {
+                        Text("Competitive").tag("Competitive")
+                        Text("Non-Competitive").tag("Non-Competitive")
+                        Section("Subjects") {
+                            Text("Math").tag("Math")
+                            Text("Science").tag("Science")
+                            Text("Reading").tag("Reading")
+                            Text("History").tag("History")
+                            Text("Business").tag("Business")
+                            Text("Technology").tag("Technology")
+                            Text("Art").tag("Art")
+                            Text("Fine Arts").tag("Fine Arts")
+                            Text("Speaking").tag("Speaking")
+                        }
+                        Section("Descriptors") {
+                            Text("Cultural").tag("Cultural")
+                            Text("Physical").tag("Physical")
+                            Text("Mental").tag("Mental")
+                            Text("Safe Space").tag("Safe Space")
+                        }
                     }
-                    Section("Descriptors") {
-                        Text("Cultural").tag("Cultural")
-                        Text("Physical").tag("Physical")
-                        Text("Mental").tag("Mental")
-                        Text("Safe Space").tag("Safe Space")
+                    .padding()
+                    
+                    Button {
+                        if !genres.contains(genrePicker) && genrePicker != "" {
+                            genres.append(genrePicker)
+                            genrePicker = ""
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                            .foregroundStyle(.green)
                     }
+                    .padding()
+                    
+                    if !genres.isEmpty {
+                        Button {
+                            genres.removeLast()
+                            genrePicker = ""
+                        } label: {
+                            Image(systemName: "minus")
+                                .foregroundStyle(.red)
+                        }
+                        .padding()
+                    }
+                } label: {
+                    Text("Genres")
                 }
                 .padding()
                 
-                Button {
-                    if !genres.contains(genrePicker) && genrePicker != "" {
-                        genres.append(genrePicker)
-                        genrePicker = ""
+                ScrollView {
+                    ForEach(genres, id: \.self) { i in
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(.gray, lineWidth: 3)
+                            
+                            Text("\(i)")
+                                .padding()
+                        }
+                        .fixedSize()
                     }
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(.green)
                 }
                 .padding()
-
-                if !genres.isEmpty {
-                    Button {
-                        genres.removeLast()
-                        genrePicker = ""
-                    } label: {
-                        Image(systemName: "minus")
-                            .foregroundStyle(.red)
-                    }
-                    .padding()
-                }
-            } label: {
-                Text("Genres")
-            }
-            .padding()
-            
-            ScrollView {
-                ForEach(genres, id: \.self) { i in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(.gray, lineWidth: 3)
-                        
-                        Text("\(i)")
-                            .padding()
-                    }
-                    .fixedSize()
-                }
             }
             .padding()
             
@@ -371,7 +384,7 @@ struct CreateClubView: View {
     
     func addLeaderFunc() {
         addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
-        if addLeaderText.contains("d214.org") && leaders.contains(addLeaderText) == false {
+        if (addLeaderText.contains("d214.org") || addLeaderText.contains("gmail.com")) && leaders.contains(addLeaderText) == false {
             if addLeaderText.contains(",") {
                 let splitLeaders = addLeaderText.split(separator: ",")
                  for i in splitLeaders {
@@ -403,6 +416,7 @@ struct CreateClubView: View {
             }
         } else {
             leaderTextShake.toggle()
+            dropper(title: "Enter a correct email!", subtitle: "Use the d214.org ending!", icon: UIImage(systemName: "trash"))
         }
     }
     
@@ -422,6 +436,7 @@ struct CreateClubView: View {
             }
         } else {
             memberTextShake.toggle()
+            dropper(title: "Enter a correct email!", subtitle: "Use the d214.org ending!", icon: UIImage(systemName: "trash"))
         }
     }
 }
