@@ -74,7 +74,9 @@ struct CodeSnippetView: View {
                 )
             
             Button(action: { 
-                UIPasteboard.general.string = code.removingOccurences(of: "-", with: "") then also count and make sure it is staying less than schoology code limit
+                UIPasteboard.general.string = code.replacingOccurrences(of: "-", with: "").prefix(13).uppercased()
+                
+                //then also count and make sure it is staying less than schoology code limit
                 dropper(title: "Copied!", subtitle: "\(code)", icon: UIImage(systemName: "checkmark"))
                 clicked = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -395,7 +397,7 @@ struct CreateClubView: View {
             } else if addLeaderText.contains("/") {
                 let splitLeaders = addLeaderText.split(separator: "/")
                  for i in splitLeaders {
-                     leaders.append(String(i).lowerecased())
+                     leaders.append(String(i).lowercased())
                  }
                  addLeaderText = ""
             } else if addLeaderText.contains(";") {
