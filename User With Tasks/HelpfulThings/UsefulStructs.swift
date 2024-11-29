@@ -58,7 +58,7 @@ struct Box: View {
 }
 
 struct CodeSnippetView: View {
-    let code: String
+    @State var code: String = ""
     @State var clicked = false
     
     var body: some View {
@@ -74,11 +74,10 @@ struct CodeSnippetView: View {
                         .stroke(Color.gray.opacity(0.5), lineWidth: 1)
                 )
             
-            Button(action: { 
-                UIPasteboard.general.string = code.replacingOccurrences(of: "-", with: "").prefix(13).uppercased()
+            Button(action: {
+                UIPasteboard.general.string = replaceSchoologyExtras(code)
                 
-                //then also count and make sure it is staying less than schoology code limit
-                dropper(title: "Copied!", subtitle: "\(code)", icon: UIImage(systemName: "checkmark"))
+                dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
                 clicked = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     clicked = false
@@ -103,6 +102,11 @@ struct CodeSnippetView: View {
                 
             }
         }
+        
+     
     }
 }
 
+func replaceSchoologyExtras(_ string: String) -> String {
+    return string.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
+}

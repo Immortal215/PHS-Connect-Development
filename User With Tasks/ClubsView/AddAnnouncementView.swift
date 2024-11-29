@@ -28,7 +28,7 @@ struct AddAnnouncementSheet: View {
                     .padding(.horizontal)
 
                 Spacer()
-
+                
                 HStack {
                     Button("Cancel") {
                         presentationMode.wrappedValue.dismiss()

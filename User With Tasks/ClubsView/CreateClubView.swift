@@ -27,210 +27,30 @@ struct CreateClubView: View {
     @State var memberDisclosureExpanded = false
     @State var leaderDisclosureExpanded = false
     @State var genreDisclosureExpanded = false
-
+    @State var clubType = "Course"
     
     var viewCloser: (() -> Void)?
     
     @State var CreatedClub : Club = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
     @State var clubs: [Club] = []
-
+    
     var body: some View {
-        ScrollView {
-            TextField("Club Name (Required)", text: $clubTitle)
-                .padding()
-            
-            TextField("Club Description (Required)", text: $clubDesc)
-                .padding()
-            
-            TextField("Club Abstract (Required)", text: $clubAbstract)
-                .padding()
-            
-            DisclosureGroup("Edit Leaders (Required)", isExpanded: $leaderDisclosureExpanded) {
-                
-                HStack {
-                    TextField("Add Leader Email(s) (Required)", text: $addLeaderText)
-                        .padding()
-                        .changeEffect(.shake(rate: .fast), value: leaderTextShake)
-                        .onSubmit {
-                            addLeaderFunc()
-                        }
-                    
-                    Button {
-                        addLeaderFunc()
-                    } label: {
-                        Image(systemName: "plus")
-                            .foregroundStyle(.green)
-                    }
-                    .padding()
-                    
-                    if !leaders.isEmpty {
-                        Button {
-                            leaders.removeLast()
-                            addLeaderText = ""
-                        } label: {
-                            Image(systemName: "minus")
-                                .foregroundStyle(.red)
-                        }
-                        .padding()
-                    }
-                }
-                .padding()
-                
-                ScrollView {
-                    ForEach(leaders, id: \.self) { i in
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 5)
-                                .stroke(.gray, lineWidth: 3)
-                            
-                            Text("\(i)")
-                                .padding()
-                            
-                        }
-                        .fixedSize()
-                    }
-                }
-                .padding()
-                
-            }
-            .padding()
         
-            TextField("Schoology Code (Required)", text: $schoology)
-                .padding()
-
-            TextField("Club Location (Required)", text: $location)
-                .padding()
-                        
-            TextField("Club Photo URL (Optional)", text: $clubPhoto)
-                .padding()
-            
-            TextField("Normal Meeting Times (Optional)", text: $normalMeet)
-                .padding()
-            
-            DisclosureGroup("Edit Members", isExpanded: $memberDisclosureExpanded) {
-                VStack {
-                    HStack {
-                        TextField("Add Member Email(s) ", text: $addMemberText)
-                            .padding()
-                            .onSubmit {
-                                addMemberFunc()
-                            }
-                            .changeEffect(.shake(rate: .fast), value: memberTextShake)
-                        
-                        Button {
-                            addMemberFunc()
-                        } label: {
-                            Image(systemName: "plus")
-                                .foregroundStyle(.green)
-                        }
-                        .padding()
-                        
-                        if !members.isEmpty {
-                            Button {
-                                members.removeLast()
-                                addMemberText = ""
-                            } label: {
-                                Image(systemName: "minus")
-                                    .foregroundStyle(.red)
-                            }
-                            .padding()
-                        }
-                    }
-                    .padding()
-                    
-                    ScrollView {
-                        ForEach(members, id: \.self) { i in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 5)
-                                    .stroke(.gray, lineWidth: 3)
-                                
-                                Text("\(i)")
-                                    .padding()
-                            }
-                            .fixedSize()
-                        }
-                    }
-                    .padding()
-                }
-
-            }
-            .padding()
-            
-            DisclosureGroup("Edit Genres", isExpanded: $genreDisclosureExpanded) {
-                
-                LabeledContent {
-                    Picker(selection: $genrePicker) {
-                        Text("Competitive").tag("Competitive")
-                        Text("Non-Competitive").tag("Non-Competitive")
-                        Section("Subjects") {
-                            Text("Math").tag("Math")
-                            Text("Science").tag("Science")
-                            Text("Reading").tag("Reading")
-                            Text("History").tag("History")
-                            Text("Business").tag("Business")
-                            Text("Technology").tag("Technology")
-                            Text("Art").tag("Art")
-                            Text("Fine Arts").tag("Fine Arts")
-                            Text("Speaking").tag("Speaking")
-                        }
-                        Section("Descriptors") {
-                            Text("Cultural").tag("Cultural")
-                            Text("Physical").tag("Physical")
-                            Text("Mental").tag("Mental")
-                            Text("Safe Space").tag("Safe Space")
-                        }
-                    }
-                    .padding()
-                    
-                    Button {
-                        if !genres.contains(genrePicker) && genrePicker != "" {
-                            genres.append(genrePicker)
-                            genrePicker = ""
-                        }
-                    } label: {
-                        Image(systemName: "plus")
-                            .foregroundStyle(.green)
-                    }
-                    .padding()
-                    
-                    if !genres.isEmpty {
-                        Button {
-                            genres.removeLast()
-                            genrePicker = ""
-                        } label: {
-                            Image(systemName: "minus")
-                                .foregroundStyle(.red)
-                        }
-                        .padding()
-                    }
-                } label: {
-                    Text("Genres")
-                }
-                .padding()
-                
-                ScrollView {
-                    ForEach(genres, id: \.self) { i in
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 5)
-                                .stroke(.gray, lineWidth: 3)
-                            
-                            Text("\(i)")
-                                .padding()
-                        }
-                        .fixedSize()
-                    }
-                }
-                .padding()
-            }
-            .padding()
-            
-            if (clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty) {
-                Button(clubId == "" ? "Create Club" : "Edit Club") {
+        var abletoCreate: Bool {
+            return (clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty)
+        }
+        
+        VStack(alignment: .trailing) {
+            if abletoCreate {
+                Button {
                     if clubId == "" {
                         CreatedClub.clubID = "clubID\(clubs.count + 1)"
                     } else {
                         CreatedClub.clubID = clubId
                     }
-                    CreatedClub.schoologyCode = schoology
+                    
+                    CreatedClub.schoologyCode = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "") + " (\(clubType))"
+                    
                     CreatedClub.name = clubTitle
                     CreatedClub.description = clubDesc
                     CreatedClub.abstract = clubAbstract
@@ -261,28 +81,303 @@ struct CreateClubView: View {
                     
                     addClub(club: CreatedClub)
                     viewCloser?()
+                } label: {
+                    Label {
+                        Text(clubId == "" ? "Create Club" : "Edit Club")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    } icon: {
+                        Image(systemName: clubId == "" ? "plus" : "pencil")
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(clubId == "" ? Color.green : Color.blue)
+                    .cornerRadius(10)
+                    .shadow(radius: 5)
                 }
-                .padding()
-            }
-        }
-        .textFieldStyle(.roundedBorder)
-        .onAppear {
-            leaders = CreatedClub.leaders
-            members = CreatedClub.members
-            clubId = CreatedClub.clubID
-            clubTitle = CreatedClub.name
-            clubDesc = CreatedClub.description
-            clubAbstract = CreatedClub.abstract
-            schoology = CreatedClub.schoologyCode
-            location = CreatedClub.location
-            genres = CreatedClub.genres ?? []
-            if let photo = CreatedClub.clubPhoto {
-                clubPhoto = photo
-            }
-            if let meet = CreatedClub.normalMeetingTime {
-                normalMeet = meet
+                .padding(.top)
+                .padding(.trailing)
+            } else {
+                Button {
+                    
+                } label: {
+                    Label {
+                        Text("Info Not Complete!")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(.yellow)
+                    .cornerRadius(10)
+                    .shadow(radius: 5)
+                }
+                .padding(.top)
+                .padding(.trailing)
             }
             
+            ScrollView {
+                LabeledContent {
+                    TextField("Club Name (Required)", text: $clubTitle)
+                } label: {
+                    Text("Club Name \(clubTitle.isEmpty ? "(Required)" : "")")
+                        .foregroundStyle(clubTitle.isEmpty ? .red : .black)
+                        .bold(clubTitle.isEmpty ? true : false)
+                }
+                .padding()
+ 
+                
+                LabeledContent {
+                    TextField("Club Description (Required)", text: $clubDesc)
+                } label: {
+                    Text("Club Description \(clubDesc.isEmpty ? "(Required)" : "")")
+                        .foregroundStyle(clubDesc.isEmpty ? .red : .black)
+                        .bold(clubDesc.isEmpty ? true : false)
+                }
+                .padding()
+                
+                LabeledContent {
+                    TextField("Club Abstract (Required)", text: $clubAbstract)
+                } label: {
+                    Text("Club Abstract \(clubAbstract.isEmpty ? "(Required)" : "")")
+                        .foregroundStyle(clubAbstract.isEmpty ? .red : .black)
+                        .bold(clubAbstract.isEmpty ? true : false)
+                }
+                .padding()
+                
+                DisclosureGroup(isExpanded: $leaderDisclosureExpanded) {
+                    
+                    HStack {
+                        TextField("Add Leader Email(s) (Required)", text: $addLeaderText)
+                            .padding()
+                            .changeEffect(.shake(rate: .fast), value: leaderTextShake)
+                            .onSubmit {
+                                addLeaderFunc()
+                            }
+                        
+                        Button {
+                            addLeaderFunc()
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(.green)
+                        }
+                        .padding()
+                        
+                        if !leaders.isEmpty {
+                            Button {
+                                leaders.removeLast()
+                                addLeaderText = ""
+                            } label: {
+                                Image(systemName: "minus")
+                                    .foregroundStyle(.red)
+                            }
+                            .padding()
+                        }
+                    }
+                    .padding()
+                    
+                    ScrollView {
+                        ForEach(leaders, id: \.self) { i in
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(.gray, lineWidth: 3)
+                                
+                                Text("\(i)")
+                                    .padding()
+                                
+                            }
+                            .fixedSize()
+                        }
+                    }
+                    .padding()
+                    
+                } label: {
+                    Text("Edit Leaders \(leaders.isEmpty ? "(Required)" : "")")
+                        .foregroundStyle(leaders.isEmpty ? .red : .black)
+                        .bold(leaders.isEmpty ? true : false)
+                }
+                .padding()
+                
+                LabeledContent {
+                    TextField("Schoology Code (Required)", text: $schoology)
+                        .onAppear {
+                            clubType = schoology.contains("Course") ? "Course" : "Group"
+                            
+                            schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
+                        }
+                    
+                    Picker(selection: $clubType) {
+                        Section("Club Type") {
+                            Text("Course").tag("Course")
+                            Text("Group").tag("Group")
+                        }
+                    }
+                } label: {
+                    Text("Schoology Code \(schoology.isEmpty ? "(Required)" : "")")
+                        .foregroundStyle(schoology.isEmpty ? .red : .black)
+                        .bold(schoology.isEmpty ? true : false)
+                }
+                .padding()
+                
+                LabeledContent {
+                    TextField("Club Location (Required)", text: $location)
+                        .padding()
+                } label: {
+                    Text("Club Location \(location.isEmpty ? "(Required)" : "")")
+                        .foregroundStyle(location.isEmpty ? .red : .black)
+                        .bold(location.isEmpty ? true : false)
+                }
+                .padding()
+                
+                LabeledContent("Club Photo URL") {
+                    TextField("Club Photo URL", text: $clubPhoto)
+                }
+                .padding()
+                
+                LabeledContent("Normal Meeting Times") {
+                    TextField("Normal Meeting Times", text: $normalMeet)
+                }
+                .padding()
+                
+                DisclosureGroup("Edit Members", isExpanded: $memberDisclosureExpanded) {
+                    VStack {
+                        HStack {
+                            TextField("Add Member Email(s) ", text: $addMemberText)
+                                .padding()
+                                .onSubmit {
+                                    addMemberFunc()
+                                }
+                                .changeEffect(.shake(rate: .fast), value: memberTextShake)
+                            
+                            Button {
+                                addMemberFunc()
+                            } label: {
+                                Image(systemName: "plus")
+                                    .foregroundStyle(.green)
+                            }
+                            .padding()
+                            
+                            if !members.isEmpty {
+                                Button {
+                                    members.removeLast()
+                                    addMemberText = ""
+                                } label: {
+                                    Image(systemName: "minus")
+                                        .foregroundStyle(.red)
+                                }
+                                .padding()
+                            }
+                        }
+                        .padding()
+                        
+                        ScrollView {
+                            ForEach(members, id: \.self) { i in
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(.gray, lineWidth: 3)
+                                    
+                                    Text("\(i)")
+                                        .padding()
+                                }
+                                .fixedSize()
+                            }
+                        }
+                        .padding()
+                    }
+                    
+                }
+                .padding()
+                
+                DisclosureGroup("Edit Genres", isExpanded: $genreDisclosureExpanded) {
+                    
+                    LabeledContent {
+                        Picker(selection: $genrePicker) {
+                            Text("Competitive").tag("Competitive")
+                            Text("Non-Competitive").tag("Non-Competitive")
+                            Section("Subjects") {
+                                Text("Math").tag("Math")
+                                Text("Science").tag("Science")
+                                Text("Reading").tag("Reading")
+                                Text("History").tag("History")
+                                Text("Business").tag("Business")
+                                Text("Technology").tag("Technology")
+                                Text("Art").tag("Art")
+                                Text("Fine Arts").tag("Fine Arts")
+                                Text("Speaking").tag("Speaking")
+                            }
+                            Section("Descriptors") {
+                                Text("Cultural").tag("Cultural")
+                                Text("Physical").tag("Physical")
+                                Text("Mental").tag("Mental")
+                                Text("Safe Space").tag("Safe Space")
+                            }
+                        }
+                        .padding()
+                        
+                        Button {
+                            if !genres.contains(genrePicker) && genrePicker != "" {
+                                genres.append(genrePicker)
+                                genrePicker = ""
+                            }
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(.green)
+                        }
+                        .padding()
+                        
+                        if !genres.isEmpty {
+                            Button {
+                                genres.removeLast()
+                                genrePicker = ""
+                            } label: {
+                                Image(systemName: "minus")
+                                    .foregroundStyle(.red)
+                            }
+                            .padding()
+                        }
+                    } label: {
+                        Text("Genres")
+                    }
+                    .padding()
+                    
+                    ScrollView {
+                        ForEach(genres, id: \.self) { i in
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(.gray, lineWidth: 3)
+                                
+                                Text("\(i)")
+                                    .padding()
+                            }
+                            .fixedSize()
+                        }
+                    }
+                    .padding()
+                }
+                .padding()
+                
+            }
+            .textFieldStyle(.roundedBorder)
+            .onAppear {
+                leaders = CreatedClub.leaders
+                members = CreatedClub.members
+                clubId = CreatedClub.clubID
+                clubTitle = CreatedClub.name
+                clubDesc = CreatedClub.description
+                clubAbstract = CreatedClub.abstract
+                schoology = CreatedClub.schoologyCode
+                location = CreatedClub.location
+                genres = CreatedClub.genres ?? []
+                if let photo = CreatedClub.clubPhoto {
+                    clubPhoto = photo
+                }
+                if let meet = CreatedClub.normalMeetingTime {
+                    normalMeet = meet
+                }
+                
+            }
         }
     }
     
@@ -291,29 +386,29 @@ struct CreateClubView: View {
         if (addLeaderText.contains("d214.org") || addLeaderText.contains("gmail.com")) && leaders.contains(addLeaderText) == false {
             if addLeaderText.contains(",") {
                 let splitLeaders = addLeaderText.split(separator: ",")
-                 for i in splitLeaders {
-                     leaders.append(String(i).lowercased())
-                 }
-                 addLeaderText = ""
+                for i in splitLeaders {
+                    leaders.append(String(i).lowercased())
+                }
+                addLeaderText = ""
                 
             } else if addLeaderText.contains("/") {
                 let splitLeaders = addLeaderText.split(separator: "/")
-                 for i in splitLeaders {
-                     leaders.append(String(i).lowercased())
-                 }
-                 addLeaderText = ""
+                for i in splitLeaders {
+                    leaders.append(String(i).lowercased())
+                }
+                addLeaderText = ""
             } else if addLeaderText.contains(";") {
                 let splitLeaders = addLeaderText.split(separator: ";")
-                 for i in splitLeaders {
-                     leaders.append(String(i).lowercased())
-                 }
-                 addLeaderText = ""
+                for i in splitLeaders {
+                    leaders.append(String(i).lowercased())
+                }
+                addLeaderText = ""
             } else if addLeaderText.contains("-") {
                 let splitLeaders = addLeaderText.split(separator: "-")
-                 for i in splitLeaders {
-                     leaders.append(String(i).lowercased())
-                 }
-                 addLeaderText = ""
+                for i in splitLeaders {
+                    leaders.append(String(i).lowercased())
+                }
+                addLeaderText = ""
             } else {
                 leaders.append(addLeaderText.lowercased())
                 addLeaderText = ""
@@ -330,8 +425,8 @@ struct CreateClubView: View {
             if addMemberText.contains(",") {
                 let splitMembers = addMemberText.split(separator: ",")
                 for i in splitMembers {
-                     members.append(String(i).lowercased())
-                 }
+                    members.append(String(i).lowercased())
+                }
                 addMemberText = ""
                 
             }  else {
