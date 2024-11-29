@@ -39,6 +39,22 @@ func fetchClubs(completion: @escaping ([Club]) -> Void) {
     }
 }
 
+func fetchClub(withId clubId: String, completion: @escaping (Club?) -> Void) {
+    let reference = Database.database().reference().child("clubs").child(clubId)
+    
+    reference.observeSingleEvent(of: .value) { snapshot in
+        guard let value = snapshot.value as? [String: Any],
+              let jsonData = try? JSONSerialization.data(withJSONObject: value),
+              let club = try? JSONDecoder().decode(Club.self, from: jsonData) else {
+            completion(nil)
+            return
+        }
+        
+        completion(club)
+    }
+}
+
+
 func addClubToUser(userID: String, clubID: String) {
     let reference = Database.database().reference()
     let userClubReference = reference.child("users").child(userID).child("clubsAPartOf")
