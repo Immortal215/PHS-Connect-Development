@@ -49,7 +49,7 @@ struct ClubInfoView: View {
                                 CreateClubView(viewCloser: {
                                     showEditScreen = false
                                     fetchClub(withId: club.clubID) { fetchedClub in
-                                        self.club = fetchedClub ?? self.club
+                                        club = fetchedClub ?? club
                                     }
                                 }, CreatedClub: club)
                                 .presentationDetents([.medium, .large])

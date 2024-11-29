@@ -104,10 +104,16 @@ struct ClubView: View {
                                             var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                             
                                             Button {
-                                                shownInfo = infoRelativeIndex
-                                                advSearchShown = true
+                                                fetchClub(withId: club.clubID) { cluber in
+                                                    clubs[infoRelativeIndex] = cluber ?? club
+                                                }
+                                                
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                                    shownInfo = infoRelativeIndex
+                                                    advSearchShown = true
+                                                }
                                             } label: {
-                                                ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
+                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                             }
                                             .frame(maxWidth: screenWidth/2.2)
                                             .padding(.vertical, 3)
@@ -143,9 +149,9 @@ struct ClubView: View {
                                             } label: {
                                                 ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                             }
-                                            .frame(width: screenWidth/2.1, height: screenHeight/4)
+                                            .frame(width: screenWidth/2.5, height: screenHeight/4)
                                             .padding(.vertical, 3)
-                                            .padding(.horizontal)
+                                            .padding(.horizontal, 4)
                                             .sheet(isPresented: $showClubInfoSheet) {
                                                 fetchClub(withId: club.clubID) { fetchedClub in
                                                     clubs[infoRelativeIndex] = fetchedClub ?? club

@@ -37,7 +37,7 @@ struct CreateClubView: View {
     var body: some View {
         
         var abletoCreate: Bool {
-            return (clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology != "" && location != "" && !leaders.isEmpty)
+            return (clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology.replacingOccurrences(of: "-", with: "").count > 12 && location != "" && !leaders.isEmpty)
         }
         
         VStack(alignment: .trailing) {
@@ -49,8 +49,12 @@ struct CreateClubView: View {
                         CreatedClub.clubID = clubId
                     }
                     
-                    CreatedClub.schoologyCode = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "") + " (\(clubType))"
+                    var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
                     
+                    CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
+                                                String(cutSchool.dropFirst(4).prefix(4)) + "-" +
+                                                String(cutSchool.dropFirst(8).prefix(5)) +
+                                                " (\(clubType))"
                     CreatedClub.name = clubTitle
                     CreatedClub.description = clubDesc
                     CreatedClub.abstract = clubAbstract
@@ -127,7 +131,7 @@ struct CreateClubView: View {
                         .bold(clubTitle.isEmpty ? true : false)
                 }
                 .padding()
- 
+                
                 
                 LabeledContent {
                     TextField("Club Description (Required)", text: $clubDesc)
@@ -200,13 +204,16 @@ struct CreateClubView: View {
                 }
                 .padding()
                 
+                // schoology code
                 LabeledContent {
                     TextField("Schoology Code (Required)", text: $schoology)
+                        .padding()
                         .onAppear {
-                            clubType = schoology.contains("Course") ? "Course" : "Group"
-                            
-                            schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
-                        }
+                        clubType = schoology.contains("Course") ? "Course" : "Group"
+                        
+                        schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
+                    }
+
                     
                     Picker(selection: $clubType) {
                         Section("Club Type") {
@@ -214,10 +221,11 @@ struct CreateClubView: View {
                             Text("Group").tag("Group")
                         }
                     }
+                    
                 } label: {
-                    Text("Schoology Code \(schoology.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(schoology.isEmpty ? .red : .black)
-                        .bold(schoology.isEmpty ? true : false)
+                    Text("Schoology Code \(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? "(Required)" : "")")
+                        .foregroundStyle(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? .red : .black)
+                        .bold(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? true : false)
                 }
                 .padding()
                 
@@ -380,7 +388,7 @@ struct CreateClubView: View {
             }
         }
     }
-    
+
     func addLeaderFunc() {
         addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
         if (addLeaderText.contains("d214.org") || addLeaderText.contains("gmail.com")) && leaders.contains(addLeaderText) == false {
