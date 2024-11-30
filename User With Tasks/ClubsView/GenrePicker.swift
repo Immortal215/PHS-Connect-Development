@@ -3,34 +3,43 @@ import SwiftUI
 struct MultiGenrePickerView: View {
     @State var selectedGenres: [String] = []
     @AppStorage("searchText") var searchText: String = ""
-
+    
     private let genres: [String: [String]] = [
-        "General": ["Competitive", "Non-Competitive"],
+        "Types": ["Competitive", "Non-Competitive"],
         "Subjects": ["Math", "Science", "Reading", "History", "Business", "Technology", "Art", "Fine Arts", "Speaking"],
         "Descriptors": ["Cultural", "Physical", "Mental", "Safe Space"]
     ]
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 20) {
-                ForEach(genres.keys.sorted(), id: \.self) { section in
-                    Section(header: Text(section).font(.headline)) {
-                        FlowLayout(alignment: .leading) {
-                            ForEach(genres[section]!, id: \.self) { genre in
-                                GenreTag(genre: genre, isSelected: selectedGenres.contains(genre)) {
-                                    toggleGenreSelection(genre)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
+                        Section(header: Text(section).font(.headline)) {
+                            FlowLayout(alignment: .leading) {
+                                ForEach(genres[section]!, id: \.self) { genre in
+                                    GenreTag(genre: genre, isSelected: selectedGenres.contains(genre)) {
+                                        toggleGenreSelection(genre)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .padding()
             }
-            .padding()
             
             Spacer()
         }
         .onChange(of: selectedGenres) { newValue in
             searchText = newValue.joined(separator: ", ")
+        }
+        .onAppear {
+            for i in searchText.split(separator: ", ") {
+                if !selectedGenres.contains(String(i)) {
+                    selectedGenres.append(String(i))
+                }
+            }
         }
     }
     
@@ -47,7 +56,7 @@ struct GenreTag: View {
     let genre: String
     let isSelected: Bool
     let onTap: () -> Void
-
+    
     var body: some View {
         Text(genre)
             .padding(.horizontal, 10)
@@ -59,6 +68,7 @@ struct GenreTag: View {
                 onTap()
             }
             .fixedSize(horizontal: true, vertical: false)
+        
     }
 }
 
@@ -68,7 +78,7 @@ struct FlowLayout<Content: View>: View {
     @ViewBuilder var content: () -> Content
     @AppStorage("advSearchShown") var advSearchShown = false
     @State var screenWidth = UIScreen.main.bounds.width
-
+    
     var body: some View {
         if advSearchShown {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: screenWidth/8.1), alignment: alignment)], spacing: 10) {

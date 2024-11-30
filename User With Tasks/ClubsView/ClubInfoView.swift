@@ -11,7 +11,6 @@ struct ClubInfoView: View {
     @State var club : Club
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
-    @State var searchText = ""
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var createClubToggler = false
@@ -19,9 +18,12 @@ struct ClubInfoView: View {
     @State var showAddAnnouncement = false
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
-    @State var currentSearchingBy = "name"
     @State var whoCanSeeWhat = false
-    
+    @AppStorage("searchingBy") var currentSearchingBy = "Name"
+    @AppStorage("searchText") var searchText = ""
+    @AppStorage("advSearchShown") var advSearchShown = false
+    @AppStorage("tagsExpanded") var tagsExpanded = true
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -52,7 +54,6 @@ struct ClubInfoView: View {
                                         club = fetchedClub ?? club
                                     }
                                 }, CreatedClub: club)
-                                .presentationDetents([.medium, .large])
                                 .presentationDragIndicator(.visible)
                             }
                             .padding()
@@ -204,13 +205,38 @@ struct ClubInfoView: View {
                 }
                 
                 if let genres = club.genres, !genres.isEmpty {
-                    Text("Genres:")
-                        .font(.headline)
-                    Text(genres.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", "))
-                        .font(.subheadline)
-                        .foregroundStyle(.blue)
-                        .padding(.top, -8)
+                    VStack(alignment: .leading) {
+                        Text("Genres:")
+                            .font(.headline)
+                        
+                        HStack {
+                            ForEach(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }, id: \.self) { genre in
+                                HStack(spacing: 0) {
+                                    Button(action: {
+                                        tagsExpanded = false 
+                                        advSearchShown = true
+                                        currentSearchingBy = "Genre"
+                                        searchText = genre
+                                    }) {
+                                        Text(genre)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.blue)
+                                            .padding(6)
+                                            .background(Color.blue.opacity(0.2))
+                                            .cornerRadius(8)
+                                    }
+                                    
+                                    if genre != genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }.last {
+                                        Text(", ")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.gray)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+
                 
                 Text("Location:")
                     .font(.headline)

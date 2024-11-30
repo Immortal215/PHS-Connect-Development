@@ -20,7 +20,7 @@ struct SearchClubView: View {
     @AppStorage("searchingBy") var currentSearchingBy = "name"
     @State var createClubToggler = false
     @State var searchCategories = ["Name", "Info", "Genre"]
-    @State var tagsExpanded = true
+    @AppStorage("tagsExpanded") var tagsExpanded = true
     
     var body: some View {
         var filteredItems: [Club] {
@@ -111,7 +111,6 @@ struct SearchClubView: View {
                         ZStack(alignment: .leading) {
                             HStack {
                                 SearchBar("Search all clubs by",text: $searchText, isEditing: $isSearching)
-                                    .showsCancelButton(isSearching)
                                     .padding()
                                     .disabled(currentSearchingBy == "Genre" ? true : false)
                                 
@@ -127,12 +126,11 @@ struct SearchClubView: View {
                                     }
                                     .sheet(isPresented: $createClubToggler) {
                                         CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
-                                            .presentationDetents([.medium, .large])
                                             .presentationDragIndicator(.visible)
                                     }
                                 }
                             }
-
+                         
                             
                             if searchText == "" {
                                 HStack {
@@ -140,6 +138,7 @@ struct SearchClubView: View {
                                         ForEach(searchCategories, id: \.self) { category in
                                             Button(action: {
                                                 currentSearchingBy = category
+                                                tagsExpanded = true 
                                             }) {
                                                 Text(category)
                                             }
@@ -158,9 +157,17 @@ struct SearchClubView: View {
                         
                         if currentSearchingBy == "Genre" {
                             DisclosureGroup("Club Tags", isExpanded: $tagsExpanded) {
-                                MultiGenrePickerView()
+                                    ScrollView {
+                                        
+                                        MultiGenrePickerView()
+                                      
+                                    }
+                                
                             }
-                            .frame(width: screenWidth/2.2, height: screenHeight/2.5)
+                            .frame(maxWidth: screenWidth/2.2, maxHeight: screenHeight/2.5)
+                            .padding(.top, tagsExpanded ? 36 : -20)
+                            .animation(.easeInOut)
+                           
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
@@ -173,7 +180,7 @@ struct SearchClubView: View {
                             
                             Button {
                                 if shownInfo != infoRelativeIndex {
-                                    shownInfo = -1 // needed to reset the clubInfoView
+                                    shownInfo = -1 // needed to reset the clubInfoView so data reset idk why
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                         shownInfo = infoRelativeIndex
                                     }

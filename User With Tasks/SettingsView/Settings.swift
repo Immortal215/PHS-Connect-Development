@@ -68,6 +68,7 @@ struct Settings: View {
             
             FeatureReportButton()
         }
+        .animation(.snappy)
         .onAppear {
             if !viewModel.isGuestUser {
                 

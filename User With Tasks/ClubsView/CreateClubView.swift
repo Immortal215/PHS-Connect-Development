@@ -209,7 +209,9 @@ struct CreateClubView: View {
                     TextField("Schoology Code (Required)", text: $schoology)
                         .padding()
                         .onAppear {
-                        clubType = schoology.contains("Course") ? "Course" : "Group"
+                            if schoology != "" {
+                                clubType = schoology.contains("Course") ? "Course" : "Group"
+                            }
                         
                         schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
                     }

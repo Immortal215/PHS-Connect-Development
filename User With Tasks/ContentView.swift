@@ -106,50 +106,36 @@ struct ContentView: View {
                             
                             // tab bar view
                             VStack {
-//                                HStack {
-//                                    CUIExpandableButton(
-//                                        expanded: $expanded,
-//                                        sfSymbolName: "envelope.fill"
-//                                    ) {
-//                                        Text("My content")
-//                                            .frame(width: 200)
-//                                            .padding(8)
-//                                    }
-//                                    .title("Inbox")
-//                                    .subtitle("5 unread messages")
-//                                    .padding()
-//                                    Spacer()
-//                                }
-
-                                Spacer()
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .foregroundStyle(.gray)
-                                        .frame(height: 60)
-                                        .shadow(color:.gray, radius: 5)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .opacity(0.8)
-//                                    VisualEffectBlurView(blurStyle: .systemUltraThinMaterial)
-//                                        .frame(height: 60)
-//                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    Spacer()
                                     
-                                    HStack {
-                                        TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
-                                            .padding(.horizontal, 100)
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .foregroundStyle(.gray)
+                                            .frame(height: 60)
+                                            .shadow(color:.gray, radius: 5)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .opacity(0.8)
+                                        //                                    VisualEffectBlurView(blurStyle: .systemUltraThinMaterial)
+                                        //                                        .frame(height: 60)
+                                        //                                        .clipShape(RoundedRectangle(cornerRadius: 10))
                                         
-                                        TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
-                                            .padding(.horizontal, 100)
+                                        HStack {
+                                            TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
+                                                .padding(.horizontal, 100)
+                                            
+                                            TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
+                                                .padding(.horizontal, 100)
+                                            
+                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                                .padding(.horizontal, 100)
+                                            
+                                            
+                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                                .padding(.horizontal, 100)
+                                        }
                                         
-                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
-                                            .padding(.horizontal, 100)
-                                        
-                                        
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
-                                            .padding(.horizontal, 100)
                                     }
-                                    
-                                }
-                                .padding()
+                                
                             }
                         }
                         
@@ -181,6 +167,8 @@ struct ContentView: View {
             advSearchShown = false
             searchText = ""
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+
     }
    
 }

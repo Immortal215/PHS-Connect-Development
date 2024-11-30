@@ -16,7 +16,7 @@ struct ClubView: View {
     var viewModel: AuthenticationViewModel
     @AppStorage("advSearchShown") var advSearchShown = false
     @State var searchBarExpanded = true
-    @State var tagsExpanded = true
+    @AppStorage("tagsExpanded") var tagsExpanded = true
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
@@ -143,12 +143,14 @@ struct ClubView: View {
                                 }
                             })
                             .disabled(currentSearchingBy == "Genre" ? true : false)
+                          
                             
                             if searchText == "" {
                                 HStack {
                                     Menu {
                                         ForEach(searchCategories, id: \.self) { category in
                                             Button(action: {
+                                                tagsExpanded = true 
                                                 currentSearchingBy = category
                                             }) {
                                                 Text(category)
@@ -165,11 +167,16 @@ struct ClubView: View {
                                 .offset(x: screenWidth/7)
                             }
                         }
+                      
                         
                         if currentSearchingBy == "Genre" {
                             DisclosureGroup("Club Tags", isExpanded: $tagsExpanded) {
                                 MultiGenrePickerView()
                             }
+                            .padding()
+                            .padding(.top, tagsExpanded ? 4 : 0)
+                            .animation(.easeInOut)
+                            
                         }
                         
                         if searchText != "" {
@@ -268,6 +275,7 @@ struct ClubView: View {
                         
                     }
                 }
+                .animation(.snappy)
             }
             
         }
