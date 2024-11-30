@@ -13,12 +13,14 @@ struct SearchClubView: View {
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @AppStorage("shownInfo") var shownInfo = -1
-    @State var searchText = ""
+    @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var isSearching = false
-    @State var currentSearchingBy = "name"
-    @State var createClubToggler = false 
+    @AppStorage("searchingBy") var currentSearchingBy = "name"
+    @State var createClubToggler = false
+    @State var searchCategories = ["Name", "Info", "Genre"]
+    @State var tagsExpanded = true
     
     var body: some View {
         var filteredItems: [Club] {
@@ -33,17 +35,51 @@ struct SearchClubView: View {
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
             } else {
-                return clubs
-                    .filter {
-                        $0.name.localizedCaseInsensitiveContains(searchText)
+                switch currentSearchingBy {
+                    case "Name":
+                        return clubs
+                            .filter {
+                                $0.name.localizedCaseInsensitiveContains(searchText)
+                            }
+                            .sorted {
+                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                            }
+                            .sorted {
+                                userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                                !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                            }
+                    case "Info":
+                        return clubs
+                            .filter {
+                                $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText)
+                            }
+                            .sorted {
+                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                            }
+                            .sorted {
+                                userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                                !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                            }
+                    case "Genre":
+                        let searchKeywords = searchText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                        
+                        return clubs
+                            .filter { club in
+                                guard let genres = club.genres else { return false }
+                                return searchKeywords.allSatisfy { keyword in genres.contains(keyword) } // satisfies that all tags are in genres
+                            }
+                            .sorted {
+                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                            }
+                            .sorted {
+                                userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                                !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                            }
+
+                    default:
+                        return clubs
                     }
-                    .sorted {
-                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                    }
-                    .sorted {
-                        userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-                        !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                }
+
             }
         }
         
@@ -71,30 +107,65 @@ struct SearchClubView: View {
             
             HStack {
                 VStack {
-                    HStack {
-                        SearchBar("Search all clubs by \(currentSearchingBy)",text: $searchText, isEditing: $isSearching)
-                            .showsCancelButton(isSearching)
-                            .padding()
-                            
-                        
-                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
-                            Button {
-                                fetchClubs { fetchedClubs in
-                                    self.clubs = fetchedClubs
+                    ScrollView {
+                        ZStack(alignment: .leading) {
+                            HStack {
+                                SearchBar("Search all clubs by",text: $searchText, isEditing: $isSearching)
+                                    .showsCancelButton(isSearching)
+                                    .padding()
+                                    .disabled(currentSearchingBy == "Genre" ? true : false)
+                                
+                                if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
+                                    Button {
+                                        fetchClubs { fetchedClubs in
+                                            self.clubs = fetchedClubs
+                                        }
+                                        createClubToggler = true
+                                    } label: {
+                                        Image(systemName: "plus")
+                                            .foregroundStyle(.green)
+                                    }
+                                    .sheet(isPresented: $createClubToggler) {
+                                        CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
+                                            .presentationDetents([.medium, .large])
+                                            .presentationDragIndicator(.visible)
+                                    }
                                 }
-                                createClubToggler = true
-                            } label: {
-                                Image(systemName: "plus")
-                                    .foregroundStyle(.green)
                             }
-                            .sheet(isPresented: $createClubToggler) {
-                                CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
-                                    .presentationDetents([.medium, .large])
-                                    .presentationDragIndicator(.visible)
+
+                            
+                            if searchText == "" {
+                                HStack {
+                                    Menu {
+                                        ForEach(searchCategories, id: \.self) { category in
+                                            Button(action: {
+                                                currentSearchingBy = category
+                                            }) {
+                                                Text(category)
+                                            }
+                                        }
+                                    } label: {
+                                        Text(currentSearchingBy)
+                                            .font(.headline)
+                                            .foregroundColor(.blue)
+                                            .padding(.leading, 8)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .offset(x: screenWidth/6.6)
                             }
                         }
+                        
+                        if currentSearchingBy == "Genre" {
+                            DisclosureGroup("Club Tags", isExpanded: $tagsExpanded) {
+                                MultiGenrePickerView()
+                            }
+                            .frame(width: screenWidth/2.2, height: screenHeight/2.5)
+                        }
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                     
+
                     // clubs view with search
                     ScrollView {
                         ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
@@ -137,7 +208,6 @@ struct SearchClubView: View {
                 VStack {
                     if shownInfo >= 0 {
                         ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
-                        
                         //  .padding(.trailing, 16)
                     } else {
                         Text("Choose a Club!")

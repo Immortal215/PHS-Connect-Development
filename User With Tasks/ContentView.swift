@@ -15,6 +15,9 @@ struct ContentView: View {
     @State var screenWidth = UIScreen.main.bounds.width
     @StateObject var networkMonitor = NetworkMonitor()
     @State var expanded = false
+    @AppStorage("advSearchShown") var advSearchShown = false
+    @AppStorage("searchText") var searchText: String = ""
+
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -173,6 +176,10 @@ struct ContentView: View {
         }
         .onChange(of: selectedTab) {
                 _ = networkMonitor.isConnected
+        }
+        .onAppear {
+            advSearchShown = false
+            searchText = ""
         }
     }
    

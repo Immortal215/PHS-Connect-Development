@@ -101,11 +101,13 @@ struct ClubCard: View {
                                     for: viewModel.uid ?? "",
                                     clubID: club.clubID
                                 )
+                                
                                 if let UserID = viewModel.uid {
                                     fetchUser(for: UserID) { user in
                                         userInfo = user
                                     }
                                 }
+                                
                                 dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart")
                                 )
                             } else {
