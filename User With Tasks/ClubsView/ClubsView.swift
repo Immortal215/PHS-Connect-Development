@@ -15,7 +15,7 @@ struct ClubView: View {
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
     @AppStorage("advSearchShown") var advSearchShown = false
-    @State var searchBarExpanded = true
+    @State var searchBarExpanded = false
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
