@@ -271,11 +271,8 @@ struct ClubView: View {
                             }
                         }
                         .padding()
-                        
-                        
                     }
                 }
-                .animation(.snappy)
             }
             
         }
