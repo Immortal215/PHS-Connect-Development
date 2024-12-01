@@ -52,7 +52,6 @@ final class AuthenticationViewModel: ObservableObject {
             self.userImage = userImage
             self.isGuestUser = false
             self.uid = uid
-            
         }
     }
     

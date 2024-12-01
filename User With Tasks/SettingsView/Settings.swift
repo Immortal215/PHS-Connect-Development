@@ -10,6 +10,11 @@ struct Settings: View {
     @Binding var showSignInView: Bool
     @State var favoriteText = ""
     @AppStorage("selectedTab") var selectedTab = 3
+    @AppStorage("userEmail") var userEmail: String?
+    @AppStorage("userName") var userName: String?
+    @AppStorage("userImage") var userImage: String?
+    @AppStorage("userType") var userType: String?
+    @AppStorage("uid") var uid: String?
     
     var body: some View {
         ScrollView {
@@ -48,6 +53,11 @@ struct Settings: View {
                 do {
                     try AuthenticationManager.shared.signOut()
                     showSignInView = true
+                    userEmail = nil
+                    userName = nil
+                    userImage = nil
+                    userType = nil
+                    uid = nil
                 } catch {
                     print("Error signing out: \(error.localizedDescription)")
                 }

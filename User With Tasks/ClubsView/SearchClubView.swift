@@ -17,7 +17,7 @@ struct SearchClubView: View {
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var isSearching = false
-    @AppStorage("searchingBy") var currentSearchingBy = "name"
+    @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @State var createClubToggler = false
     @State var searchCategories = ["Name", "Info", "Genre"]
     @AppStorage("tagsExpanded") var tagsExpanded = true
@@ -213,7 +213,7 @@ struct SearchClubView: View {
                 
                 // club info view
                 VStack {
-                    if shownInfo >= 0 {
+                    if shownInfo >= 0 && !clubs.isEmpty {
                         ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
                         //  .padding(.trailing, 16)
                     } else {
@@ -224,6 +224,19 @@ struct SearchClubView: View {
             }
         }
         .padding()
+        .onAppearOnce {
+                    fetchClubs { fetchedClubs in
+                        self.clubs = fetchedClubs
+                    }
+                    
+                    if !viewModel.isGuestUser {
+                        if let UserID = viewModel.uid {
+                            fetchUser(for: UserID) { user in
+                                userInfo = user
+                            }
+                        }
+                }
+        }
     }
 }
 

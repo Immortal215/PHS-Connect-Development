@@ -164,6 +164,10 @@ struct ContentView: View {
                 _ = networkMonitor.isConnected
         }
         .onAppear {
+            if viewModel.isGuestUser {
+                showSignInView = true 
+            }
+            showSignInView = true 
             advSearchShown = false
             searchText = ""
         }

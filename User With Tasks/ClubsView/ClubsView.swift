@@ -21,7 +21,7 @@ struct ClubView: View {
     @State var showClubInfoSheet = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @State var searchCategories = ["Name", "Info", "Genre"]
-    
+    @AppStorage("selectedTab") var selectedTab = 3
     
     var body: some View {
         
@@ -83,6 +83,17 @@ struct ClubView: View {
                 }
         }
         
+        var filteredClubsEnrolled: [Club] {
+            return clubs
+                .sorted {
+                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                }
+                .filter { club in
+                    (club.leaders.contains(viewModel.userEmail!) || club.members.contains(viewModel.userEmail!))
+                }
+        }
+
+        
         var whoCanSeeWhat: Bool {
             guard shownInfo >= 0, shownInfo < clubs.count else { return false }
             
@@ -104,29 +115,32 @@ struct ClubView: View {
         
         ZStack {
             if advSearchShown {
-                Button {
-                    if !viewModel.isGuestUser {
+                if !viewModel.isGuestUser {
+                    Button {
                         if let UserID = viewModel.uid {
                             fetchUser(for: UserID) { user in
                                 userInfo = user
                             }
                         }
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         
-                        advSearchShown = false
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                            
+                            advSearchShown = false
+                        }
+                        
+                    } label: {
+                        Image(systemName: "chevron.backward")
+                        Text("Back")
                     }
-                    
-                } label: {
-                    Image(systemName: "chevron.backward")
-                    Text("Back")
+                    .position(x: 50, y: 25)
                 }
-                .position(x: 50, y: 25)
                 
                 SearchClubView(clubs: clubs, userInfo: userInfo, shownInfo: shownInfo, viewModel: viewModel)
             } else {
                 ScrollView {
+                    
+                    // searching
                     ScrollView {
                         ZStack(alignment: .leading) {
                             SearchBar("Search All Clubs By", text: $searchText, onCommit: {
@@ -220,75 +234,31 @@ struct ClubView: View {
                     
                     ScrollView {
                         
+                        // Clubs in
+                        HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
+                        
                         // favorited clubs
-                        VStack(alignment: .leading) {
-                            Text("Favorited Clubs")
-                            
-                            ScrollView(.horizontal) {
-                                if !filteredClubsFavorite.isEmpty {
-                                    
-                                    LazyHStack {
-                                        ForEach(Array(filteredClubsFavorite.enumerated()), id: \.element.name) { (index, club) in
-                                            
-                                            let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                            
-                                            Button {
-                                                shownInfo = infoRelativeIndex
-                                                showClubInfoSheet = true
-                                                
-                                            } label: {
-                                                ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
-                                            }
-                                            .frame(width: screenWidth/2.5, height: screenHeight/4)
-                                            .padding(.vertical, 3)
-                                            .padding(.horizontal, 4)
-                                            .sheet(isPresented: $showClubInfoSheet) {
-                                                fetchClub(withId: club.clubID) { fetchedClub in
-                                                    clubs[infoRelativeIndex] = fetchedClub ?? club
-                                                }
-                                            } content: {
-                                                if shownInfo >= 0 {
-                                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
-                                                        .presentationDragIndicator(.visible)
-                                                } else {
-                                                    Text("Error! Try Again!")
-                                                        .presentationDragIndicator(.visible)
-                                                }
-                                            }
-                                            
-                                        }
-                                        
-                                    }
-                                } else {
-                                    Button {
-                                        advSearchShown = true
-                                        
-                                    } label: {
-                                        Text("Add Favorite +")
-                                            .font(.subheadline)
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
+                        HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
                     }
                 }
             }
             
         }
         .onAppear {
-            fetchClubs { fetchedClubs in
-                self.clubs = fetchedClubs
-            }
-            
-            if !viewModel.isGuestUser {
-                if let UserID = viewModel.uid {
-                    fetchUser(for: UserID) { user in
-                        userInfo = user
+                fetchClubs { fetchedClubs in
+                    self.clubs = fetchedClubs
+                }
+                
+                if !viewModel.isGuestUser {
+                    if let UserID = viewModel.uid {
+                        fetchUser(for: UserID) { user in
+                            userInfo = user
+                        }
                     }
+                } else {
+                    advSearchShown = true
                 }
             }
-        }
         
     }
 }
