@@ -102,20 +102,23 @@ struct ClubCard: View {
                                     for: viewModel.uid ?? "",
                                     clubID: club.clubID
                                 )
-                                
-                                if let UserID = viewModel.uid {
-                                    fetchUser(for: UserID) { user in
-                                        userInfo = user
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                    
+                                    if let UserID = viewModel.uid {
+                                        fetchUser(for: UserID) { user in
+                                            userInfo = user
+                                        }
                                     }
                                 }
-                                
-                                dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart")
-                                )
+                                dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
                             } else {
                                 addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                if let UserID = viewModel.uid {
-                                    fetchUser(for: UserID) { user in
-                                        userInfo = user
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                    
+                                    if let UserID = viewModel.uid {
+                                        fetchUser(for: UserID) { user in
+                                            userInfo = user
+                                        }
                                     }
                                 }
                                 dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
