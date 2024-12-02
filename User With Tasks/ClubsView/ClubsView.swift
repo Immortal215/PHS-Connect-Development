@@ -265,7 +265,20 @@ struct ClubView: View {
                 advSearchShown = !advSearchShown
             }
         }
-        
-        
+     .refreshable {
+         fetchClubs { fetchedClubs in
+                self.clubs = fetchedClubs
+            }
+            
+            if !viewModel.isGuestUser {
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
+                    }
+                }
+            } else {
+                advSearchShown = true
+            }
+     }
     }
 }
