@@ -136,7 +136,7 @@ struct CreateClubView: View {
                 LabeledContent {
                     TextField("Club Description (Required)", text: $clubDesc)
                 } label: {
-                    Text("Club Description \(clubDesc.isEmpty ? "(Required)" : "")")
+                    Text("Short Description \(clubDesc.isEmpty ? "(Required)" : "")")
                         .foregroundStyle(clubDesc.isEmpty ? .red : .black)
                         .bold(clubDesc.isEmpty ? true : false)
                 }

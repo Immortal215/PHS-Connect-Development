@@ -89,8 +89,9 @@ struct ClubInfoView: View {
                                     .fixedSize()
                                 }
                                 
-                                Rectangle()
+                                RoundedRectangle(cornerRadius: 5)
                                     .stroke(.black, lineWidth: 3)
+                                    .frame(minWidth: screenWidth/10, minHeight: screenHeight/10)
                             }
                             .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
                         },

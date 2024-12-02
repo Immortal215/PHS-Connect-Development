@@ -189,9 +189,10 @@ struct SearchClubView: View {
                                 }
                             } label: {
                                 // each club
-                                ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 5, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
+                                ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 5.3, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                 .padding(.horizontal)
                                 .padding(.vertical, 3)
+                                .frame(width: screenWidth/2.1, height: screenHeight/4)
                             }
                             .conditionalEffect(
                                 .pushDown,

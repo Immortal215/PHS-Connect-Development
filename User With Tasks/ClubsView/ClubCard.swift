@@ -31,8 +31,8 @@ struct ClubCard: View {
                         ZStack {
                             Image
                                 .resizable()
-                                .scaledToFit()
-                                .clipShape(Rectangle())
+                                 .scaledToFit()
+                                 .clipShape(Rectangle())
                             
                             if club.clubPhoto == nil {
                                 ZStack {
@@ -46,10 +46,11 @@ struct ClubCard: View {
                                 .fixedSize()
                             }
                             
-                            Rectangle()
+                            RoundedRectangle(cornerRadius: 5)
                                 .stroke(.black, lineWidth: 3)
+                                .frame(minWidth: screenWidth/10, minHeight: screenHeight/10)
                         }
-                        .frame(maxWidth: screenWidth/CGFloat(imageScaler), maxHeight: screenHeight/CGFloat(imageScaler))
+                        .frame(minWidth: screenWidth/10, maxWidth: screenWidth/CGFloat(imageScaler), minHeight: screenHeight/10, maxHeight: screenHeight/CGFloat(imageScaler))
                     },
                     placeholder: {
                         ZStack {
@@ -79,7 +80,7 @@ struct ClubCard: View {
                 }
                 .padding()
                 .foregroundStyle(.black)
-                .frame(maxWidth: screenWidth/4)
+                .frame(maxWidth: screenWidth/3)
                 
                 
                 VStack {
@@ -130,9 +131,10 @@ struct ClubCard: View {
                         }
                         .padding(.top)
                     }
+                    
+                    Spacer()
                 }
                 .padding()
-                .padding(.bottom, screenWidth/10)
             }
         }
 

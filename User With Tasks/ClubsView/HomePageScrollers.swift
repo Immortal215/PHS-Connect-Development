@@ -39,7 +39,7 @@ struct HomePageScrollers: View {
                             } label: {
                                 ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                             }
-                            .frame(width: screenWidth/2.5, height: screenHeight/4)
+                            .frame(width: screenWidth/2, height: screenHeight/4)
                             .padding(.vertical, 3)
                             .padding(.horizontal, 4)
                             .sheet(isPresented: $showClubInfoSheet) {
