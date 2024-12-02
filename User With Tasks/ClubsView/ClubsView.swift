@@ -15,7 +15,7 @@ struct ClubView: View {
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
     @AppStorage("advSearchShown") var advSearchShown = false
-    @State var searchBarExpanded = false
+    @State var searchBarExpanded = true
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
@@ -66,7 +66,7 @@ struct ClubView: View {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
-
+                
             default:
                 return clubs
             }
@@ -92,7 +92,7 @@ struct ClubView: View {
                     (club.leaders.contains(viewModel.userEmail!) || club.members.contains(viewModel.userEmail!))
                 }
         }
-
+        
         
         var whoCanSeeWhat: Bool {
             guard shownInfo >= 0, shownInfo < clubs.count else { return false }
@@ -152,19 +152,18 @@ struct ClubView: View {
                                     }
                                 }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                    
                                     advSearchShown = true
                                 }
                             })
                             .disabled(currentSearchingBy == "Genre" ? true : false)
-                          
+                            
                             
                             if searchText == "" {
                                 HStack {
                                     Menu {
                                         ForEach(searchCategories, id: \.self) { category in
                                             Button(action: {
-                                                tagsExpanded = true 
+                                                tagsExpanded = true
                                                 currentSearchingBy = category
                                             }) {
                                                 Text(category)
@@ -181,16 +180,17 @@ struct ClubView: View {
                                 .offset(x: screenWidth/7)
                             }
                         }
-                      
                         
                         if currentSearchingBy == "Genre" {
-                            DisclosureGroup("Club Tags", isExpanded: $tagsExpanded) {
+                            DisclosureGroup("Club Tags \(tagsExpanded ? (searchText == "" ? "(Click to select)" : "(Double-Click to clear)") : "")", isExpanded: $tagsExpanded) {
                                 MultiGenrePickerView()
                             }
                             .padding()
-                            .padding(.top, tagsExpanded ? 4 : 0)
-                            .animation(.easeInOut)
-                            
+                            .animation(.smooth)
+                            .onTapGesture(count: 2) {
+                                searchText = ""
+                                tagsExpanded = false
+                            }
                         }
                         
                         if searchText != "" {
@@ -235,30 +235,37 @@ struct ClubView: View {
                     ScrollView {
                         
                         // Clubs in
-                        HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
+                        HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
                         
                         // favorited clubs
-                        HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
+                        HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
                     }
+                    
                 }
             }
             
         }
         .onAppear {
-                fetchClubs { fetchedClubs in
-                    self.clubs = fetchedClubs
-                }
-                
-                if !viewModel.isGuestUser {
-                    if let UserID = viewModel.uid {
-                        fetchUser(for: UserID) { user in
-                            userInfo = user
-                        }
-                    }
-                } else {
-                    advSearchShown = true
-                }
+            fetchClubs { fetchedClubs in
+                self.clubs = fetchedClubs
             }
+            
+            if !viewModel.isGuestUser {
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
+                    }
+                }
+            } else {
+                advSearchShown = true
+            }
+            
+            advSearchShown = !advSearchShown
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                advSearchShown = !advSearchShown
+            }
+        }
+        
         
     }
 }

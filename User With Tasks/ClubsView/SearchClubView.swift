@@ -156,17 +156,18 @@ struct SearchClubView: View {
                         }
                         
                         if currentSearchingBy == "Genre" {
-                            DisclosureGroup("Club Tags", isExpanded: $tagsExpanded) {
-                                    ScrollView {
-                                        
-                                        MultiGenrePickerView()
-                                      
-                                    }
-                                
+                            DisclosureGroup("Club Tags \(tagsExpanded ? (searchText == "" ? "(Click to select)" : "(Double-Click to clear)") : "")", isExpanded: $tagsExpanded) {
+                                ScrollView {
+                                    MultiGenrePickerView()
+                                }
+                            }
+                            .onTapGesture(count: 2) {
+                                searchText = ""
+                                tagsExpanded = false
                             }
                             .frame(maxWidth: screenWidth/2.2, maxHeight: screenHeight/2.5)
                             .padding(.top, tagsExpanded ? 36 : -20)
-                            .animation(.easeInOut)
+                            .animation(.smooth)
                            
                         }
                     }

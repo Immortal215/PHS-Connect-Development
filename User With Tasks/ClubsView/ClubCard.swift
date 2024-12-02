@@ -120,6 +120,7 @@ struct ClubCard: View {
                                 }
                                 dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
                             }
+                           
                         } label: {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                 Image(systemName: "heart.fill")

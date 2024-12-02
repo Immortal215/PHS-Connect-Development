@@ -15,7 +15,7 @@ struct HomePageScrollers: View {
     @State var viewModel: AuthenticationViewModel
     @State var screenHeight: CGFloat
     @State var screenWidth: CGFloat
-    @State var userInfo: Personal?
+    @State var userInfo: Personal? = nil 
     @State var whoCanSeeWhat: Bool
     @AppStorage("advSearchShown") var advSearchShown = false
     @State var scrollerOf : String
