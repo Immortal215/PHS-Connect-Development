@@ -234,11 +234,13 @@ struct ClubView: View {
                     
                     ScrollView {
                         
-                        // Clubs in
-                        HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
-                        
-                        // favorited clubs
-                        HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
+                        if userInfo?.userID != nil {
+                            // Clubs in
+                            HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
+                            
+                            // favorited clubs
+                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
+                        }
                     }
                     
                 }
@@ -259,15 +261,11 @@ struct ClubView: View {
             } else {
                 advSearchShown = true
             }
-            
-            advSearchShown = !advSearchShown
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                advSearchShown = !advSearchShown
-            }
+
         }
-     .refreshable {
-         fetchClubs { fetchedClubs in
-                self.clubs = fetchedClubs
+        .refreshable {
+            fetchClubs { fetchedClubs in
+                clubs = fetchedClubs
             }
             
             if !viewModel.isGuestUser {
@@ -279,6 +277,7 @@ struct ClubView: View {
             } else {
                 advSearchShown = true
             }
-     }
+            
+        }
     }
 }

@@ -36,50 +36,50 @@ struct SearchClubView: View {
                     }
             } else {
                 switch currentSearchingBy {
-                    case "Name":
-                        return clubs
-                            .filter {
-                                $0.name.localizedCaseInsensitiveContains(searchText)
-                            }
-                            .sorted {
-                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                            }
-                            .sorted {
-                                userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-                                !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                            }
-                    case "Info":
-                        return clubs
-                            .filter {
-                                $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText)
-                            }
-                            .sorted {
-                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                            }
-                            .sorted {
-                                userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-                                !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                            }
-                    case "Genre":
-                        let searchKeywords = searchText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                        
-                        return clubs
-                            .filter { club in
-                                guard let genres = club.genres else { return false }
-                                return searchKeywords.allSatisfy { keyword in genres.contains(keyword) } // satisfies that all tags are in genres
-                            }
-                            .sorted {
-                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                            }
-                            .sorted {
-                                userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-                                !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                            }
-
-                    default:
-                        return clubs
-                    }
-
+                case "Name":
+                    return clubs
+                        .filter {
+                            $0.name.localizedCaseInsensitiveContains(searchText)
+                        }
+                        .sorted {
+                            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                        }
+                        .sorted {
+                            userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                            !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                        }
+                case "Info":
+                    return clubs
+                        .filter {
+                            $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText)
+                        }
+                        .sorted {
+                            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                        }
+                        .sorted {
+                            userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                            !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                        }
+                case "Genre":
+                    let searchKeywords = searchText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    
+                    return clubs
+                        .filter { club in
+                            guard let genres = club.genres else { return false }
+                            return searchKeywords.allSatisfy { keyword in genres.contains(keyword) } // satisfies that all tags are in genres
+                        }
+                        .sorted {
+                            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                        }
+                        .sorted {
+                            userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+                            !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+                        }
+                    
+                default:
+                    return clubs
+                }
+                
             }
         }
         
@@ -130,7 +130,7 @@ struct SearchClubView: View {
                                     }
                                 }
                             }
-                         
+                            
                             
                             if searchText == "" {
                                 HStack {
@@ -138,7 +138,7 @@ struct SearchClubView: View {
                                         ForEach(searchCategories, id: \.self) { category in
                                             Button(action: {
                                                 currentSearchingBy = category
-                                                tagsExpanded = true 
+                                                tagsExpanded = true
                                             }) {
                                                 Text(category)
                                             }
@@ -168,12 +168,12 @@ struct SearchClubView: View {
                             .frame(maxWidth: screenWidth/2.2, maxHeight: screenHeight/2.5)
                             .padding(.top, tagsExpanded ? 36 : -20)
                             .animation(.smooth)
-                           
+                            
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     
-
+                    
                     // clubs view with search
                     ScrollView {
                         ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
@@ -191,9 +191,9 @@ struct SearchClubView: View {
                             } label: {
                                 // each club
                                 ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 5.3, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
-                                .padding(.horizontal)
-                                .padding(.vertical, 3)
-                                .frame(width: screenWidth/2.1, height: screenHeight/4)
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 3)
+                                    .frame(width: screenWidth/2.1, height: screenHeight/4)
                             }
                             .conditionalEffect(
                                 .pushDown,
@@ -209,7 +209,7 @@ struct SearchClubView: View {
                             .frame(height: screenHeight/3, alignment: .top)
                     }
                     .frame(width: screenWidth/2.1)
-
+                    
                     //.padding()
                 }
                 
@@ -227,17 +227,31 @@ struct SearchClubView: View {
         }
         .padding()
         .onAppearOnce {
-                    fetchClubs { fetchedClubs in
-                        self.clubs = fetchedClubs
+            fetchClubs { fetchedClubs in
+                self.clubs = fetchedClubs
+            }
+            
+            if !viewModel.isGuestUser {
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
                     }
-                    
-                    if !viewModel.isGuestUser {
-                        if let UserID = viewModel.uid {
-                            fetchUser(for: UserID) { user in
-                                userInfo = user
-                            }
-                        }
                 }
+            }
+        }
+        .refreshable {
+            fetchClubs { fetchedClubs in
+                clubs = fetchedClubs
+            }
+            
+            if !viewModel.isGuestUser {
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
+                    }
+                }
+            } 
+            
         }
     }
 }
