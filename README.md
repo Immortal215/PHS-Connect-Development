@@ -3,7 +3,7 @@
 ## Overview
 
 > [!NOTE]
-> PHS Connect is designed to provide a structured and interactive platform for students to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
+> PHS Connect is designed to provide a structured and interactive platform for students @ Prospect HS to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
 
 ---
 
@@ -14,7 +14,7 @@
 > [!NOTE]
 >  **Manage clubs effortlessly** 🛠️
 
-- **Leaders and Members:**
+- **Leaders :**
   - Club leaders can manage members, make announcements, set meeting times, and fully edit their clubs.
   - Flexible visibility settings (“All”, “Non-Guests Only”, “Members Only”, “Leaders Only”) ensure sensitive data is displayed appropriately.
 - **Invite-Only Clubs:**
@@ -31,12 +31,12 @@
 ### 3. **Club Discovery**
 
 - Users can:
-  - Browse clubs with a short description and abstract.
-  - View genres, meeting times, announcements, and photos to make informed decisions about joining.
+  - Browse and search through clubs using name, info, or genre. 
+  - View genres, meeting times, announcements, photos, information, and schoology codes to make informed decisions about joining.
 
-### 4. **Custom Calendar View**
+### 4. **Custom Calendar View** (Will ship in 2025)
 
-> 📅 **Stay organized with our unique calendar feature!**
+ 📅 **Stay organized with our unique calendar feature!**
 
 - A unique calendar feature displays meeting times for favorited clubs, independent of Apple’s system calendars.
 
@@ -56,42 +56,8 @@
 
 ## Technical Details
 
-> [!IMPORTANT] **Dive into the technical backbone** 🧑‍💻
-
-### 1. **Models**
-
-#### `Personal`
-
-```swift
-struct Personal: Codable {
-    var favoritedClubs: [String]
-    var subjectPreferences: [String]
-    var clubsAPartOf: [String]
-    var pendingClubRequests: [String]?
-}
-```
-
-#### `Club`
-
-```swift
-struct Club: Codable, Equatable {
-    var leaders: [String] // emails
-    var members: [String] // emails
-    var inviteOnly: Bool
-    var announcements: [String: String]?
-    var meetingTimes: [String: [String]]?
-    var description: String
-    var name: String
-    var schoologyCode: String
-    var genres: [String]?
-    var clubPhoto: String?
-    var abstract: String
-    var showDataWho: String
-    var pendingMemberRequests: [String]?
-    var clubID: String
-
-```
-
+> [!IMPORTANT]
+>  **Dive into the technical backbone** 🧑‍💻
 
 ### 2. **UI Components**
 
