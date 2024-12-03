@@ -251,6 +251,8 @@ struct SearchClubView: View {
                     }
                 }
             }
+
+            sleep(1)
             
             shownInfo = -1
         }
