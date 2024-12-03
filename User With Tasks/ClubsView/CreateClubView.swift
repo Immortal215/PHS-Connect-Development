@@ -41,7 +41,7 @@ struct CreateClubView: View {
     var body: some View {
         
         var abletoCreate: Bool {
-            return (clubTitle != "" && clubDesc != "" && clubAbstract != "" && schoology.replacingOccurrences(of: "-", with: "").count > 12 && location != "" && !leaders.isEmpty)
+            return (clubTitle != "" && clubDesc != "" && clubAbstract != "" && location != "" && !leaders.isEmpty)
         }
         
         VStack(alignment: .trailing) {
@@ -53,12 +53,17 @@ struct CreateClubView: View {
                         CreatedClub.clubID = clubId
                     }
                     
-                    var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
+                    if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
+                        var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
+
+                        CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
+                        String(cutSchool.dropFirst(4).prefix(4)) + "-" +
+                        String(cutSchool.dropFirst(8).prefix(5)) +
+                        " (\(clubType))"
+                    } else {
+                        CreatedClub.schoologyCode = "None"
+                    }
                     
-                    CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
-                    String(cutSchool.dropFirst(4).prefix(4)) + "-" +
-                    String(cutSchool.dropFirst(8).prefix(5)) +
-                    " (\(clubType))"
                     CreatedClub.name = clubTitle
                     CreatedClub.description = clubDesc
                     CreatedClub.abstract = clubAbstract
@@ -240,7 +245,7 @@ struct CreateClubView: View {
                     }
                     
                 } label: {
-                    Text("Schoology Code \(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? "(Required)" : "")")
+                    Text("Schoology Code \(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? "(Set to NONE)" : "")")
                         .foregroundStyle(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? .red : .black)
                         .bold(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? true : false)
                 }
@@ -419,6 +424,7 @@ struct CreateClubView: View {
                 schoology = CreatedClub.schoologyCode
                 location = CreatedClub.location
                 genres = CreatedClub.genres ?? []
+                
                 if let photo = CreatedClub.clubPhoto {
                     clubPhoto = photo
                 }
