@@ -28,6 +28,10 @@ struct CreateClubView: View {
     @State var leaderDisclosureExpanded = false
     @State var genreDisclosureExpanded = false
     @State var clubType = "Course"
+    @State var selectedLeaders: Set<String> = []
+    @State var selectedMembers: Set<String> = []
+    @State var selectedGenres: Set<String> = []
+
     
     var viewCloser: (() -> Void)?
     
@@ -52,9 +56,9 @@ struct CreateClubView: View {
                     var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
                     
                     CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
-                                                String(cutSchool.dropFirst(4).prefix(4)) + "-" +
-                                                String(cutSchool.dropFirst(8).prefix(5)) +
-                                                " (\(clubType))"
+                    String(cutSchool.dropFirst(4).prefix(4)) + "-" +
+                    String(cutSchool.dropFirst(8).prefix(5)) +
+                    " (\(clubType))"
                     CreatedClub.name = clubTitle
                     CreatedClub.description = clubDesc
                     CreatedClub.abstract = clubAbstract
@@ -171,7 +175,8 @@ struct CreateClubView: View {
                         
                         if !leaders.isEmpty {
                             Button {
-                                leaders.removeLast()
+                                leaders.removeAll(where: { selectedLeaders.contains($0) })
+                                selectedLeaders.removeAll()
                                 addLeaderText = ""
                             } label: {
                                 Image(systemName: "minus")
@@ -183,17 +188,27 @@ struct CreateClubView: View {
                     .padding()
                     
                     ScrollView {
-                        ForEach(leaders, id: \.self) { i in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 5)
-                                    .stroke(.gray, lineWidth: 3)
-                                
-                                Text("\(i)")
-                                    .padding()
-                                
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+                            ForEach(leaders, id: \.self) { i in
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(selectedLeaders.contains(i) ? .red : .gray, lineWidth: 3)
+                                    
+                                    Text("\(i)")
+                                        .padding()
+                                }
+                                .fixedSize()
+                                .padding()
+                                .onTapGesture {
+                                    if selectedLeaders.contains(i) {
+                                        selectedLeaders.remove(i)
+                                    } else {
+                                        selectedLeaders.insert(i)
+                                    }
+                                }
                             }
-                            .fixedSize()
                         }
+                        .padding()
                     }
                     .padding()
                     
@@ -212,10 +227,10 @@ struct CreateClubView: View {
                             if schoology != "" {
                                 clubType = schoology.contains("Course") ? "Course" : "Group"
                             }
-                        
-                        schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
-                    }
-
+                            
+                            schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
+                        }
+                    
                     
                     Picker(selection: $clubType) {
                         Section("Club Type") {
@@ -271,7 +286,8 @@ struct CreateClubView: View {
                             
                             if !members.isEmpty {
                                 Button {
-                                    members.removeLast()
+                                    members.removeAll(where: { selectedMembers.contains($0) })
+                                    selectedMembers.removeAll()
                                     addMemberText = ""
                                 } label: {
                                     Image(systemName: "minus")
@@ -283,16 +299,27 @@ struct CreateClubView: View {
                         .padding()
                         
                         ScrollView {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
                             ForEach(members, id: \.self) { i in
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .stroke(.gray, lineWidth: 3)
-                                    
-                                    Text("\(i)")
-                                        .padding()
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
+                                        
+                                        Text("\(i)")
+                                            .padding()
+                                    }
+                                    .fixedSize()
+                                    .padding()
+                                    .onTapGesture {
+                                        if selectedMembers.contains(i) {
+                                            selectedMembers.remove(i)
+                                        } else {
+                                            selectedMembers.insert(i)
+                                        }
+                                    }
                                 }
-                                .fixedSize()
                             }
+                            .padding()
                         }
                         .padding()
                     }
@@ -339,7 +366,8 @@ struct CreateClubView: View {
                         
                         if !genres.isEmpty {
                             Button {
-                                genres.removeLast()
+                                genres.removeAll(where: { selectedGenres.contains($0) })
+                                selectedGenres.removeAll()
                                 genrePicker = ""
                             } label: {
                                 Image(systemName: "minus")
@@ -353,16 +381,27 @@ struct CreateClubView: View {
                     .padding()
                     
                     ScrollView {
-                        ForEach(genres, id: \.self) { i in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 5)
-                                    .stroke(.gray, lineWidth: 3)
-                                
-                                Text("\(i)")
-                                    .padding()
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+                            ForEach(genres, id: \.self) { i in
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(selectedGenres.contains(i) ? .red : .gray, lineWidth: 3)
+                                    
+                                    Text("\(i)")
+                                        .padding()
+                                }
+                                .fixedSize()
+                                .padding()
+                                .onTapGesture {
+                                    if selectedGenres.contains(i) {
+                                        selectedGenres.remove(i)
+                                    } else {
+                                        selectedGenres.insert(i)
+                                    }
+                                }
                             }
-                            .fixedSize()
                         }
+                        .padding()
                     }
                     .padding()
                 }
@@ -390,33 +429,41 @@ struct CreateClubView: View {
             }
         }
     }
-
+    
     func addLeaderFunc() {
         addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
         if (addLeaderText.contains("d214.org") || addLeaderText.contains("gmail.com")) && leaders.contains(addLeaderText) == false {
             if addLeaderText.contains(",") {
                 let splitLeaders = addLeaderText.split(separator: ",")
                 for i in splitLeaders {
-                    leaders.append(String(i).lowercased())
+                    if leaders.contains(String(i)) == false {
+                        leaders.append(String(i).lowercased())
+                    }
                 }
                 addLeaderText = ""
                 
             } else if addLeaderText.contains("/") {
                 let splitLeaders = addLeaderText.split(separator: "/")
                 for i in splitLeaders {
-                    leaders.append(String(i).lowercased())
+                    if leaders.contains(String(i)) == false {
+                        leaders.append(String(i).lowercased())
+                    }
                 }
                 addLeaderText = ""
             } else if addLeaderText.contains(";") {
                 let splitLeaders = addLeaderText.split(separator: ";")
                 for i in splitLeaders {
-                    leaders.append(String(i).lowercased())
+                    if leaders.contains(String(i)) == false {
+                        leaders.append(String(i).lowercased())
+                    }
                 }
                 addLeaderText = ""
             } else if addLeaderText.contains("-") {
                 let splitLeaders = addLeaderText.split(separator: "-")
                 for i in splitLeaders {
-                    leaders.append(String(i).lowercased())
+                    if leaders.contains(String(i)) == false {
+                        leaders.append(String(i).lowercased())
+                    }
                 }
                 addLeaderText = ""
             } else {
@@ -431,11 +478,13 @@ struct CreateClubView: View {
     
     func addMemberFunc() {
         addMemberText = addMemberText.replacingOccurrences(of: " ", with: "")
-        if addMemberText.contains("d214.org") && members.contains(addMemberText) == false {
+        if (addMemberText.contains("d214.org") || addMemberText.contains("gmail.com")) && members.contains(addMemberText) == false {
             if addMemberText.contains(",") {
                 let splitMembers = addMemberText.split(separator: ",")
                 for i in splitMembers {
-                    members.append(String(i).lowercased())
+                    if members.contains(String(i)) == false {
+                        members.append(String(i).lowercased())
+                    }
                 }
                 addMemberText = ""
                 

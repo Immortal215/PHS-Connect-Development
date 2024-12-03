@@ -53,6 +53,7 @@ struct ClubInfoView: View {
                                     fetchClub(withId: club.clubID) { fetchedClub in
                                         club = fetchedClub ?? club
                                     }
+                                    dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
                                 }, CreatedClub: club)
                                 .presentationDragIndicator(.visible)
                             }
@@ -114,9 +115,11 @@ struct ClubInfoView: View {
                 if !club.leaders.isEmpty {
                     Text("Leaders (\(club.leaders.count)):")
                         .font(.headline)
-                    ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
-                        CodeSnippetView(code: leader)
-                            .padding(.top, -8)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+                        ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
+                            CodeSnippetView(code: leader, textSmall: true)
+                                .padding(.top, leader == club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.first ? -8 : 0)
+                        }
                     }
                 }
                 
@@ -148,7 +151,7 @@ struct ClubInfoView: View {
                         Text("Members (\(club.members.count)):")
                             .font(.headline)
                         
-                        CodeSnippetView(code: mem)
+                        CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
                             .padding(.top, -8)
                     }
                     

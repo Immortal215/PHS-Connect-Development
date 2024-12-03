@@ -135,7 +135,7 @@ struct ContentView: View {
                                         }
                                         
                                     }
-                                
+                                    .offset(y: 30)
                             }
                         }
                         

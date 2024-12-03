@@ -51,7 +51,7 @@ struct SearchClubView: View {
                 case "Info":
                     return clubs
                         .filter {
-                            $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText)
+                            $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText) || $0.name.localizedCaseInsensitiveContains(searchText)
                         }
                         .sorted {
                             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
@@ -250,8 +250,9 @@ struct SearchClubView: View {
                         userInfo = user
                     }
                 }
-            } 
+            }
             
+            shownInfo = -1
         }
     }
 }

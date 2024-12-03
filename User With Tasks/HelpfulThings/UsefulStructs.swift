@@ -60,11 +60,12 @@ struct Box: View {
 struct CodeSnippetView: View {
     @State var code: String = ""
     @State var clicked = false
+    @State var textSmall : Bool? = false
     
     var body: some View {
         HStack {
             Text(code)
-                .font(.subheadline)
+                .font(textSmall! ? .footnote :.subheadline)
                 .padding()
                 .background(Color(UIColor.systemGray6))
                 .foregroundColor(.primary)
@@ -91,8 +92,6 @@ struct CodeSnippetView: View {
                         Image(systemName: "doc.on.doc")
                             .transition(.identity)
                     }
-                    
-                    Text("Copy")
                 }
                 .font(.caption)
                 .padding(8)
@@ -102,8 +101,7 @@ struct CodeSnippetView: View {
                 
             }
         }
-        
-     
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

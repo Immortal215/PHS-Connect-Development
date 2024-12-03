@@ -2,9 +2,9 @@ import SwiftUI
 import MessageUI
 
 struct FeatureReportButton: View {
-    @State private var isShowingMailView = false
-    @State private var alertMessage = ""
-    @State private var showAlert = false
+    @State var isShowingMailView = false
+    @State var alertMessage = ""
+    @State var showAlert = false
     
     // Configuration
     let recipientEmail = "sharulshah@icloud.com"
@@ -71,16 +71,17 @@ struct FeatureReportButton: View {
         Device Information:
         • Model: \(UIDevice.current.model)
         • iOS Version: \(UIDevice.current.systemVersion)
-        • Device Name: \(UIDevice.current.name)
+        • Device Width: \(UIScreen.main.bounds.width)
+        • Device Height: \(UIScreen.main.bounds.height)
         
-        Feature Request Details:
-        Please describe the feature you'd like to suggest:
+        Feature/ Bug Request Details:
+        Please describe the issue or feature you'd like to recognize:
         
-        Why is this feature important to you?
         
-        How would you envision this feature working?
+        How would you achieve this? : 
         
-        Additional comments:
+        
+        Additional comments/ resources to help:
         
         """
     }
