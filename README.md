@@ -92,6 +92,7 @@
 2. Open the `.xcodeproj` file in Xcode.
 3. Install dependencies via Swift Package Manager.
 4. Configure Firebase by adding your `GoogleService-Info.plist` file to the project.
+5. Make sure you do not share this file and add it to your .gitignore
 
 ### Running the App
 
