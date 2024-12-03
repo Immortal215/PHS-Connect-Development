@@ -59,14 +59,14 @@
 > [!IMPORTANT]
 >  **Dive into the technical backbone** 🧑‍💻
 
-### 2. **UI Components**
+### 1. **UI Components**
 
 - **Custom Calendar View:**
   - Built using SwiftUI to show meeting times for favorited clubs.
 - **Add Announcement Sheet:**
   - Structured with `struct AddAnnouncementSheet: View` for leaders to create and save announcements.
 
-### 3. **Backend**
+### 2. **Backend**
 
 - **Firebase Realtime Database:**
   - Securely stores club and user data.
