@@ -2,8 +2,8 @@
 
 ## Overview
 
-> [!INFO] **Overview**
-> The Clubs App is designed to provide a structured and interactive platform for students to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
+> [!NOTE]
+> PHS Connect is designed to provide a structured and interactive platform for students to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
 
 ---
 
@@ -11,10 +11,11 @@
 
 ### 1. **Club Management**
 
-> [!NOTE] **Manage clubs effortlessly** 🛠️
+> [!NOTE]
+>  **Manage clubs effortlessly** 🛠️
 
 - **Leaders and Members:**
-  - Club leaders can manage members, make announcements, and set meeting times.
+  - Club leaders can manage members, make announcements, set meeting times, and fully edit their clubs.
   - Flexible visibility settings (“All”, “Non-Guests Only”, “Members Only”, “Leaders Only”) ensure sensitive data is displayed appropriately.
 - **Invite-Only Clubs:**
   - Users can request to join invite-only clubs, pending approval from leaders.
