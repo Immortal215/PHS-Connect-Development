@@ -31,7 +31,7 @@ struct CreateClubView: View {
     @State var selectedLeaders: Set<String> = []
     @State var selectedMembers: Set<String> = []
     @State var selectedGenres: Set<String> = []
-
+    
     
     var viewCloser: (() -> Void)?
     
@@ -55,7 +55,7 @@ struct CreateClubView: View {
                     
                     if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
                         var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
-
+                        
                         CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
                         String(cutSchool.dropFirst(4).prefix(4)) + "-" +
                         String(cutSchool.dropFirst(8).prefix(5)) +
@@ -152,11 +152,22 @@ struct CreateClubView: View {
                 .padding()
                 
                 LabeledContent {
-                    TextField("Club Abstract (Required)", text: $clubAbstract)
+                    // TextField("Club Abstract (Required)", text: $clubAbstract)
+                    TextEditor(text: $clubAbstract)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(.gray, lineWidth: 1)
+                        )
+                        .frame(minHeight: UIScreen.main.bounds.height/8, maxHeight: UIScreen.main.bounds.height/4)
+                        .fixedSize(horizontal: false, vertical: true)
                 } label: {
-                    Text("Club Abstract \(clubAbstract.isEmpty ? "(Required)" : "")")
+                    Text("Club Abstract \(clubAbstract.isEmpty ? "\n(Required)" : "")")
                         .foregroundStyle(clubAbstract.isEmpty ? .red : .black)
                         .bold(clubAbstract.isEmpty ? true : false)
+                    Spacer()
                 }
                 .padding()
                 
@@ -236,11 +247,12 @@ struct CreateClubView: View {
                             schoology = schoology.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
                         }
                     
-                    
-                    Picker(selection: $clubType) {
-                        Section("Club Type") {
-                            Text("Course").tag("Course")
-                            Text("Group").tag("Group")
+                    if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
+                        Picker(selection: $clubType) {
+                            Section("Club Type") {
+                                Text("Course").tag("Course")
+                                Text("Group").tag("Group")
+                            }
                         }
                     }
                     
@@ -305,7 +317,7 @@ struct CreateClubView: View {
                         
                         ScrollView {
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
-                            ForEach(members, id: \.self) { i in
+                                ForEach(members, id: \.self) { i in
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 5)
                                             .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
