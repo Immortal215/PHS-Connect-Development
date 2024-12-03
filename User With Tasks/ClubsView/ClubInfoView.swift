@@ -45,6 +45,7 @@ struct ClubInfoView: View {
                                 }
                             } label: {
                                 Image(systemName: "gear")
+                                .imageScale(.large)
                             }
                             .sheet(isPresented: $showEditScreen) {
                                 
