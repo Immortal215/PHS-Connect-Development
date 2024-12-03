@@ -86,7 +86,14 @@ struct ClubCard: View {
                 VStack {
                     // info button
                     Button {
-                        shownInfo = infoRelativeIndex
+                     if shownInfo != infoRelativeIndex {
+                                    shownInfo = -1 
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                        shownInfo = infoRelativeIndex
+                                    }
+                                } else {
+                                    shownInfo = -1
+                                }
                     } label: {
                         Image(
                             systemName: club.leaders.contains(viewModel.userEmail ?? "") ?
