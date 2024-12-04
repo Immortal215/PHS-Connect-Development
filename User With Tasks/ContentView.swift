@@ -170,7 +170,7 @@ struct ContentView: View {
             showSignInView = true 
             advSearchShown = false
             searchText = ""
-        }
+        } 
         .ignoresSafeArea(.keyboard, edges: .bottom)
 
     }
@@ -189,7 +189,7 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
             Drops.hideCurrent()
         },
         position: .top,
-        duration: 5.0,
+        duration: 4.0,
         accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)
