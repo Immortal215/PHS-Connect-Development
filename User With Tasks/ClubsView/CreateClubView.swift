@@ -31,7 +31,7 @@ struct CreateClubView: View {
     @State var selectedLeaders: Set<String> = []
     @State var selectedMembers: Set<String> = []
     @State var selectedGenres: Set<String> = []
-    
+    @State var showDataWho = "allNonGuest"
     
     var viewCloser: (() -> Void)?
     
@@ -81,7 +81,7 @@ struct CreateClubView: View {
                         CreatedClub.genres = genres
                     }
                     // create a picker for this
-                    CreatedClub.showDataWho = "allNonGuest"
+                    CreatedClub.showDataWho = showDataWho
                     
                     // optional additions, needed to keep optional
                     if clubPhoto != "" {
@@ -424,6 +424,18 @@ struct CreateClubView: View {
                 }
                 .padding()
                 
+                LabeledContent("Show Announcements and All Members to") {
+                    Picker(selection: $showDataWho) {
+                        Section("Club Important Info Visibility") {
+                            Text("Everyone").tag("all")
+                            Text("Everyone Except Guests").tag("allNonGuest")
+                            Text("Only Club Members").tag("onlyMembers")
+                            Text("Only Club Leaders").tag("onlyLeaders")
+                        }
+                    }
+                }
+                .padding()
+                
             }
             .textFieldStyle(.roundedBorder)
             .onAppear {
@@ -436,6 +448,7 @@ struct CreateClubView: View {
                 schoology = CreatedClub.schoologyCode
                 location = CreatedClub.location
                 genres = CreatedClub.genres ?? []
+                showDataWho = CreatedClub.showDataWho
                 
                 if let photo = CreatedClub.clubPhoto {
                     clubPhoto = photo

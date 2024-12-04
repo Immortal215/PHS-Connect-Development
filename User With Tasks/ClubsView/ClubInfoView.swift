@@ -23,7 +23,8 @@ struct ClubInfoView: View {
     @AppStorage("searchText") var searchText = ""
     @AppStorage("advSearchShown") var advSearchShown = false
     @AppStorage("tagsExpanded") var tagsExpanded = true
-    @State var abstractExpanded = false
+    @State var abstractExpanded = true
+    @State var abstractGreaterThanFour = false
     
     var body: some View {
         ScrollView {
@@ -70,15 +71,26 @@ struct ClubInfoView: View {
                             .font(.body)
                             .foregroundColor(.gray)
                             .lineLimit(abstractExpanded ? nil : 4)
+                            .background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            calculateLines(for: geometry.size)
+                                            abstractExpanded = false
+                                        }
+                                }
+                            )
                         
-                        Text(abstractExpanded ? "Show less" : "Show more")
-                            .font(.footnote)
-                            .foregroundColor(.blue)
-                            .onTapGesture {
-                                abstractExpanded.toggle()
-                            }
+                        if abstractGreaterThanFour {
+                            Text(abstractExpanded ? "Show less" : "Show more")
+                                .font(.footnote)
+                                .foregroundColor(.blue)
+                                .onTapGesture {
+                                    abstractExpanded.toggle()
+                                }
+                        }
                     }
-               
+                    
                     
                     AsyncImage(
                         url: URL(
@@ -276,7 +288,18 @@ struct ClubInfoView: View {
             Color.white
                 .frame(height: screenHeight/3)
         }
-             .animation(.easeInOut, value: abstractExpanded) // Smooth transition    
+        .animation(.easeInOut, value: abstractExpanded) // Smooth transition
+        
+    }
+    
+    func calculateLines(for size: CGSize) {
+        let font = UIFont.preferredFont(forTextStyle: .body)
+        let lineHeight = font.lineHeight
+        let totalLines = Int(size.height / lineHeight)
+        
+        DispatchQueue.main.async {
+            abstractGreaterThanFour = (totalLines != 4 ? totalLines > 4 : false )
+        }
     }
 }
 
