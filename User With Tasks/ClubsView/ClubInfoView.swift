@@ -78,7 +78,7 @@ struct ClubInfoView: View {
                                 abstractExpanded.toggle()
                             }
                     }
-                    .animation(.easeInOut, value: abstractExpanded) // Smooth transition
+               
                     
                     AsyncImage(
                         url: URL(
@@ -276,7 +276,7 @@ struct ClubInfoView: View {
             Color.white
                 .frame(height: screenHeight/3)
         }
-        
+             .animation(.easeInOut, value: abstractExpanded) // Smooth transition    
     }
 }
 
