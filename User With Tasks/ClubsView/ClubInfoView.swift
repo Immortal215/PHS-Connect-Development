@@ -23,7 +23,8 @@ struct ClubInfoView: View {
     @AppStorage("searchText") var searchText = ""
     @AppStorage("advSearchShown") var advSearchShown = false
     @AppStorage("tagsExpanded") var tagsExpanded = true
-
+    @State var abstractExpanded = false
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -45,7 +46,7 @@ struct ClubInfoView: View {
                                 }
                             } label: {
                                 Image(systemName: "gear")
-                                .imageScale(.large)
+                                    .imageScale(.large)
                             }
                             .sheet(isPresented: $showEditScreen) {
                                 
@@ -63,9 +64,21 @@ struct ClubInfoView: View {
                         }
                         
                     }
-                    Text(club.abstract)
-                        .font(.body)
-                        .foregroundColor(.gray)
+                    
+                    VStack {
+                        Text(club.abstract)
+                            .font(.body)
+                            .foregroundColor(.gray)
+                            .lineLimit(abstractExpanded ? nil : 4)
+                        
+                        Text(abstractExpanded ? "Show less" : "Show more")
+                            .font(.footnote)
+                            .foregroundColor(.blue)
+                            .onTapGesture {
+                                abstractExpanded.toggle()
+                            }
+                    }
+                    .animation(.easeInOut, value: abstractExpanded) // Smooth transition
                     
                     AsyncImage(
                         url: URL(
@@ -218,7 +231,7 @@ struct ClubInfoView: View {
                             ForEach(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }, id: \.self) { genre in
                                 HStack(spacing: 0) {
                                     Button(action: {
-                                        tagsExpanded = false 
+                                        tagsExpanded = false
                                         advSearchShown = true
                                         currentSearchingBy = "Genre"
                                         searchText = genre
@@ -241,7 +254,7 @@ struct ClubInfoView: View {
                         }
                     }
                 }
-
+                
                 
                 Text("Location:")
                     .font(.headline)
