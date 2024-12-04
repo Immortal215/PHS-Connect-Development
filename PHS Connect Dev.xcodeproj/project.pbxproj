@@ -40,7 +40,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B861A8472CB811A0006AF254 /* PHS Connect.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PHS Connect.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B861A8472CB811A0006AF254 /* PHS Connect Dev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PHS Connect Dev.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -103,7 +103,7 @@
 		B861A8482CB811A0006AF254 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B861A8472CB811A0006AF254 /* PHS Connect.app */,
+				B861A8472CB811A0006AF254 /* PHS Connect Dev.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -111,9 +111,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B861A8462CB811A0006AF254 /* PHS Connect */ = {
+		B861A8462CB811A0006AF254 /* PHS Connect Dev */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect" */;
+			buildConfigurationList = B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect Dev" */;
 			buildPhases = (
 				B861A8432CB811A0006AF254 /* Sources */,
 				B861A8442CB811A0006AF254 /* Frameworks */,
@@ -126,7 +126,7 @@
 			fileSystemSynchronizedGroups = (
 				B861A8492CB811A0006AF254 /* User With Tasks */,
 			);
-			name = "PHS Connect";
+			name = "PHS Connect Dev";
 			packageProductDependencies = (
 				B861A85B2CB81714006AF254 /* FirebaseAnalytics */,
 				B861A85D2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion */,
@@ -160,7 +160,7 @@
 				3D17D1972CE796A5001EC760 /* CUIExpandableButton */,
 			);
 			productName = "User with Tasks";
-			productReference = B861A8472CB811A0006AF254 /* PHS Connect.app */;
+			productReference = B861A8472CB811A0006AF254 /* PHS Connect Dev.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -178,7 +178,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect" */;
+			buildConfigurationList = B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect Dev" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,7 +200,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B861A8462CB811A0006AF254 /* PHS Connect */,
+				B861A8462CB811A0006AF254 /* PHS Connect Dev */,
 			);
 		};
 /* End PBXProject section */
@@ -408,7 +408,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect" */ = {
+		B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect Dev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B861A8532CB811A1006AF254 /* Debug */,
@@ -417,7 +417,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect" */ = {
+		B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect Dev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B861A8562CB811A1006AF254 /* Debug */,
