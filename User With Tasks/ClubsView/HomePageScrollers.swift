@@ -23,7 +23,7 @@ struct HomePageScrollers: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(scrollerOf) Clubs")
-            
+
             ScrollView(.horizontal) {
                 if !filteredClubs.isEmpty {
                     

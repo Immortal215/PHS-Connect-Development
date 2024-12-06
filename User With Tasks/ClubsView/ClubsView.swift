@@ -123,7 +123,6 @@ struct ClubView: View {
                             }
                         }
                         
-                        
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                             
                             advSearchShown = false
@@ -138,110 +137,38 @@ struct ClubView: View {
                 
                 SearchClubView(clubs: clubs, userInfo: userInfo, shownInfo: shownInfo, viewModel: viewModel)
             } else {
+                HStack {
+                    Spacer()
+                    
+                     SearchBar("Search All Clubs", text: $searchText)
+                         .onTapGesture {
+                             if !viewModel.isGuestUser {
+                                 if let UserID = viewModel.uid {
+                                     fetchUser(for: UserID) { user in
+                                         userInfo = user
+                                     }
+                                 }
+                             }
+                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                 advSearchShown = true
+                             }
+                         }
+                         .frame(width: screenWidth/3)
+                 }
+
                 ScrollView {
                     
-                    // searching
-                    ScrollView {
-                        ZStack(alignment: .leading) {
-                            SearchBar("Search All Clubs By", text: $searchText, onCommit: {
-                                if !viewModel.isGuestUser {
-                                    if let UserID = viewModel.uid {
-                                        fetchUser(for: UserID) { user in
-                                            userInfo = user
-                                        }
-                                    }
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                    advSearchShown = true
-                                }
-                            })
-                            .disabled(currentSearchingBy == "Genre" ? true : false)
+                        ScrollView {
                             
-                            
-                            if searchText == "" {
-                                HStack {
-                                    Menu {
-                                        ForEach(searchCategories, id: \.self) { category in
-                                            Button(action: {
-                                                tagsExpanded = true
-                                                currentSearchingBy = category
-                                            }) {
-                                                Text(category)
-                                            }
-                                        }
-                                    } label: {
-                                        Text(currentSearchingBy)
-                                            .font(.headline)
-                                            .foregroundColor(.blue)
-                                            .padding(.leading, 8)
-                                    }
-                                }
-                                .padding(.horizontal)
-                                .offset(x: screenWidth/7)
+                            if userInfo?.userID != nil {
+                                // Clubs in
+                                HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
+                                
+                                // favorited clubs
+                                HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
                             }
                         }
-                        
-                        if currentSearchingBy == "Genre" {
-                            DisclosureGroup("Club Tags \(tagsExpanded ? (searchText == "" ? "(Click to select)" : "(Double-Click to clear)") : "")", isExpanded: $tagsExpanded) {
-                                MultiGenrePickerView()
-                            }
-                            .padding()
-                            .animation(.smooth)
-                            .onTapGesture(count: 2) {
-                                searchText = ""
-                                tagsExpanded = false
-                            }
-                        }
-                        
-                        if searchText != "" {
-                            DisclosureGroup("Search Results for \"\(searchText)\" Searching Through All \(currentSearchingBy.capitalized)", isExpanded: $searchBarExpanded) {
-                                if filteredClubsSearch.isEmpty {
-                                    Text("No Clubs Found for \"\(searchText)\"")
-                                } else {
-                                    ScrollView {
-                                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
-                                            ForEach(Array(filteredClubsSearch.enumerated()), id: \.element.name) { (index, club) in
-                                                var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                                
-                                                Button {
-                                                    fetchClub(withId: club.clubID) { cluber in
-                                                        clubs[infoRelativeIndex] = cluber ?? club
-                                                    }
-                                                    
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                                        shownInfo = infoRelativeIndex
-                                                        advSearchShown = true
-                                                    }
-                                                } label: {
-                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
-                                                }
-                                                .frame(maxWidth: screenWidth/2.2)
-                                                .padding(.vertical, 3)
-                                                .padding(.horizontal)
-                                            }
-                                        }
-                                    }
-                                    .frame(maxHeight: screenHeight/2.5)
-                                }
-                            }
-                            .padding()
-                            
-                            Divider()
-                        }
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    
-                    
-                    ScrollView {
-                        
-                        if userInfo?.userID != nil {
-                            // Clubs in
-                            HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
-                            
-                            // favorited clubs
-                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
-                        }
-                    }
+
                     
                 }
             }
@@ -261,7 +188,10 @@ struct ClubView: View {
             } else {
                 advSearchShown = true
             }
-
+            
+            if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
+                advSearchShown = true
+            }
         }
         .refreshable {
             fetchClubs { fetchedClubs in
