@@ -233,11 +233,16 @@ struct SearchClubView: View {
                                     userInfo = user
                                 }
                             }
+                        } else {
+                            advSearchShown = true
                         }
                         
                         sleep(1)
+                        advSearchShown = !advSearchShown
                         
-                        shownInfo = -1
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                            advSearchShown = !advSearchShown
+                        }
                     }
                     
                     

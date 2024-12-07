@@ -7,13 +7,13 @@ struct MultiGenrePickerView: View {
     private let genres: [String: [String]] = [
         "Types": ["Competitive", "Non-Competitive"],
         "Subjects": ["Math", "Science", "Reading", "History", "Business", "Technology", "Art", "Fine Arts", "Speaking"],
-        "Descriptors": ["Cultural", "Physical", "Mental", "Safe Space"]
+        "Descriptors": ["Cultural", "Physical", "Mental Health", "Safe Space"]
     ]
     
     var body: some View {
         HStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 10) {
                     ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
                         Section(header: Text(section).font(.headline)) {
                             FlowLayout(alignment: .leading) {

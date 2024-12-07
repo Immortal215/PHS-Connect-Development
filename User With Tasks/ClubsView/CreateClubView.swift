@@ -364,14 +364,14 @@ struct CreateClubView: View {
                             Section("Descriptors") {
                                 Text("Cultural").tag("Cultural")
                                 Text("Physical").tag("Physical")
-                                Text("Mental").tag("Mental")
+                                Text("Mental Health").tag("Mental Health")
                                 Text("Safe Space").tag("Safe Space")
                             }
                         }
                         .padding()
                         
                         Button {
-                            if !genres.contains(genrePicker) && genrePicker != "" {
+                            if !genres.contains(genrePicker) && genrePicker != "" && genres.count < 6 {
                                 genres.append(genrePicker)
                                 genrePicker = ""
                             }
@@ -393,7 +393,9 @@ struct CreateClubView: View {
                             .padding()
                         }
                     } label: {
-                        Text("Genres")
+                        Text(genres.count > 4 ? "Genres (Max 5)" : "Genres")
+                            .bold(genres.count > 4)
+                            .foregroundStyle(genres.count > 4 ? .red : .black )
                     }
                     .padding()
                     

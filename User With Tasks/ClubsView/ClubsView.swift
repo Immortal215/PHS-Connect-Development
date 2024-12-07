@@ -137,27 +137,40 @@ struct ClubView: View {
                 
                 SearchClubView(clubs: clubs, userInfo: userInfo, shownInfo: shownInfo, viewModel: viewModel)
             } else {
-                HStack {
-                    Spacer()
+                VStack {
+                    HStack {
+                        Spacer()
+                        
+                        Button {
+                            if !viewModel.isGuestUser {
+                                if let UserID = viewModel.uid {
+                                    fetchUser(for: UserID) { user in
+                                        userInfo = user
+                                    }
+                                }
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                advSearchShown = true
+                            }
+                        } label: {
+                            Label {
+                                Text("Search All Clubs")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            } icon: {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
+                            .background(.blue)
+                            .cornerRadius(10)
+                            .shadow(radius: 5)
+                        }
+                        .padding()
+                    }
                     
-                     SearchBar("Search All Clubs", text: $searchText)
-                         .onTapGesture {
-                             if !viewModel.isGuestUser {
-                                 if let UserID = viewModel.uid {
-                                     fetchUser(for: UserID) { user in
-                                         userInfo = user
-                                     }
-                                 }
-                             }
-                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                 advSearchShown = true
-                             }
-                         }
-                         .frame(width: screenWidth/3)
-                 }
-
-                ScrollView {
-                    
+                    ScrollView {
+                        
                         ScrollView {
                             
                             if userInfo?.userID != nil {
@@ -168,8 +181,9 @@ struct ClubView: View {
                                 HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
                             }
                         }
-
-                    
+                        
+                        
+                    }
                 }
             }
             
