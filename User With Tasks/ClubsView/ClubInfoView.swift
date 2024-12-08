@@ -56,6 +56,7 @@ struct ClubInfoView: View {
                                     fetchClub(withId: club.clubID) { fetchedClub in
                                         club = fetchedClub ?? club
                                     }
+                                    
                                     dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
                                 }, CreatedClub: club)
                                 .presentationDragIndicator(.visible)

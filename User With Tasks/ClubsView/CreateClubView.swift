@@ -48,7 +48,14 @@ struct CreateClubView: View {
             if abletoCreate {
                 Button {
                     if clubId == "" {
-                        CreatedClub.clubID = "clubID\(clubs.count + 1)"
+                        let lastClub = clubs.sorted {
+                            Int($0.clubID.replacingOccurrences(of: "clubID", with: ""))! <
+                            Int($1.clubID.replacingOccurrences(of: "clubID", with: ""))!
+                        }.last!
+                        let lastDigit = Int(lastClub.clubID.replacingOccurrences(of: "clubID", with: ""))!
+                        CreatedClub.clubID = "clubID\(lastDigit + 1)"
+
+                       // CreatedClub.clubID = "clubID\(Int(clubs.sorted(by: { $0.clubID < $1.clubID }).last!.clubID.last!)! + 1)"
                     } else {
                         CreatedClub.clubID = clubId
                     }
@@ -324,6 +331,7 @@ struct CreateClubView: View {
                                         
                                         Text("\(i)")
                                             .padding()
+                                            .font(.footnote)
                                     }
                                     .fixedSize()
                                     .padding()
@@ -371,7 +379,7 @@ struct CreateClubView: View {
                         .padding()
                         
                         Button {
-                            if !genres.contains(genrePicker) && genrePicker != "" && genres.count < 6 {
+                            if !genres.contains(genrePicker) && genrePicker != "" && genres.count < 5 {
                                 genres.append(genrePicker)
                                 genrePicker = ""
                             }
@@ -440,6 +448,10 @@ struct CreateClubView: View {
             }
             .textFieldStyle(.roundedBorder)
             .onAppear {
+                fetchClubs { fetchedClubs in
+                    self.clubs = fetchedClubs
+                }
+                
                 leaders = CreatedClub.leaders
                 members = CreatedClub.members
                 clubId = CreatedClub.clubID
@@ -463,6 +475,7 @@ struct CreateClubView: View {
                 
             }
         }
+        
     }
     
     func addLeaderFunc() {
