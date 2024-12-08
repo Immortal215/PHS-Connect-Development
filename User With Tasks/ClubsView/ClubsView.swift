@@ -105,8 +105,6 @@ struct ClubView: View {
             case "onlyMembers":
                 return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") ||
                         clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
-            case "onlyLeaders":
-                return clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
             default:
                 return false
             }
@@ -199,13 +197,23 @@ struct ClubView: View {
                         userInfo = user
                     }
                 }
+                
+                advSearchShown = !advSearchShown
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    advSearchShown = !advSearchShown
+                }
+                
+                if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
+                    advSearchShown = true
+                }
             } else {
-                advSearchShown = true
+                advSearchShown = true 
             }
             
-            if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
-                advSearchShown = true
-            }
+
+            
+           
         }
         .refreshable {
             fetchClubs { fetchedClubs in

@@ -17,6 +17,11 @@ struct ContentView: View {
     @State var expanded = false
     @AppStorage("advSearchShown") var advSearchShown = false
     @AppStorage("searchText") var searchText: String = ""
+    @AppStorage("userEmail") var userEmail: String?
+    @AppStorage("userName") var userName: String?
+    @AppStorage("userImage") var userImage: String?
+    @AppStorage("userType") var userType: String?
+    @AppStorage("uid") var uid: String?
 
     var body: some View {
         VStack {
@@ -165,10 +170,19 @@ struct ContentView: View {
         }
         .onAppear {
             if viewModel.isGuestUser {
-                showSignInView = true 
+                do {
+                    try AuthenticationManager.shared.signOut()
+                    userEmail = nil
+                    userName = nil
+                    userImage = nil
+                    userType = nil
+                    uid = nil
+                    showSignInView = true
+                } catch {
+                    print("error with guest signout")
+                }
             }
-            showSignInView = true 
-            advSearchShown = false
+            advSearchShown = true
             searchText = ""
         } 
         .ignoresSafeArea(.keyboard, edges: .bottom)

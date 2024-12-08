@@ -52,12 +52,13 @@ struct Settings: View {
             Button {
                 do {
                     try AuthenticationManager.shared.signOut()
-                    showSignInView = true
                     userEmail = nil
                     userName = nil
                     userImage = nil
                     userType = nil
                     uid = nil
+                    userInfo = nil
+                    showSignInView = true
                 } catch {
                     print("Error signing out: \(error.localizedDescription)")
                 }

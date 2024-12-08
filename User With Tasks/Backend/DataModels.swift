@@ -39,7 +39,7 @@ final class AuthenticationViewModel: ObservableObject {
     @AppStorage("userEmail") var userEmail: String?
     @AppStorage("userName") var userName: String?
     @AppStorage("userImage") var userImage: String?
-    @Published var isGuestUser: Bool = false
+    @AppStorage("isGuestUser") var isGuestUser = true
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
     
@@ -53,7 +53,6 @@ final class AuthenticationViewModel: ObservableObject {
             self.uid = uid
         }
     }
-    
     
     func createUserNodeIfNeeded(userID: String) {
         let reference = Database.database().reference()
