@@ -107,7 +107,7 @@ struct ClubInfoView: View {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 5)
                                             .foregroundStyle(.blue)
-                                        
+
                                         Text(club.name)
                                             .padding()
                                             .foregroundStyle(.white)
@@ -179,6 +179,7 @@ struct ClubInfoView: View {
                         
                         CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
                             .padding(.top, -8)
+                            .frame(maxHeight: screenHeight/3)
                     }
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
@@ -234,6 +235,21 @@ struct ClubInfoView: View {
                     }
                 }
                 
+                Text("Location:")
+                    .font(.headline)
+                Text(club.location)
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+                    .padding(.top, -8)
+                
+                HStack {
+                    Text("Schoology Code: ")
+                        .font(.headline)
+                    
+                    CodeSnippetView(code: club.schoologyCode)
+                    
+                }
+                
                 if let genres = club.genres, !genres.isEmpty {
                     VStack(alignment: .leading) {
                         Text("Genres:")
@@ -266,22 +282,7 @@ struct ClubInfoView: View {
                         }
                     }
                 }
-                
-                
-                Text("Location:")
-                    .font(.headline)
-                Text(club.location)
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
-                    .padding(.top, -8)
-                
-                HStack {
-                    Text("Schoology Code: ")
-                        .font(.headline)
-                    
-                    CodeSnippetView(code: club.schoologyCode)
-                    
-                }
+
             }
             .padding()
             

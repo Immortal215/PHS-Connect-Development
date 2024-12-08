@@ -37,6 +37,7 @@ struct ClubCard: View {
                             if club.clubPhoto == nil {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 5)
+                                        .foregroundStyle(.blue)
                                     
                                     Text(club.name)
                                         .padding()

@@ -96,8 +96,6 @@ struct SearchClubView: View {
             case "onlyMembers":
                 return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") ||
                         clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
-            case "onlyLeaders":
-                return clubs[shownInfo].leaders.contains(viewModel.userEmail ?? "")
             default:
                 return false
             }

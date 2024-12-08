@@ -31,7 +31,7 @@ struct CreateClubView: View {
     @State var selectedLeaders: Set<String> = []
     @State var selectedMembers: Set<String> = []
     @State var selectedGenres: Set<String> = []
-    @State var showDataWho = "allNonGuest"
+    @State var showDataWho = "onlyMembers"
     
     var viewCloser: (() -> Void)?
     
@@ -80,7 +80,7 @@ struct CreateClubView: View {
                     if !genres.isEmpty {
                         CreatedClub.genres = genres
                     }
-                    // create a picker for this
+                    
                     CreatedClub.showDataWho = showDataWho
                     
                     // optional additions, needed to keep optional
@@ -432,7 +432,6 @@ struct CreateClubView: View {
                             Text("Everyone").tag("all")
                             Text("Everyone Except Guests").tag("allNonGuest")
                             Text("Only Club Members").tag("onlyMembers")
-                            Text("Only Club Leaders").tag("onlyLeaders")
                         }
                     }
                 }
@@ -450,7 +449,10 @@ struct CreateClubView: View {
                 schoology = CreatedClub.schoologyCode
                 location = CreatedClub.location
                 genres = CreatedClub.genres ?? []
-                showDataWho = CreatedClub.showDataWho
+                
+                if CreatedClub.showDataWho != "" {
+                    showDataWho = CreatedClub.showDataWho
+                }
                 
                 if let photo = CreatedClub.clubPhoto {
                     clubPhoto = photo
