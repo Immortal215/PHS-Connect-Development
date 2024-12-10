@@ -237,7 +237,7 @@ struct CreateClubView: View {
                     
                 } label: {
                     Text("Edit Leaders \(leaders.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(leaders.isEmpty ? .red : .black)
+                        .foregroundStyle(leaders.isEmpty ? .red : .blue)
                         .bold(leaders.isEmpty ? true : false)
                 }
                 .padding()
@@ -323,28 +323,27 @@ struct CreateClubView: View {
                         .padding()
                         
                         ScrollView {
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
-                                ForEach(members, id: \.self) { i in
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 5)
-                                            .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
-                                        
-                                        Text("\(i)")
-                                            .padding()
-                                            .font(.footnote)
-                                    }
-                                    .fixedSize()
-                                    .padding()
-                                    .onTapGesture {
-                                        if selectedMembers.contains(i) {
-                                            selectedMembers.remove(i)
-                                        } else {
-                                            selectedMembers.insert(i)
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
+                                    ForEach(members, id: \.self) { i in
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
+                                            
+                                            Text("\(i)")
+                                                .padding()
+                                                .font(.footnote)
+                                        }
+                                        .scaledToFit()
+                                        .onTapGesture {
+                                            if selectedMembers.contains(i) {
+                                                selectedMembers.remove(i)
+                                            } else {
+                                                selectedMembers.insert(i)
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            .padding()
+                                .padding()
                         }
                         .padding()
                     }

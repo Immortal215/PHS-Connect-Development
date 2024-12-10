@@ -60,6 +60,8 @@ struct ClubInfoView: View {
                                     dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
                                 }, CreatedClub: club)
                                 .presentationDragIndicator(.visible)
+                                .presentationSizing(.page)
+
                             }
                             .padding()
                             
@@ -144,7 +146,7 @@ struct ClubInfoView: View {
                         .font(.headline)
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
                         ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
-                            CodeSnippetView(code: leader, textSmall: true)
+                            CodeSnippetView(code: leader)
                                 .padding(.top, leader == club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.first ? -8 : 0)
                         }
                     }

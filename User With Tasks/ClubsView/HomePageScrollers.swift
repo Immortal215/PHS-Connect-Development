@@ -50,6 +50,7 @@ struct HomePageScrollers: View {
                                 if shownInfo >= 0 {
                                     ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
                                         .presentationDragIndicator(.visible)
+                                        .presentationSizing(.page)
                                 } else {
                                     Text("Error! Try Again!")
                                         .presentationDragIndicator(.visible)

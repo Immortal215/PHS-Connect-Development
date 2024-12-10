@@ -109,10 +109,32 @@ struct SearchClubView: View {
                 VStack {
                     ZStack(alignment: .leading) {
                         HStack {
-                            SearchBar("Search all clubs by",text: $searchText, isEditing: $isSearching)
+                            SearchBar("Search all clubs by \(currentSearchingBy)",text: $searchText, isEditing: $isSearching)
                                 .padding()
                                 .disabled(currentSearchingBy == "Genre" ? true : false)
+        
+                                HStack {
+                                    Menu {
+                                        ForEach(searchCategories, id: \.self) { category in
+                                            Button(action: {
+                                                searchText = ""
+                                                currentSearchingBy = category
+                                                tagsExpanded = false
+                                                if category == "Genre" {
+                                                    tagsExpanded = true
+                                                }
+                                            }) {
+                                                Text(category)
+                                            }
+                                        }
+                                    } label: {
+                                        Text(currentSearchingBy)
+                                            .font(.headline)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
                             
+
                             if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
                                 Button {
                                     fetchClubs { fetchedClubs in
@@ -126,32 +148,12 @@ struct SearchClubView: View {
                                 .sheet(isPresented: $createClubToggler) {
                                     CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
                                         .presentationDragIndicator(.visible)
+                                        .presentationSizing(.page)
                                 }
+                                .padding(.leading)
                             }
                         }
                         
-                        
-                        if searchText == "" {
-                            HStack {
-                                Menu {
-                                    ForEach(searchCategories, id: \.self) { category in
-                                        Button(action: {
-                                            currentSearchingBy = category
-                                            tagsExpanded = true
-                                        }) {
-                                            Text(category)
-                                        }
-                                    }
-                                } label: {
-                                    Text(currentSearchingBy)
-                                        .font(.headline)
-                                        .foregroundColor(.blue)
-                                        .padding(.leading, 8)
-                                }
-                            }
-                            .padding(.horizontal)
-                            .offset(x: screenWidth/6.6)
-                        }
                     }
                     
                     if currentSearchingBy == "Genre" {
@@ -199,6 +201,8 @@ struct SearchClubView: View {
                                             if shownInfo >= 0 {
                                                 ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
                                                     .presentationDragIndicator(.visible)
+                                                    .presentationSizing(.page)
+                                                  
                                             } else {
                                                 Text("Error! Try Again!")
                                                     .presentationDragIndicator(.visible)
