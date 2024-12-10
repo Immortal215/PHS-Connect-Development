@@ -16,7 +16,7 @@ struct ClubCard: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var infoRelativeIndex : Int
     @State var userInfo: Personal? = nil
-
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 5)
@@ -31,8 +31,8 @@ struct ClubCard: View {
                         ZStack {
                             Image
                                 .resizable()
-                                 .scaledToFit()
-                                 .clipShape(Rectangle())
+                                .scaledToFit()
+                                .clipShape(Rectangle())
                             
                             if club.clubPhoto == nil {
                                 ZStack {
@@ -87,14 +87,14 @@ struct ClubCard: View {
                 VStack {
                     // info button
                     Button {
-                     if shownInfo != infoRelativeIndex {
-                                    shownInfo = -1 
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                        shownInfo = infoRelativeIndex
-                                    }
-                                } else {
-                                    shownInfo = -1
-                                }
+                        if shownInfo != infoRelativeIndex {
+                            shownInfo = -1
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                shownInfo = infoRelativeIndex
+                            }
+                        } else {
+                            shownInfo = -1
+                        }
                     } label: {
                         Image(
                             systemName: club.leaders.contains(viewModel.userEmail ?? "") ?
@@ -131,7 +131,7 @@ struct ClubCard: View {
                                 }
                                 dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
                             }
-                           
+                            
                         } label: {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                 Image(systemName: "heart.fill")
@@ -149,6 +149,6 @@ struct ClubCard: View {
                 .padding()
             }
         }
-
+        
     }
 }

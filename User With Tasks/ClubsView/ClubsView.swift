@@ -197,29 +197,23 @@ struct ClubView: View {
                         userInfo = user
                     }
                 }
-                
-                advSearchShown = !advSearchShown
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                    advSearchShown = !advSearchShown
-                }
-                
-                if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
-                    advSearchShown = true
-                }
+
             } else {
                 advSearchShown = true 
             }
             
-
+            advSearchShown = !advSearchShown
             
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                advSearchShown = !advSearchShown
+            }
+            
+            if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
+                advSearchShown = true
+            }
            
         }
         .refreshable {
-            fetchClubs { fetchedClubs in
-                clubs = fetchedClubs
-            }
-            
             if !viewModel.isGuestUser {
                 if let UserID = viewModel.uid {
                     fetchUser(for: UserID) { user in
@@ -228,6 +222,10 @@ struct ClubView: View {
                 }
             } else {
                 advSearchShown = true
+            }
+            
+            fetchClubs { fetchedClubs in
+                clubs = fetchedClubs
             }
             
             sleep(1)

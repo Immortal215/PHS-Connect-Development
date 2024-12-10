@@ -234,13 +234,6 @@ struct SearchClubView: View {
                         } else {
                             advSearchShown = true
                         }
-                        
-                        sleep(1)
-                        advSearchShown = !advSearchShown
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            advSearchShown = !advSearchShown
-                        }
                     }
                     
                     
@@ -258,11 +251,7 @@ struct SearchClubView: View {
             
         }
         .padding()
-        .onAppearOnce {
-            fetchClubs { fetchedClubs in
-                self.clubs = fetchedClubs
-            }
-            
+        .onAppear {
             if !viewModel.isGuestUser {
                 if let UserID = viewModel.uid {
                     fetchUser(for: UserID) { user in
@@ -270,6 +259,11 @@ struct SearchClubView: View {
                     }
                 }
             }
+
+            fetchClubs { fetchedClubs in
+                self.clubs = fetchedClubs
+            }
+            
         }
     }
 }
