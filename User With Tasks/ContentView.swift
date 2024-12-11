@@ -203,7 +203,7 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
             Drops.hideCurrent()
         },
         position: .top,
-        duration: 4.0,
+        duration: 3.0,
         accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)

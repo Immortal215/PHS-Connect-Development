@@ -31,11 +31,10 @@ struct CreateClubView: View {
     @State var selectedLeaders: Set<String> = []
     @State var selectedMembers: Set<String> = []
     @State var selectedGenres: Set<String> = []
-    @State var showDataWho = "onlyMembers"
     
     var viewCloser: (() -> Void)?
     
-    @State var CreatedClub : Club = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", showDataWho: "", clubID: "", location: "")
+    @State var CreatedClub : Club = Club(leaders: [], members: [], description: "", name: "", schoologyCode: "", abstract: "", clubID: "", location: "")
     @State var clubs: [Club] = []
     
     var body: some View {
@@ -87,9 +86,7 @@ struct CreateClubView: View {
                     if !genres.isEmpty {
                         CreatedClub.genres = genres
                     }
-                    
-                    CreatedClub.showDataWho = showDataWho
-                    
+                                        
                     // optional additions, needed to keep optional
                     if clubPhoto != "" {
                         CreatedClub.clubPhoto = clubPhoto
@@ -367,6 +364,9 @@ struct CreateClubView: View {
                                 Text("Art").tag("Art")
                                 Text("Fine Arts").tag("Fine Arts")
                                 Text("Speaking").tag("Speaking")
+                                Text("Health").tag("Health")
+                                Text("Law").tag("Law")
+                                Text("Engineering").tag("Engineering")
                             }
                             Section("Descriptors") {
                                 Text("Cultural").tag("Cultural")
@@ -433,17 +433,6 @@ struct CreateClubView: View {
                 }
                 .padding()
                 
-                LabeledContent("Show Announcements and All Members to") {
-                    Picker(selection: $showDataWho) {
-                        Section("Club Important Info Visibility") {
-                            Text("Everyone").tag("all")
-                            Text("Everyone Except Guests").tag("allNonGuest")
-                            Text("Only Club Members").tag("onlyMembers")
-                        }
-                    }
-                }
-                .padding()
-                
             }
             .textFieldStyle(.roundedBorder)
             .onAppear {
@@ -451,8 +440,8 @@ struct CreateClubView: View {
                     self.clubs = fetchedClubs
                 }
                 
-                leaders = CreatedClub.leaders
-                members = CreatedClub.members
+                leaders = CreatedClub.leaders.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+                members = CreatedClub.members.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
                 clubId = CreatedClub.clubID
                 clubTitle = CreatedClub.name
                 clubDesc = CreatedClub.description
@@ -460,10 +449,6 @@ struct CreateClubView: View {
                 schoology = CreatedClub.schoologyCode
                 location = CreatedClub.location
                 genres = CreatedClub.genres ?? []
-                
-                if CreatedClub.showDataWho != "" {
-                    showDataWho = CreatedClub.showDataWho
-                }
                 
                 if let photo = CreatedClub.clubPhoto {
                     clubPhoto = photo

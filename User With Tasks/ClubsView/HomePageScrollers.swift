@@ -16,7 +16,6 @@ struct HomePageScrollers: View {
     @State var screenHeight: CGFloat
     @State var screenWidth: CGFloat
     @State var userInfo: Personal? = nil 
-    @State var whoCanSeeWhat: Bool
     @AppStorage("advSearchShown") var advSearchShown = false
     @State var scrollerOf : String
     
@@ -48,7 +47,7 @@ struct HomePageScrollers: View {
                                 }
                             } content: {
                                 if shownInfo >= 0 {
-                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
+                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
                                         .presentationDragIndicator(.visible)
                                         .presentationSizing(.page)
                                 } else {

@@ -54,21 +54,6 @@ func fetchClub(withId clubId: String, completion: @escaping (Club?) -> Void) {
     }
 }
 
-
-func addClubToUser(userID: String, clubID: String) {
-    let reference = Database.database().reference()
-    let userClubReference = reference.child("users").child(userID).child("clubsAPartOf")
-    
-    userClubReference.observeSingleEvent(of: .value) { snapshot in
-        var updatedClubs = snapshot.value as? [String] ?? []
-        
-        if !updatedClubs.contains(clubID) {
-            updatedClubs.append(clubID)
-            userClubReference.setValue(updatedClubs)
-        }
-    }
-}
-
 func fetchUser(for userID: String, completion: @escaping (Personal?) -> Void) {
     let reference = Database.database().reference().child("users").child(userID)
     
@@ -112,7 +97,6 @@ func addClubToFavorites(for userID: String, clubID: String) {
     }
 }
 
-
 func removeClubFromFavorites(for userID: String, clubID: String) {
     let reference = Database.database().reference()
     let userFavoritesRef = reference.child("users").child(userID).child("favoritedClubs")
@@ -135,6 +119,49 @@ func removeClubFromFavorites(for userID: String, clubID: String) {
     }
 }
 
+func addClubToUser(for userID: String, clubID: String) {
+    let reference = Database.database().reference()
+    let userFavoritesRef = reference.child("users").child(userID).child("clubsAPartOf")
+    
+    userFavoritesRef.observeSingleEvent(of: .value) { snapshot in
+        var favorites = snapshot.value as? [String] ?? []
+        
+        if !favorites.contains(clubID) {
+            favorites.append(clubID)
+            userFavoritesRef.setValue(favorites) { error, _ in
+                if let error = error {
+                    print("Error adding club to user: \(error)")
+                } else {
+                    print("Club added to user successfully")
+                }
+            }
+        } else {
+            print("Club is already in user")
+        }
+    }
+}
+
+func removeClubFromUser(for userID: String, clubID: String) {
+    let reference = Database.database().reference()
+    let userFavoritesRef = reference.child("users").child(userID).child("clubsAPartOf")
+    
+    userFavoritesRef.observeSingleEvent(of: .value) { snapshot in
+        var favorites = snapshot.value as? [String] ?? []
+        
+        if let index = favorites.firstIndex(of: clubID) {
+            favorites.remove(at: index)
+            userFavoritesRef.setValue(favorites) { error, _ in
+                if let error = error {
+                    print("Error removing club from user: \(error)")
+                } else {
+                    print("Club removed from user successfully")
+                }
+            }
+        } else {
+            print("Club was not in user")
+        }
+    }
+}
 
 func getClubIDByName(clubName: String, completion: @escaping (String?) -> Void) {
     let reference = Database.database().reference().child("clubs")
@@ -187,15 +214,15 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
     }
 }
 
-func addAnnouncment(clubID: String, date: String, body: String) {
+func addAnnouncement(clubID: String, date: String, title: String, body: String, writer: String) {
     let reference = Database.database().reference()
-    let announcementRefrence = reference.child("clubs").child(clubID).child("announcements").child(date)
-    
-    announcementRefrence.observeSingleEvent(of: .value) { snapshot in
-        var announcement = snapshot.value as? String
-        
-            announcement = body
-            announcementRefrence.setValue(announcement)
-        
+    let announcementReference = reference.child("clubs").child(clubID).child("announcements").child(date)
+
+    announcementReference.observeSingleEvent(of: .value) { snapshot in
+        var announcement = snapshot.value as? [String] ?? []
+
+        // Update announcement to include new data
+        announcement = [title, body, writer, clubID]
+        announcementReference.setValue(announcement)
     }
 }

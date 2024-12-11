@@ -84,23 +84,7 @@ struct SearchClubView: View {
                 
             }
         }
-        
-        var whoCanSeeWhat: Bool {
-            guard shownInfo >= 0, shownInfo < clubs.count else { return false }
-            
-            switch clubs[shownInfo].showDataWho {
-            case "all":
-                return true
-            case "allNonGuest":
-                return !viewModel.isGuestUser
-            case "onlyMembers":
-                return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") ||
-                        clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
-            default:
-                return false
-            }
-        }
-        
+                
         VStack {
             Text("Advanced Club Search")
                 .font(.title)
@@ -166,7 +150,6 @@ struct SearchClubView: View {
                             searchText = ""
                             tagsExpanded = false
                         }
-                        .padding(.top, tagsExpanded ? -16 : -20)
                         .animation(.smooth)
                         
                     }
@@ -199,7 +182,7 @@ struct SearchClubView: View {
                                             }
                                         } content: {
                                             if shownInfo >= 0 {
-                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
+                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
                                                     .presentationDragIndicator(.visible)
                                                     .presentationSizing(.page)
                                                   
@@ -239,18 +222,7 @@ struct SearchClubView: View {
                             advSearchShown = true
                         }
                     }
-                    
-                    
-                    // club info view
-                    //VStack {
-//                    if shownInfo >= 0 && !clubs.isEmpty {
-//                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, whoCanSeeWhat: whoCanSeeWhat)
-//                        //  .padding(.trailing, 16)
-//                    } else {
-//                        Text("Choose a Club!")
-//                    }
                 }
-                //.frame(width: screenWidth/2)
             }
             
         }

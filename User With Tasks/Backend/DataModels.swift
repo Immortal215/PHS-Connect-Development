@@ -10,7 +10,7 @@ import SwiftUI
 struct Club: Codable, Equatable {
     var leaders: [String] // emails
     var members: [String] // emails
-    var announcements: [String: String]? // each announcement time will be in this form of Date : [Title, Body, person writing, ClubID of club] need to add this in
+    var announcements: [String: [String]]? // each announcement time will be in this form of Date : [Title, Body, person writing, ClubID of club] need to add this in
     var meetingTimes: [String: [String]]? // each meeting time will be in this form of Date : [Title, Body, Date of end Time] maybe add a show to all thing too?
     var description: String // short description to catch viewers
     var name: String
@@ -19,7 +19,7 @@ struct Club: Codable, Equatable {
     var genres: [String]?
     var clubPhoto: String?
     var abstract: String // club abstract (basically a longer description)
-    var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
+//    var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
     var pendingMemberRequests: [String : String]? // Userid : emails 
     var clubID: String
     var location: String

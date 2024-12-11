@@ -47,6 +47,7 @@ struct Settings: View {
             
             if !viewModel.isGuestUser {
                 Text(favoriteText)
+                    .padding()
             }
             
             Button {
@@ -82,7 +83,6 @@ struct Settings: View {
         .animation(.snappy)
         .onAppear {
             if !viewModel.isGuestUser {
-                
                 if let UserID = viewModel.uid {
                     fetchUser(for: UserID) { user in
                         userInfo = user

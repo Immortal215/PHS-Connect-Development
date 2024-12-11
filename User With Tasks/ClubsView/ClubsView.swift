@@ -93,24 +93,6 @@ struct ClubView: View {
                 }
         }
         
-        
-        var whoCanSeeWhat: Bool {
-            guard shownInfo >= 0, shownInfo < clubs.count else { return false }
-            
-            switch clubs[shownInfo].showDataWho {
-            case "all":
-                return true
-            case "allNonGuest":
-                return !viewModel.isGuestUser
-            case "onlyMembers":
-                return (clubs[shownInfo].members.contains(viewModel.userEmail ?? "") ||
-                        clubs[shownInfo].leaders.contains(viewModel.userEmail ?? ""))
-            default:
-                return false
-            }
-        }
-        
-        
         ZStack {
             if advSearchShown {
                 if !viewModel.isGuestUser {
@@ -173,10 +155,10 @@ struct ClubView: View {
                             
                             if userInfo?.userID != nil {
                                 // Clubs in
-                                HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Enrolled")
+                                HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Enrolled")
                                 
                                 // favorited clubs
-                                HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, whoCanSeeWhat: whoCanSeeWhat, scrollerOf: "Favorite")
+                                HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Favorite")
                             }
                         }
                         
@@ -197,19 +179,19 @@ struct ClubView: View {
                         userInfo = user
                     }
                 }
-
+                
+                advSearchShown = !advSearchShown
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    advSearchShown = !advSearchShown
+                }
+                
+                if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
+                    advSearchShown = true
+                }
+                
             } else {
                 advSearchShown = true 
-            }
-            
-            advSearchShown = !advSearchShown
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                advSearchShown = !advSearchShown
-            }
-            
-            if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
-                advSearchShown = true
             }
            
         }

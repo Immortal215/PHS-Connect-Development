@@ -6,7 +6,7 @@ struct MultiGenrePickerView: View {
     
     private let genres: [String: [String]] = [
         "Types": ["Competitive", "Non-Competitive"],
-        "Subjects": ["Math", "Science", "Reading", "History", "Business", "Technology", "Art", "Fine Arts", "Speaking"],
+        "Subjects": ["Math", "Science", "Reading", "History", "Business", "Technology", "Art", "Fine Arts", "Speaking", "Health", "Law", "Engineering"],
         "Descriptors": ["Cultural", "Physical", "Mental Health", "Safe Space"]
     ]
     
