@@ -52,7 +52,7 @@
 
 ### 7. **Firebase Integration**
 
-- Real-time data syncing powered by Firebase Realtime Database ensures smooth operation.
+- Data pulling powered by Firebase Realtime Database ensures full access to club information and editing of said information. 
 
 ---
 
