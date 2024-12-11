@@ -101,13 +101,13 @@ struct SearchClubView: View {
                                     Menu {
                                         ForEach(searchCategories, id: \.self) { category in
                                             Button(action: {
+                                                
+                                                searchText = ""
+                                                currentSearchingBy = category
                                                 tagsExpanded = false
                                                 if category == "Genre" {
                                                     tagsExpanded = true
                                                 }
-                                                searchText = ""
-                                                currentSearchingBy = category
-                                                
                                             }) {
                                                 Text(category)
                                             }
