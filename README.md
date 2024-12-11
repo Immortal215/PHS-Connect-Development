@@ -87,7 +87,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Immortal215/PHS-Connect.git
+   git clone https://github.com/Immortal215/PHS-Connect-Development.git
    ```
 2. Open the `.xcodeproj` file in Xcode.
 3. Install dependencies via Swift Package Manager.
