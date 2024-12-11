@@ -25,6 +25,7 @@ struct TabBarButton: View {
                 }
               //  .offset(y: selectedTab == index ? -20 : 0.0 )
                 .foregroundColor(selectedTab == index ? .blue : .white)
+                .brightness(0.1)
             }
         }
         .shadow(color: .gray, radius: 5)

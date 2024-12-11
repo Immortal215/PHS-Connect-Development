@@ -94,11 +94,11 @@ struct ContentView: View {
                                     }
                                     .tag(1)
                                 
-                                CalendarView(viewModel: viewModel)
-                                    .tabItem {
-                                        Image(systemName: "calendar.badge.clock")
-                                    }
-                                    .tag(2)
+//                                CalendarView(viewModel: viewModel)
+//                                    .tabItem {
+//                                        Image(systemName: "calendar.badge.clock")
+//                                    }
+//                                    .tag(2)
                                 
                                 Settings(viewModel: viewModel, showSignInView: $showSignInView)
                                     .tabItem {
@@ -126,19 +126,17 @@ struct ContentView: View {
                                         
                                         HStack {
                                             TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
-                                                .padding(.horizontal, 100)
+                                                .padding(.horizontal, screenWidth/8) 
                                             
                                             TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
-                                                .padding(.horizontal, 100)
+                                                .padding(.horizontal, screenWidth/8)
                                             
-                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
-                                                .padding(.horizontal, 100)
-                                            
-                                            
+//                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+//                                                .padding(.horizontal, 100)
+//                                            
                                             TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
-                                                .padding(.horizontal, 100)
+                                                .padding(.horizontal, screenWidth/8)
                                         }
-                                        
                                     }
                                     .offset(y: 30)
                             }
