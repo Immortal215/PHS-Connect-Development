@@ -52,7 +52,7 @@
 
 ### 7. **Firebase Integration**
 
-- Real-time data syncing powered by Firebase Realtime Database ensures smooth operation.
+- Data pulling powered by Firebase Realtime Database ensures full access to club information and editing of said information. 
 
 ---
 
@@ -61,19 +61,17 @@
 > [!IMPORTANT]
 >  **Dive into the technical backbone** 🧑‍💻
 
-### 1. **UI Components**
+### 1. **Custom UI Components**
 
-- **Custom Calendar View:**
-  - Built using SwiftUI to show meeting times for favorited clubs.
-- **Add Announcement Sheet:**
-  - Structured with `struct AddAnnouncementSheet: View` for leaders to create and save announcements.
+- **Custom Calendar View :** (Will ship in 2025)
+  - Built using SwiftUI to show meeting times on a calendar for enrolled clubs.
+- **Lots more! :**
 
 ### 2. **Backend**
 
 - **Firebase Realtime Database:**
   - Securely stores club and user data.
-  - Ensures real-time updates for announcements, member lists, and more.
-
+  - Ensures pulled updates for club information such as announcements, meeting times, schoology codes, etc. 
 ---
 
 ## Getting Started
@@ -89,7 +87,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Immortal215/PHS-Connect.git
+   git clone https://github.com/Immortal215/PHS-Connect-Development.git
    ```
 2. Open the `.xcodeproj` file in Xcode.
 3. Install dependencies via Swift Package Manager.
