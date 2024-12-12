@@ -119,50 +119,6 @@ func removeClubFromFavorites(for userID: String, clubID: String) {
     }
 }
 
-func addClubToUser(for userID: String, clubID: String) {
-    let reference = Database.database().reference()
-    let userFavoritesRef = reference.child("users").child(userID).child("clubsAPartOf")
-    
-    userFavoritesRef.observeSingleEvent(of: .value) { snapshot in
-        var favorites = snapshot.value as? [String] ?? []
-        
-        if !favorites.contains(clubID) {
-            favorites.append(clubID)
-            userFavoritesRef.setValue(favorites) { error, _ in
-                if let error = error {
-                    print("Error adding club to user: \(error)")
-                } else {
-                    print("Club added to user successfully")
-                }
-            }
-        } else {
-            print("Club is already in user")
-        }
-    }
-}
-
-func removeClubFromUser(for userID: String, clubID: String) {
-    let reference = Database.database().reference()
-    let userFavoritesRef = reference.child("users").child(userID).child("clubsAPartOf")
-    
-    userFavoritesRef.observeSingleEvent(of: .value) { snapshot in
-        var favorites = snapshot.value as? [String] ?? []
-        
-        if let index = favorites.firstIndex(of: clubID) {
-            favorites.remove(at: index)
-            userFavoritesRef.setValue(favorites) { error, _ in
-                if let error = error {
-                    print("Error removing club from user: \(error)")
-                } else {
-                    print("Club removed from user successfully")
-                }
-            }
-        } else {
-            print("Club was not in user")
-        }
-    }
-}
-
 func getClubIDByName(clubName: String, completion: @escaping (String?) -> Void) {
     let reference = Database.database().reference().child("clubs")
     
@@ -221,8 +177,21 @@ func addAnnouncement(clubID: String, date: String, title: String, body: String, 
     announcementReference.observeSingleEvent(of: .value) { snapshot in
         var announcement = snapshot.value as? [String] ?? []
 
-        // Update announcement to include new data
         announcement = [title, body, writer, clubID]
         announcementReference.setValue(announcement)
     }
 }
+
+//func addPendingMemberRequest(clubID: String, email: String) {
+//    let databaseRef = Database.database().reference()
+//    let dataref = databaseRef.child("clubs").child(clubID).child("pendingMemberRequests")
+//
+//    dataref.observeSingleEvent(of: .value) { snapshot in
+//        var pendingRequests = snapshot.value as? [String] ?? []
+//        if !pendingRequests.contains(email) {
+//            pendingRequests.append(email)
+//        }
+//        
+//        dataref.setValue(pendingRequests)
+//    }
+//}

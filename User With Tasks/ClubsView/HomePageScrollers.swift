@@ -13,20 +13,20 @@ struct HomePageScrollers: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
     @State var viewModel: AuthenticationViewModel
-    @State var screenHeight: CGFloat
-    @State var screenWidth: CGFloat
-    @State var userInfo: Personal? = nil 
+    @State var screenHeight = UIScreen.main.bounds.height
+    @State var screenWidth = UIScreen.main.bounds.width
+    @State var userInfo: Personal? = nil
     @AppStorage("advSearchShown") var advSearchShown = false
     @State var scrollerOf : String
     
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(scrollerOf) Clubs")
-
-            ScrollView(.horizontal) {
+            
+            ScrollView(.horizontal, showsIndicators: false) {
                 if !filteredClubs.isEmpty {
                     
-                    LazyHStack {
+                    HStack { 
                         ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, club) in
                             
                             let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
@@ -34,11 +34,10 @@ struct HomePageScrollers: View {
                             Button {
                                 shownInfo = infoRelativeIndex
                                 showClubInfoSheet = true
-                                
                             } label: {
-                                ClubCard(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
+                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                             }
-                            .frame(width: screenWidth/2, height: screenHeight/4)
+                           // .frame(minWidth: screenWidth/2.2, minHeight: screenHeight/5)
                             .padding(.vertical, 3)
                             .padding(.horizontal, 4)
                             .sheet(isPresented: $showClubInfoSheet) {
@@ -50,14 +49,14 @@ struct HomePageScrollers: View {
                                     ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
                                         .presentationDragIndicator(.visible)
                                         .presentationSizing(.page)
+                                      
                                 } else {
                                     Text("Error! Try Again!")
                                         .presentationDragIndicator(.visible)
                                 }
                             }
-                            
                         }
-                        
+        
                     }
                 } else {
                     Button {
@@ -68,20 +67,20 @@ struct HomePageScrollers: View {
                     }
                 }
             }
+            
         }
-        .padding()
         .onAppear {
-                fetchClubs { fetchedClubs in
-                    self.clubs = fetchedClubs
-                }
-                
-                if !viewModel.isGuestUser {
-                    if let UserID = viewModel.uid {
-                        fetchUser(for: UserID) { user in
-                            userInfo = user
-                        }
+            fetchClubs { fetchedClubs in
+                self.clubs = fetchedClubs
+            }
+            
+            if !viewModel.isGuestUser {
+                if let UserID = viewModel.uid {
+                    fetchUser(for: UserID) { user in
+                        userInfo = user
                     }
                 }
+            }
         }
     }
 }

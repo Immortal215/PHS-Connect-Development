@@ -148,9 +148,7 @@ struct ClubView: View {
                         }
                         .padding()
                     }
-                    
-                    ScrollView {
-                        
+                                            
                         ScrollView {
                             
                             if userInfo?.userID != nil {
@@ -161,9 +159,6 @@ struct ClubView: View {
                                 HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Favorite")
                             }
                         }
-                        
-                        
-                    }
                 }
             }
             

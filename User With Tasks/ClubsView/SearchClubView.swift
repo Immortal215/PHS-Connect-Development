@@ -159,7 +159,6 @@ struct SearchClubView: View {
                             .font(.headline)
                     }
                     
-                    ScrollView {
                         // clubs view with search
                         ScrollView {
                             ScrollView {
@@ -173,7 +172,7 @@ struct SearchClubView: View {
                                         } label: {
                                             ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                         }
-                                        .frame(maxWidth: screenWidth/2.2)
+                                      //  .frame(width: screenWidth/2.2, height: screenHeight/5)
                                         .padding(.vertical, 3)
                                         .padding(.horizontal)
                                         .sheet(isPresented: $showClubInfoSheet) {
@@ -206,7 +205,7 @@ struct SearchClubView: View {
                         //  .frame(width: screenWidth/2.1)
                         
                         //.padding()
-                    }
+                    
                     .refreshable {
                         fetchClubs { fetchedClubs in
                             clubs = fetchedClubs

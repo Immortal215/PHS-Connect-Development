@@ -149,6 +149,7 @@ struct ClubInfoView: View {
                     }
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
+                        
                         Button {
                             if let announcements = club.announcements {
                                 if formattedDate(from: Date()) > announcements.sorted(by: { dateFormattedString(from: $0.key) > dateFormattedString(from: $1.key)})[0].key {
