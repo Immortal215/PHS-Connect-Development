@@ -20,7 +20,7 @@ struct Club: Codable, Equatable {
     var clubPhoto: String?
     var abstract: String // club abstract (basically a longer description)
 //    var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
-    var pendingMemberRequests: [String]? // Userid : emails 
+    var pendingMemberRequests: Set<String>? // Userid : emails
     var clubID: String
     var location: String
     var instagram: String? // instagram link (maybe in app web view because of photo showing)

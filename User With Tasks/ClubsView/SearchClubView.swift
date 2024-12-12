@@ -161,7 +161,7 @@ struct SearchClubView: View {
                     }
                     
                         // clubs view with search
-                        ScrollView {
+                    ScrollView(showsIndicators: false) {
                             ScrollView {
                                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
                                     ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in

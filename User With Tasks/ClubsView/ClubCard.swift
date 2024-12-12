@@ -135,31 +135,45 @@ struct ClubCard: View {
                     Spacer()
                     
                     // Enroll Button
-                    Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") ? "Enroll" : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? "Requested" : "Enrolled") {
+                    Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Enroll" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Enrolled") {
                         if let email = viewModel.userEmail {
-                            print("yes")
 
                             if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) {
-                                print("yes2")
-                                if var cluber = club.pendingMemberRequests {
-                                    print("yes3")
-                                    cluber.append(email)
+                                if var cluber =  club.pendingMemberRequests {
+                                    cluber.insert(email)
+                                    club.pendingMemberRequests = cluber
                                     addClub(club: club)
                                 } else {
                                     club.pendingMemberRequests = [email]
                                     addClub(club: club)
                                 }
+                            } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) {
+                                club.pendingMemberRequests?.remove(email)
+                                addClub(club: club)
+                            } else {
+                                club.pendingMemberRequests?.remove(email)
+                                if club.members.count != 1 {
+                                    club.members.removeAll(where: { $0 == email })
+                                }
+                                addClub(club: club)
                             }
                         }
                     }
                     .buttonStyle(.borderedProminent)
                     .padding(.top)
+                    .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
                     
                 }
                 .padding()
             }
         }
         .frame(width: screenWidth / 2.2, height: screenHeight / 5)
+        .onAppear {
+            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
+                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                refreshUserInfo()
+            }
+        }
     }
     
     // Helper Function to Refresh User Info

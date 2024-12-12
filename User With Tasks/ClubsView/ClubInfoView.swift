@@ -149,7 +149,20 @@ struct ClubInfoView: View {
                     }
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
-                        
+                        if let cluber = club.pendingMemberRequests {
+                            ForEach(Array(cluber), id: \.self) { i in
+                                Text(i)
+                                
+                                Button {
+                                    club.pendingMemberRequests?.remove(i)
+                                    club.members.append(i)
+                                    addClub(club: club)
+                                } label: {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.green)
+                                }
+                            }
+                        }
                         Button {
                             if let announcements = club.announcements {
                                 if formattedDate(from: Date()) > announcements.sorted(by: { dateFormattedString(from: $0.key) > dateFormattedString(from: $1.key)})[0].key {
