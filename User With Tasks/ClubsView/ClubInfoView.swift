@@ -151,15 +151,29 @@ struct ClubInfoView: View {
                     if club.leaders.contains(viewModel.userEmail ?? "") {
                         if let cluber = club.pendingMemberRequests {
                             ForEach(Array(cluber), id: \.self) { i in
-                                Text(i)
-                                
-                                Button {
-                                    club.pendingMemberRequests?.remove(i)
-                                    club.members.append(i)
-                                    addClub(club: club)
-                                } label: {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(.green)
+                                HStack {
+                                    Text(i)
+                                    
+                                    Button {
+                                        club.pendingMemberRequests?.remove(i)
+                                        club.members.append(i)
+                                        addClub(club: club)
+                                    } label: {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(.green)
+                                    }
+                                    .imageScale(.large)
+                                    .padding()
+                                    
+                                    Button {
+                                        club.pendingMemberRequests?.remove(i)
+                                        addClub(club: club)
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .foregroundStyle(.red)
+                                    }
+                                    .imageScale(.large)
+                                    .padding()
                                 }
                             }
                         }

@@ -23,6 +23,7 @@ struct SearchClubView: View {
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @State var showClubInfoSheet = false
     @AppStorage("advSearchShown") var advSearchShown = false
+    @State var hider = false
     
     var body: some View {
         var filteredItems: [Club] {
@@ -160,8 +161,9 @@ struct SearchClubView: View {
                             .font(.headline)
                     }
                     
+                    if !hider {
                         // clubs view with search
-                    ScrollView(showsIndicators: false) {
+                        ScrollView(showsIndicators: false) {
                             ScrollView {
                                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
                                     ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
@@ -173,7 +175,7 @@ struct SearchClubView: View {
                                         } label: {
                                             ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                         }
-                                      //  .frame(width: screenWidth/2.2, height: screenHeight/5)
+                                        //  .frame(width: screenWidth/2.2, height: screenHeight/5)
                                         .padding(.vertical, 3)
                                         .padding(.horizontal)
                                         .sheet(isPresented: $showClubInfoSheet) {
@@ -185,7 +187,7 @@ struct SearchClubView: View {
                                                 ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
                                                     .presentationDragIndicator(.visible)
                                                     .presentationSizing(.page)
-                                                  
+                                                
                                             } else {
                                                 Text("Error! Try Again!")
                                                     .presentationDragIndicator(.visible)
@@ -203,25 +205,29 @@ struct SearchClubView: View {
                             Text("Search for Other Clubs! 🙃")
                                 .frame(height: screenHeight/3, alignment: .top)
                         }
+                        .refreshable {
+                            hider = true
+                            fetchClubs { fetchedClubs in
+                                clubs = fetchedClubs
+                            }
+                            
+                            if !viewModel.isGuestUser {
+                                if let UserID = viewModel.uid {
+                                    fetchUser(for: UserID) { user in
+                                        userInfo = user
+                                    }
+                                }
+                            } else {
+                                advSearchShown = true
+                            }
+                            
+                            hider = false
+                        }
+
                         //  .frame(width: screenWidth/2.1)
-                        
+                    }
                         //.padding()
                     
-                    .refreshable {
-                        fetchClubs { fetchedClubs in
-                            clubs = fetchedClubs
-                        }
-                        
-                        if !viewModel.isGuestUser {
-                            if let UserID = viewModel.uid {
-                                fetchUser(for: UserID) { user in
-                                    userInfo = user
-                                }
-                            }
-                        } else {
-                            advSearchShown = true
-                        }
-                    }
                 }
             }
             
