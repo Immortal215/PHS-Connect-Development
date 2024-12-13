@@ -22,52 +22,52 @@ struct HomePageScrollers: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(scrollerOf) Clubs")
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                if !filteredClubs.isEmpty {
-                    
-                    HStack { 
-                        ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, club) in
-                            
-                            let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                            
-                            Button {
-                                shownInfo = infoRelativeIndex
-                                showClubInfoSheet = true
-                            } label: {
-                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
-                            }
-                           // .frame(minWidth: screenWidth/2.2, minHeight: screenHeight/5)
-                            .padding(.vertical, 3)
-                            .padding(.horizontal, 4)
-                            .sheet(isPresented: $showClubInfoSheet) {
-                                fetchClub(withId: club.clubID) { fetchedClub in
-                                    clubs[infoRelativeIndex] = fetchedClub ?? club
+            ScrollView {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    if !filteredClubs.isEmpty {
+                        
+                        HStack {
+                            ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, club) in
+                                
+                                let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                
+                                Button {
+                                    shownInfo = infoRelativeIndex
+                                    showClubInfoSheet = true
+                                } label: {
+                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                 }
-                            } content: {
-                                if shownInfo >= 0 {
-                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
-                                        .presentationDragIndicator(.visible)
-                                        .presentationSizing(.page)
-                                      
-                                } else {
-                                    Text("Error! Try Again!")
-                                        .presentationDragIndicator(.visible)
+                                // .frame(minWidth: screenWidth/2.2, minHeight: screenHeight/5)
+                                .padding(.vertical, 3)
+                                .padding(.horizontal, 4)
+                                .sheet(isPresented: $showClubInfoSheet) {
+                                    fetchClub(withId: club.clubID) { fetchedClub in
+                                        clubs[infoRelativeIndex] = fetchedClub ?? club
+                                    }
+                                } content: {
+                                    if shownInfo >= 0 {
+                                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
+                                            .presentationDragIndicator(.visible)
+                                            .presentationSizing(.page)
+                                        
+                                    } else {
+                                        Text("Error! Try Again!")
+                                            .presentationDragIndicator(.visible)
+                                    }
                                 }
                             }
+                            
                         }
-        
-                    }
-                } else {
-                    Button {
-                        advSearchShown = true
-                    } label: {
-                        Text("Add \(scrollerOf) +")
-                            .font(.subheadline)
+                    } else {
+                        Button {
+                            advSearchShown = true
+                        } label: {
+                            Text("Add \(scrollerOf) +")
+                                .font(.subheadline)
+                        }
                     }
                 }
             }
-            
         }
         .onAppear {
             fetchClubs { fetchedClubs in

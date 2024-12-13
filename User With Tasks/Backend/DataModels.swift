@@ -10,7 +10,7 @@ import SwiftUI
 struct Club: Codable, Equatable {
     var leaders: [String] // emails
     var members: [String] // emails
-    var announcements: [String: [String]]? // each announcement time will be in this form of Date : [Title, Body, person writing, ClubID of club] need to add this in
+    var announcements: [String : Announcements]? // each announcement time will be in this form of Date : [Title, Body, person writing, ClubID of club] need to add this in
     var meetingTimes: [String: [String]]? // each meeting time will be in this form of Date : [Title, Body, Date of end Time] maybe add a show to all thing too?
     var description: String // short description to catch viewers
     var name: String
@@ -25,6 +25,14 @@ struct Club: Codable, Equatable {
     var location: String
     var instagram: String? // instagram link (maybe in app web view because of photo showing)
     
+    struct Announcements: Codable, Equatable {
+        var date: String
+        var title: String
+        var body: String
+        var writer: String
+        var clubID: String
+        var link: String?
+    }
 }
 
 struct Personal: Codable {

@@ -27,6 +27,25 @@ struct ClubInfoView: View {
     
     var body: some View {
         
+        var latestAnnouncementMessage: String {
+            if let announcements = club.announcements {
+                let sortedAnnouncements = announcements.sorted {
+                    let date1 = dateFromString($0.value.date)
+                    let date2 = dateFromString($1.value.date)
+                    return (date1 ?? Date.distantPast) > (date2 ?? Date.distantPast)
+                }
+                
+                if let latestAnnouncementDate = sortedAnnouncements.first?.value.date,
+                   stringFromDate(Date()) > latestAnnouncementDate {
+                    return "Add Announcement +"
+                } else {
+                    return "Add Announcement + (Waiting)"
+                }
+            } else {
+                return "Add First Announcement +"
+            }
+        }
+
         NavigationView {
             
             ScrollView {
@@ -177,57 +196,48 @@ struct ClubInfoView: View {
                                 }
                             }
                         }
+                        
                         Button {
                             if let announcements = club.announcements {
-                                if formattedDate(from: Date()) > announcements.sorted(by: { dateFormattedString(from: $0.key) > dateFormattedString(from: $1.key)})[0].key {
+                                let sortedAnnouncements = announcements.sorted {
+                                    let date1 = dateFromString($0.value.date)
+                                    let date2 = dateFromString($1.value.date)
+                                    return (date1 ?? Date.distantPast) > (date2 ?? Date.distantPast)
+                                }
+                                
+                                if let latestAnnouncementDate = sortedAnnouncements.first?.value.date,
+                                   Date() > dateFromString(latestAnnouncementDate) {
                                     showAddAnnouncement.toggle()
                                 } else {
-                                    dropper(title: "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds", subtitle: "One Announcement Per Minute!", icon: UIImage(systemName: "timer"))
+                                    dropper(title: "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
+                                            subtitle: "One Announcement Per Minute!",
+                                            icon: UIImage(systemName: "timer"))
                                 }
                             } else {
                                 showAddAnnouncement.toggle()
                             }
                         } label: {
-                            if let announcements = club.announcements {
-                                if formattedDate(from: Date()) > announcements.sorted(by: { dateFormattedString(from: $0.key) > dateFormattedString(from: $1.key)})[0].key {
-                                    Text("Add Announcement +")
-                                        .font(.subheadline)
-                                } else {
-                                    Text("Add Announcement + (Waiting)")
-                                        .font(.subheadline)
-                                }
-                            } else {
-                                Text("Add First Announcement +")
-                                    .font(.subheadline)
-                            }
+                            Text(latestAnnouncementMessage)
                         }
                         .sheet(isPresented: $showAddAnnouncement) {
-                            AddAnnouncementSheet(announcementBody: "", announcementTitle: "", email: viewModel.userEmail!, clubID: club.clubID, onSubmit: {
-                                oneMinuteAfter = Date().addingTimeInterval(60)
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                    fetchClub(withId: club.clubID) { fetchedClub in
-                                        self.club = fetchedClub ?? self.club
+                            AddAnnouncementSheet(announcementBody: "", announcementTitle: "", email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
+                                    oneMinuteAfter = Date().addingTimeInterval(60)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                        fetchClub(withId: club.clubID) { fetchedClub in
+                                            self.club = fetchedClub ?? self.club
+                                        }
                                     }
                                 }
-                            }
                             )
                             .presentationDetents([.fraction(0.8)])
                             .presentationDragIndicator(.visible)
-                        
                         }
+
                     }
                     
                     if let announcements = club.announcements, viewModel.isGuestUser == false {
-                        //                        Text("Announcements:")
-                        //                            .font(.headline)
-                        //                        ForEach(announcements.sorted(by: { $0.key > $1.key }), id: \.key) { key, value in
-                        //                                Text("\(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened)): \(value)")
-                        //                                    .font(.subheadline)
-                        //                                    .padding(.top, -8)
-                        //                            }
                         AnnouncementsView(announcements: announcements)
                     }
-                    
                     
                     Text("Location:")
                         .font(.headline)
@@ -333,7 +343,4 @@ struct ClubInfoView: View {
             abstractGreaterThanFour = (totalLines != 4 ? totalLines > 4 : false )
         }
     }
-    
 }
-
-

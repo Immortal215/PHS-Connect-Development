@@ -17,13 +17,13 @@ struct TabBarButton: View {
                 VStack {
                     Image(systemName: image)
                         .font(.system(size: 24))
-                      //  .rotationEffect(.degrees(selectedTab == index ? 10.0 : 0.0))
+                    //  .rotationEffect(.degrees(selectedTab == index ? 10.0 : 0.0))
                     
                     Text(labelr)
                         .font(.caption)
-                       // .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
+                    // .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
                 }
-              //  .offset(y: selectedTab == index ? -20 : 0.0 )
+                //  .offset(y: selectedTab == index ? -20 : 0.0 )
                 .foregroundColor(selectedTab == index ? .blue : .white)
                 .brightness(0.1)
             }
@@ -75,6 +75,14 @@ struct CodeSnippetView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.gray.opacity(0.5), lineWidth: 1)
                 )
+                .onTapGesture {
+                    UIPasteboard.general.string = replaceSchoologyExtras(code)
+                    dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
+                    clicked = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        clicked = false
+                    }
+                }
             
             Button(action: {
                 UIPasteboard.general.string = replaceSchoologyExtras(code)

@@ -170,17 +170,22 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
     }
 }
 
-func addAnnouncement(clubID: String, date: String, title: String, body: String, writer: String) {
+func addAnnouncement(clubID: String, date: String, title: String, body: String, writer: String, link: String? = nil) {
     let reference = Database.database().reference()
-    let announcementReference = reference.child("clubs").child(clubID).child("announcements").child(date)
+    let announcementReference = reference.child("clubs").child(clubID).child("announcements")
 
-    announcementReference.observeSingleEvent(of: .value) { snapshot in
-        var announcement = snapshot.value as? [String] ?? []
+    let newAnnouncement = Club.Announcements(date: date, title: title, body: body, writer: writer, clubID: clubID, link: link)
 
-        announcement = [title, body, writer, clubID]
-        announcementReference.setValue(announcement)
+    do {
+        let data = try JSONEncoder().encode(newAnnouncement)
+        if let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            announcementReference.child(date).setValue(dictionary)
+        }
+    } catch {
+        print("Error encoding club data: \(error)")
     }
 }
+
 
 //func addPendingMemberRequest(clubID: String, email: String) {
 //    let databaseRef = Database.database().reference()

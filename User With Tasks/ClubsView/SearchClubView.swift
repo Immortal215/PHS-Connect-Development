@@ -96,7 +96,7 @@ struct SearchClubView: View {
                         HStack {
                             SearchBar("Search all clubs by \(currentSearchingBy)",text: $searchText, isEditing: $isSearching)
                                 .padding()
-                                .disabled(currentSearchingBy == "Genre" ? true : false)
+                               // .disabled(currentSearchingBy == "Genre" ? true : false)
         
                                 HStack {
                                     Menu {

@@ -5,15 +5,15 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-func formattedDate(from date: Date) -> String {
+func stringFromDate(_ from: Date) -> String {
     let formatter = DateFormatter()
     formatter.dateFormat = "MM-dd-yyyy, h:mm a"
-    return formatter.string(from: date)
+    return formatter.string(from: from)
 }
 
-func dateFormattedString(from date: String) -> Date {
+func dateFromString(_ from: String) -> Date {
     let formatter = DateFormatter()
     formatter.dateFormat = "MM-dd-yyyy, h:mm a"
-    return formatter.date(from: date)!
+    return formatter.date(from: from)!
 }
 

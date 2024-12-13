@@ -7,25 +7,23 @@ import FirebaseDatabase
 import Pow
 import SwiftUIX
 
-
 struct AddAnnouncementSheet: View {
     @State var announcementBody: String
     @State var announcementTitle: String
     @State var email: String
     @State var clubID: String
+    @State var link: String? = nil
     @Environment(\.presentationMode) var presentationMode
     var onSubmit: () -> Void
     
     var body: some View {
         VStack(alignment: .trailing) {
-            
             ScrollView {
                 Text("Add Announcement")
                     .font(.title)
                     .fontWeight(.bold)
                     .padding(.top)
-                
-                
+
                 LabeledContent {
                     TextField("Enter announcement title...", text: $announcementTitle)
                         .padding()
@@ -68,7 +66,7 @@ struct AddAnnouncementSheet: View {
                     
                     Button("Post (Cannot Re-Edit)") {
                         if !announcementBody.isEmpty && !announcementTitle.isEmpty {
-                            addAnnouncement(clubID: clubID, date: formattedDate(from: Date()), title: announcementTitle, body: announcementBody, writer: email)
+                            addAnnouncement(clubID: clubID, date: stringFromDate(Date()), title: announcementTitle, body: announcementBody, writer: email, link: link)
                             onSubmit()
                             presentationMode.wrappedValue.dismiss()
                         } else {
@@ -83,13 +81,12 @@ struct AddAnnouncementSheet: View {
             }
             .padding()
         }
-        
     }
 }
 
 struct AnnouncementsView: View {
     @State var showAllAnnouncements = false
-    var announcements: [String: [String]] // Date: [Title, Body, Person, ClubID]
+    var announcements: [String: Club.Announcements]
     @State var clubNames: [String: String] = [:]
     @Environment(\.presentationMode) var presentationMode
     
@@ -98,30 +95,24 @@ struct AnnouncementsView: View {
             Text("Recent Announcements:")
                 .font(.headline)
             
-            ForEach(announcements.sorted(by: { dateFormattedString(from: $0.key) > dateFormattedString(from: $1.key)}).prefix(2), id: \.key) { key, value in // show the 2 most recent announcements
+            ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }).prefix(2), id: \.key) { (key, announcement) in
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened))
-                            
+                            Text(announcement.date)
                             Text("-")
                             
-                            if let clubName = clubNames[value[3]] {
+                            if let clubName = clubNames[announcement.clubID] {
                                 Button {
                                     presentationMode.wrappedValue.dismiss()
-                                } label : {
-                                    Text(clubName)
-                                        .foregroundStyle(.blue)
+                                } label: {
+                                    Text(clubName).foregroundStyle(.blue)
                                 }
                             } else {
                                 Text("Loading...")
                                     .onAppear {
-                                        getClubNameByID(clubID: value[3]) { name in
-                                            if let name = name {
-                                                clubNames[value[3]] = name
-                                            } else {
-                                                clubNames[value[3]] = "Unknown Club"
-                                            }
+                                        getClubNameByID(clubID: announcement.clubID) { name in
+                                            clubNames[announcement.clubID] = name ?? "Unknown Club"
                                         }
                                     }
                             }
@@ -129,27 +120,30 @@ struct AnnouncementsView: View {
                         .font(.caption)
                         .foregroundColor(.gray)
                         
-                        Text(value[0]) // title
+                        Text(announcement.title)
                             .font(.headline)
                             .bold()
                         
-                        Text(value[1]) // body
+                        Text(announcement.body)
                             .font(.body)
-                        //  .lineLimit(2)
                         
-                        Text("- \(value[2])") // person writing
+                        if let link = announcement.link, !link.isEmpty {
+                            Link("Learn more", destination: URL(string: link)!)
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Text("- \(announcement.writer)")
                             .font(.caption)
                             .italic()
                             .padding(.bottom, 8)
-                        
                     }
                     .padding(.vertical, 4)
                     
                     Spacer()
                 }
             }
-            
-            // Show more button
+
             if announcements.count > 2 {
                 Button{
                     showAllAnnouncements.toggle()
@@ -169,39 +163,35 @@ struct AnnouncementsView: View {
 }
 
 struct AllAnnouncementsView: View {
-    var announcements: [String: [String]]
+    var announcements: [String: Club.Announcements]
     @State var clubNames: [String: String] = [:]
     @Environment(\.presentationMode) var presentationMode
-    
+
     var body: some View {
         ScrollView {
             Text("All Announcements")
                 .font(.largeTitle)
                 .bold()
-            ForEach(announcements.sorted(by: { dateFormattedString(from: $0.key) > dateFormattedString(from: $1.key)}), id: \.key) { key, value in
+                .padding()
+
+            ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }), id: \.key) { (key, announcement) in
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text(dateFormattedString(from: key).formatted(date: .abbreviated, time: .shortened))
-                            
+                            Text(announcement.date)
                             Text("-")
                             
-                            if let clubName = clubNames[value[3]] {
+                            if let clubName = clubNames[announcement.clubID] {
                                 Button {
                                     presentationMode.wrappedValue.dismiss()
-                                } label : {
-                                    Text(clubName)
-                                        .foregroundStyle(.blue)
+                                } label: {
+                                    Text(clubName).foregroundStyle(.blue)
                                 }
                             } else {
                                 Text("Loading...")
                                     .onAppear {
-                                        getClubNameByID(clubID: value[3]) { name in
-                                            if let name = name {
-                                                clubNames[value[3]] = name
-                                            } else {
-                                                clubNames[value[3]] = "Unknown Club"
-                                            }
+                                        getClubNameByID(clubID: announcement.clubID) { name in
+                                            clubNames[announcement.clubID] = name ?? "Unknown Club"
                                         }
                                     }
                             }
@@ -209,25 +199,28 @@ struct AllAnnouncementsView: View {
                         .font(.caption)
                         .foregroundColor(.gray)
                         
-                        Text(value[0]) // title
+                        Text(announcement.title)
                             .font(.headline)
                             .bold()
                         
-                        Text(value[1]) // body
+                        Text(announcement.body)
                             .font(.body)
-                        //  .lineLimit(2)
                         
-                        Text("- \(value[2])") // person writing
+                        if let link = announcement.link, !link.isEmpty {
+                            Link("Learn more", destination: URL(string: link)!)
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Text("- \(announcement.writer)")
                             .font(.caption)
                             .italic()
                             .padding(.bottom, 8)
-                        
                     }
                     .padding(.vertical, 4)
                     
                     Spacer()
                 }
-                .padding(.horizontal)
             }
         }
     }
