@@ -39,6 +39,7 @@ struct Personal: Codable {
     var userID : String
     var favoritedClubs: [String] // clubIDs
     var subjectPreferences: [String]
+    var fcmToken: String?
 }
 
 @MainActor
