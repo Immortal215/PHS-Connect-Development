@@ -53,7 +53,7 @@ struct ClubInfoView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .center) {
                         VStack {
-                            Text(club.abstract)
+                            Text(.init(club.abstract))
                                 .font(.body)
                                 .foregroundColor(.gray)
                                 .lineLimit(abstractExpanded ? nil : 4)
@@ -220,7 +220,7 @@ struct ClubInfoView: View {
                             Text(latestAnnouncementMessage)
                         }
                         .sheet(isPresented: $showAddAnnouncement) {
-                            AddAnnouncementSheet(announcementBody: "", announcementTitle: "", email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
+                            AddAnnouncementSheet(clubName: club.name, announcementBody: "", announcementTitle: "", email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
                                     oneMinuteAfter = Date().addingTimeInterval(60)
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                         fetchClub(withId: club.clubID) { fetchedClub in
@@ -229,7 +229,7 @@ struct ClubInfoView: View {
                                     }
                                 }
                             )
-                            .presentationDetents([.fraction(0.8)])
+                            .presentationSizing(.page)
                             .presentationDragIndicator(.visible)
                         }
 
@@ -243,7 +243,7 @@ struct ClubInfoView: View {
                         .font(.headline)
                     Text(club.location)
                         .font(.subheadline)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.black)
                         .padding(.top, -8)
                     
                     HStack {
@@ -330,6 +330,11 @@ struct ClubInfoView: View {
                         }
                     }
                 }
+            }
+        }
+        .onAppear {
+            fetchClub(withId: club.clubID) { clubr in
+                club = clubr ?? club
             }
         }
     }
