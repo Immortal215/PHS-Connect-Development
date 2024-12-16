@@ -26,7 +26,7 @@ struct HomePageScrollers: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     if !filteredClubs.isEmpty {
                         
-                        HStack {
+                        HStack(alignment: .center, spacing: 0) {
                             ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, club) in
                                 
                                 let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
@@ -37,7 +37,8 @@ struct HomePageScrollers: View {
                                 } label: {
                                     ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
                                 }
-                                // .frame(minWidth: screenWidth/2.2, minHeight: screenHeight/5)
+                                //.fixedSize(horizontal: false, vertical: false)
+                                // .frame(width: screenWidth/2.2, height: screenHeight/5)
                                 .padding(.vertical, 3)
                                 .padding(.horizontal, 4)
                                 .sheet(isPresented: $showClubInfoSheet) {
@@ -58,6 +59,8 @@ struct HomePageScrollers: View {
                             }
                             
                         }
+                     //   .fixedSize(horizontal: false, vertical: false)
+                       // .fixedSize()
                     } else {
                         Button {
                             advSearchShown = true

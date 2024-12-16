@@ -148,7 +148,7 @@ struct ClubView: View {
                         }
                         .padding()
                     }
-                                            
+            
                         ScrollView {
                             
                             if userInfo?.userID != nil {

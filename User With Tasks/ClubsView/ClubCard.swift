@@ -167,7 +167,7 @@ struct ClubCard: View {
                 .padding()
             }
         }
-        .frame(width: screenWidth / 2.2, height: screenHeight / 5)
+          .frame(width: screenWidth / 2.2, height: screenHeight / 5)
         
         .onAppear {
             if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {

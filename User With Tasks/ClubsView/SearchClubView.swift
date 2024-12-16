@@ -221,7 +221,9 @@ struct SearchClubView: View {
                                 advSearchShown = true
                             }
                             
-                            hider = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                hider = false
+                            }
                         }
 
                         //  .frame(width: screenWidth/2.1)
