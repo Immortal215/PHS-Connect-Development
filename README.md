@@ -18,9 +18,8 @@
 
 - **Leaders :**
   - Club leaders can manage members, make announcements, set meeting times, and fully edit their clubs.
-  - Flexible visibility settings (“All”, “Non-Guests Only”, “Members Only”, “Leaders Only”) ensure sensitive data is displayed appropriately.
-- **Invite-Only Clubs:**
-  - Users can request to join invite-only clubs, pending approval from leaders.
+- **Enrolling in Clubs:**
+  - Users can request to join clubs, pending approval from leaders.
 
 ### 2. **User Profiles**
 
