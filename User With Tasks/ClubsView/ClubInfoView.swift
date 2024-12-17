@@ -24,7 +24,8 @@ struct ClubInfoView: View {
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @State var abstractExpanded = true
     @State var abstractGreaterThanFour = false
-    
+    @State var userInfo: Personal? = nil
+
     var body: some View {
         
         var latestAnnouncementMessage: String {
@@ -36,7 +37,7 @@ struct ClubInfoView: View {
                 }
                 
                 if let latestAnnouncementDate = sortedAnnouncements.first?.value.date,
-                   stringFromDate(Date()) > latestAnnouncementDate {
+                   Date() > dateFromString(latestAnnouncementDate) {
                     return "Add Announcement +"
                 } else {
                     return "Add Announcement + (Waiting)"
@@ -220,7 +221,7 @@ struct ClubInfoView: View {
                             Text(latestAnnouncementMessage)
                         }
                         .sheet(isPresented: $showAddAnnouncement) {
-                            AddAnnouncementSheet(clubName: club.name, announcementBody: "", announcementTitle: "", email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
+                            AddAnnouncementSheet(clubName: club.name, email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
                                     oneMinuteAfter = Date().addingTimeInterval(60)
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                         fetchClub(withId: club.clubID) { fetchedClub in
@@ -328,6 +329,33 @@ struct ClubInfoView: View {
                             .presentationDragIndicator(.visible)
                             .presentationSizing(.page)
                         }
+                    } else {
+                        if !viewModel.isGuestUser {
+                            Button {
+                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                    removeClubFromFavorites(
+                                        for: viewModel.uid ?? "",
+                                        clubID: club.clubID
+                                    )
+                                    refreshUserInfo()
+                                    dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
+                                } else {
+                                    addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                    refreshUserInfo()
+                                    dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
+                                }
+                            } label: {
+                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                    Image(systemName: "heart.fill")
+                                        .transition(.movingParts.pop(.blue))
+                                } else {
+                                    Image(systemName: "heart")
+                                        .transition(.identity)
+                                }
+                            }
+                            .padding(.top)
+                        }
+
                     }
                 }
             }
@@ -348,4 +376,15 @@ struct ClubInfoView: View {
             abstractGreaterThanFour = (totalLines != 4 ? totalLines > 4 : false )
         }
     }
+    
+    func refreshUserInfo() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            if let userID = viewModel.uid {
+                fetchUser(for: userID) { user in
+                    userInfo = user
+                }
+            }
+        }
+    }
+
 }

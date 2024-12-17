@@ -79,6 +79,7 @@ struct ClubCard: View {
                             .font(.caption)
                             .foregroundStyle(.blue)
                             .multilineTextAlignment(.center)
+                            .lineLimit(2)
                     }
                 }
                 .padding()
@@ -167,19 +168,16 @@ struct ClubCard: View {
                 .padding()
             }
         }
-          .frame(width: screenWidth / 2.2, height: screenHeight / 5)
+        .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
           .animation(.easeInOut)
         .onAppear {
-
-            
-            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
-                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                refreshUserInfo()
-            }
+//            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
+//                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+//                refreshUserInfo()
+//            }
         }
     }
     
-    // Helper Function to Refresh User Info
     func refreshUserInfo() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             if let userID = viewModel.uid {
