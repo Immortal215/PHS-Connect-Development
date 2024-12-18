@@ -184,7 +184,7 @@ struct SearchClubView: View {
                                             }
                                         } content: {
                                             if shownInfo >= 0 {
-                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel)
+                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: userInfo)
                                                     .presentationDragIndicator(.visible)
                                                     .presentationSizing(.page)
                                                 

@@ -22,6 +22,7 @@ struct AddAnnouncementSheet: View {
     @State var isEditMenuVisible = false
     @State var linkr : String?
     @State var linkAsk = false
+    @State var announceFull = false
     
     var body: some View {
         VStack(alignment: .trailing) {
@@ -60,21 +61,23 @@ struct AddAnnouncementSheet: View {
                             EditMenuItem("Bold") {
                                 applyMarkdownStyle("**")
                             }
-                            
+
                             EditMenuItem("Italic") {
                                 applyMarkdownStyle("*")
                             }
-                            
+
                             EditMenuItem("Strikethrough") {
                                 applyMarkdownStyle("~")
                             }
-                            
+
                             EditMenuItem("Link") {
                                 if selectedRange != nil {
                                     linkAsk = true
                                 }
                             }
                         }
+                      
+                        
                     
                 } label: {
                     VStack(alignment: .leading) {
@@ -99,21 +102,24 @@ struct AddAnnouncementSheet: View {
                             Image(systemName: "bold")
                         }
                         .buttonStyle(.bordered)
-                        
+                        .keyboardShortcut("b", modifiers: .command)
+
                         Button {
                             applyMarkdownStyle("*")
                         } label: {
                             Image(systemName: "italic")
                         }
                         .buttonStyle(.bordered)
-                        
+                        .keyboardShortcut("i", modifiers: .command)
+
                         Button {
                             applyMarkdownStyle("~")
                         } label: {
                             Image(systemName: "strikethrough")
                         }
                         .buttonStyle(.bordered)
-                        
+                        .keyboardShortcut("s", modifiers: .command)
+
                         Button {
                             if selectedRange != nil {
                                 linkAsk = true
@@ -123,6 +129,7 @@ struct AddAnnouncementSheet: View {
                                 .imageScale(.medium)
                         }
                         .buttonStyle(.bordered)
+                        .keyboardShortcut("l", modifiers: .command)
                         .alert("Add Link Here", isPresented: $linkAsk) {
                             TextField("Link", text: $linkr)
                                 .onSubmit {
@@ -150,7 +157,19 @@ struct AddAnnouncementSheet: View {
                     .font(.headline)
                     .padding(.top)
                 
-                SingleAnnouncementView(date: stringFromDate(Date()), clubName: clubName, title: announcementTitle, clubBody: announcementBody, writer: email)
+                Button {
+                    announceFull = true
+                } label: {
+                    SingleAnnouncementView(date: stringFromDate(Date()), clubName: clubName, title: announcementTitle, clubBody: announcementBody, writer: email, link: link)
+                }
+                
+                .sheet(isPresented: $announceFull) {
+                    SingleAnnouncementView(date: stringFromDate(Date()), clubName: clubName, title: announcementTitle, clubBody: announcementBody, writer: email, link: link, fullView: true)
+
+                        .presentationDragIndicator(.visible)
+                    
+                    Spacer()
+                }
                 
                 Spacer()
                 
@@ -204,9 +223,14 @@ struct AddAnnouncementSheet: View {
         guard let range = selectedRange,
               let textRange = Range(range, in: announcementBody) else { return }
         
-        let selectedText = announcementBody[textRange].replacingOccurrences(of: "*", with: "")
+        let selectedText = announcementBody[textRange]
+            
+            // .count(where: { $0 == "*"}) >= 6 ? announcementBody[textRange].replacingOccurrences(of: markdownSyntax, with: "") : announcementBody[textRange]
+            // try later for managing too much markdown
+        
+        
         if selectedText != "" {
-            let modifiedText = "\(markdownSyntax)\(selectedText)\(markdownSyntax)"
+            let modifiedText = "\(markdownSyntax)\(selectedText.trimmingCharacters(in: .whitespaces))\(markdownSyntax)"
             
             announcementBody.replaceSubrange(textRange, with: modifiedText)
         } else {
@@ -220,10 +244,10 @@ struct AddAnnouncementSheet: View {
         guard let range = selectedRange,
               let textRange = Range(range, in: announcementBody) else { return }
         
-        let selectedText = announcementBody[textRange].replacingOccurrences(of: "*", with: "").replacingOccurrences(of: "~", with: "")
+        let selectedText = announcementBody[textRange]
         if selectedText != "" {
             var linkr = ensureURL(from: link)
-            let modifiedText = "[\(selectedText)](\(linkr))"
+            let modifiedText = "[\(selectedText.trimmingCharacters(in: .whitespaces))](\(linkr))"
             
             announcementBody.replaceSubrange(textRange, with: modifiedText)
         } else {
@@ -357,7 +381,7 @@ struct SingleAnnouncementView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(date)
+                        Text(dateFromString(date).formatted(date: .abbreviated, time: .shortened))
                         Text("-")
                         Text(clubName)
                             .foregroundColor(.blue)
@@ -371,7 +395,7 @@ struct SingleAnnouncementView: View {
                     
                     Text(.init(clubBody.isEmpty ? "Body" : clubBody))
                         .font(.body)
-                        .lineLimit(fullView! ? 100 : 2)
+                        .lineLimit(fullView! ? 100 : 3)
                     
                     if let link = link, !link.isEmpty {
                         Link(linkText ?? "Link", destination: URL(string: link)!)

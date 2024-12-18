@@ -157,15 +157,18 @@ struct ClubInfoView: View {
                         }
                     }
                     
-                    if !club.members.isEmpty && club.leaders.contains(viewModel.userEmail ?? "") {
-                        var mem = club.members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
-                        
+                    if !club.members.isEmpty {
                         Text("Members (\(club.members.count)):")
                             .font(.headline)
                         
-                        CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
-                            .padding(.top, -8)
-                            .frame(maxHeight: screenHeight/3)
+                        if club.leaders.contains(viewModel.userEmail ?? "") {
+                            var mem = club.members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
+
+                            CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
+                                .padding(.top, -8)
+                                .frame(maxHeight: screenHeight/3)
+                            
+                        }
                     }
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
