@@ -31,7 +31,9 @@ struct Club: Codable, Equatable {
         var body: String
         var writer: String
         var clubID: String
+        var peopleSeen: [String]?
         var link: String?
+        var linkText: String? 
     }
 }
 

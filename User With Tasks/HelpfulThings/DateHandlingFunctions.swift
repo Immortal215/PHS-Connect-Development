@@ -14,6 +14,6 @@ func stringFromDate(_ from: Date) -> String {
 func dateFromString(_ from: String) -> Date {
     let formatter = DateFormatter()
     formatter.dateFormat = "MM-dd-yyyy, h:mm a"
-    return formatter.date(from: from)!
+    return formatter.date(from: from) ?? Date()
 }
 

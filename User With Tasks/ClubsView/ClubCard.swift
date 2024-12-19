@@ -18,7 +18,7 @@ struct ClubCard: View {
     @State var userInfo: Personal? = nil
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 5)
                 .stroke(.black, lineWidth: 3)
             
@@ -167,7 +167,23 @@ struct ClubCard: View {
                 }
                 .padding()
             }
+            if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) { // ensures that the announcment has not been seen and is less than a week old
+                Color.black.opacity(0.2)
+                            .cornerRadius(5)
+                
+                    VStack {
+            
+                        Spacer()
+                        Text("\(notificationCount) New Notifications")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(5)
+                            .background(Capsule().fill(Color.red))
+                    }
+                    .padding(.bottom, 10)
+                }
         }
+      
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
           .animation(.easeInOut)
         .onAppear {

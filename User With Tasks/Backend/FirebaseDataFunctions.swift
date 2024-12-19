@@ -170,16 +170,14 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
     }
 }
 
-func addAnnouncement(clubID: String, date: String, title: String, body: String, writer: String, link: String? = nil) {
+func addAnnouncement(announcement: Club.Announcements) {
     let reference = Database.database().reference()
-    let announcementReference = reference.child("clubs").child(clubID).child("announcements")
-
-    let newAnnouncement = Club.Announcements(date: date, title: title, body: body, writer: writer, clubID: clubID, link: link)
+    let announcementReference = reference.child("clubs").child(announcement.clubID).child("announcements")
 
     do {
-        let data = try JSONEncoder().encode(newAnnouncement)
+        let data = try JSONEncoder().encode(announcement)
         if let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-            announcementReference.child(date).setValue(dictionary)
+            announcementReference.child(announcement.date).setValue(dictionary)
         }
     } catch {
         print("Error encoding club data: \(error)")

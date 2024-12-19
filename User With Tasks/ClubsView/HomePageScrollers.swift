@@ -22,7 +22,6 @@ struct HomePageScrollers: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(scrollerOf) Clubs")
-            ScrollView {
                 ScrollView(.horizontal, showsIndicators: false) {
                     if !filteredClubs.isEmpty {
                         
@@ -70,7 +69,7 @@ struct HomePageScrollers: View {
                         }
                     }
                 }
-            }
+            
         }
         .onAppear {
             fetchClubs { fetchedClubs in

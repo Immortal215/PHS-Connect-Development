@@ -231,8 +231,7 @@ struct ClubInfoView: View {
                                             self.club = fetchedClub ?? self.club
                                         }
                                     }
-                                }
-                            )
+                            }, viewModel: viewModel)
                             .presentationSizing(.page)
                             .presentationDragIndicator(.visible)
                         }
@@ -240,7 +239,7 @@ struct ClubInfoView: View {
                     }
                     
                     if let announcements = club.announcements, viewModel.isGuestUser == false {
-                        AnnouncementsView(announcements: announcements)
+                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")))
                     }
                     
                     Text("Location:")
