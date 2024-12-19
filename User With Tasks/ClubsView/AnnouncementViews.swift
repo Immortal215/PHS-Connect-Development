@@ -40,6 +40,9 @@ struct AddAnnouncementSheet: View {
                         .padding()
                         .textFieldStyle(.roundedBorder)
                         .padding(.horizontal)
+                        .onChange(of: announcementTitle) {
+                            setAnnouncementToValues()
+                        }
                 } label: {
                     Text("Enter Announcement Title:")
                     Spacer()
@@ -48,6 +51,9 @@ struct AddAnnouncementSheet: View {
                 
                 LabeledContent {
                     MarkdownTextView(text: $announcementBody, selectedRange: $selectedRange)
+                        .onChange(of: announcementBody) {
+                            setAnnouncementToValues()
+                        }
                         .frame(height: UIScreen.main.bounds.height / 4)
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
@@ -87,7 +93,9 @@ struct AddAnnouncementSheet: View {
                         Image(systemName: "questionmark.circle")
                             .foregroundColor(.blue)
                             .onTapGesture {
+                                areUSure = false
                                 showHelp = true
+                                
                             }
                         
                             .padding(.bottom)
@@ -163,11 +171,12 @@ struct AddAnnouncementSheet: View {
                 Button {
                     announceFull = true
                 } label: {
-                    SingleAnnouncementView(clubName: clubName, announcement: announcement, viewModel: viewModel, isClubMember: false)
+                    SingleAnnouncementView(clubName: clubName, announcement: $announcement, viewModel: viewModel, isClubMember: false)
+
                 }
                 
                 .sheet(isPresented: $announceFull) {
-                    SingleAnnouncementView(clubName: clubName, announcement: announcement, fullView: true, viewModel: viewModel, isClubMember: false)
+                    SingleAnnouncementView(clubName: clubName, announcement: $announcement, fullView: true, viewModel: viewModel, isClubMember: false)
                         .presentationDragIndicator(.visible)
                     
                     Spacer()
@@ -188,6 +197,7 @@ struct AddAnnouncementSheet: View {
                     Button("Post (Cannot Re-Edit)") {
                         if !announcementBody.isEmpty && !announcementTitle.isEmpty {
                             areUSure = true
+                            showHelp = true 
                         } else {
                             dropper(title: "More Information Needed!", subtitle: "", icon: nil)
                         }
@@ -195,35 +205,27 @@ struct AddAnnouncementSheet: View {
                     .foregroundStyle(.white)
                     .padding()
                     .background(Capsule().fill(Color.blue))
+        
                 }
                 .padding(.horizontal)
             }
+  
         }
         .onAppear {
-            announcement.clubID = clubID
-            announcement.date = stringFromDate(Date())
-            announcement.link = link
-            announcement.title = announcementTitle
-            announcement.writer = email
-            announcement.linkText = linkText
+            setAnnouncementToValues()
         }
         .imageScale(.large)
         .padding()
-        .alert(isPresented: $areUSure) {
-            Alert(title: Text("Post this message?"), primaryButton: .destructive(Text("Post"), action: {
-                announcement.clubID = clubID
-                announcement.date = stringFromDate(Date())
-                announcement.link = link
-                announcement.title = announcementTitle
-                announcement.writer = email
-                announcement.linkText = linkText
-                addAnnouncement(announcement: announcement)
-                onSubmit()
-                presentationMode.wrappedValue.dismiss()
-            }), secondaryButton: .cancel() )
-        }
         .alert(isPresented: $showHelp) {
-            Alert(title: Text("Markdown Help"), message: Text("""
+            if areUSure {
+                Alert(title: Text("Post this message?"), primaryButton: .destructive(Text("Post"), action: {
+                    setAnnouncementToValues()
+                    addAnnouncement(announcement: announcement)
+                    onSubmit()
+                    presentationMode.wrappedValue.dismiss()
+                }), secondaryButton: .cancel() )
+            } else {
+                Alert(title: Text("Markdown Help"), message: Text("""
                     Markdown Syntax Help:
                     - **Bold**: `**bold text**`
                     - *Italic*: `*italic text*`
@@ -231,9 +233,18 @@ struct AddAnnouncementSheet: View {
                     - Link: `https://url` 
                     - Email: `email@gmail.com`
                     """), dismissButton: .default(Text("Got it!")))
+            }
         }
     }
-    
+    func setAnnouncementToValues() {
+        announcement.clubID = clubID
+        announcement.date = stringFromDate(Date())
+        announcement.link = link
+        announcement.title = announcementTitle
+        announcement.writer = email
+        announcement.linkText = linkText
+        announcement.body = announcementBody
+    }
     func applyMarkdownStyle(_ markdownSyntax: String) {
         guard let range = selectedRange,
               let textRange = Range(range, in: announcementBody) else { return }
@@ -291,34 +302,49 @@ struct AnnouncementsView: View {
                 .font(.headline)
             
             LazyVStack {
-                ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date)}).prefix(2), id: \.key) { (key, announcement) in
+                ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }).prefix(2), id: \.key) { (key, announcement) in
                     if let clubName = clubNames[announcement.clubID] {
                         Button {
                             selectedAnnouncement = SelectedAnnouncement(id: key, announcement: announcement)
                         } label: {
-                            SingleAnnouncementView(clubName: clubName, announcement: announcement, viewModel: viewModel, isClubMember: isClubMember)
+                            SingleAnnouncementView(
+                                clubName: clubName,
+                                announcement: Binding(
+                                    get: { announcements[key]! }, // Fetch the value safely
+                                    set: { announcements[key] = $0 } // Update the dictionary
+                                ),
+                                viewModel: viewModel,
+                                isClubMember: isClubMember
+                            )
                         }
                         .sheet(item: $selectedAnnouncement) { selected in
-                            SingleAnnouncementView(clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club", announcement: selected.announcement, fullView: true, viewModel: viewModel, isClubMember: isClubMember)
-                                .onAppear {
-                                    guard isClubMember else { return }
-                                    
-                                    var mutableAnnouncement = selected.announcement
-                                    
-                                    if let peopleSeen = mutableAnnouncement.peopleSeen {
-                                        if !peopleSeen.contains(viewModel.userEmail ?? "") {
-                                            mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
-                                        }
-                                    } else {
-                                        mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
+                            SingleAnnouncementView(
+                                clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
+                                announcement: Binding(
+                                    get: { announcements[selected.id]! }, // Fetch the value using selected ID
+                                    set: { announcements[selected.id] = $0 } // Update the dictionary
+                                ),
+                                fullView: true,
+                                viewModel: viewModel,
+                                isClubMember: isClubMember
+                            )
+                            .onAppear {
+                                guard isClubMember else { return }
+                                
+                                var mutableAnnouncement = selected.announcement
+                                
+                                if let peopleSeen = mutableAnnouncement.peopleSeen {
+                                    if !peopleSeen.contains(viewModel.userEmail ?? "") {
+                                        mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
                                     }
-                                    
-                                    addAnnouncement(announcement: mutableAnnouncement)
-                                    announcements[selected.id] = mutableAnnouncement
+                                } else {
+                                    mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
                                 }
-
-
-                                .presentationDragIndicator(.visible)
+                                
+                                addAnnouncement(announcement: mutableAnnouncement)
+                                announcements[selected.id] = mutableAnnouncement
+                            }
+                            .presentationDragIndicator(.visible)
                             
                             Spacer()
                         }
@@ -334,7 +360,7 @@ struct AnnouncementsView: View {
                     Spacer()
                 }
             }
-            
+
             if announcements.count > 2 {
                 Button {
                     showAllAnnouncements.toggle()
@@ -392,29 +418,45 @@ struct AllAnnouncementsView: View {
                         Button {
                             selectedAnnouncement = SelectedAnnouncement(id: key, announcement: announcement)
                         } label: {
-                            SingleAnnouncementView(clubName: clubName, announcement: announcement, viewModel: viewModel, isClubMember: isClubMember)
+                            SingleAnnouncementView(
+                                clubName: clubName,
+                                announcement: Binding(
+                                    get: { announcements[key]! },
+                                    set: { announcements[key] = $0 }
+                                ),
+                                viewModel: viewModel,
+                                isClubMember: isClubMember
+                            )
                         }
-                        
                         .sheet(item: $selectedAnnouncement) { selected in
-                            SingleAnnouncementView(clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club", announcement: selected.announcement, fullView: true, viewModel: viewModel, isClubMember: isClubMember)
-                                .presentationDragIndicator(.visible)
-                                .onAppear {
-                                    guard isClubMember else { return }
-                                    
-                                    var mutableAnnouncement = selected.announcement
-                                    
-                                    if let peopleSeen = mutableAnnouncement.peopleSeen {
-                                        if !peopleSeen.contains(viewModel.userEmail ?? "") {
-                                            mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
-                                        }
-                                    } else {
-                                        mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
+                            SingleAnnouncementView(
+                                clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
+                                announcement: Binding(
+                                    get: { announcements[selected.id]! },
+                                    set: { announcements[selected.id] = $0 }
+                                ),
+                                fullView: true,
+                                viewModel: viewModel,
+                                isClubMember: isClubMember
+                            )
+                            .onAppear {
+                                guard isClubMember else { return }
+                                
+                                var mutableAnnouncement = selected.announcement
+                                
+                                if let peopleSeen = mutableAnnouncement.peopleSeen {
+                                    if !peopleSeen.contains(viewModel.userEmail ?? "") {
+                                        mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
                                     }
-                                    
-                                    addAnnouncement(announcement: mutableAnnouncement)
-                                    announcements[selected.id] = mutableAnnouncement
+                                } else {
+                                    mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
                                 }
-
+                                
+                                addAnnouncement(announcement: mutableAnnouncement)
+                                announcements[selected.id] = mutableAnnouncement
+                            }
+                            .presentationDragIndicator(.visible)
+                            
                             Spacer()
                         }
                     } else {
@@ -442,7 +484,7 @@ struct SingleAnnouncementView: View {
     //    var writer: String
     //    var link: String?
     //    var linkText: String?
-    @State var announcement: Club.Announcements
+    @Binding var announcement: Club.Announcements
     var fullView : Bool? = false
     var viewModel: AuthenticationViewModel
     var isClubMember: Bool
