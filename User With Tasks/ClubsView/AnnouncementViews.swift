@@ -197,7 +197,7 @@ struct AddAnnouncementSheet: View {
                     Button("Post (Cannot Re-Edit)") {
                         if !announcementBody.isEmpty && !announcementTitle.isEmpty {
                             areUSure = true
-                            showHelp = true 
+                            showHelp = true
                         } else {
                             dropper(title: "More Information Needed!", subtitle: "", icon: nil)
                         }
@@ -295,6 +295,9 @@ struct AnnouncementsView: View {
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
     @State var viewModel: AuthenticationViewModel
     @State var isClubMember: Bool
+    @State var limitingPrefix: Int? = 2
+    @State var clubs: [Club] = []
+    @State var isHomePage: Bool = false
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -302,7 +305,7 @@ struct AnnouncementsView: View {
                 .font(.headline)
             
             LazyVStack {
-                ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }).prefix(2), id: \.key) { (key, announcement) in
+                ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }).prefix(limitingPrefix!), id: \.key) { (key, announcement) in
                     if let clubName = clubNames[announcement.clubID] {
                         Button {
                             selectedAnnouncement = SelectedAnnouncement(id: key, announcement: announcement)
@@ -310,23 +313,26 @@ struct AnnouncementsView: View {
                             SingleAnnouncementView(
                                 clubName: clubName,
                                 announcement: Binding(
-                                    get: { announcements[key]! }, // Fetch the value safely
-                                    set: { announcements[key] = $0 } // Update the dictionary
+                                    get: { announcements[key]! },
+                                    set: { announcements[key] = $0 }
                                 ),
                                 viewModel: viewModel,
                                 isClubMember: isClubMember
+                               
                             )
                         }
                         .sheet(item: $selectedAnnouncement) { selected in
                             SingleAnnouncementView(
                                 clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
                                 announcement: Binding(
-                                    get: { announcements[selected.id]! }, // Fetch the value using selected ID
-                                    set: { announcements[selected.id] = $0 } // Update the dictionary
+                                    get: { announcements[selected.id]! },
+                                    set: { announcements[selected.id] = $0 } 
                                 ),
                                 fullView: true,
                                 viewModel: viewModel,
-                                isClubMember: isClubMember
+                                isClubMember: isClubMember,
+                                clubs: clubs,
+                                isHomePage: isHomePage
                             )
                             .onAppear {
                                 guard isClubMember else { return }
@@ -374,14 +380,14 @@ struct AnnouncementsView: View {
                             Text("\(announcements.filter{ $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count)")
                                 .font(.caption)
                                 .foregroundColor(.white)
-                                .padding(5)
+                                .padding(7)
                                 .background(Circle().fill(.red))
                                 .offset(x: 15, y: -5)
                         }
                     }
                 }
                 .sheet(isPresented: $showAllAnnouncements) {
-                    AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMember)
+                    AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMember, clubs: clubs, isHomePage: isHomePage)
                         .presentationDragIndicator(.visible)
                         .presentationSizing(.page)
                 }
@@ -404,7 +410,9 @@ struct AllAnnouncementsView: View {
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
     @State var viewModel: AuthenticationViewModel
     @State var isClubMember: Bool
-    
+    @State var clubs: [Club] = []
+    @State var isHomePage: Bool = false
+
     var body: some View {
         ScrollView {
             Text("All Announcements")
@@ -428,6 +436,7 @@ struct AllAnnouncementsView: View {
                                 isClubMember: isClubMember
                             )
                         }
+                        .padding()
                         .sheet(item: $selectedAnnouncement) { selected in
                             SingleAnnouncementView(
                                 clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
@@ -437,7 +446,9 @@ struct AllAnnouncementsView: View {
                                 ),
                                 fullView: true,
                                 viewModel: viewModel,
-                                isClubMember: isClubMember
+                                isClubMember: isClubMember,
+                                clubs: clubs,
+                                isHomePage: isHomePage
                             )
                             .onAppear {
                                 guard isClubMember else { return }
@@ -488,6 +499,9 @@ struct SingleAnnouncementView: View {
     var fullView : Bool? = false
     var viewModel: AuthenticationViewModel
     var isClubMember: Bool
+    @State var clubs: [Club] = []
+    @State var isHomePage = false
+    @State var showInfo = false
     
     var body: some View {
         ZStack {
@@ -496,8 +510,15 @@ struct SingleAnnouncementView: View {
                     HStack {
                         Text(dateFromString(announcement.date).formatted(date: .abbreviated, time: .shortened))
                         Text("-")
-                        Text(clubName)
-                            .foregroundColor(.blue)
+                        
+                        Button {
+                            if isHomePage == true {
+                                showInfo = true
+                            }
+                        } label: {
+                            Text(clubName)
+                                .foregroundColor(.blue)
+                        }
                     }
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -513,23 +534,44 @@ struct SingleAnnouncementView: View {
                     if let link = announcement.link, !link.isEmpty {
                         Link(announcement.linkText ?? "Link", destination: URL(string: link)!)
                             .font(.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
                     
                     Text(.init("- \(announcement.writer)"))
                         .font(.caption)
                         .italic()
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal)
+                //.padding(.vertical, 8)
+                //.padding(.horizontal)
+                .padding()
                 .foregroundStyle(.black)
                 
                 Spacer()
             }
             
+            
+        }
+        .sheet(isPresented: $showInfo) {
+                if let cluber = clubs.first(where: { $0.clubID == announcement.clubID }) {
+                    ClubInfoView(club: cluber, viewModel: viewModel)
+                        .presentationDragIndicator(.visible)
+                        .presentationSizing(.page)
+                        .foregroundColor(nil)
+                } else {
+                    Text("Club not found")
+                }
+        
+        }
+
+        .padding()
+        .background {
+            Color.blue.opacity(0.1)
+                .cornerRadius(15)
+        }
+        .overlay {
             if !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false) && isClubMember && dateFromString(announcement.date) > Date().addingTimeInterval(-604800) {
                 Color.black.opacity(0.2)
-                    .cornerRadius(5)
+                    .cornerRadius(15)
                 
                 VStack {
                     
@@ -537,12 +579,11 @@ struct SingleAnnouncementView: View {
                     Text("Announcement Not Seen Yet!")
                         .font(.subheadline)
                         .foregroundColor(.white)
-                        .padding(5)
+                        .padding(7)
                         .background(Capsule().fill(Color.red))
                 }
                 .padding(.bottom, 10)
             }
         }
-        .padding()
     }
 }

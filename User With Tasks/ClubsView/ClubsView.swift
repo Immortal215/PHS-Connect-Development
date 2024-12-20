@@ -175,11 +175,11 @@ struct ClubView: View {
                     }
                 }
                 
-                advSearchShown = !advSearchShown
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                    advSearchShown = !advSearchShown
-                }
+//                advSearchShown = !advSearchShown
+//                
+//                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+//                    advSearchShown = !advSearchShown
+//                }
                 
                 if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
                     advSearchShown = true

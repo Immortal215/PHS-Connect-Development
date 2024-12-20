@@ -82,12 +82,13 @@ struct ContentView: View {
                     } else {
                         ZStack {
                             TabView(selection: $selectedTab) {
-                                HomeView(viewModel: viewModel)
-                                    .tabItem {
-                                        Image(systemName: "rectangle.3.group.bubble")
-                                    }
-                                    .tag(0)
-                                
+                                if !viewModel.isGuestUser {
+                                    HomeView(viewModel: viewModel)
+                                        .tabItem {
+                                            Image(systemName: "rectangle.3.group.bubble")
+                                        }
+                                        .tag(0)
+                                }
                                 ClubView(viewModel: viewModel)
                                     .tabItem {
                                         Image(systemName: "person.3.sequence")
@@ -125,8 +126,10 @@ struct ContentView: View {
                                         //                                        .clipShape(RoundedRectangle(cornerRadius: 10))
                                         
                                         HStack {
-                                            TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
-                                                .padding(.horizontal, screenWidth/8) 
+                                            if !viewModel.isGuestUser {
+                                                TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
+                                                    .padding(.horizontal, screenWidth/8)
+                                            }
                                             
                                             TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
                                                 .padding(.horizontal, screenWidth/8)

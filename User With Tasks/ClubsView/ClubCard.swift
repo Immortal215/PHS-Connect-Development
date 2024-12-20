@@ -106,7 +106,7 @@ struct ClubCard: View {
                         )
                     }
                     
-                    // Favorite Button
+                    // Favorite Button + enroll
                     if !viewModel.isGuestUser {
                         Button {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
@@ -131,39 +131,42 @@ struct ClubCard: View {
                             }
                         }
                         .padding(.top)
-                    }
-                    
-                    Spacer()
-                    
-                    // Enroll Button
-                    Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Enroll" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Enrolled") {
-                        if let email = viewModel.userEmail {
-
-                            if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) {
-                                if var cluber =  club.pendingMemberRequests {
-                                    cluber.insert(email)
-                                    club.pendingMemberRequests = cluber
+                        
+                        
+                        Spacer()
+                        
+                        // Enroll Button
+                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Enroll" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Enrolled") {
+                            if let email = viewModel.userEmail {
+                                
+                                if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) {
+                                    if var cluber =  club.pendingMemberRequests {
+                                        cluber.insert(email)
+                                        club.pendingMemberRequests = cluber
+                                        addClub(club: club)
+                                    } else {
+                                        club.pendingMemberRequests = [email]
+                                        addClub(club: club)
+                                    }
+                                } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) {
+                                    club.pendingMemberRequests?.remove(email)
                                     addClub(club: club)
                                 } else {
-                                    club.pendingMemberRequests = [email]
+                                    club.pendingMemberRequests?.remove(email)
+                                    if club.members.count != 1 {
+                                        club.members.removeAll(where: { $0 == email })
+                                    }
                                     addClub(club: club)
                                 }
-                            } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) {
-                                club.pendingMemberRequests?.remove(email)
-                                addClub(club: club)
-                            } else {
-                                club.pendingMemberRequests?.remove(email)
-                                if club.members.count != 1 {
-                                    club.members.removeAll(where: { $0 == email })
-                                }
-                                addClub(club: club)
                             }
                         }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top)
+                        .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
+                    } else {
+                        
+                        Spacer()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.top)
-                    .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
-                    
                 }
                 .padding()
             }
@@ -177,7 +180,7 @@ struct ClubCard: View {
                         Text("\(notificationCount) New Notifications")
                             .font(.subheadline)
                             .foregroundColor(.white)
-                            .padding(5)
+                            .padding(7)
                             .background(Capsule().fill(Color.red))
                     }
                     .padding(.bottom, 10)

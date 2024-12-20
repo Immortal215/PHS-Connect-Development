@@ -10,12 +10,13 @@ struct HomeView: View {
     var viewModel : AuthenticationViewModel
     @State var isEditMenuVisible = false
     @State var screenWidth = UIScreen.main.bounds.width
-    
+    @State var announcements : [String : Club.Announcements] = [:]
+    @State var clubs: [Club] = []
     var body: some View {
         VStack {
-
-            HStack {
-                VStack {
+            
+            LazyVGrid(columns: [GridItem(), GridItem()]) {
+                VStack(alignment: .leading) {
                     Text("School Announcements")
                         .font(.headline)
                         .frame(width: screenWidth/2, alignment: .leading)
@@ -28,33 +29,41 @@ struct HomeView: View {
                     }
                 }
                 
-                VStack {
+                VStack(alignment: .leading){
                     
-                    Text("Club Announcements")
-                        .font(.headline)
-                        .frame(width: screenWidth/2, alignment: .leading)
-                    
-                    ScrollView {
-                        Box("NASA APP meeting thursday")
-                        
-                        Box("Come to service club")
-                        
-                        Text("Hello, World!")
-                            .onTapGesture {
-                                isEditMenuVisible.toggle()
-                            }
-                            .editMenu(isVisible: $isEditMenuVisible) {
-                                EditMenuItem("Copy") {
-                                    UIPasteboard.general.string = "Hello, World!"
-                                }
-                            }
+                    if !announcements.isEmpty {
+                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: true, limitingPrefix: 3, clubs: clubs, isHomePage: true)
+                            .foregroundStyle(.black)
+                    } else {
+                        Text("No Announcements")
                     }
+                    Spacer()
+
                 }
+                
             }
-            
+            Spacer()
             
         }
         .padding()
+        .onAppear {
+            announcements = [:]
+            
+            fetchClubs { fetchedClubs in
+                clubs = fetchedClubs
+                DispatchQueue.main.async {
+                    for club in clubs {
+                        if (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
+                            if let clubAnnouncements = club.announcements {
+                                for (key, value) in clubAnnouncements {
+                                    announcements[key] = value
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

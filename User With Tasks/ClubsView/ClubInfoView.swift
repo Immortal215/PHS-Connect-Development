@@ -25,6 +25,7 @@ struct ClubInfoView: View {
     @State var abstractExpanded = true
     @State var abstractGreaterThanFour = false
     @State var userInfo: Personal? = nil
+    @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
         
@@ -270,6 +271,8 @@ struct ClubInfoView: View {
                                             advSearchShown = true
                                             currentSearchingBy = "Genre"
                                             searchText = genre
+                                            selectedTab = 1
+                                            presentationMode.wrappedValue.dismiss()
                                         }) {
                                             Text(genre)
                                                 .font(.subheadline)
@@ -296,6 +299,7 @@ struct ClubInfoView: View {
                 Color.white
                     .frame(height: screenHeight/10)
             }
+            
             .animation(.easeInOut, value: abstractExpanded) // smooth transition with whenever u expand abstract to show more
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -303,62 +307,67 @@ struct ClubInfoView: View {
                         .font(.title)
                         .bold()
                         .padding(.top)
+                        .foregroundStyle(.black)
+
                 }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if club.leaders.contains(viewModel.userEmail ?? "") {
-                        Button {
-                            fetchClub(withId: club.clubID) { fetchedClub in
-                                self.club = fetchedClub ?? self.club
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                showEditScreen.toggle()
-                            }
-                        } label: {
-                            Image(systemName: "gear")
-                                .imageScale(.large)
-                        }
-                        .padding(.top)
-                        .sheet(isPresented: $showEditScreen) {
-                            CreateClubView(viewCloser: {
-                                showEditScreen = false
-                                fetchClub(withId: club.clubID) { fetchedClub in
-                                    club = fetchedClub ?? club
-                                }
-                                
-                                dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
-                            }, CreatedClub: club)
-                            .presentationDragIndicator(.visible)
-                            .presentationSizing(.page)
-                        }
-                    } else {
-                        if !viewModel.isGuestUser {
+                    Group {
+                        if club.leaders.contains(viewModel.userEmail ?? "") {
                             Button {
-                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                    removeClubFromFavorites(
-                                        for: viewModel.uid ?? "",
-                                        clubID: club.clubID
-                                    )
-                                    refreshUserInfo()
-                                    dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
-                                } else {
-                                    addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-                                    refreshUserInfo()
-                                    dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
+                                fetchClub(withId: club.clubID) { fetchedClub in
+                                    self.club = fetchedClub ?? self.club
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                    showEditScreen.toggle()
                                 }
                             } label: {
-                                if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                    Image(systemName: "heart.fill")
-                                        .transition(.movingParts.pop(.blue))
-                                } else {
-                                    Image(systemName: "heart")
-                                        .transition(.identity)
-                                }
+                                Image(systemName: "gear")
+                                    .imageScale(.large)
                             }
                             .padding(.top)
+                            .sheet(isPresented: $showEditScreen) {
+                                CreateClubView(viewCloser: {
+                                    showEditScreen = false
+                                    fetchClub(withId: club.clubID) { fetchedClub in
+                                        club = fetchedClub ?? club
+                                    }
+                                    
+                                    dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
+                                }, CreatedClub: club)
+                                .presentationDragIndicator(.visible)
+                                .presentationSizing(.page)
+                            }
+                        } else {
+                            if !viewModel.isGuestUser {
+                                Button {
+                                    if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                        removeClubFromFavorites(
+                                            for: viewModel.uid ?? "",
+                                            clubID: club.clubID
+                                        )
+                                        refreshUserInfo()
+                                        dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
+                                    } else {
+                                        addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                        refreshUserInfo()
+                                        dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
+                                    }
+                                } label: {
+                                    if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                        Image(systemName: "heart.fill")
+                                            .transition(.movingParts.pop(.blue))
+                                    } else {
+                                        Image(systemName: "heart")
+                                            .transition(.identity)
+                                    }
+                                }
+                                .padding(.top)
+                            }
+                            
                         }
-
                     }
+                    .foregroundStyle(.blue)
+
                 }
             }
         }
