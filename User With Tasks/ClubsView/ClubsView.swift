@@ -174,12 +174,12 @@ struct ClubView: View {
                         userInfo = user
                     }
                 }
+
+                advSearchShown = !advSearchShown
                 
-//                advSearchShown = !advSearchShown
-//                
-//                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-//                    advSearchShown = !advSearchShown
-//                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    advSearchShown = !advSearchShown
+                }
                 
                 if filteredClubsFavorite.isEmpty && filteredClubsEnrolled.isEmpty {
                     advSearchShown = true
