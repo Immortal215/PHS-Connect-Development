@@ -125,9 +125,12 @@ struct ClubCard: View {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                 Image(systemName: "heart.fill")
                                     .transition(.movingParts.pop(.blue))
+                                    
                             } else {
                                 Image(systemName: "heart")
-                                    .transition(.identity)
+                                    .transition(
+                                        .asymmetric(insertion: .opacity, removal: .movingParts.vanish(Color(white: 0.8), mask: Circle()))
+                                    )
                             }
                         }
                         .padding(.top)

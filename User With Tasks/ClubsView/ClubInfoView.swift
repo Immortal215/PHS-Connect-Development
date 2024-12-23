@@ -366,7 +366,6 @@ struct ClubInfoView: View {
                             
                         }
                     }
-                    .foregroundStyle(.blue)
 
                 }
             }
