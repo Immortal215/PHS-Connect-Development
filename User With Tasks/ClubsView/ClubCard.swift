@@ -19,7 +19,7 @@ struct ClubCard: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 5)
+            RoundedRectangle(cornerRadius: 15)
                 .stroke(.black, lineWidth: 3)
             
             HStack {
@@ -37,7 +37,7 @@ struct ClubCard: View {
                             
                             if club.clubPhoto == nil {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 5)
+                                    RoundedRectangle(cornerRadius: 15)
                                         .foregroundStyle(.blue)
                                     Text(club.name)
                                         .padding()
@@ -47,7 +47,7 @@ struct ClubCard: View {
                                 .fixedSize()
                             }
                             
-                            RoundedRectangle(cornerRadius: 5)
+                            RoundedRectangle(cornerRadius: 15)
                                 .stroke(.black, lineWidth: 3)
                                 .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                         }
@@ -175,7 +175,7 @@ struct ClubCard: View {
             }
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) { // ensures that the announcment has not been seen and is less than a week old
                 Color.black.opacity(0.2)
-                            .cornerRadius(5)
+                            .cornerRadius(15)
                 
                     VStack {
             

@@ -211,7 +211,7 @@ struct CreateClubView: View {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
                             ForEach(leaders, id: \.self) { i in
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 5)
+                                    RoundedRectangle(cornerRadius: 15)
                                         .stroke(selectedLeaders.contains(i) ? .red : .gray, lineWidth: 3)
                                     
                                     Text("\(i)")
@@ -323,7 +323,7 @@ struct CreateClubView: View {
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
                                     ForEach(members, id: \.self) { i in
                                         ZStack {
-                                            RoundedRectangle(cornerRadius: 5)
+                                            RoundedRectangle(cornerRadius: 15)
                                                 .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
                                             
                                             Text("\(i)")
@@ -410,7 +410,7 @@ struct CreateClubView: View {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
                             ForEach(genres, id: \.self) { i in
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 5)
+                                    RoundedRectangle(cornerRadius: 15)
                                         .stroke(selectedGenres.contains(i) ? .red : .gray, lineWidth: 3)
                                     
                                     Text("\(i)")

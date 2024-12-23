@@ -6,6 +6,7 @@ import SwiftUI
 import FirebaseDatabase
 import Pow
 import SwiftUIX
+import PopupView
 
 struct ClubView: View {
     @State var clubs: [Club] = []
@@ -22,6 +23,7 @@ struct ClubView: View {
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @State var searchCategories = ["Name", "Info", "Genre"]
     @AppStorage("selectedTab") var selectedTab = 3
+    @State var notificationBellClicked = false
     
     var body: some View {
         
@@ -119,8 +121,6 @@ struct ClubView: View {
             } else {
                 VStack {
                     HStack {
-                        Spacer()
-                        
                         Button {
                             if !viewModel.isGuestUser {
                                 if let UserID = viewModel.uid {
@@ -147,21 +147,94 @@ struct ClubView: View {
                             .shadow(radius: 5)
                         }
                         .padding()
-                    }
-            
-                        ScrollView {
-                            
-                            if userInfo?.userID != nil {
-                                // Clubs in
-                                HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Enrolled")
-                                
-                                // favorited clubs
-                                HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Favorite")
+                        
+                        Spacer()
+                        
+                        Button {
+                            notificationBellClicked.toggle()
+                        } label: {
+                            let notificationCount = clubs.reduce(0) { total, club in
+                                guard let announcements = club.announcements else { return total }
+                                let unreadCount = announcements.values.filter { announcement in
+                                    let hasNotSeen = !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false)
+                                    let isRecent = dateFromString(announcement.date) > Date().addingTimeInterval(-604800) // 7 days ago
+                                    let isMemberOrLeader = club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")
+                                    return hasNotSeen && isRecent && isMemberOrLeader
+                                }.count
+                                return total + unreadCount
                             }
+                            
+                            ZStack {
+                                Image(systemName: notificationBellClicked ? "bell.fill" : "bell")
+                                    .imageScale(.large)
+                                
+                                if notificationCount > 0 {
+                                    Text("\(notificationCount)")
+                                        .font(.caption2)
+                                        .foregroundColor(.white)
+                                        .padding(5)
+                                        .background(Circle().fill(Color.red))
+                                        .offset(x: 10, y: -10)
+                                }
+                            }
+                            .padding()
+                            
+                    
                         }
+                    }
+
+                    ScrollView {
+                        
+                        if userInfo?.userID != nil {
+                            // Clubs in
+                            HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Enrolled")
+                            
+                            // favorited clubs
+                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Favorite")
+                        }
+                    }
                 }
             }
             
+        }
+        .popup(isPresented: $notificationBellClicked) {
+            let unreadAnnouncements: [String: Club.Announcements] = clubs.reduce(into: [String: Club.Announcements]()) { result, club in
+                guard let announcements = club.announcements else { return }
+                let filteredAnnouncements = announcements.filter { (_, announcement) in
+                    let hasNotSeen = !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false)
+                    let isRecent = dateFromString(announcement.date) > Date().addingTimeInterval(-604800)
+                    let isMemberOrLeader = club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")
+                    return hasNotSeen && isRecent && isMemberOrLeader
+                }
+                result.merge(filteredAnnouncements) { _, new in new }
+            }
+
+            VStack {
+                if unreadAnnouncements.isEmpty {
+                    Text("No announcements")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                        .padding()
+                } else {
+                    AnnouncementsView(announcements: unreadAnnouncements, viewModel: viewModel, isClubMember: true)
+                        .padding()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: screenHeight/1.8)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(radius: 10)
+            .padding()
+
+        } customize: {
+            $0
+                .isOpaque(true)
+                .closeOnTapOutside(true)
+                .type(.toast)
+                .position(.bottom)
+                .dragToDismiss(true)
+                .closeOnTap(false)
+                
         }
         .onAppear {
             fetchClubs { fetchedClubs in
@@ -174,7 +247,7 @@ struct ClubView: View {
                         userInfo = user
                     }
                 }
-
+                
                 advSearchShown = !advSearchShown
                 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -186,9 +259,9 @@ struct ClubView: View {
                 }
                 
             } else {
-                advSearchShown = true 
+                advSearchShown = true
             }
-           
+            
         }
         .refreshable {
             if !viewModel.isGuestUser {

@@ -291,7 +291,6 @@ struct AnnouncementsView: View {
     @State var showAllAnnouncements = false
     @State var announcements: [String: Club.Announcements]
     @State var clubNames: [String: String] = [:]
-    @Environment(\.presentationMode) var presentationMode
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
     @State var viewModel: AuthenticationViewModel
     @State var isClubMember: Bool
@@ -300,97 +299,102 @@ struct AnnouncementsView: View {
     @State var isHomePage: Bool = false
     
     var body: some View {
+    
         VStack(alignment: .leading) {
             Text("Recent Announcements:")
                 .font(.headline)
-            
-            LazyVStack {
-                ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }).prefix(limitingPrefix!), id: \.key) { (key, announcement) in
-                    if let clubName = clubNames[announcement.clubID] {
-                        Button {
-                            selectedAnnouncement = SelectedAnnouncement(id: key, announcement: announcement)
-                        } label: {
-                            SingleAnnouncementView(
-                                clubName: clubName,
-                                announcement: Binding(
-                                    get: { announcements[key]! },
-                                    set: { announcements[key] = $0 }
-                                ),
-                                viewModel: viewModel,
-                                isClubMember: isClubMember
-                               
-                            )
-                        }
-                        .sheet(item: $selectedAnnouncement) { selected in
-                            SingleAnnouncementView(
-                                clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
-                                announcement: Binding(
-                                    get: { announcements[selected.id]! },
-                                    set: { announcements[selected.id] = $0 } 
-                                ),
-                                fullView: true,
-                                viewModel: viewModel,
-                                isClubMember: isClubMember,
-                                clubs: clubs,
-                                isHomePage: isHomePage
-                            )
-                            .onAppear {
-                                guard isClubMember else { return }
-                                
-                                var mutableAnnouncement = selected.announcement
-                                
-                                if let peopleSeen = mutableAnnouncement.peopleSeen {
-                                    if !peopleSeen.contains(viewModel.userEmail ?? "") {
-                                        mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
+            ScrollView {
+                LazyVStack {
+                    ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }).prefix(limitingPrefix!), id: \.key) { (key, announcement) in
+                        if let clubName = clubNames[announcement.clubID] {
+                            Button {
+                                selectedAnnouncement = SelectedAnnouncement(id: key, announcement: announcement)
+                            } label: {
+                                SingleAnnouncementView(
+                                    clubName: clubName,
+                                    announcement: Binding(
+                                        get: { announcements[key]! },
+                                        set: { announcements[key] = $0 }
+                                    ),
+                                    viewModel: viewModel,
+                                    isClubMember: isClubMember
+                                    
+                                )
+                            }
+                            .sheet(item: $selectedAnnouncement) { selected in
+                                SingleAnnouncementView(
+                                    clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
+                                    announcement: Binding(
+                                        get: { announcements[selected.id]! },
+                                        set: { announcements[selected.id] = $0 }
+                                    ),
+                                    fullView: true,
+                                    viewModel: viewModel,
+                                    isClubMember: isClubMember,
+                                    clubs: clubs,
+                                    isHomePage: isHomePage
+                                )
+                                .onAppear {
+                                    guard isClubMember else { return }
+                                    
+                                    var mutableAnnouncement = selected.announcement
+                                    
+                                    if let peopleSeen = mutableAnnouncement.peopleSeen {
+                                        if !peopleSeen.contains(viewModel.userEmail ?? "") {
+                                            mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
+                                        }
+                                    } else {
+                                        mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
                                     }
-                                } else {
-                                    mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
+                                    
+                                    addAnnouncement(announcement: mutableAnnouncement)
+                                    announcements[selected.id] = mutableAnnouncement
                                 }
+                                .presentationDragIndicator(.visible)
                                 
-                                addAnnouncement(announcement: mutableAnnouncement)
-                                announcements[selected.id] = mutableAnnouncement
+                                Spacer()
                             }
-                            .presentationDragIndicator(.visible)
-                            
-                            Spacer()
+                        } else {
+                            Text("")
+                                .onAppear {
+                                    getClubNameByID(clubID: announcement.clubID) { name in
+                                        clubNames[announcement.clubID] = name ?? "Unknown Club"
+                                    }
+                                }
                         }
-                    } else {
-                        Text("")
-                            .onAppear {
-                                getClubNameByID(clubID: announcement.clubID) { name in
-                                    clubNames[announcement.clubID] = name ?? "Unknown Club"
+                        
+                        Spacer()
+                    }
+                    
+                    if announcements.count > 2 {
+                        Button {
+                            showAllAnnouncements.toggle()
+                            
+                        } label: {
+                            ZStack(alignment: .topTrailing) {
+                                Text("Show More")
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+                                
+                                if announcements.filter{ $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count > 0 {
+                                    Text("\(announcements.filter{ $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count)")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                        .padding(7)
+                                        .background(Circle().fill(.red))
+                                        .offset(x: 15, y: -5)
                                 }
                             }
-                    }
-                    
-                    Spacer()
-                }
-            }
-
-            if announcements.count > 2 {
-                Button {
-                    showAllAnnouncements.toggle()
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Text("Show More")
-                            .font(.subheadline)
-                            .foregroundColor(.blue)
-                    
-                        if announcements.filter{ $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count > 0 {
-                            Text("\(announcements.filter{ $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count)")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .padding(7)
-                                .background(Circle().fill(.red))
-                                .offset(x: 15, y: -5)
+                        }
+                        .sheet(isPresented: $showAllAnnouncements) {
+                            AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMember, clubs: clubs, isHomePage: isHomePage)
+                                .presentationDragIndicator(.visible)
+                                .presentationSizing(.page)
                         }
                     }
+
                 }
-                .sheet(isPresented: $showAllAnnouncements) {
-                    AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMember, clubs: clubs, isHomePage: isHomePage)
-                        .presentationDragIndicator(.visible)
-                        .presentationSizing(.page)
-                }
+                
             }
 
         }
@@ -405,7 +409,6 @@ struct SelectedAnnouncement: Identifiable {
 struct AllAnnouncementsView: View {
     @State var announcements: [String: Club.Announcements]
     @State var clubNames: [String: String] = [:]
-    @Environment(\.presentationMode) var presentationMode
     @State var showBiggerAnnouncement = false
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
     @State var viewModel: AuthenticationViewModel
@@ -570,7 +573,7 @@ struct SingleAnnouncementView: View {
         }
         .overlay {
             if !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false) && isClubMember && dateFromString(announcement.date) > Date().addingTimeInterval(-604800) && !fullView! {
-                Color.black.opacity(0.2)
+                Color.black.opacity(0.3)
                     .cornerRadius(15)
                 
                 VStack {

@@ -93,7 +93,7 @@ struct ClubInfoView: View {
                                     
                                     if club.clubPhoto == nil {
                                         ZStack {
-                                            RoundedRectangle(cornerRadius: 5)
+                                            RoundedRectangle(cornerRadius: 15)
                                                 .foregroundStyle(.blue)
                                             
                                             Text(club.name)
@@ -104,7 +104,7 @@ struct ClubInfoView: View {
                                         .fixedSize()
                                     }
                                     
-                                    RoundedRectangle(cornerRadius: 5)
+                                    RoundedRectangle(cornerRadius: 15)
                                         .stroke(.black, lineWidth: 3)
                                         .frame(minWidth: screenWidth/10, minHeight: screenHeight/10)
                                 }

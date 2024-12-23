@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3D17D1952CE7965A001EC760 /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1942CE7965A001EC760 /* SwiftUIX */; };
 		3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1972CE796A5001EC760 /* CUIExpandableButton */; };
+		7136E9522D19E6A200C1A286 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 7136E9512D19E6A200C1A286 /* PopupView */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
 		B861A85C2CB81714006AF254 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85B2CB81714006AF254 /* FirebaseAnalytics */; };
 		B861A85E2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85D2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion */; };
@@ -76,6 +77,7 @@
 				B861A8782CB81714006AF254 /* FirebaseFunctionsCombine-Community in Frameworks */,
 				B8A6DF642CC14F600014B5F8 /* GoogleSignIn in Frameworks */,
 				B861A8642CB81714006AF254 /* FirebaseAppDistribution-Beta in Frameworks */,
+				7136E9522D19E6A200C1A286 /* PopupView in Frameworks */,
 				B861A8602CB81714006AF254 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				B861A87A2CB81714006AF254 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */,
@@ -158,6 +160,7 @@
 				716022FC2CDB0DEB00E2887B /* Pow */,
 				3D17D1942CE7965A001EC760 /* SwiftUIX */,
 				3D17D1972CE796A5001EC760 /* CUIExpandableButton */,
+				7136E9512D19E6A200C1A286 /* PopupView */,
 			);
 			productName = "User with Tasks";
 			productReference = B861A8472CB811A0006AF254 /* PHS Connect Dev.app */;
@@ -194,6 +197,7 @@
 				716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */,
 				3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
 				3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */,
+				7136E9502D19E6A200C1A286 /* XCRemoteSwiftPackageReference "PopupView" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B861A8482CB811A0006AF254 /* Products */;
@@ -445,6 +449,14 @@
 				minimumVersion = 0.14.0;
 			};
 		};
+		7136E9502D19E6A200C1A286 /* XCRemoteSwiftPackageReference "PopupView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exyte/PopupView.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.4;
+			};
+		};
 		716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/EmergeTools/Pow.git";
@@ -489,6 +501,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */;
 			productName = CUIExpandableButton;
+		};
+		7136E9512D19E6A200C1A286 /* PopupView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7136E9502D19E6A200C1A286 /* XCRemoteSwiftPackageReference "PopupView" */;
+			productName = PopupView;
 		};
 		716022FC2CDB0DEB00E2887B /* Pow */ = {
 			isa = XCSwiftPackageProductDependency;
