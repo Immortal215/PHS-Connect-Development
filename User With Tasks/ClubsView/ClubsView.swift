@@ -211,12 +211,12 @@ struct ClubView: View {
 
             VStack {
                 if unreadAnnouncements.isEmpty {
-                    Text("No announcements")
+                    Text("No Announcements, Check Back Later!")
                         .font(.headline)
                         .foregroundColor(.gray)
                         .padding()
                 } else {
-                    AnnouncementsView(announcements: unreadAnnouncements, viewModel: viewModel, isClubMember: true)
+                    AnnouncementsView(announcements: unreadAnnouncements, viewModel: viewModel, isClubMember: true, clubs: clubs, isHomePage: true)
                         .padding()
                 }
             }
@@ -234,6 +234,7 @@ struct ClubView: View {
                 .position(.bottom)
                 .dragToDismiss(true)
                 .closeOnTap(false)
+                .animation(.easeInOut)
                 
         }
         .onAppear {

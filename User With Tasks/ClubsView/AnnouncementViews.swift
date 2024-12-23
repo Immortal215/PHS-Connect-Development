@@ -221,6 +221,7 @@ struct AddAnnouncementSheet: View {
                 Alert(title: Text("Post this message?"), primaryButton: .destructive(Text("Post"), action: {
                     setAnnouncementToValues()
                     addAnnouncement(announcement: announcement)
+                    dropper(title: "Announcement Published!", subtitle: "", icon: nil)
                     onSubmit()
                     presentationMode.wrappedValue.dismiss()
                 }), secondaryButton: .cancel() )
