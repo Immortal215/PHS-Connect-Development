@@ -13,6 +13,7 @@ struct ContentView: View {
     @State var showSignInView = true
     @AppStorage("selectedTab") var selectedTab = 3
     @State var screenWidth = UIScreen.main.bounds.width
+    @State var screenHeight = UIScreen.main.bounds.height
     @StateObject var networkMonitor = NetworkMonitor()
     @State var expanded = false
     @AppStorage("advSearchShown") var advSearchShown = false
@@ -22,7 +23,8 @@ struct ContentView: View {
     @AppStorage("userImage") var userImage: String?
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
-
+    @State var clubs: [Club] = []
+    
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -83,23 +85,26 @@ struct ContentView: View {
                         ZStack {
                             TabView(selection: $selectedTab) {
                                 if !viewModel.isGuestUser {
-                                    HomeView(viewModel: viewModel)
+                                    ClubView(viewModel: viewModel)
                                         .tabItem {
                                             Image(systemName: "rectangle.3.group.bubble")
                                         }
                                         .tag(0)
                                 }
-                                ClubView(viewModel: viewModel)
-                                    .tabItem {
-                                        Image(systemName: "person.3.sequence")
-                                    }
+                                
+                                SearchClubView(clubs: $clubs, viewModel: viewModel)
                                     .tag(1)
                                 
-//                                CalendarView(viewModel: viewModel)
-//                                    .tabItem {
-//                                        Image(systemName: "calendar.badge.clock")
-//                                    }
-//                                    .tag(2)
+                                //                                ClubView(viewModel: viewModel)
+                                //                                    .tabItem {
+                                //                                        Image(systemName: "person.3.sequence")
+                                //                                    }
+                                //                                    .tag(2)
+                                //                                CalendarView(viewModel: viewModel)
+                                //                                    .tabItem {
+                                //                                        Image(systemName: "calendar.badge.clock")
+                                //                                    }
+                                //                                    .tag(2)
                                 
                                 Settings(viewModel: viewModel, showSignInView: $showSignInView)
                                     .tabItem {
@@ -109,45 +114,40 @@ struct ContentView: View {
                                 
                             }
                             .tabViewStyle(.page(indexDisplayMode: .never))
+                            .edgesIgnoringSafeArea(.all)
                             
                             // tab bar view
                             VStack {
-                                    Spacer()
+                                Spacer()
+                                
+                                ZStack {
                                     
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .foregroundStyle(.gray)
-                                            .frame(height: 60)
-                                            .shadow(color:.gray, radius: 5)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                            .opacity(0.8)
-                                        //                                    VisualEffectBlurView(blurStyle: .systemUltraThinMaterial)
-                                        //                                        .frame(height: 60)
-                                        //                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        
                                         HStack {
                                             if !viewModel.isGuestUser {
                                                 TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
-                                                    .padding(.horizontal, screenWidth/8)
+                                                    .padding(.horizontal, screenWidth / 8)
                                             }
                                             
                                             TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
-                                                .padding(.horizontal, screenWidth/8)
+                                                .padding(.horizontal, screenWidth / 8)
                                             
-//                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
-//                                                .padding(.horizontal, 100)
-//                                            
                                             TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
-                                                .padding(.horizontal, screenWidth/8)
+                                                .padding(.horizontal, screenWidth / 8)
                                         }
-                                    }
-                                    .offset(y: 30)
+                                        .padding(.bottom, 20)
+                                }
+
+
+                            }
+                        }
+                        .onAppear {
+                            fetchClubs { fetchedClubs in
+                                clubs = fetchedClubs
                             }
                         }
                         
                     }
                 }
-                .padding()
                 .onChange(of: showSignInView) {
                     dropper(title: showSignInView ? "Logged Out" : "Logged In", subtitle: "", icon: UIImage(systemName: "person"))
                 }
@@ -167,7 +167,7 @@ struct ContentView: View {
             }
         }
         .onChange(of: selectedTab) {
-                _ = networkMonitor.isConnected
+            _ = networkMonitor.isConnected
         }
         .onAppear {
             if viewModel.isGuestUser {
@@ -185,11 +185,11 @@ struct ContentView: View {
             }
             advSearchShown = true
             searchText = ""
-        } 
+        }
         .ignoresSafeArea(.keyboard, edges: .bottom)
-
+        
     }
-   
+    
 }
 
 func dropper(title: String, subtitle: String, icon: UIImage?) {
@@ -211,11 +211,11 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
 }
 
 struct MainButton: View {
-
+    
     var imageName: String
     var colorHex: String
     var width: CGFloat = 50
-
+    
     var body: some View {
         ZStack {
             Color(hex: colorHex)
@@ -229,16 +229,16 @@ struct MainButton: View {
 }
 
 extension Color {
-
+    
     init(hex: String) {
         let scanner = Scanner(string: hex)
         var rgbValue: UInt64 = 0
         scanner.scanHexInt64(&rgbValue)
-
+        
         let r = (rgbValue & 0xff0000) >> 16
         let g = (rgbValue & 0xff00) >> 8
         let b = rgbValue & 0xff
-
+        
         self.init(red: Double(r) / 0xff, green: Double(g) / 0xff, blue: Double(b) / 0xff)
     }
 }

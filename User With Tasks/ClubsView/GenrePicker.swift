@@ -11,29 +11,32 @@ struct MultiGenrePickerView: View {
     ]
     
     var body: some View {
-        HStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
+        VStack {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
                     ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
-                        Section(header: Text(section).font(.headline)) {
-                            FlowLayout(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(section)
+                                .font(.headline)
+                            
+                            HStack(spacing: 10) {
                                 ForEach(genres[section]!, id: \.self) { genre in
                                     GenreTag(genre: genre, isSelected: selectedGenres.contains(genre)) {
                                         toggleGenreSelection(genre)
                                     }
                                 }
                             }
+                            //.frame(height: 40) // Adjust the height of one genre
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal)
             }
-            
-            Spacer()
         }
         .onChange(of: selectedGenres) { newValue in
             searchText = newValue.joined(separator: ", ")
         }
+        .animation(.smooth)
         .onAppear {
             for i in searchText.split(separator: ", ") {
                 if !selectedGenres.contains(String(i)) {
@@ -68,26 +71,5 @@ struct GenreTag: View {
                 onTap()
             }
             .fixedSize(horizontal: true, vertical: false)
-        
-    }
-}
-
-// Layout for wrapping tags
-struct FlowLayout<Content: View>: View {
-    var alignment: Alignment
-    @ViewBuilder var content: () -> Content
-    @AppStorage("advSearchShown") var advSearchShown = false
-    @State var screenWidth = UIScreen.main.bounds.width
-    
-    var body: some View {
-        if advSearchShown {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: screenWidth/8.1), alignment: alignment)], spacing: 10) {
-                content()
-            }
-        } else {
-            LazyHGrid(rows: [GridItem(.adaptive(minimum: 100), alignment: alignment)], spacing: 10) {
-                content()
-            }
-        }
     }
 }

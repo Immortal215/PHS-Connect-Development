@@ -24,11 +24,10 @@ struct TabBarButton: View {
                     // .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
                 }
                 //  .offset(y: selectedTab == index ? -20 : 0.0 )
-                .foregroundColor(selectedTab == index ? .blue : .white)
+                .foregroundColor(selectedTab == index ? .blue : .black)
                 .brightness(0.1)
             }
         }
-        .shadow(color: .gray, radius: 5)
         .animation(.bouncy(duration: 1, extraBounce: 0.3))
     }
 }
