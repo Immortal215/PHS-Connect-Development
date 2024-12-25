@@ -27,11 +27,8 @@ final class AuthenticationManager {
         return AuthDataResultModel(user: user)
     }
     
-
-    
     func signOut() throws {
         try Auth.auth().signOut()
-        
     }
 }
 
@@ -39,8 +36,8 @@ final class AuthenticationManager {
 extension AuthenticationManager {
     
     @discardableResult
-    func signInWithGoogle(tokens: GoogleSignInResultModel) async throws -> AuthDataResultModel {
-        let credential = GoogleAuthProvider.credential(withIDToken: tokens.idToken, accessToken: tokens.accessToken)
+    func signInWithGoogle(idToken: String, accessToken: String) async throws -> AuthDataResultModel {
+        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
         return try await signIn(credential: credential)
     }
     

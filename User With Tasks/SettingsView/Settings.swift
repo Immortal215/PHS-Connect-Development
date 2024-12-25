@@ -6,7 +6,7 @@ import SwiftUI
 
 struct Settings: View {
     var viewModel: AuthenticationViewModel
-    @State var userInfo: Personal? = nil
+    @Binding var userInfo: Personal?
     @Binding var showSignInView: Bool
     @State var favoriteText = ""
     @AppStorage("selectedTab") var selectedTab = 3
@@ -87,13 +87,15 @@ struct Settings: View {
                     fetchUser(for: UserID) { user in
                         userInfo = user
                         
-                        if !userInfo!.favoritedClubs.filter({ !$0.contains(" ") }).isEmpty {
-                            getFavoritedClubNames(from: userInfo!.favoritedClubs) { clubNames in
-                                favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
+                        if let favoriteClubs = userInfo?.favoritedClubs {
+                            if !favoriteClubs.filter({ !$0.contains(" ") }).isEmpty {
+                                getFavoritedClubNames(from: favoriteClubs) { clubNames in
+                                    favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
+                                }
+                            } else {
+                                favoriteText = "Favorited Clubs: None"
+                                
                             }
-                        } else {
-                            favoriteText = "Favorited Clubs: None"
-                            
                         }
                     }
                 }

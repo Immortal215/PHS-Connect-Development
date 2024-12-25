@@ -171,12 +171,12 @@ struct AddAnnouncementSheet: View {
                 Button {
                     announceFull = true
                 } label: {
-                    SingleAnnouncementView(clubName: clubName, announcement: $announcement, viewModel: viewModel, isClubMember: false)
+                    SingleAnnouncementView(clubName: clubName, announcement: $announcement, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
 
                 }
                 
                 .sheet(isPresented: $announceFull) {
-                    SingleAnnouncementView(clubName: clubName, announcement: $announcement, fullView: true, viewModel: viewModel, isClubMember: false)
+                    SingleAnnouncementView(clubName: clubName, announcement: $announcement, fullView: true, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
                         .presentationDragIndicator(.visible)
                     
                     Spacer()
@@ -288,6 +288,12 @@ struct AddAnnouncementSheet: View {
     }
 }
 
+
+struct SelectedAnnouncement: Identifiable {
+    let id: String
+    let announcement: Club.Announcements
+}
+
 struct AnnouncementsView: View {
     @State var showAllAnnouncements = false
     @State var announcements: [String: Club.Announcements]
@@ -298,9 +304,9 @@ struct AnnouncementsView: View {
     @State var limitingPrefix: Int? = 2
     @State var clubs: [Club] = []
     @State var isHomePage: Bool = false
+    @Binding var userInfo: Personal?
     
     var body: some View {
-    
         VStack(alignment: .leading) {
             Text("Recent Announcements:")
                 .font(.headline)
@@ -318,8 +324,8 @@ struct AnnouncementsView: View {
                                         set: { announcements[key] = $0 }
                                     ),
                                     viewModel: viewModel,
-                                    isClubMember: isClubMember
-                                    
+                                    isClubMember: isClubMember,
+                                    userInfo: $userInfo
                                 )
                             }
                             .sheet(item: $selectedAnnouncement) { selected in
@@ -333,7 +339,8 @@ struct AnnouncementsView: View {
                                     viewModel: viewModel,
                                     isClubMember: isClubMember,
                                     clubs: clubs,
-                                    isHomePage: isHomePage
+                                    isHomePage: isHomePage,
+                                    userInfo: $userInfo
                                 )
                                 .onAppear {
                                     guard isClubMember else { return }
@@ -388,23 +395,15 @@ struct AnnouncementsView: View {
                             }
                         }
                         .sheet(isPresented: $showAllAnnouncements) {
-                            AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMember, clubs: clubs, isHomePage: isHomePage)
+                            AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMember, clubs: clubs, isHomePage: isHomePage, userInfo: $userInfo)
                                 .presentationDragIndicator(.visible)
                                 .presentationSizing(.page)
                         }
                     }
-
                 }
-                
             }
-
         }
     }
-}
-
-struct SelectedAnnouncement: Identifiable {
-    let id: String
-    let announcement: Club.Announcements
 }
 
 struct AllAnnouncementsView: View {
@@ -416,7 +415,8 @@ struct AllAnnouncementsView: View {
     @State var isClubMember: Bool
     @State var clubs: [Club] = []
     @State var isHomePage: Bool = false
-
+    @Binding var userInfo: Personal?
+    
     var body: some View {
         ScrollView {
             Text("All Announcements")
@@ -437,7 +437,8 @@ struct AllAnnouncementsView: View {
                                     set: { announcements[key] = $0 }
                                 ),
                                 viewModel: viewModel,
-                                isClubMember: isClubMember
+                                isClubMember: isClubMember,
+                                userInfo: $userInfo
                             )
                         }
                         .padding()
@@ -452,7 +453,8 @@ struct AllAnnouncementsView: View {
                                 viewModel: viewModel,
                                 isClubMember: isClubMember,
                                 clubs: clubs,
-                                isHomePage: isHomePage
+                                isHomePage: isHomePage,
+                                userInfo: $userInfo
                             )
                             .onAppear {
                                 guard isClubMember else { return }
@@ -487,25 +489,19 @@ struct AllAnnouncementsView: View {
                 }
             }
         }
-        
     }
 }
 
 struct SingleAnnouncementView: View {
-    //  var date: String
     var clubName: String
-    //    var title: String
-    //    var clubBody: String
-    //    var writer: String
-    //    var link: String?
-    //    var linkText: String?
     @Binding var announcement: Club.Announcements
-    var fullView : Bool? = false
+    var fullView: Bool? = false
     var viewModel: AuthenticationViewModel
     var isClubMember: Bool
     @State var clubs: [Club] = []
     @State var isHomePage = false
     @State var showInfo = false
+    @Binding var userInfo: Personal?
     
     var body: some View {
         ZStack {
@@ -545,28 +541,25 @@ struct SingleAnnouncementView: View {
                         .font(.caption)
                         .italic()
                 }
-                //.padding(.vertical, 8)
-                //.padding(.horizontal)
                 .padding()
                 .foregroundStyle(.black)
                 
                 Spacer()
             }
-            
-            
         }
         .sheet(isPresented: $showInfo) {
+            if let userInfo = userInfo {
+                
                 if let cluber = clubs.first(where: { $0.clubID == announcement.clubID }) {
-                    ClubInfoView(club: cluber, viewModel: viewModel)
+                    ClubInfoView(club: cluber, viewModel: viewModel, userInfo: $userInfo)
                         .presentationDragIndicator(.visible)
                         .presentationSizing(.page)
                         .foregroundColor(nil)
                 } else {
                     Text("Club not found")
                 }
-        
+            }
         }
-
         .padding()
         .background {
             Color.blue.opacity(0.1)
@@ -578,7 +571,6 @@ struct SingleAnnouncementView: View {
                     .cornerRadius(15)
                 
                 VStack {
-                    
                     Spacer()
                     Text("Announcement Not Seen Yet!")
                         .font(.subheadline)

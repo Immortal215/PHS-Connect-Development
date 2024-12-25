@@ -9,8 +9,8 @@ import SwiftUIX
 import PopupView
 
 struct ClubView: View {
-    @Binding var clubs: [Club] 
-    @State var userInfo: Personal? = nil
+    @Binding var clubs: [Club]
+    @Binding var userInfo: Personal?
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @AppStorage("searchText") var searchText: String = ""
@@ -49,32 +49,32 @@ struct ClubView: View {
             if advSearchShown {
                 VStack {
                     HStack {
-//                        Button {
-//                            if !viewModel.isGuestUser {
-//                                if let UserID = viewModel.uid {
-//                                    fetchUser(for: UserID) { user in
-//                                        userInfo = user
-//                                    }
-//                                }
-//                            }
-//                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-//                                advSearchShown = true
-//                            }
-//                        } label: {
-//                            Label {
-//                                Text("Search All Clubs")
-//                                    .font(.headline)
-//                                    .foregroundColor(.white)
-//                            } icon: {
-//                                Image(systemName: "magnifyingglass")
-//                                    .foregroundColor(.white)
-//                            }
-//                            .padding()
-//                            .background(.blue)
-//                            .cornerRadius(10)
-//                            .shadow(radius: 5)
-//                        }
-//                        .padding()
+                        //                        Button {
+                        //                            if !viewModel.isGuestUser {
+                        //                                if let UserID = viewModel.uid {
+                        //                                    fetchUser(for: UserID) { user in
+                        //                                        userInfo = user
+                        //                                    }
+                        //                                }
+                        //                            }
+                        //                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        //                                advSearchShown = true
+                        //                            }
+                        //                        } label: {
+                        //                            Label {
+                        //                                Text("Search All Clubs")
+                        //                                    .font(.headline)
+                        //                                    .foregroundColor(.white)
+                        //                            } icon: {
+                        //                                Image(systemName: "magnifyingglass")
+                        //                                    .foregroundColor(.white)
+                        //                            }
+                        //                            .padding()
+                        //                            .background(.blue)
+                        //                            .cornerRadius(10)
+                        //                            .shadow(radius: 5)
+                        //                        }
+                        //                        .padding()
                         
                         Spacer()
                         
@@ -115,26 +115,23 @@ struct ClubView: View {
                         
                         if userInfo?.userID != nil {
                             // Clubs in
-                            HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Enrolled")
+                            HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Enrolled")
                             
                             // favorited clubs
-                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: userInfo, scrollerOf: "Favorite")
+                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
                         }
                     }
                     .refreshable {
-                        if !viewModel.isGuestUser {
-                            if let UserID = viewModel.uid {
-                                fetchUser(for: UserID) { user in
-                                    userInfo = user
-                                }
-                            }
-                        } else {
-                            advSearchShown = true
-                        }
-                        
                         fetchClubs { fetchedClubs in
                             clubs = fetchedClubs
                         }
+                        
+                        if let UserID = viewModel.uid {
+                            fetchUser(for: UserID) { user in
+                                userInfo = user
+                            }
+                        }
+                        
                         
                         advSearchShown = !advSearchShown
                         
@@ -159,7 +156,7 @@ struct ClubView: View {
                 }
                 result.merge(filteredAnnouncements) { _, new in new }
             }
-
+            
             VStack {
                 if unreadAnnouncements.isEmpty {
                     Text("No Announcements, Check Back Later!")
@@ -167,7 +164,7 @@ struct ClubView: View {
                         .foregroundColor(.gray)
                         .padding()
                 } else {
-                    AnnouncementsView(announcements: unreadAnnouncements, viewModel: viewModel, isClubMember: true, clubs: clubs, isHomePage: true)
+                    AnnouncementsView(announcements: unreadAnnouncements, viewModel: viewModel, isClubMember: true, clubs: clubs, isHomePage: true, userInfo: $userInfo)
                         .padding()
                 }
             }
@@ -176,7 +173,7 @@ struct ClubView: View {
             .cornerRadius(16)
             .shadow(radius: 10)
             .padding()
-
+            
         } customize: {
             $0
                 .isOpaque(true)
@@ -188,19 +185,17 @@ struct ClubView: View {
                 .animation(.easeInOut)
             
         }
-        .onAppear {
+        .onAppearOnce {
             fetchClubs { fetchedClubs in
                 clubs = fetchedClubs
             }
             
-                if let UserID = viewModel.uid {
-                    fetchUser(for: UserID) { user in
-                        userInfo = user
-                    }
+            if let UserID = viewModel.uid {
+                fetchUser(for: UserID) { user in
+                    userInfo = user
                 }
+            }
             
-
-
             advSearchShown = !advSearchShown
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {

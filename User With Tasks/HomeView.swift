@@ -32,7 +32,7 @@ struct HomeView: View {
                 VStack(alignment: .leading){
                     
                     if !announcements.isEmpty {
-                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: true, limitingPrefix: 3, clubs: clubs, isHomePage: true)
+                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: true, limitingPrefix: 3, clubs: clubs, isHomePage: true, userInfo: .constant(nil))
                             .foregroundStyle(.black)
                     } else {
                         Text("No Announcements")

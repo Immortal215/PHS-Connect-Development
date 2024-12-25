@@ -15,8 +15,8 @@ struct ClubCard: View {
     @State var viewModel: AuthenticationViewModel
     @AppStorage("shownInfo") var shownInfo = -1
     @State var infoRelativeIndex: Int
-    @State var userInfo: Personal? = nil
-    
+    @Binding var userInfo: Personal?
+
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)

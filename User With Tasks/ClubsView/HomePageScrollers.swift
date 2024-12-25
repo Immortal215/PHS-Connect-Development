@@ -15,7 +15,7 @@ struct HomePageScrollers: View {
     @State var viewModel: AuthenticationViewModel
     @State var screenHeight = UIScreen.main.bounds.height
     @State var screenWidth = UIScreen.main.bounds.width
-    @State var userInfo: Personal? = nil
+    @Binding var userInfo: Personal?
     @AppStorage("advSearchShown") var advSearchShown = false
     @State var scrollerOf : String
     
@@ -34,7 +34,7 @@ struct HomePageScrollers: View {
                                     shownInfo = infoRelativeIndex
                                     showClubInfoSheet = true
                                 } label: {
-                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
+                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
                                 }
                                 //.fixedSize(horizontal: false, vertical: false)
                                 // .frame(width: screenWidth/2.2, height: screenHeight/5)
@@ -46,7 +46,7 @@ struct HomePageScrollers: View {
                                     }
                                 } content: {
                                     if shownInfo >= 0 {
-                                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: userInfo)
+                                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
                                             .presentationDragIndicator(.visible)
                                             .presentationSizing(.page)
                                         

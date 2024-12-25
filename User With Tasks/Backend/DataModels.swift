@@ -6,25 +6,23 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-
 struct Club: Codable, Equatable {
     var leaders: [String] // emails
     var members: [String] // emails
-    var announcements: [String : Announcements]? // each announcement time will be in this form of Date : [Title, Body, person writing, ClubID of club] need to add this in
-    var meetingTimes: [String: [String]]? // each meeting time will be in this form of Date : [Title, Body, Date of end Time] maybe add a show to all thing too?
-    var description: String // short description to catch viewers
+    var announcements: [String : Announcements]? // announcements details
+    var meetingTimes: [String: [String]]? // meeting times details
+    var description: String // short description
     var name: String
     var normalMeetingTime: String?
     var schoologyCode: String
     var genres: [String]?
     var clubPhoto: String?
-    var abstract: String // club abstract (basically a longer description)
-//    var showDataWho: String // shows sensitive info to : all, allNonGuest, onlyMembers, onlyLeaders
-    var pendingMemberRequests: Set<String>? // Userid : emails
+    var abstract: String // club abstract
+    var pendingMemberRequests: Set<String>? // UserID: emails
     var clubID: String
     var location: String
-    var instagram: String? // instagram link (maybe in app web view because of photo showing)
-    
+    var instagram: String? // Instagram link
+
     struct Announcements: Codable, Equatable {
         var date: String
         var title: String
@@ -33,12 +31,12 @@ struct Club: Codable, Equatable {
         var clubID: String
         var peopleSeen: [String]?
         var link: String?
-        var linkText: String? 
+        var linkText: String?
     }
 }
 
 struct Personal: Codable {
-    var userID : String
+    var userID: String
     var favoritedClubs: [String] // clubIDs
     var subjectPreferences: [String]
     var fcmToken: String?
@@ -52,33 +50,34 @@ final class AuthenticationViewModel: ObservableObject {
     @AppStorage("isGuestUser") var isGuestUser = true
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
-    
-    // do not get rid of, may be important
+
     init() {
         if let user = Auth.auth().currentUser {
-            self.userEmail = userEmail
-            self.userName = userName
-            self.userImage = userImage
+            self.userEmail = user.email
+            self.userName = user.displayName
+            self.userImage = user.photoURL?.absoluteString
             self.isGuestUser = false
-            self.uid = uid
+            self.uid = user.uid
         }
     }
-    
-    func createUserNodeIfNeeded(userID: String) {
+
+    func createUserNodeIfNeeded() {
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("User is not authenticated")
+            return
+        }
+
         let reference = Database.database().reference()
         let userReference = reference.child("users").child(userID)
-        
+
         userReference.observeSingleEvent(of: .value) { snapshot in
-            
-            // only create node if it doesn't already exist
             if !snapshot.exists() {
                 let newUser = [
-                    "userID" : self.uid!,
-                    "clubsAPartOf": [" "],
+                    "userID": userID,
                     "favoritedClubs": [" "],
                     "subjectPreferences": [" "]
-                ] as [String : Any]
-                
+                ] as [String: Any]
+
                 userReference.setValue(newUser) { error, _ in
                     if let error = error {
                         print("Error creating user node: \(error)")
@@ -91,7 +90,7 @@ final class AuthenticationViewModel: ObservableObject {
             }
         }
     }
-    
+
     func signInAsGuest() {
         self.userName = "Guest Account"
         self.userEmail = "Explore!"
@@ -100,47 +99,33 @@ final class AuthenticationViewModel: ObservableObject {
         self.userType = "Guest"
         self.uid = ""
     }
-    
+
     func signInGoogle() async throws {
         guard let topVC = Utilities.shared.topViewController() else {
             throw URLError(.cannotFindHost)
         }
-        
+
         let gidSignInResult = try await GIDSignIn.sharedInstance.signIn(withPresenting: topVC)
-        
+
         guard let idToken = gidSignInResult.user.idToken?.tokenString else {
             throw URLError(.badServerResponse)
         }
-        
-        let accesssToken = gidSignInResult.user.accessToken.tokenString
-        let name = gidSignInResult.user.profile?.name
-        let email = gidSignInResult.user.profile?.email
-        let image = gidSignInResult.user.profile?.imageURL(withDimension: 100)
-        let uid = gidSignInResult.user.userID!
 
-        self.userEmail = email
-        self.userName = name
-        self.userImage = image?.absoluteString
+        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: gidSignInResult.user.accessToken.tokenString)
+
+        let authResult = try await Auth.auth().signIn(with: credential)
+        let user = authResult.user
+
+        self.userEmail = user.email
+        self.userName = user.displayName
+        self.userImage = user.photoURL?.absoluteString
         self.isGuestUser = false
-        self.uid = uid
-        self.createUserNodeIfNeeded(userID: uid)
+        self.uid = user.uid
         
-        if let email = email {
+        self.createUserNodeIfNeeded()
+
+        if let email = user.email {
             self.userType = email.split(separator: ".").contains("d214") ? (email.split(separator: ".").contains("stu") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
         }
-        
-        let tokens = GoogleSignInResultModel(idToken: idToken, accessToken: accesssToken, name: name, email: email, image: image)
-        try await AuthenticationManager.shared.signInWithGoogle(tokens: tokens)
-        
     }
-    
-}
-
-struct GoogleSignInResultModel {
-    let idToken : String
-    let accessToken: String
-    let name: String?
-    let email: String?
-    let image: URL?
-    
 }

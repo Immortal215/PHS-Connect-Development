@@ -9,7 +9,7 @@ import SwiftUIX
 
 struct SearchClubView: View {
     @Binding var clubs: [Club]
-    @State var userInfo: Personal? = nil
+    @Binding var userInfo: Personal?
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @AppStorage("shownInfo") var shownInfo = -1
@@ -124,7 +124,7 @@ struct SearchClubView: View {
                                                 shownInfo = infoRelativeIndex
                                                 showClubInfoSheet = true
                                             } label: {
-                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: userInfo)
+                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
                                             }
                                             //  .frame(width: screenWidth/2.2, height: screenHeight/5)
                                             .padding(.vertical, 3)
@@ -135,7 +135,7 @@ struct SearchClubView: View {
                                                 }
                                             } content: {
                                                 if shownInfo >= 0 {
-                                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: userInfo)
+                                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
                                                         .presentationDragIndicator(.visible)
                                                         .presentationSizing(.page)
                                                     
@@ -217,7 +217,7 @@ struct SearchClubView: View {
                 .closeOnTap(false)
             
         }
-        .onAppear {
+        .onAppearOnce {
             fetchClubs { fetchedClubs in
                 clubs = fetchedClubs
             }

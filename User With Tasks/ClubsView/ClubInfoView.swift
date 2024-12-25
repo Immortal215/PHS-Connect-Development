@@ -24,7 +24,7 @@ struct ClubInfoView: View {
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @State var abstractExpanded = true
     @State var abstractGreaterThanFour = false
-    @State var userInfo: Personal? = nil
+    @Binding var userInfo: Personal?
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
@@ -240,7 +240,7 @@ struct ClubInfoView: View {
                     }
                     
                     if let announcements = club.announcements, viewModel.isGuestUser == false {
-                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")))
+                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")), userInfo: $userInfo)
                     }
                     
                     Text("Location:")

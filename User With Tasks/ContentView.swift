@@ -24,7 +24,7 @@ struct ContentView: View {
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
     @State var clubs: [Club] = []
-    
+    @State var userInfo: Personal? = nil
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -85,14 +85,14 @@ struct ContentView: View {
                         ZStack {
                             TabView(selection: $selectedTab) {
                                 if !viewModel.isGuestUser {
-                                    ClubView(clubs: $clubs, viewModel: viewModel)
+                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         .tabItem {
                                             Image(systemName: "rectangle.3.group.bubble")
                                         }
                                         .tag(0)
                                 }
                                 
-                                SearchClubView(clubs: $clubs, viewModel: viewModel)
+                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .tag(1)
                                 
                                 //                                ClubView(viewModel: viewModel)
@@ -106,7 +106,7 @@ struct ContentView: View {
                                 //                                    }
                                 //                                    .tag(2)
                                 
-                                Settings(viewModel: viewModel, showSignInView: $showSignInView)
+                                Settings(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                     .tabItem {
                                         Image(systemName: "gearshape")
                                     }
@@ -143,6 +143,12 @@ struct ContentView: View {
                         .onAppear {
                             fetchClubs { fetchedClubs in
                                 clubs = fetchedClubs
+                            }
+                            
+                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
+                                fetchUser(for: UserID) { user in
+                                    userInfo = user
+                                }
                             }
                         }
                         
