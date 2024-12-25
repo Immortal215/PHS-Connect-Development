@@ -19,12 +19,13 @@ struct SearchClubView: View {
     @State var isSearching = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @State var createClubToggler = false
-    @State var searchCategories = ["Name", "Info", "Genre"]
     @State var showClubInfoSheet = false
     @State var advSearchShown = true
     @State var sortingMenu = false
     @AppStorage("ascendingStyle") var ascendingStyle = true
     @State var filteredItems: [Club] = []
+    @State var selectedGenres: [String] = []
+    
     var body: some View {
         ZStack {
             if advSearchShown {
@@ -38,6 +39,9 @@ struct SearchClubView: View {
                             ZStack(alignment: .leading) {
                                 HStack {
                                     SearchBar("Search all clubs by \(currentSearchingBy)", text: $searchText, isEditing: $isSearching)
+                                        .onChange(of: searchText) {
+                                            filteredItems = calculateFiltered()
+                                        }
                                     // .disabled(currentSearchingBy == "Genre" ? true : false)
                                     Text("Tags")
                                         .bold()
@@ -48,7 +52,6 @@ struct SearchClubView: View {
                                         .buttonStyle(.borderedProminent)
                                         .cornerRadius(15)
                                         .onTapGesture {
-                                            searchText = ""
                                             if currentSearchingBy == "Genre" {
                                                 currentSearchingBy = "Name"
                                             } else {
@@ -93,17 +96,20 @@ struct SearchClubView: View {
                             }
                             
                             if currentSearchingBy == "Genre" {
-                                MultiGenrePickerView()
+                                MultiGenrePickerView(selectedGenres: $selectedGenres)
                                     .padding(.top, -8)
                                     .padding(.bottom)
+                                    .onChange(of: selectedGenres) {
+                                        filteredItems = calculateFiltered()
+                                    }
                                     .onTapGesture(count: 2) {
-                                        searchText = ""
+                                        selectedGenres = []
                                         currentSearchingBy = "Name"
                                     }
                             }
                             
                             if !searchText.isEmpty {
-                                Text("Search Results for \"\(searchText)\" Searching Through All \(currentSearchingBy.capitalized)")
+                                Text("Search Results for \"\(searchText)\" Searching Through All Clubs")
                                     .font(.headline)
                             }
                             
@@ -190,6 +196,7 @@ struct SearchClubView: View {
                             .edgesIgnoringSafeArea(.all)
                         }
                         .frame(width:screenWidth, height: screenHeight, alignment: .bottom)
+                        .allowsHitTesting(false)
                     }
                     
                 }
@@ -224,18 +231,27 @@ struct SearchClubView: View {
             }
             
             filteredItems = calculateFiltered()
-            
+
             advSearchShown = !advSearchShown
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                 advSearchShown = !advSearchShown
             }
+
         }
     }
     
     func calculateFiltered() -> [Club] {
         if searchText.isEmpty {
             return clubs
+                .filter { club in
+                    if let genres = club.genres {
+                        return selectedGenres.allSatisfy { keyword in
+                            genres.contains(keyword)
+                        } // satisfies that all tags are in genres
+                    }
+                    return false
+                }
                 .sorted {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
                 }
@@ -244,19 +260,17 @@ struct SearchClubView: View {
                     !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                 }
         } else {
-            switch currentSearchingBy {
-            case "Name":
-                return clubs
-                    .filter {
-                        $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText) || $0.name.localizedCaseInsensitiveContains(searchText)
-                    }
-                    .sorted {
-                        $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
-                    }
-                    .sorted {
-                        userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-                        !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-                    }
+//                return clubs
+//                    .filter {
+//                        $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText) || $0.name.localizedCaseInsensitiveContains(searchText)
+//                    }
+//                    .sorted {
+//                        $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
+//                    }
+//                    .sorted {
+//                        userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
+//                        !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
+//                    }
                 //                case "Info":
                 //                    return clubs
                 //                        .filter {
@@ -269,13 +283,19 @@ struct SearchClubView: View {
                 //                            userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                 //                            !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                 //                        }
-            case "Genre":
-                let searchKeywords = searchText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                //searchText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 
                 return clubs
                     .filter { club in
-                        guard let genres = club.genres else { return false }
-                        return searchKeywords.allSatisfy { keyword in genres.contains(keyword) } // satisfies that all tags are in genres
+                        if let genres = club.genres {
+                            return selectedGenres.allSatisfy { keyword in
+                                genres.contains(keyword)
+                            } // satisfies that all tags are in genres
+                        }
+                        return false
+                    }
+                    .filter {
+                        $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText) || $0.name.localizedCaseInsensitiveContains(searchText)
                     }
                     .sorted {
                         $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
@@ -284,9 +304,8 @@ struct SearchClubView: View {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
-            default:
-                return clubs
-            }
+
+            
             
         }
     }

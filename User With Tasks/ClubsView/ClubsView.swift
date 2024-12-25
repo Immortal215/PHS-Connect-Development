@@ -9,7 +9,7 @@ import SwiftUIX
 import PopupView
 
 struct ClubView: View {
-    @State var clubs: [Club] = []
+    @Binding var clubs: [Club] 
     @State var userInfo: Personal? = nil
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height

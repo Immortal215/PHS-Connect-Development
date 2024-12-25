@@ -85,7 +85,7 @@ struct ContentView: View {
                         ZStack {
                             TabView(selection: $selectedTab) {
                                 if !viewModel.isGuestUser {
-                                    ClubView(viewModel: viewModel)
+                                    ClubView(clubs: $clubs, viewModel: viewModel)
                                         .tabItem {
                                             Image(systemName: "rectangle.3.group.bubble")
                                         }
@@ -122,22 +122,22 @@ struct ContentView: View {
                                 
                                 ZStack {
                                     
-                                        HStack {
-                                            if !viewModel.isGuestUser {
-                                                TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
-                                                    .padding(.horizontal, screenWidth / 8)
-                                            }
-                                            
-                                            TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
-                                                .padding(.horizontal, screenWidth / 8)
-                                            
-                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                    HStack {
+                                        if !viewModel.isGuestUser {
+                                            TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
                                                 .padding(.horizontal, screenWidth / 8)
                                         }
-                                        .padding(.bottom, 20)
+                                        
+                                        TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
+                                            .padding(.horizontal, screenWidth / 8)
+                                        
+                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                            .padding(.horizontal, screenWidth / 8)
+                                    }
+                                    .padding(.bottom, 20)
                                 }
-
-
+                                
+                                
                             }
                         }
                         .onAppear {

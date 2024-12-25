@@ -1,10 +1,9 @@
 import SwiftUI
 
 struct MultiGenrePickerView: View {
-    @State var selectedGenres: [String] = []
-    @AppStorage("searchText") var searchText: String = ""
+    @Binding var selectedGenres: [String]
     
-    private let genres: [String: [String]] = [
+    let genres: [String: [String]] = [
         "Types": ["Competitive", "Non-Competitive"],
         "Subjects": ["Math", "Science", "Reading", "History", "Business", "Technology", "Art", "Fine Arts", "Speaking", "Health", "Law", "Engineering"],
         "Descriptors": ["Cultural", "Physical", "Mental Health", "Safe Space"]
@@ -33,17 +32,7 @@ struct MultiGenrePickerView: View {
                 .padding(.horizontal)
             }
         }
-        .onChange(of: selectedGenres) { newValue in
-            searchText = newValue.joined(separator: ", ")
-        }
         .animation(.smooth)
-        .onAppear {
-            for i in searchText.split(separator: ", ") {
-                if !selectedGenres.contains(String(i)) {
-                    selectedGenres.append(String(i))
-                }
-            }
-        }
     }
     
     func toggleGenreSelection(_ genre: String) {
