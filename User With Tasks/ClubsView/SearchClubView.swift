@@ -24,6 +24,7 @@ struct SearchClubView: View {
     @State var sortingMenu = false
     @AppStorage("ascendingStyle") var ascendingStyle = true
     @State var filteredItems: [Club] = []
+    @AppStorage("sharedGenre") var sharedGenre = ""
     @State var selectedGenres: [String] = []
     
     var body: some View {
@@ -218,26 +219,32 @@ struct SearchClubView: View {
             
         }
         .onAppearOnce {
-            fetchClubs { fetchedClubs in
-                clubs = fetchedClubs
-            }
-            
-            if !viewModel.isGuestUser {
-                if let UserID = viewModel.uid {
-                    fetchUser(for: UserID) { user in
-                        userInfo = user
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                fetchClubs { fetchedClubs in
+                    clubs = fetchedClubs
+                }
+                
+                if !viewModel.isGuestUser {
+                    if let UserID = viewModel.uid {
+                        fetchUser(for: UserID) { user in
+                            userInfo = user
+                        }
                     }
                 }
-            }
-            
-            filteredItems = calculateFiltered()
-
-            advSearchShown = !advSearchShown
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                filteredItems = calculateFiltered()
+                
                 advSearchShown = !advSearchShown
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    advSearchShown = !advSearchShown
+                }
             }
-
+        }
+        .onChange(of: sharedGenre) {
+            if sharedGenre != "" {
+                selectedGenres = [sharedGenre]
+                sharedGenre = ""
+            }
         }
     }
     

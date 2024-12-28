@@ -466,38 +466,16 @@ struct CreateClubView: View {
         addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
         if (addLeaderText.contains("d214.org") || addLeaderText.contains("gmail.com")) && leaders.contains(addLeaderText) == false {
             if addLeaderText.contains(",") {
-                let splitLeaders = addLeaderText.split(separator: ",")
-                for i in splitLeaders {
-                    if leaders.contains(String(i)) == false {
-                        leaders.append(String(i).lowercased())
-                    }
-                }
-                addLeaderText = ""
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
                 
             } else if addLeaderText.contains("/") {
-                let splitLeaders = addLeaderText.split(separator: "/")
-                for i in splitLeaders {
-                    if leaders.contains(String(i)) == false {
-                        leaders.append(String(i).lowercased())
-                    }
-                }
-                addLeaderText = ""
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
+
             } else if addLeaderText.contains(";") {
-                let splitLeaders = addLeaderText.split(separator: ";")
-                for i in splitLeaders {
-                    if leaders.contains(String(i)) == false {
-                        leaders.append(String(i).lowercased())
-                    }
-                }
-                addLeaderText = ""
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
+                
             } else if addLeaderText.contains("-") {
-                let splitLeaders = addLeaderText.split(separator: "-")
-                for i in splitLeaders {
-                    if leaders.contains(String(i)) == false {
-                        leaders.append(String(i).lowercased())
-                    }
-                }
-                addLeaderText = ""
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
             } else {
                 leaders.append(addLeaderText.lowercased())
                 addLeaderText = ""
@@ -506,6 +484,20 @@ struct CreateClubView: View {
             leaderTextShake.toggle()
             dropper(title: "Enter a correct email!", subtitle: "Use the d214.org ending!", icon: UIImage(systemName: "trash"))
         }
+    }
+    
+    func addLeaderHelpperFunc(splitLeaders: [Substring]) {
+        for i in splitLeaders {
+            if leaders.contains(String(i)) == false {
+                if leaders.count < 6 {
+                    leaders.append(String(i).lowercased())
+                } else {
+                    dropper(title: "Too Many Leaders", subtitle: "Max 6", icon: nil)
+                    break
+                }
+            }
+        }
+        addLeaderText = ""
     }
     
     func addMemberFunc() {

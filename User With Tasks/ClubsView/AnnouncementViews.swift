@@ -174,7 +174,6 @@ struct AddAnnouncementSheet: View {
                     SingleAnnouncementView(clubName: clubName, announcement: $announcement, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
 
                 }
-                
                 .sheet(isPresented: $announceFull) {
                     SingleAnnouncementView(clubName: clubName, announcement: $announcement, fullView: true, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
                         .presentationDragIndicator(.visible)

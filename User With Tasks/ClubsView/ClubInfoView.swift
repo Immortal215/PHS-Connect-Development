@@ -19,9 +19,9 @@ struct ClubInfoView: View {
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
-    @AppStorage("searchText") var searchText = ""
     @AppStorage("advSearchShown") var advSearchShown = false
     @AppStorage("tagsExpanded") var tagsExpanded = true
+    @AppStorage("sharedGenre") var sharedGenre = ""
     @State var abstractExpanded = true
     @State var abstractGreaterThanFour = false
     @Binding var userInfo: Personal?
@@ -270,8 +270,8 @@ struct ClubInfoView: View {
                                             tagsExpanded = false
                                             advSearchShown = true
                                             currentSearchingBy = "Genre"
-                                            searchText = genre
                                             selectedTab = 1
+                                            sharedGenre = genre
                                             presentationMode.wrappedValue.dismiss()
                                         }) {
                                             Text(genre)

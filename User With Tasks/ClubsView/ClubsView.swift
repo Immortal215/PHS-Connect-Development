@@ -183,24 +183,28 @@ struct ClubView: View {
                 .dragToDismiss(true)
                 .closeOnTap(false)
                 .animation(.easeInOut)
-            
         }
         .onAppearOnce {
-            fetchClubs { fetchedClubs in
-                clubs = fetchedClubs
-            }
-            
-            if let UserID = viewModel.uid {
-                fetchUser(for: UserID) { user in
-                    userInfo = user
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                fetchClubs { fetchedClubs in
+                    clubs = fetchedClubs
+                }
+                
+                if !viewModel.isGuestUser {
+                    if let UserID = viewModel.uid {
+                        fetchUser(for: UserID) { user in
+                            userInfo = user
+                        }
+                    }
+                }
+                
+                advSearchShown = !advSearchShown
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    advSearchShown = !advSearchShown
                 }
             }
-            
-            advSearchShown = !advSearchShown
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                advSearchShown = !advSearchShown
-            }
+
         }
         
     }
