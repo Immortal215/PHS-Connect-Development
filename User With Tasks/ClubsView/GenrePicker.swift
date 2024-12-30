@@ -25,7 +25,6 @@ struct MultiGenrePickerView: View {
                                     }
                                 }
                             }
-                            //.frame(height: 40) // Adjust the height of one genre
                         }
                     }
                 }
@@ -60,5 +59,6 @@ struct GenreTag: View {
                 onTap()
             }
             .fixedSize(horizontal: true, vertical: false)
+            .font(.subheadline)
     }
 }

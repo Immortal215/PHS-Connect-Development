@@ -20,7 +20,8 @@ struct ClubCard: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
-                .stroke(.black, lineWidth: 3)
+                .foregroundStyle(Color(hexadecimal: "#E1EAF2"))
+            
             
             HStack {
                 // Club Image Section
@@ -33,7 +34,7 @@ struct ClubCard: View {
                             image
                                 .resizable()
                                 .scaledToFit()
-                                .clipShape(Rectangle())
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
                             
                             if club.clubPhoto == nil {
                                 ZStack {
@@ -47,11 +48,11 @@ struct ClubCard: View {
                                 .fixedSize()
                             }
                             
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(.black, lineWidth: 3)
-                                .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
+//                            RoundedRectangle(cornerRadius: 15)
+                             //   .stroke(.black, lineWidth: 3)
+                               // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                         }
-                        .frame(minWidth: screenWidth / 10, maxWidth: screenWidth / CGFloat(imageScaler), minHeight: screenHeight / 10, maxHeight: screenHeight / CGFloat(imageScaler))
+                      //  .frame(width: screenWidth / CGFloat(imageScaler), height: screenWidth / CGFloat(imageScaler))
                     },
                     placeholder: {
                         ZStack {
@@ -67,7 +68,9 @@ struct ClubCard: View {
                 VStack {
                     Text(club.name)
                         .font(.callout)
-                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 8)
+                        .multilineTextAlignment(.leading)
+                    
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
@@ -78,7 +81,6 @@ struct ClubCard: View {
                         Text("Genres: \(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }.joined(separator: ", "))")
                             .font(.caption)
                             .foregroundStyle(.blue)
-                            .multilineTextAlignment(.center)
                             .lineLimit(2)
                     }
                 }
@@ -189,7 +191,6 @@ struct ClubCard: View {
                     .padding(.bottom, 10)
                 }
         }
-      
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
           .animation(.easeInOut)
         .onAppear {

@@ -43,6 +43,7 @@ struct SearchClubView: View {
                                         .onChange(of: searchText) {
                                             filteredItems = calculateFiltered()
                                         }
+                                        .frame(width: screenWidth/3)
                                     // .disabled(currentSearchingBy == "Genre" ? true : false)
                                     Text("Tags")
                                         .bold()
