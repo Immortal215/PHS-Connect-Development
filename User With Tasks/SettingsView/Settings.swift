@@ -4,12 +4,11 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-struct Settings: View {
+struct SettingsView: View {
     var viewModel: AuthenticationViewModel
     @Binding var userInfo: Personal?
     @Binding var showSignInView: Bool
     @State var favoriteText = ""
-    @AppStorage("selectedTab") var selectedTab = 3
     @AppStorage("userEmail") var userEmail: String?
     @AppStorage("userName") var userName: String?
     @AppStorage("userImage") var userImage: String?

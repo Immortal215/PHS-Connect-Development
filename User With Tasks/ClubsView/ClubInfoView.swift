@@ -270,7 +270,7 @@ struct ClubInfoView: View {
                                             tagsExpanded = false
                                             advSearchShown = true
                                             currentSearchingBy = "Genre"
-                                            selectedTab = 1
+                                            selectedTab = 0
                                             sharedGenre = genre
                                             presentationMode.wrappedValue.dismiss()
                                         }) {

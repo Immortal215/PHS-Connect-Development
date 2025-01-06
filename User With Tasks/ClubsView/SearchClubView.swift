@@ -15,7 +15,6 @@ struct SearchClubView: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
-    @AppStorage("selectedTab") var selectedTab = 3
     @State var isSearching = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @State var createClubToggler = false
@@ -45,7 +44,7 @@ struct SearchClubView: View {
                                         }
                                         .frame(width: screenWidth/3)
                                     // .disabled(currentSearchingBy == "Genre" ? true : false)
-                                    Text("Tags")
+                                    Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
                                         .bold()
                                         .padding(.horizontal)
                                         .padding(.vertical, 8)
@@ -116,7 +115,7 @@ struct SearchClubView: View {
                             }
                             
                             // clubs view with search
-                            ScrollView(showsIndicators: false) {
+                            ScrollView() {
                                 ScrollView {
                                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
                                         ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in

@@ -21,7 +21,6 @@ struct ClubView: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
     @State var searchCategories = ["Name", "Info", "Genre"]
-    @AppStorage("selectedTab") var selectedTab = 3
     @State var notificationBellClicked = false
     
     var body: some View {
@@ -116,9 +115,10 @@ struct ClubView: View {
                         if userInfo?.userID != nil {
                             // Clubs in
                             HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Enrolled")
+                                .padding()
                             
                             // favorited clubs
-                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
+//                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
                         }
                     }
                     .refreshable {

@@ -84,16 +84,20 @@ struct ContentView: View {
                     } else {
                         ZStack {
                             TabView(selection: $selectedTab) {
+                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                    .tabItem {
+                                        Image(systemName: "magnifyingglass")
+                                    }
+                                    .tag(0)
+                                
                                 if !viewModel.isGuestUser {
                                     ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         .tabItem {
                                             Image(systemName: "rectangle.3.group.bubble")
                                         }
-                                        .tag(0)
+                                        .tag(1)
                                 }
-                                
-                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .tag(1)
+                             
                                 
                                 //                                ClubView(viewModel: viewModel)
                                 //                                    .tabItem {
@@ -106,11 +110,11 @@ struct ContentView: View {
                                 //                                    }
                                 //                                    .tag(2)
                                 
-                                Settings(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                                SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                     .tabItem {
                                         Image(systemName: "gearshape")
                                     }
-                                    .tag(3)
+                                    .tag(2)
                                 
                             }
                             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -123,18 +127,20 @@ struct ContentView: View {
                                 ZStack {
                                     
                                     HStack {
+                                        
+                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
+                                            .padding(.horizontal, screenWidth / 8)
+                                        
                                         if !viewModel.isGuestUser {
-                                            TabBarButton(image: "rectangle.3.group.bubble", index: 0, labelr: "Home")
+                                            TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
                                                 .padding(.horizontal, screenWidth / 8)
                                         }
-                                        
-                                        TabBarButton(image: "person.3.sequence", index: 1, labelr: "Clubs")
-                                            .padding(.horizontal, screenWidth / 8)
                                         
                                         TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
                                             .padding(.horizontal, screenWidth / 8)
                                     }
                                     .padding(.bottom, 20)
+                                    .fixedSize()
                                 }
                                 
                                 
@@ -214,37 +220,4 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
         accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)
-}
-
-struct MainButton: View {
-    
-    var imageName: String
-    var colorHex: String
-    var width: CGFloat = 50
-    
-    var body: some View {
-        ZStack {
-            Color(hex: colorHex)
-                .frame(width: width, height: width)
-                .cornerRadius(width / 2)
-                .shadow(color: Color(hex: colorHex).opacity(0.3), radius: 15, x: 0, y: 15)
-            Image(systemName: imageName)
-                .foregroundColor(.white)
-        }
-    }
-}
-
-extension Color {
-    
-    init(hex: String) {
-        let scanner = Scanner(string: hex)
-        var rgbValue: UInt64 = 0
-        scanner.scanHexInt64(&rgbValue)
-        
-        let r = (rgbValue & 0xff0000) >> 16
-        let g = (rgbValue & 0xff00) >> 8
-        let b = rgbValue & 0xff
-        
-        self.init(red: Double(r) / 0xff, green: Double(g) / 0xff, blue: Double(b) / 0xff)
-    }
 }

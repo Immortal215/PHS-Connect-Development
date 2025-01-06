@@ -22,10 +22,10 @@ struct HomePageScrollers: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(scrollerOf) Clubs")
-                ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.vertical, showsIndicators: false) {
                     if !filteredClubs.isEmpty {
                         
-                        HStack(alignment: .center, spacing: 0) {
+                        VStack(alignment: .center, spacing: 0) {
                             ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, club) in
                                 
                                 let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1

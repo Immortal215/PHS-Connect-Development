@@ -20,7 +20,7 @@ struct ClubCard: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
-                .foregroundStyle(Color(hexadecimal: "#E1EAF2"))
+                .foregroundStyle(Color(hexadecimal: "#F2F2F2"))
             
             
             HStack {

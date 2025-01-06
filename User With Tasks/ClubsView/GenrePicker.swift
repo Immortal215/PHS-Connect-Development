@@ -11,7 +11,7 @@ struct MultiGenrePickerView: View {
     
     var body: some View {
         VStack {
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 HStack(spacing: 10) {
                     ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
                         VStack(alignment: .leading, spacing: 10) {
