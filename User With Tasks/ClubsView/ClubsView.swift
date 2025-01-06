@@ -48,33 +48,10 @@ struct ClubView: View {
             if advSearchShown {
                 VStack {
                     HStack {
-                        //                        Button {
-                        //                            if !viewModel.isGuestUser {
-                        //                                if let UserID = viewModel.uid {
-                        //                                    fetchUser(for: UserID) { user in
-                        //                                        userInfo = user
-                        //                                    }
-                        //                                }
-                        //                            }
-                        //                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                        //                                advSearchShown = true
-                        //                            }
-                        //                        } label: {
-                        //                            Label {
-                        //                                Text("Search All Clubs")
-                        //                                    .font(.headline)
-                        //                                    .foregroundColor(.white)
-                        //                            } icon: {
-                        //                                Image(systemName: "magnifyingglass")
-                        //                                    .foregroundColor(.white)
-                        //                            }
-                        //                            .padding()
-                        //                            .background(.blue)
-                        //                            .cornerRadius(10)
-                        //                            .shadow(radius: 5)
-                        //                        }
-                        //                        .padding()
-                        
+                       Text("Home")
+                            .bold()
+                            .font(.title)
+                    
                         Spacer()
                         
                         Button {
@@ -104,11 +81,11 @@ struct ClubView: View {
                                         .offset(x: 10, y: -10)
                                 }
                             }
-                            .padding()
                             
                             
                         }
                     }
+                    .padding()
                     
                     ScrollView {
                         

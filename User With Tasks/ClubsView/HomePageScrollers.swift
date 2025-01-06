@@ -21,7 +21,6 @@ struct HomePageScrollers: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text("\(scrollerOf) Clubs")
             ScrollView(.vertical, showsIndicators: false) {
                     if !filteredClubs.isEmpty {
                         
@@ -34,12 +33,11 @@ struct HomePageScrollers: View {
                                     shownInfo = infoRelativeIndex
                                     showClubInfoSheet = true
                                 } label: {
-                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
+                                    ClubCardHome(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
                                 }
                                 //.fixedSize(horizontal: false, vertical: false)
                                 // .frame(width: screenWidth/2.2, height: screenHeight/5)
-                                .padding(.vertical, 3)
-                                .padding(.horizontal, 4)
+                                .padding()
                                 .sheet(isPresented: $showClubInfoSheet) {
                                     fetchClub(withId: club.clubID) { fetchedClub in
                                         clubs[infoRelativeIndex] = fetchedClub ?? club

@@ -30,9 +30,9 @@ struct SearchClubView: View {
         ZStack {
             if advSearchShown {
                 VStack {
-                    Text("Advanced Club Search")
+                    Text("Search For More Clubs")
                         .font(.title)
-                    
+                        .bold()
                     
                     HStack {
                         VStack {

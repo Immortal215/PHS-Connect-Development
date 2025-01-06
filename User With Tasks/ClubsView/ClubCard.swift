@@ -67,14 +67,14 @@ struct ClubCard: View {
                 // Club Info Section
                 VStack {
                     Text(club.name)
-                        .font(.callout)
+                        .font(.title3)
+                        .bold()
                         .padding(.bottom, 8)
-                        .multilineTextAlignment(.leading)
                     
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
-                    
+
                     Spacer()
                     
                     if let genres = club.genres, !genres.isEmpty {
@@ -84,9 +84,9 @@ struct ClubCard: View {
                             .lineLimit(2)
                     }
                 }
-                .padding()
                 .foregroundStyle(.black)
                 .frame(maxWidth: screenWidth / 3)
+                .padding()
                 
                 // Action Buttons Section
                 VStack(alignment: .trailing) {
