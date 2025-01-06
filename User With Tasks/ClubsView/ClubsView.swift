@@ -50,7 +50,7 @@ struct ClubView: View {
                     HStack {
                        Text("Home")
                             .bold()
-                            .font(.title)
+                            .font(.largeTitle)
                     
                         Spacer()
                         
@@ -87,7 +87,7 @@ struct ClubView: View {
                     }
                     .padding()
                     
-                    ScrollView {
+                    ScrollView() {
                         
                         if userInfo?.userID != nil {
                             // Clubs in
@@ -108,7 +108,6 @@ struct ClubView: View {
                                 userInfo = user
                             }
                         }
-                        
                         
                         advSearchShown = !advSearchShown
                         

@@ -24,7 +24,6 @@ struct ClubCard: View {
             
             
             HStack {
-                // Club Image Section
                 AsyncImage(
                     url: URL(
                         string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
@@ -64,12 +63,12 @@ struct ClubCard: View {
                 )
                 .padding()
                 
-                // Club Info Section
                 VStack {
                     Text(club.name)
-                        .font(.title3)
+                        .font(.callout)
                         .bold()
                         .padding(.bottom, 8)
+                        
                     
                     Text(club.description)
                         .font(.caption)
@@ -85,7 +84,7 @@ struct ClubCard: View {
                     }
                 }
                 .foregroundStyle(.black)
-                .frame(maxWidth: screenWidth / 3)
+                .frame(maxWidth: screenWidth / 2.8)
                 .padding()
                 
                 // Action Buttons Section
@@ -182,7 +181,7 @@ struct ClubCard: View {
                     VStack {
             
                         Spacer()
-                        Text("\(notificationCount) New Notifications")
+                        Text("^[\(notificationCount) Notifications](inflect:true)")
                             .font(.subheadline)
                             .foregroundColor(.white)
                             .padding(7)

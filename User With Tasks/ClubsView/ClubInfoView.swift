@@ -223,6 +223,7 @@ struct ClubInfoView: View {
                             }
                         } label: {
                             Text(latestAnnouncementMessage)
+                                .foregroundStyle(.blue)
                         }
                         .sheet(isPresented: $showAddAnnouncement) {
                             AddAnnouncementSheet(clubName: club.name, email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
@@ -249,6 +250,7 @@ struct ClubInfoView: View {
                         .font(.subheadline)
                         .foregroundStyle(.black)
                         .padding(.top, -8)
+                
                     
                     HStack {
                         Text("Schoology Code: ")
@@ -299,7 +301,7 @@ struct ClubInfoView: View {
                 Color.white
                     .frame(height: screenHeight/10)
             }
-            
+            .foregroundStyle(.black)
             .animation(.easeInOut, value: abstractExpanded) // smooth transition with whenever u expand abstract to show more
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

@@ -31,7 +31,7 @@ struct SearchClubView: View {
             if advSearchShown {
                 VStack {
                     Text("Search For More Clubs")
-                        .font(.title)
+                        .font(.largeTitle)
                         .bold()
                     
                     HStack {
@@ -185,21 +185,7 @@ struct SearchClubView: View {
                             
                         }
                     }
-                    .animation(.smooth)
-                    .overlay {
-                        HStack {
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.clear, Color.white]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .frame(height: screenHeight / 3)
-                            .edgesIgnoringSafeArea(.all)
-                        }
-                        .frame(width:screenWidth, height: screenHeight, alignment: .bottom)
-                        .allowsHitTesting(false)
-                    }
-                    
+                    .animation(.smooth)                    
                 }
             } else {
                 ProgressView()

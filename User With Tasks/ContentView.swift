@@ -125,19 +125,19 @@ struct ContentView: View {
                                 Spacer()
                                 
                                 ZStack {
-                                    
                                     HStack {
                                         
                                         TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
-                                            .padding(.horizontal, screenWidth / 8)
+                                            .padding(.horizontal)
                                         
                                         if !viewModel.isGuestUser {
                                             TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
-                                                .padding(.horizontal, screenWidth / 8)
+                                                .padding(.horizontal)
                                         }
                                         
                                         TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
-                                            .padding(.horizontal, screenWidth / 8)
+                                            .padding(.horizontal)
+    
                                     }
                                     .padding(.bottom, 20)
                                     .fixedSize()
@@ -145,6 +145,21 @@ struct ContentView: View {
                                 
                                 
                             }
+                            .background {
+                                HStack {
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.clear, Color.white]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                    .frame(height: screenHeight / 3)
+                                    .edgesIgnoringSafeArea(.all)
+                                }
+                                .frame(width:screenWidth, height: screenHeight, alignment: .bottom)
+                                .allowsHitTesting(false)
+                        
+                            }
+
                         }
                         .onAppear {
                             fetchClubs { fetchedClubs in
