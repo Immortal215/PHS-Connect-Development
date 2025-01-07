@@ -98,24 +98,27 @@ struct ClubView: View {
 //                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
                         }
                     }
-                    .refreshable {
-                        fetchClubs { fetchedClubs in
-                            clubs = fetchedClubs
-                        }
-                        
+                }
+                .refreshable {
+                    fetchClubs { fetchedClubs in
+                        clubs = fetchedClubs
+                    }
+                    
+                    if !viewModel.isGuestUser {
                         if let UserID = viewModel.uid {
                             fetchUser(for: UserID) { user in
                                 userInfo = user
                             }
                         }
-                        
+                    }
+                    
+                    advSearchShown = !advSearchShown
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         advSearchShown = !advSearchShown
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            advSearchShown = !advSearchShown
-                        }
                     }
                 }
+
             } else {
                 ProgressView()
             }

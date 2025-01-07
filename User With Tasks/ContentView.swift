@@ -135,7 +135,7 @@ struct ContentView: View {
                                                 .padding(.horizontal)
                                         }
                                         
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                        TabBarButton(image: "gearshape", index: 2, labelr: "Settings")
                                             .padding(.horizontal)
     
                                     }

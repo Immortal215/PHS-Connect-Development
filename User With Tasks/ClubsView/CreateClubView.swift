@@ -85,6 +85,8 @@ struct CreateClubView: View {
                     
                     if !genres.isEmpty {
                         CreatedClub.genres = genres
+                    } else {
+                        CreatedClub.genres = ["Non-Competitive"]
                     }
                                         
                     // optional additions, needed to keep optional

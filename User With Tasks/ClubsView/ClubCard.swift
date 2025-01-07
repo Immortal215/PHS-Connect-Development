@@ -16,12 +16,13 @@ struct ClubCard: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var infoRelativeIndex: Int
     @Binding var userInfo: Personal?
-
+    @State var youSureYouWantToLeave = false
+    @Binding var selectedGenres : [String]
+    
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
                 .foregroundStyle(Color(hexadecimal: "#F2F2F2"))
-            
             
             HStack {
                 AsyncImage(
@@ -77,10 +78,18 @@ struct ClubCard: View {
                     Spacer()
                     
                     if let genres = club.genres, !genres.isEmpty {
-                        Text("Genres: \(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }.joined(separator: ", "))")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
+                        genres
+                            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+                            .map { genre in
+                                Text(genre)
+                                    .foregroundColor(selectedGenres.contains(genre) ? .blue : .gray)
+                                    .bold()
+                            }
+                            .reduce(Text("")) { partialResult, genreText in
+                                partialResult == Text("") ? genreText : partialResult + Text(", ") + genreText
+                            }
                             .lineLimit(2)
+                            .font(.caption)
                     }
                 }
                 .foregroundStyle(.black)
@@ -142,7 +151,6 @@ struct ClubCard: View {
                         // Enroll Button
                         Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Enroll" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Enrolled") {
                             if let email = viewModel.userEmail {
-                                
                                 if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) {
                                     if var cluber =  club.pendingMemberRequests {
                                         cluber.insert(email)
@@ -156,17 +164,24 @@ struct ClubCard: View {
                                     club.pendingMemberRequests?.remove(email)
                                     addClub(club: club)
                                 } else {
-                                    club.pendingMemberRequests?.remove(email)
                                     if club.members.count != 1 {
-                                        club.members.removeAll(where: { $0 == email })
+                                        youSureYouWantToLeave.toggle()
                                     }
-                                    addClub(club: club)
                                 }
                             }
                         }
                         .buttonStyle(.borderedProminent)
                         .padding(.top)
                         .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
+                        .alert(isPresented: $youSureYouWantToLeave) {
+                            Alert(title: Text("Leave Club?"), primaryButton: .destructive(Text("Leave Club"), action: {
+                                if let email = viewModel.userEmail {
+                                    club.members.removeAll(where: { $0 == email })
+                                }
+                                dropper(title: "Club Left!", subtitle: "", icon: nil)
+                            }), secondaryButton: .cancel() )
+                        }
+                        
                     } else {
                         
                         Spacer()
@@ -181,7 +196,7 @@ struct ClubCard: View {
                     VStack {
             
                         Spacer()
-                        Text("^[\(notificationCount) Notifications](inflect:true)")
+                        Text("^[\(notificationCount) New Notifications](inflect:true)")
                             .font(.subheadline)
                             .foregroundColor(.white)
                             .padding(7)

@@ -106,6 +106,7 @@ struct SearchClubView: View {
                                     .onTapGesture(count: 2) {
                                         selectedGenres = []
                                         currentSearchingBy = "Name"
+                                        filteredItems = calculateFiltered()
                                     }
                             }
                             
@@ -125,7 +126,9 @@ struct SearchClubView: View {
                                                 shownInfo = infoRelativeIndex
                                                 showClubInfoSheet = true
                                             } label: {
-                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
+                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                               
+                                                
                                             }
                                             //  .frame(width: screenWidth/2.2, height: screenHeight/5)
                                             .padding(.vertical, 3)
@@ -169,8 +172,8 @@ struct SearchClubView: View {
                                         }
                                     }
                                 }
+                                
                                 filteredItems = calculateFiltered()
-
 
                                 advSearchShown = !advSearchShown
                                 
@@ -297,9 +300,6 @@ struct SearchClubView: View {
                         userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                         !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                     }
-
-            
-            
         }
     }
 }
