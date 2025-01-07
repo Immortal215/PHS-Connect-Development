@@ -141,6 +141,7 @@ struct ContentView: View {
                                     }
                                     .padding(.bottom, 20)
                                     .fixedSize()
+                                    .bold()
                                 }
                                 
                                 

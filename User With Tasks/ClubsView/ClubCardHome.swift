@@ -97,11 +97,10 @@ struct ClubCardHome: View {
                             .bold()
                     }
                     
-                    Text("Recent Updates")
-                        .font(.title3)
-                        .bold()
-                        .padding(.top)
-                    
+//                    Text("Recent Updates")
+//                        .font(.title3)
+//                        .bold()
+//                    
                     if let announcements = club.announcements {
                         ScrollView(.horizontal) {
                             LazyHStack {

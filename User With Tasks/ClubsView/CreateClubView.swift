@@ -292,7 +292,7 @@ struct CreateClubView: View {
                 DisclosureGroup("Edit Members", isExpanded: $memberDisclosureExpanded) {
                     VStack {
                         HStack {
-                            TextField("Add Member Email(s) ", text: $addMemberText)
+                            TextField("Add Member Email(s)", text: $addMemberText)
                                 .padding()
                                 .onSubmit {
                                     addMemberFunc()
@@ -436,6 +436,7 @@ struct CreateClubView: View {
                 .padding()
                 
             }
+            .animation(.smooth)
             .textFieldStyle(.roundedBorder)
             .onAppear {
                 fetchClubs { fetchedClubs in
@@ -461,7 +462,6 @@ struct CreateClubView: View {
                 
             }
         }
-        .animation(.smooth)
         
     }
     

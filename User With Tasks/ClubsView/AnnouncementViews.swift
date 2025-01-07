@@ -359,7 +359,6 @@ struct AnnouncementsView: View {
                                 }
                                 .presentationDragIndicator(.visible)
                                 
-                                Spacer()
                             }
                         } else {
                             Text("")
@@ -445,7 +444,7 @@ struct AllAnnouncementsView: View {
                     )
                 }
                 .frame(width: isTheHomeScreenClubView ? UIScreen.main.bounds.width / 3 : nil)
-                .padding()
+                .padding(.horizontal, isTheHomeScreenClubView ? 0 : 16)
                 .sheet(item: $selectedAnnouncement) { selected in
                     SingleAnnouncementView(
                         clubName: clubNames[selected.announcement.clubID] ?? "Unknown Club",
@@ -478,7 +477,6 @@ struct AllAnnouncementsView: View {
                     }
                     .presentationDragIndicator(.visible)
                     
-                    Spacer()
                 }
             } else {
                 Text("")
@@ -540,6 +538,10 @@ struct SingleAnnouncementView: View {
                             .foregroundStyle(.blue)
                     }
                     
+                    if fullView! {
+                        Spacer()
+                    }
+                    
                     Text(.init("- \(announcement.writer)"))
                         .font(.caption)
                         .italic()
@@ -563,10 +565,14 @@ struct SingleAnnouncementView: View {
                 }
             }
         }
-        .padding()
+        .padding(fullView! ? 0 : 16)
         .background {
-            Color.blue.opacity(0.1)
-                .cornerRadius(15)
+            if fullView! {
+                Color.blue.opacity(0.1)
+            } else {
+                Color.blue.opacity(0.1)
+                    .cornerRadius(15)
+            }
         }
         .overlay {
             if !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false) && isClubMember && dateFromString(announcement.date) > Date().addingTimeInterval(-604800) && !fullView! {

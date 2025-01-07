@@ -16,7 +16,7 @@ struct TabBarButton: View {
                 
                 VStack {
                     Image(systemName: image)
-                        .font(.system(size: 24))
+                        .imageScale(.large)
                     //  .rotationEffect(.degrees(selectedTab == index ? 10.0 : 0.0))
                     
                     Text(labelr)
