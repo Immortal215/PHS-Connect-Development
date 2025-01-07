@@ -114,7 +114,7 @@ struct ContentView: View {
                                     .tabItem {
                                         Image(systemName: "gearshape")
                                     }
-                                    .tag(2)
+                                    .tag(3)
                                 
                             }
                             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -135,7 +135,7 @@ struct ContentView: View {
                                                 .padding(.horizontal)
                                         }
                                         
-                                        TabBarButton(image: "gearshape", index: 2, labelr: "Settings")
+                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
                                             .padding(.horizontal)
     
                                     }

@@ -195,7 +195,7 @@ struct CreateClubView: View {
                         }
                         .padding()
                         
-                        if !leaders.isEmpty {
+                        if !leaders.isEmpty && !selectedLeaders.isEmpty {
                             Button {
                                 leaders.removeAll(where: { selectedLeaders.contains($0) })
                                 selectedLeaders.removeAll()
@@ -307,7 +307,7 @@ struct CreateClubView: View {
                             }
                             .padding()
                             
-                            if !members.isEmpty {
+                            if !members.isEmpty && !selectedMembers.isEmpty {
                                 Button {
                                     members.removeAll(where: { selectedMembers.contains($0) })
                                     selectedMembers.removeAll()
@@ -390,7 +390,7 @@ struct CreateClubView: View {
                         }
                         .padding()
                         
-                        if !genres.isEmpty {
+                        if !genres.isEmpty && !selectedGenres.isEmpty {
                             Button {
                                 genres.removeAll(where: { selectedGenres.contains($0) })
                                 selectedGenres.removeAll()
@@ -461,23 +461,43 @@ struct CreateClubView: View {
                 
             }
         }
+        .animation(.smooth)
         
     }
     
     func addLeaderFunc() {
         addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
         if (addLeaderText.contains("d214.org") || addLeaderText.contains("gmail.com")) && leaders.contains(addLeaderText) == false {
-            if addLeaderText.contains(",") {
+            if addLeaderText.contains("<") && addLeaderText.contains(">") {
+                
+                // below code splits emails if it looks like this :
+                // Pryncess Butler <pbutler5545@stu.d214.org>, Destani Cross <dcross6555@stu.d214.org>, Makaylah Mosby <mmosby5290@stu.d214.org>
+                
+                
+                var splitLeaders : [Substring] = []
+                
+                for entry in addLeaderText.split(separator: ",") {
+                    let trimmedEntry = entry.trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    if let start = trimmedEntry.firstIndex(of: "<"), let end = trimmedEntry.firstIndex(of: ">") {
+                        let email = String(trimmedEntry[trimmedEntry.index(after: start)..<end])
+                        splitLeaders.append(Substring(email))
+                    }
+                }
+                
+                addLeaderHelpperFunc(splitLeaders: splitLeaders)
+                
+            } else if addLeaderText.contains(",") {
                 addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
                 
             } else if addLeaderText.contains("/") {
-                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: "/"))
 
             } else if addLeaderText.contains(";") {
-                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ";"))
                 
             } else if addLeaderText.contains("-") {
-                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ","))
+                addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: "-"))
             } else {
                 leaders.append(addLeaderText.lowercased())
                 addLeaderText = ""
@@ -505,7 +525,27 @@ struct CreateClubView: View {
     func addMemberFunc() {
         addMemberText = addMemberText.replacingOccurrences(of: " ", with: "")
         if (addMemberText.contains("d214.org") || addMemberText.contains("gmail.com")) && members.contains(addMemberText) == false {
-            if addMemberText.contains(",") {
+            if addMemberText.contains("<") && addMemberText.contains(">") {
+                
+                // below code splits emails if it looks like this :
+                // Pryncess Butler <pbutler5545@stu.d214.org>, Destani Cross <dcross6555@stu.d214.org>, Makaylah Mosby <mmosby5290@stu.d214.org>
+                
+                let splitMembers = addMemberText.split(separator: ",")
+                
+                for entry in splitMembers {
+                    let trimmedEntry = entry.trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    if let start = trimmedEntry.firstIndex(of: "<"), let end = trimmedEntry.firstIndex(of: ">") {
+                        let email = String(trimmedEntry[trimmedEntry.index(after: start)..<end])
+                        
+                        if !members.contains(email.lowercased()) {
+                            members.append(email.lowercased())
+                        }
+                    }
+                }
+                addMemberText = ""
+                
+            } else if addMemberText.contains(",") {
                 let splitMembers = addMemberText.split(separator: ",")
                 for i in splitMembers {
                     if members.contains(String(i)) == false {
@@ -514,7 +554,7 @@ struct CreateClubView: View {
                 }
                 addMemberText = ""
                 
-            }  else {
+            } else {
                 members.append(addMemberText.lowercased())
                 addMemberText = ""
             }
