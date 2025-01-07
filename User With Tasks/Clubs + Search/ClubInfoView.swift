@@ -19,7 +19,6 @@ struct ClubInfoView: View {
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
-    @AppStorage("advSearchShown") var advSearchShown = false
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @AppStorage("sharedGenre") var sharedGenre = ""
     @State var abstractExpanded = true
@@ -270,7 +269,6 @@ struct ClubInfoView: View {
                                     HStack(spacing: 0) {
                                         Button(action: {
                                             tagsExpanded = false
-                                            advSearchShown = true
                                             currentSearchingBy = "Genre"
                                             selectedTab = 0
                                             sharedGenre = genre

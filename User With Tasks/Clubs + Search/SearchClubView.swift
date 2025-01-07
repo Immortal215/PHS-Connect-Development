@@ -160,28 +160,6 @@ struct SearchClubView: View {
                                 Text("Search for Other Clubs! 🙃")
                                     .frame(height: screenHeight/3, alignment: .top)
                             }
-                            .refreshable {
-                                fetchClubs { fetchedClubs in
-                                    clubs = fetchedClubs
-                                }
-                                
-                                if !viewModel.isGuestUser {
-                                    if let UserID = viewModel.uid {
-                                        fetchUser(for: UserID) { user in
-                                            userInfo = user
-                                        }
-                                    }
-                                }
-                                
-                                filteredItems = calculateFiltered()
-
-                                advSearchShown = !advSearchShown
-                                
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                    advSearchShown = !advSearchShown
-                                }
-                            }
-                            
                             //  .frame(width: screenWidth/2.1)
                             
                             //.padding()
@@ -207,27 +185,8 @@ struct SearchClubView: View {
                 .closeOnTap(false)
             
         }
-        .onAppearOnce {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                fetchClubs { fetchedClubs in
-                    clubs = fetchedClubs
-                }
-                
-                if !viewModel.isGuestUser {
-                    if let UserID = viewModel.uid {
-                        fetchUser(for: UserID) { user in
-                            userInfo = user
-                        }
-                    }
-                }
-                filteredItems = calculateFiltered()
-                
-                advSearchShown = !advSearchShown
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                    advSearchShown = !advSearchShown
-                }
-            }
+        .onAppear {
+            filteredItems = calculateFiltered()
         }
         .onChange(of: sharedGenre) {
             if sharedGenre != "" {

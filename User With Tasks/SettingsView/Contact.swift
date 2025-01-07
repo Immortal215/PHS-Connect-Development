@@ -22,7 +22,7 @@ struct FeatureReportButton: View {
             HStack {
                 Image(systemName: "envelope.fill")
                     .font(.system(size: 20))
-                Text("Submit Feature Report (Only Works on Actual Ipad not Simulator)")
+                Text("Submit Feature Report")
                     .fontWeight(.semibold)
             }
             .foregroundColor(.white)

@@ -16,7 +16,6 @@ struct HomePageScrollers: View {
     @State var screenHeight = UIScreen.main.bounds.height
     @State var screenWidth = UIScreen.main.bounds.width
     @Binding var userInfo: Personal?
-    @AppStorage("advSearchShown") var advSearchShown = false
     @State var scrollerOf : String
     
     var body: some View {
@@ -59,12 +58,9 @@ struct HomePageScrollers: View {
                      //   .fixedSize(horizontal: false, vertical: false)
                        // .fixedSize()
                     } else {
-                        Button {
-                            advSearchShown = true
-                        } label: {
-                            Text("Add \(scrollerOf) +")
-                                .font(.subheadline)
-                        }
+                       Text("Join Clubs!")
+                            .font(.largeTitle)
+                            .bold()
                     }
                 }
             

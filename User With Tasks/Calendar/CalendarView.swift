@@ -8,8 +8,12 @@ import Pow
 import SwiftUIX
 
 struct CalendarView: View {
-    var viewModel : AuthenticationViewModel
-
+    @Binding var clubs: [Club]
+    @Binding var userInfo: Personal?
+    var viewModel: AuthenticationViewModel
+    var screenWidth = UIScreen.main.bounds.width
+    var screenHeight = UIScreen.main.bounds.height
+    
     var body: some View {
         Text("calendar")
     }

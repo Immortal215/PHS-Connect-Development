@@ -16,7 +16,7 @@ struct ContentView: View {
     @State var screenHeight = UIScreen.main.bounds.height
     @StateObject var networkMonitor = NetworkMonitor()
     @State var expanded = false
-    @AppStorage("advSearchShown") var advSearchShown = false
+    @State var advSearchShown = false
     @AppStorage("searchText") var searchText: String = ""
     @AppStorage("userEmail") var userEmail: String?
     @AppStorage("userName") var userName: String?
@@ -83,43 +83,39 @@ struct ContentView: View {
                         Spacer()
                     } else {
                         ZStack {
-                            TabView(selection: $selectedTab) {
-                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .tabItem {
-                                        Image(systemName: "magnifyingglass")
-                                    }
-                                    .tag(0)
-                                
-                                if !viewModel.isGuestUser {
-                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                            if advSearchShown {
+                                TabView(selection: $selectedTab) {
+                                    SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         .tabItem {
-                                            Image(systemName: "rectangle.3.group.bubble")
+                                            Image(systemName: "magnifyingglass")
                                         }
-                                        .tag(1)
-                                }
-                             
-                                
-                                //                                ClubView(viewModel: viewModel)
-                                //                                    .tabItem {
-                                //                                        Image(systemName: "person.3.sequence")
-                                //                                    }
-                                //                                    .tag(2)
-                                //                                CalendarView(viewModel: viewModel)
-                                //                                    .tabItem {
-                                //                                        Image(systemName: "calendar.badge.clock")
-                                //                                    }
-                                //                                    .tag(2)
-                                
-                                SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                                    .tabItem {
-                                        Image(systemName: "gearshape")
+                                        .tag(0)
+                                    
+                                    if !viewModel.isGuestUser {
+                                        ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                            .tabItem {
+                                                Image(systemName: "rectangle.3.group.bubble")
+                                            }
+                                            .tag(1)
                                     }
-                                    .tag(3)
-                                
+                                    
+                                    
+                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        .tabItem {
+                                            Image(systemName: "calendar.badge.clock")
+                                        }
+                                        .tag(2)
+                                    
+                                    SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                                        .tabItem {
+                                            Image(systemName: "gearshape")
+                                        }
+                                        .tag(3)
+                                    
+                                }
+                                .tabViewStyle(.page(indexDisplayMode: .never))
+                                .edgesIgnoringSafeArea(.all)
                             }
-                            .tabViewStyle(.page(indexDisplayMode: .never))
-                            .edgesIgnoringSafeArea(.all)
-                            
                             // tab bar view
                             VStack {
                                 Spacer()
@@ -135,9 +131,12 @@ struct ContentView: View {
                                                 .padding(.horizontal)
                                         }
                                         
+                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                            .padding(.horizontal)
+                                        
                                         TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
                                             .padding(.horizontal)
-    
+                                        
                                     }
                                     .padding(.bottom, 20)
                                     .fixedSize()
@@ -158,9 +157,28 @@ struct ContentView: View {
                                 }
                                 .frame(width:screenWidth, height: screenHeight, alignment: .bottom)
                                 .allowsHitTesting(false)
-                        
+                                
                             }
-
+                            
+                        }
+                        .refreshable {
+                            fetchClubs { fetchedClubs in
+                                clubs = fetchedClubs
+                            }
+                            
+                            if !viewModel.isGuestUser {
+                                if let UserID = viewModel.uid {
+                                    fetchUser(for: UserID) { user in
+                                        userInfo = user
+                                    }
+                                }
+                            }
+                            
+                            advSearchShown = !advSearchShown
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                advSearchShown = !advSearchShown
+                            }
                         }
                         .onAppear {
                             fetchClubs { fetchedClubs in
@@ -172,6 +190,9 @@ struct ContentView: View {
                                     userInfo = user
                                 }
                             }
+                            
+                            advSearchShown = true
+                            
                         }
                         
                     }
