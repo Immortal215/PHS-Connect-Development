@@ -145,17 +145,17 @@ struct ClubInfoView: View {
                             .padding(.top, -8)
                     }
                     
-                    if let meetingTimes = club.meetingTimes {
-                        Text("Meeting Times:")
-                            .font(.headline)
-                        ForEach(meetingTimes.keys.sorted(), id: \.self) { day in
-                            if let times = meetingTimes[day] {
-                                Text("\(day): \(times.joined(separator: ", "))")
-                                    .font(.subheadline)
-                                    .padding(.top, -8)
-                            }
-                        }
-                    }
+//                    if let meetingTimes = club.meetingTimes {
+//                        Text("Meeting Times:")
+//                            .font(.headline)
+//                        ForEach(meetingTimes.keys.sorted(), id: \.self) { day in
+//                            if let times = meetingTimes[day] {
+//                                Text("\(day): \(times.joined(separator: ", "))")
+//                                    .font(.subheadline)
+//                                    .padding(.top, -8)
+//                            }
+//                        }
+//                    }
                     
                     if !club.members.isEmpty {
                         Text("Members (\(club.members.count)):")

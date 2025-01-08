@@ -184,17 +184,25 @@ func addAnnouncement(announcement: Club.Announcements) {
     }
 }
 
-
-//func addPendingMemberRequest(clubID: String, email: String) {
-//    let databaseRef = Database.database().reference()
-//    let dataref = databaseRef.child("clubs").child(clubID).child("pendingMemberRequests")
-//
-//    dataref.observeSingleEvent(of: .value) { snapshot in
-//        var pendingRequests = snapshot.value as? [String] ?? []
-//        if !pendingRequests.contains(email) {
-//            pendingRequests.append(email)
-//        }
-//        
-//        dataref.setValue(pendingRequests)
-//    }
-//}
+func addMeeting(meeting: Club.MeetingTime) {
+    let reference = Database.database().reference()
+    let clubReference = reference.child("clubs").child(meeting.clubID)
+    
+    clubReference.child("meetingTimes").observeSingleEvent(of: .value) { snapshot in
+        var currentMeetings: [[String: Any]] = []
+        
+        if let existingMeetings = snapshot.value as? [[String: Any]] {
+            currentMeetings = existingMeetings
+        }
+        
+        do {
+            let data = try JSONEncoder().encode(meeting)
+            if let meetingDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                currentMeetings.append(meetingDict)
+                clubReference.child("meetingTimes").setValue(currentMeetings)
+            }
+        } catch {
+            print("Error encoding meeting data: \(error)")
+        }
+    }
+}

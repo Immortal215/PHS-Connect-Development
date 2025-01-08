@@ -10,26 +10,24 @@ struct MultiGenrePickerView: View {
     ]
     
     var body: some View {
-        VStack {
-            ScrollView(.horizontal) {
-                HStack(spacing: 10) {
-                    ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(section)
-                                .font(.headline)
-                            
-                            HStack(spacing: 10) {
-                                ForEach(genres[section]!, id: \.self) { genre in
-                                    GenreTag(genre: genre, isSelected: selectedGenres.contains(genre)) {
-                                        toggleGenreSelection(genre)
-                                    }
+        ScrollView(.horizontal) {
+            HStack(spacing: 10) {
+                ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(section)
+                            .font(.headline)
+                        
+                        HStack(spacing: 10) {
+                            ForEach(genres[section]!, id: \.self) { genre in
+                                GenreTag(genre: genre, isSelected: selectedGenres.contains(genre)) {
+                                    toggleGenreSelection(genre)
                                 }
                             }
                         }
                     }
                 }
-                .padding(.horizontal)
             }
+            .padding(.horizontal)
         }
         .animation(.smooth)
     }

@@ -97,14 +97,14 @@ struct ContentView: View {
                                                 Image(systemName: "rectangle.3.group.bubble")
                                             }
                                             .tag(1)
+                                        
+                                        
+                                        CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                            .tabItem {
+                                                Image(systemName: "calendar.badge.clock")
+                                            }
+                                            .tag(2)
                                     }
-                                    
-                                    
-                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .tabItem {
-                                            Image(systemName: "calendar.badge.clock")
-                                        }
-                                        .tag(2)
                                     
                                     SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                         .tabItem {
@@ -129,10 +129,10 @@ struct ContentView: View {
                                         if !viewModel.isGuestUser {
                                             TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
                                                 .padding(.horizontal)
+                                            
+                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                                .padding(.horizontal)
                                         }
-                                        
-                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
-                                            .padding(.horizontal)
                                         
                                         TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
                                             .padding(.horizontal)
@@ -192,7 +192,6 @@ struct ContentView: View {
                             }
                             
                             advSearchShown = true
-                            
                         }
                         
                     }

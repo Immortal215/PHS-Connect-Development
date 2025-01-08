@@ -6,11 +6,11 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-struct Club: Codable, Equatable {
+struct Club: Codable, Equatable, Hashable {
     var leaders: [String] // emails
     var members: [String] // emails
     var announcements: [String : Announcements]? // announcements details
-    var meetingTimes: [String: [String]]? // meeting times details
+    var meetingTimes: [MeetingTime]? // meeting times details
     var description: String // short description
     var name: String
     var normalMeetingTime: String?
@@ -23,7 +23,7 @@ struct Club: Codable, Equatable {
     var location: String
     var instagram: String? // Instagram link
 
-    struct Announcements: Codable, Equatable {
+    struct Announcements: Codable, Equatable, Hashable {
         var date: String
         var title: String
         var body: String
@@ -32,6 +32,15 @@ struct Club: Codable, Equatable {
         var peopleSeen: [String]?
         var link: String?
         var linkText: String?
+    }
+    
+    struct MeetingTime: Codable, Equatable, Hashable {
+        var clubID: String
+        var startTime: String
+        var endTime: String
+        var title: String
+        var description: String?
+        var location: String?
     }
 }
 
