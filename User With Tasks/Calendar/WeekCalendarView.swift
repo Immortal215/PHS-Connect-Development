@@ -63,7 +63,7 @@ struct WeekCalendarView: View {
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
                                         .foregroundColor(.black)
-                                        .shadow(radius: 5)
+                                       // .shadow(radius: 5)
                                         .imageScale(.small)
                                 }
                             }

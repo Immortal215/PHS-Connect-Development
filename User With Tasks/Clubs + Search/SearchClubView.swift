@@ -75,7 +75,7 @@ struct SearchClubView: View {
                                         .fixedSize(horizontal: true, vertical: false)
                                     
                                     
-                                    if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" || viewModel.userEmail == "quincyalex09@gmail.com" {
+                                    if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                                         Button {
                                             fetchClubs { fetchedClubs in
                                                 self.clubs = fetchedClubs
@@ -106,6 +106,9 @@ struct SearchClubView: View {
                                     .onTapGesture(count: 2) {
                                         selectedGenres = []
                                         currentSearchingBy = "Name"
+                                        filteredItems = calculateFiltered()
+                                    }
+                                    .onAppear {  // needed for when you open tags from a clubInfo view 
                                         filteredItems = calculateFiltered()
                                     }
                             }

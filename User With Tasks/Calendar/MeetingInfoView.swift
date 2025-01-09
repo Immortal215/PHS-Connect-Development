@@ -17,14 +17,14 @@ struct MeetingInfoView: View {
                 Text("Start:")
                     .fontWeight(.semibold)
                 Text(meeting.startTime)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.darkGray)
             }
             
             HStack {
                 Text("End:")
                     .fontWeight(.semibold)
                 Text(meeting.endTime)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.darkGray)
             }
             
             if let location = meeting.location {
@@ -32,7 +32,7 @@ struct MeetingInfoView: View {
                     Text("Location:")
                         .fontWeight(.semibold)
                     Text(location)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.darkGray)
                 }
             }
             
@@ -40,8 +40,8 @@ struct MeetingInfoView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Description:")
                         .fontWeight(.semibold)
-                    Text(description)
-                        .foregroundColor(.gray)
+                    Text(.init(description))
+                        .foregroundColor(.darkGray)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
