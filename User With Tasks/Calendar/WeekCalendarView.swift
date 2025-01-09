@@ -36,10 +36,38 @@ struct WeekCalendarView: View {
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
 
-                        if !meetings(for: date).isEmpty {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 6, height: 6)
+                        var clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
+                            if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
+                                result[index].count += 1
+                            } else {
+                                result.append((clubID: meeting.clubID, count: 1))
+                            }
+                        }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count})
+                        
+                        if !clubIDCounts.isEmpty {
+                            HStack(spacing: -4) {
+                                ForEach(clubIDCounts.prefix(3), id: \.clubID) { club in
+                                    ZStack {
+                                        Circle()
+                                            .fill(colorFromClubID(club.clubID))
+                                            .frame(width: 12, height: 12)
+                                        
+                                        if club.count > 1 {
+                                            Text("\(club.count)")
+                                                .font(.system(size: 8))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
+                                }
+                                
+                                if clubIDCounts.count > 3 {
+                                    Image(systemName: "plus")
+                                        .foregroundColor(.black)
+                                        .shadow(radius: 5)
+                                        .imageScale(.small)
+                                }
+                            }
+                            .bold()
                         }
                     }
                     .onTapGesture {
@@ -61,8 +89,6 @@ struct WeekCalendarView: View {
             .sheet(isPresented: $addMeetingTimeView) {
                 AddMeetingView(viewCloser: {
                     addMeetingTimeView = false
-                    
-                    dropper(title: "Meeting Added!", subtitle: "", icon: UIImage(systemName: "checkmark"))
                 }, leaderClubs: clubs.filter {$0.leaders.contains(viewModel.userEmail ?? "") })
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)

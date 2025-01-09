@@ -61,7 +61,7 @@ struct MeetingView: View {
                 }
             }
             .frame(height: duration)
-            .position(x: geometry.size.width / 2, y: startOffset + (duration / 2) + 8)
+            .position(x: geometry.size.width / 2, y: startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, dont touch it
         }
 
     }
