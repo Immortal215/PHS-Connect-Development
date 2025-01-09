@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > This is the development github for PHS Connect, you will not find the official code here. 
 ## Overview
-
+### All Elements of This App Were Fully Created By Immortal215
 > [!NOTE]
 > PHS Connect is designed to provide a structured and interactive platform for students @ Prospect HS to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
 
@@ -26,24 +26,22 @@
 - Personalized profiles store:
   - Favorited clubs
   - Subject preferences
-  - Clubs they are a part of
-  - Pending club join requests
 
 ### 3. **Club Discovery**
 
 - Users can:
-  - Browse and search through clubs using name, info, or genre. 
-  - View genres, meeting times, announcements, photos, information, and schoology codes to make informed decisions about joining.
+  - Browse and search through clubs using descriptive words and or "tags"(genres). 
+  - View a lot of information and links pertaining to clubs to make informed decisions about joining.
 
-### 4. **Custom Calendar View** (Will ship in 2025)
+### 4. **Custom Calendar View** 
 
  📅 **Stay organized with our unique calendar feature!**
 
-- A unique calendar feature displays meeting times for favorited clubs, independent of Apple’s system calendars.
+- A unique calendar displays meeting times for enrolled clubs, independent of Apple’s system calendars.
 
 ### 5. **Announcements**
 
-- Leaders can post announcements with timestamps to keep members informed.
+- Leaders can post announcements to keep members informed.
 
 ### 6. **Google Login**
 
@@ -52,7 +50,7 @@
 ### 7. **Firebase Integration**
 
 - Data pulling powered by Firebase Realtime Database ensures full access to club information and editing of said information. 
-
+- Safeguards against database hacking! 👾👾👾
 ---
 
 ## Technical Details
@@ -62,7 +60,7 @@
 
 ### 1. **Custom UI Components**
 
-- **Custom Calendar View :** (Will ship in 2025)
+- **Custom Calendar View :**
   - Built using SwiftUI to show meeting times on a calendar for enrolled clubs.
 - **Lots more! :**
 
