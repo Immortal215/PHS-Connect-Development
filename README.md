@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > This is the development github for PHS Connect, you will not find the official code here. 
 ## Overview
-### This was designed solely by Immortal215
+### All Pertaining Elemnts of This App Were Fully Created By Immortal215
 > [!NOTE]
 > PHS Connect is designed to provide a structured and interactive platform for students @ Prospect HS to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
 
