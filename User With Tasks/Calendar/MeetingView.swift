@@ -1,10 +1,13 @@
 import SwiftUI
+import PopupView
 
 struct MeetingView: View {
     var meeting: Club.MeetingTime
     var scale: CGFloat
     let hourHeight: CGFloat
     @State var clubName = ""
+    @State var meetingInfo : Bool
+    
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
         let endTime = dateFromString(meeting.endTime)
@@ -17,10 +20,17 @@ struct MeetingView: View {
 
         return GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
-                Rectangle()
-                    .fill(colorFromClubID(meeting.clubID).opacity(0.2))
-                    .cornerRadius(.topTrailing, 8)
-                    .cornerRadius(.bottomTrailing, 8)
+                if meetingInfo {
+                    Rectangle()
+                        .fill(colorFromClubID(meeting.clubID))
+                        .cornerRadius(.topTrailing, 8)
+                        .cornerRadius(.bottomTrailing, 8)
+                } else {
+                    Rectangle()
+                        .fill(colorFromClubID(meeting.clubID).opacity(0.2))
+                        .cornerRadius(.topTrailing, 8)
+                        .cornerRadius(.bottomTrailing, 8)
+                }
 
                 HStack {
                     Text(meeting.title)
@@ -51,8 +61,9 @@ struct MeetingView: View {
                 }
             }
             .frame(height: duration)
-            .position(x: geometry.size.width / 2, y: startOffset + duration / 2)
+            .position(x: geometry.size.width / 2, y: startOffset + (duration / 2) + 8)
         }
+
     }
 }
 

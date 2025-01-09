@@ -12,7 +12,7 @@ struct CalendarView: View {
 
     var body: some View {
         VStack {
-            WeekCalendarView( double check the below
+            WeekCalendarView( //double check the below
                 meetingTimes: clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] },
                 selectedDate: $selectedDate,
                 viewModel: viewModel,
@@ -35,9 +35,8 @@ struct CalendarView: View {
         )
     }
 
-    func meetings(for date: Date) -> [Club.MeetingTime] { double check this work
-        clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] }
-            .filter { Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date) }
+    func meetings(for date: Date) -> [Club.MeetingTime] { //double check this work
+        clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] }.filter { Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date) }
     }
 }
 

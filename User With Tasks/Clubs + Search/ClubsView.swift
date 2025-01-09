@@ -20,19 +20,18 @@ struct ClubView: View {
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
-    @State var searchCategories = ["Name", "Info", "Genre"]
     @State var notificationBellClicked = false
     
     var body: some View {
-        var filteredClubsFavorite: [Club] {
-            return clubs
-                .sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                }
-                .filter { club in
-                    userInfo?.favoritedClubs.contains(club.clubID) ?? false
-                }
-        }
+//        var filteredClubsFavorite: [Club] {
+//            return clubs
+//                .sorted {
+//                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+//                }
+//                .filter { club in
+//                    userInfo?.favoritedClubs.contains(club.clubID) ?? false
+//                }
+//        }
         
         var filteredClubsEnrolled: [Club] {
             return clubs
@@ -45,7 +44,7 @@ struct ClubView: View {
         }
         
         ZStack {
-            if advSearchShown {
+            if advSearchShown && !clubs.isEmpty {
                 VStack {
                     HStack {
                        Text("Home")

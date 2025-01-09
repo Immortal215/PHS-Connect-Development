@@ -4,9 +4,9 @@ struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]
     var screenHeight: CGFloat
     @Binding var scale: CGFloat
-
+    @State var meetingInfo = false
     let hourHeight: CGFloat = 60
-
+    @State var selectedMeeting: Club.MeetingTime?
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 0) {
@@ -24,8 +24,17 @@ struct FlowingScheduleView: View {
 
                     ZStack {
                         ForEach(sortedMeetings, id: \.startTime) { meeting in
-                            MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight)
+                            MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo)
                                 .frame(width: UIScreen.main.bounds.width / 1.2)
+                                .onTapGesture {
+                                    if selectedMeeting != meeting {
+                                        selectedMeeting = meeting
+                                        meetingInfo = true
+                                    } else {
+                                        meetingInfo = false
+                                        selectedMeeting = nil
+                                    }
+                                }
                         }
                     }
                     .frame(width: UIScreen.main.bounds.width / 1.2)
@@ -35,7 +44,23 @@ struct FlowingScheduleView: View {
             }
             .padding()
             .frame(minHeight: screenHeight)
+
         }
+        .popup(isPresented: $meetingInfo) {
+            if let selectedMeeting = selectedMeeting {
+                MeetingInfoView(meeting: selectedMeeting)
+            }
+        } customize: {
+            $0
+                .type(.floater())
+                .position(.trailing)
+                .appearFrom(.rightSlide)
+                .animation(.smooth())
+                .closeOnTapOutside(false)
+                .closeOnTap(false)
+            
+        }
+
     }
 
     var sortedMeetings: [Club.MeetingTime] {

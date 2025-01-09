@@ -14,6 +14,7 @@ func addClub(club: Club) {
         let data = try JSONEncoder().encode(club)
         if let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
             clubRefrence.setValue(dictionary)
+            dropper(title: "Added Club!", subtitle: "", icon: UIImage(systemName: "externaldrive.fill.badge.plus"))
         }
     } catch {
         print("Error encoding club data: \(error)")
@@ -31,7 +32,7 @@ func fetchClubs(completion: @escaping ([Club]) -> Void) {
                let value = snap.value as? [String: Any],
                let jsonData = try? JSONSerialization.data(withJSONObject: value),
                let club = try? JSONDecoder().decode(Club.self, from: jsonData) {
-                clubs.append(club)
+                clubs.append(club)            
             }
         }
         
@@ -200,9 +201,113 @@ func addMeeting(meeting: Club.MeetingTime) {
             if let meetingDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 currentMeetings.append(meetingDict)
                 clubReference.child("meetingTimes").setValue(currentMeetings)
+                dropper(title: "Added Meeting Time!", subtitle: "", icon: nil)
             }
         } catch {
             print("Error encoding meeting data: \(error)")
+        }
+    }
+}
+
+
+
+
+// the below functions are needed to allow normal members to remove themselves from clubs
+
+//func addMemberToClub(clubID: String, memberEmail: String) {
+//    let databaseRef = Database.database().reference()
+//    let clubRef = databaseRef.child("clubs").child(clubID)
+//
+//    clubRef.child("members").observeSingleEvent(of: .value) { snapshot in
+//        var members = snapshot.value as? [String] ?? []
+//
+//        if members.contains(memberEmail.lowercased()) {
+//            print("Error: Member already in the club.")
+//            return
+//        }
+//
+//        members.append(memberEmail.lowercased())
+//        clubRef.child("members").setValue(members) { error, _ in
+//            if let error = error {
+//                print("Error adding member: \(error.localizedDescription)")
+//            } else {
+//                print("Member added successfully.")
+//                dropper(title: "Club Left!", subtitle: "", icon: nil)
+//
+//            }
+//        }
+//    }
+//}
+
+func removeMemberFromClub(clubID: String, emailToRemove: String) {
+    let databaseRef = Database.database().reference()
+    let clubRef = databaseRef.child("clubs").child(clubID)
+
+    clubRef.child("members").observeSingleEvent(of: .value) { snapshot in
+        var members = snapshot.value as? [String] ?? []
+
+        if let index = members.firstIndex(of: emailToRemove.lowercased()) {
+            members.remove(at: index)
+
+            clubRef.child("members").setValue(members) { error, _ in
+                if let error = error {
+                    print("Error removing email: \(error.localizedDescription)")
+                } else {
+                    print("Email removed successfully.")
+                    dropper(title: "Club Left!", subtitle: "", icon: nil)
+                }
+            }
+        } else {
+            print("Error: Email not found in the club.")
+        }
+    }
+}
+
+func addPendingMemberRequest(clubID: String, memberEmail: String) {
+    let databaseRef = Database.database().reference()
+    let clubRef = databaseRef.child("clubs").child(clubID)
+
+    clubRef.child("pendingMemberRequests").observeSingleEvent(of: .value) { snapshot in
+        var pendingRequests = snapshot.value as? [String] ?? []
+
+        if pendingRequests.contains(memberEmail.lowercased()) {
+            print("Error: Member already in the pending requests.")
+            return
+        }
+
+        pendingRequests.append(memberEmail.lowercased())
+
+        clubRef.child("pendingMemberRequests").setValue(Array(Set(pendingRequests))) { error, _ in
+            if let error = error {
+                print("Error adding member to pending requests: \(error.localizedDescription)")
+            } else {
+                print("Member added to pending requests successfully.")
+                dropper(title: "Requested Membership!", subtitle: "", icon: nil)
+            }
+        }
+    }
+}
+
+func removePendingMemberRequest(clubID: String, emailToRemove: String) {
+    let databaseRef = Database.database().reference()
+    let clubRef = databaseRef.child("clubs").child(clubID)
+
+    clubRef.child("pendingMemberRequests").observeSingleEvent(of: .value) { snapshot in
+        var pendingRequests = snapshot.value as? [String] ?? []
+
+        if let index = pendingRequests.firstIndex(of: emailToRemove.lowercased()) {
+            pendingRequests.remove(at: index)
+
+            clubRef.child("pendingMemberRequests").setValue(pendingRequests) { error, _ in
+                if let error = error {
+                    print("Error removing email from pending requests: \(error.localizedDescription)")
+                } else {
+                    print("Email removed from pending requests successfully.")
+                    dropper(title: "Join Request Left!", subtitle: "", icon: nil)
+                }
+            }
+        } else {
+            print("Error: Email not found in pending requests.")
         }
     }
 }

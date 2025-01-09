@@ -179,6 +179,7 @@ struct ContentView: View {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                 advSearchShown = !advSearchShown
                             }
+                            dropper(title: "Fetched Data!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
                         }
                         .onAppear {
                             fetchClubs { fetchedClubs in

@@ -155,16 +155,16 @@ struct ClubCard: View {
                                     if var cluber =  club.pendingMemberRequests {
                                         cluber.insert(email)
                                         club.pendingMemberRequests = cluber
-                                        addClub(club: club)
+                                        addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
                                     } else {
                                         club.pendingMemberRequests = [email]
-                                        addClub(club: club)
+                                        addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
                                     }
                                 } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) {
                                     club.pendingMemberRequests?.remove(email)
-                                    addClub(club: club)
+                                    removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
                                 } else {
-                                    if club.members.count != 1 {
+                                    if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
                                         youSureYouWantToLeave.toggle()
                                     }
                                 }
@@ -176,9 +176,9 @@ struct ClubCard: View {
                         .alert(isPresented: $youSureYouWantToLeave) {
                             Alert(title: Text("Leave Club?"), primaryButton: .destructive(Text("Leave Club"), action: {
                                 if let email = viewModel.userEmail {
-                                    club.members.removeAll(where: { $0 == email })
+                                    club.members.remove(at: club.members.firstIndex(of: email)!)
+                                    removeMemberFromClub(clubID: club.clubID, emailToRemove: email)
                                 }
-                                dropper(title: "Club Left!", subtitle: "", icon: nil)
                             }), secondaryButton: .cancel() )
                         }
                         
