@@ -35,6 +35,7 @@ struct FlowingScheduleView: View {
                             ForEach(sortedMeetings, id: \.startTime) { meeting in
                                 if refresher {
                                     MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo)
+                                        .zIndex(selectedMeeting == meeting && meetingInfo ? 1 : 0)
                                         .frame(width: UIScreen.main.bounds.width/1.1)
                                         .onTapGesture {
                                             if selectedMeeting != meeting {
