@@ -7,6 +7,8 @@ struct FlowingScheduleView: View {
     @State var meetingInfo = false
     let hourHeight: CGFloat = 60
     @State var selectedMeeting: Club.MeetingTime?
+    @State var refresher = true
+    
     var body: some View {
         ScrollView(.vertical) {
             ZStack(alignment: .topLeading) {
@@ -31,17 +33,28 @@ struct FlowingScheduleView: View {
                         Spacer().frame(width: 60)
                         ZStack {
                             ForEach(sortedMeetings, id: \.startTime) { meeting in
-                                MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo)
-                                    .frame(width: UIScreen.main.bounds.width/1.1)
-                                    .onTapGesture {
-                                        if selectedMeeting != meeting {
-                                            selectedMeeting = meeting
-                                            meetingInfo = true
-                                        } else {
-                                            meetingInfo = false
-                                            selectedMeeting = nil
+                                if refresher {
+                                    MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo)
+                                        .frame(width: UIScreen.main.bounds.width/1.1)
+                                        .onTapGesture {
+                                            if selectedMeeting != meeting {
+                                                meetingInfo = false
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                                    selectedMeeting = meeting
+                                                    meetingInfo = true
+                                                }
+                                            } else {
+                                                meetingInfo = false
+                                                selectedMeeting = nil
+                                            }
+                                            refresher = false
                                         }
-                                    }
+                                        .onDisappear {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                                refresher = true
+                                            }
+                                        }
+                                }
                             }
                         }
                         .frame(width: UIScreen.main.bounds.width / 1.1)

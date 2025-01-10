@@ -30,57 +30,57 @@ struct ContentView: View {
             if networkMonitor.isConnected {
                 VStack {
                     if showSignInView {
-                        Text("PHS Connect")
-                            .font(.title)
-                            .fontWeight(.bold)
-                        
-                        
-                        AsyncImage(url: URL(string: "https://www.d214.org/cms/lib/IL50000680/Centricity/Template/GlobalAssets/images///Prospect/PHS%20logo_229px.png")) { Image in
-                            Image
-                        } placeholder: {
-                            ProgressView()
-                        }
-                        .offset(x: -25)
-                        
-                        VStack {
-                            
-                            Text("Sign In")
+                        VStack(alignment: .center) {
+                            Text("PHS Connect")
                                 .font(.title)
-                                .fontWeight(.semibold)
+                                .fontWeight(.bold)
+                            
+                            AsyncImage(url: URL(string: "https://www.d214.org/cms/lib/IL50000680/Centricity/Template/GlobalAssets/images///Prospect/PHS%20logo_229px.png")) { Image in
+                                Image
+                            } placeholder: {
+                                ProgressView()
+                            }
+                            .offset(x: -25)
                             
                             VStack {
                                 
-                                GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
-                                    Task {
-                                        do {
-                                            try await viewModel.signInGoogle()
-                                            showSignInView = false
-                                        } catch {
-                                            print(error)
+                                Text("Sign In")
+                                    .font(.title)
+                                    .fontWeight(.semibold)
+                                
+                                VStack {
+                                    
+                                    GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
+                                        Task {
+                                            do {
+                                                try await viewModel.signInGoogle()
+                                                showSignInView = false
+                                            } catch {
+                                                print(error)
+                                            }
                                         }
                                     }
-                                }
-                                .padding()
-                                .padding(.horizontal)
-                                .frame(width: screenWidth/3)
-                                
-                                Button {
-                                    viewModel.signInAsGuest()
-                                    showSignInView = false
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "person.fill")
-                                        Text("Continue as Guest")
+                                    .padding()
+                                    .padding(.horizontal)
+                                    .frame(width: screenWidth/3)
+                                    
+                                    Button {
+                                        viewModel.signInAsGuest()
+                                        showSignInView = false
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "person.fill")
+                                            Text("Continue as Guest")
+                                        }
                                     }
+                                    .padding()
+                                    .background(.gray.opacity(0.2))
+                                    .cornerRadius(10)
+                                    .padding(.horizontal)
                                 }
-                                .padding()
-                                .background(.gray.opacity(0.2))
-                                .cornerRadius(10)
-                                .padding(.horizontal)
+                                
                             }
-                            
                         }
-                        Spacer()
                     } else {
                         ZStack {
                             if advSearchShown {

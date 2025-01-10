@@ -17,7 +17,7 @@ struct SettingsView: View {
     
     var body: some View {
         ScrollView {
-            VStack {
+            VStack(alignment: .center) {
                 if !viewModel.isGuestUser {
                     AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
                         image
@@ -78,17 +78,18 @@ struct SettingsView: View {
                 .padding()
                 .fixedSize()
                 
+
+            }
+                        
+            HStack {
                 Spacer()
-                
-                HStack {
-                    Spacer()
-                    if !viewModel.isGuestUser {
-                        FeatureReportButton(uid: viewModel.uid ?? "None")
-                            .padding()
-                    }
+                if !viewModel.isGuestUser {
+                    FeatureReportButton(uid: viewModel.uid ?? "None")
+                        .padding()
                 }
             }
         }
+        .padding()
         .frame(height: UIScreen.main.bounds.height)
         .animation(.snappy)
         .onAppear {

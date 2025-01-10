@@ -22,7 +22,7 @@ struct MeetingView: View {
             ZStack(alignment: .topLeading) {
                 if meetingInfo {
                     Rectangle()
-                        .fill(colorFromClubID(meeting.clubID))
+                        .fill(colorFromClubID(meeting.clubID).opacity(0.7))
                         .cornerRadius(.topTrailing, 8)
                         .cornerRadius(.bottomTrailing, 8)
                 } else {
