@@ -106,7 +106,7 @@ final class AuthenticationViewModel: ObservableObject {
         self.userImage = nil
         self.isGuestUser = true
         self.userType = "Guest"
-        self.uid = ""
+        self.uid = "None"
     }
 
     func signInGoogle() async throws {

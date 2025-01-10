@@ -19,6 +19,7 @@ struct FlowingScheduleView: View {
                             .font(.caption)
                             .frame(width: 60, height: hourHeight * scale)
                             .bold()
+                            .background(Color(hexadecimal: "#D4F1F4"))
                         
                     }
                 }

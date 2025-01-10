@@ -24,18 +24,15 @@ struct CalendarView: View {
             FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale)
         }
         .gesture(
-            MagnificationGesture()
+            MagnifyGesture()
                 .onChanged { value in
-                    scale = value.magnitude
+                    scale = max(0.6, min(value.magnification, 3.0))
                 }
-                .onEnded { value in
-                    scale = max(0.6, min(scale, 3.0))
-                    if scale < 0.6 { scale = 0.6 }
-                }
+            
         )
     }
 
-    func meetings(for date: Date) -> [Club.MeetingTime] { //double check this work
+    func meetings(for date: Date) -> [Club.MeetingTime] {
         clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] }.filter { Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date) }
     }
 }

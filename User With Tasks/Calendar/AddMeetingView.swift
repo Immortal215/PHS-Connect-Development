@@ -88,9 +88,8 @@ struct AddMeetingView: View {
                 LabeledContent {
                     TextField("Meeting Location", text: $location)
                 } label: {
-                    Text("Location \(location.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(location.isEmpty ? .red : .black)
-                        .bold(location.isEmpty ? true : false)
+                    Text("Location")
+                        .foregroundStyle(.black)
                 }
                 .padding()
                 
@@ -135,7 +134,6 @@ struct AddMeetingView: View {
                 }
                 .padding()
             }
-            .animation(.smooth)
             .textFieldStyle(.roundedBorder)
             .onAppear {
                 if CreatedMeetingTime.title != "" {

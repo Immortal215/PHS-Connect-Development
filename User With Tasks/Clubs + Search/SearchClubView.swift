@@ -29,148 +29,155 @@ struct SearchClubView: View {
     var body: some View {
         ZStack {
             if advSearchShown {
-                VStack {
-                    Text("Search For More Clubs")
-                        .font(.largeTitle)
-                        .bold()
-                    
-                    HStack {
-                        VStack {
-                            ZStack(alignment: .leading) {
-                                HStack {
-                                    SearchBar("Search all clubs by \(currentSearchingBy)", text: $searchText, isEditing: $isSearching)
-                                        .onChange(of: searchText) {
-                                            filteredItems = calculateFiltered()
-                                        }
-                                        .frame(width: screenWidth/3)
-                                    // .disabled(currentSearchingBy == "Genre" ? true : false)
-                                    Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
-                                        .bold()
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 8)
-                                        .background(currentSearchingBy == "Genre" ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
-                                        .foregroundColor(currentSearchingBy == "Genre" ? .white : .black)
-                                        .buttonStyle(.borderedProminent)
-                                        .cornerRadius(15)
-                                        .onTapGesture {
-                                            if currentSearchingBy == "Genre" {
-                                                currentSearchingBy = "Name"
-                                            } else {
-                                                currentSearchingBy = "Genre"
+                    VStack {
+                        Text("Search For More Clubs")
+                            .font(.largeTitle)
+                            .bold()
+                        
+                        HStack {
+                            VStack {
+                                ZStack(alignment: .leading) {
+                                    HStack {
+                                        SearchBar("Search all clubs by \(currentSearchingBy)", text: $searchText, isEditing: $isSearching)
+                                            .onChange(of: searchText) {
+                                                filteredItems = calculateFiltered()
                                             }
-                                        }
-                                        .fixedSize(horizontal: true, vertical: false)
-                                    
-                                    Text("Sort")
-                                        .bold()
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 8)
-                                        .background(sortingMenu ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
-                                        .foregroundColor(sortingMenu ? .white : .black)
-                                        .buttonStyle(.borderedProminent)
-                                        .cornerRadius(15)
-                                        .onTapGesture {
-                                            sortingMenu.toggle()
-                                        }
-                                        .fixedSize(horizontal: true, vertical: false)
-                                    
-                                    
-                                    if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
-                                        Button {
-                                            fetchClubs { fetchedClubs in
-                                                self.clubs = fetchedClubs
-                                            }
-                                            createClubToggler = true
-                                        } label: {
-                                            Image(systemName: "plus")
-                                                .foregroundStyle(.green)
-                                        }
-                                        .sheet(isPresented: $createClubToggler) {
-                                            CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
-                                                .presentationDragIndicator(.visible)
-                                                .presentationSizing(.page)
-                                        }
-                                        .padding(.leading)
-                                    }
-                                }
-                                .padding()
-                            }
-                            
-                            if currentSearchingBy == "Genre" {
-                                MultiGenrePickerView(selectedGenres: $selectedGenres)
-                                    .padding(.top, -8)
-                                    .padding(.bottom)
-                                    .onChange(of: selectedGenres) {
-                                        filteredItems = calculateFiltered()
-                                    }
-                                    .onTapGesture(count: 2) {
-                                        selectedGenres = []
-                                        currentSearchingBy = "Name"
-                                        filteredItems = calculateFiltered()
-                                    }
-                                    .onAppear {  // needed for when you open tags from a clubInfo view 
-                                        filteredItems = calculateFiltered()
-                                    }
-                            }
-                            
-                            if !searchText.isEmpty {
-                                Text("Search Results for \"\(searchText)\" Searching Through All Clubs")
-                                    .font(.headline)
-                            }
-                            
-                            // clubs view with search
-                            ScrollView() {
-                                ScrollView {
-                                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
-                                        ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
-                                            var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                            
-                                            Button {
-                                                shownInfo = infoRelativeIndex
-                                                showClubInfoSheet = true
-                                            } label: {
-                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
-                                               
-                                                
-                                            }
-                                            //  .frame(width: screenWidth/2.2, height: screenHeight/5)
-                                            .padding(.vertical, 3)
+                                            .frame(width: screenWidth/3)
+                                        // .disabled(currentSearchingBy == "Genre" ? true : false)
+                                        Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
+                                            .bold()
                                             .padding(.horizontal)
-                                            .sheet(isPresented: $showClubInfoSheet) {
-                                                fetchClub(withId: club.clubID) { fetchedClub in
-                                                    clubs[infoRelativeIndex] = fetchedClub ?? club
-                                                }
-                                            } content: {
-                                                if shownInfo >= 0 {
-                                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
-                                                        .presentationDragIndicator(.visible)
-                                                        .presentationSizing(.page)
-                                                    
+                                            .padding(.vertical, 8)
+                                            .background(currentSearchingBy == "Genre" ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
+                                            .foregroundColor(currentSearchingBy == "Genre" ? .white : .black)
+                                            .buttonStyle(.borderedProminent)
+                                            .cornerRadius(15)
+                                            .onTapGesture {
+                                                if currentSearchingBy == "Genre" {
+                                                    currentSearchingBy = "Name"
                                                 } else {
-                                                    Text("Error! Try Again!")
-                                                        .presentationDragIndicator(.visible)
+                                                    currentSearchingBy = "Genre"
+                                                }
+                                            }
+                                            .fixedSize(horizontal: true, vertical: false)
+                                        
+                                        Text("Sort")
+                                            .bold()
+                                            .padding(.horizontal)
+                                            .padding(.vertical, 8)
+                                            .background(sortingMenu ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
+                                            .foregroundColor(sortingMenu ? .white : .black)
+                                            .buttonStyle(.borderedProminent)
+                                            .cornerRadius(15)
+                                            .onTapGesture {
+                                                sortingMenu.toggle()
+                                            }
+                                            .fixedSize(horizontal: true, vertical: false)
+                                        
+                                        
+                                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
+                                            Button {
+                                                fetchClubs { fetchedClubs in
+                                                    self.clubs = fetchedClubs
+                                                }
+                                                createClubToggler = true
+                                            } label: {
+                                                Image(systemName: "plus")
+                                                    .foregroundStyle(.green)
+                                            }
+                                            .sheet(isPresented: $createClubToggler) {
+                                                CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
+                                                    .presentationDragIndicator(.visible)
+                                                    .presentationSizing(.page)
+                                            }
+                                            .padding(.leading)
+                                        }
+                                    }
+                                    .padding()
+                                }
+                                
+                                    if currentSearchingBy == "Genre" {
+                                        HorizontalScrollView { // needed to be custom made in order to block the vertical refresh pull, cooked
+                                            MultiGenrePickerView(selectedGenres: $selectedGenres)
+                                              //  .padding(.bottom)
+                                                .onChange(of: selectedGenres) {
+                                                    filteredItems = calculateFiltered()
+                                                }
+                                                .onTapGesture(count: 2) {
+                                                    selectedGenres = []
+                                                    currentSearchingBy = "Name"
+                                                    filteredItems = calculateFiltered()
+                                                }
+                                                .onAppear {  // needed for when you open tags from a clubInfo view
+                                                    filteredItems = calculateFiltered()
+                                                }
+                                        }
+                                        .frame(height: screenHeight/11)
+                                        .padding(.top, -24)
+                                    }
+                                
+                                
+                                if !searchText.isEmpty {
+                                    Text("Search Results for \"\(searchText)\" Searching Through All Clubs")
+                                        .font(.headline)
+                                }
+                                
+                                // clubs view with search
+                                ScrollView {
+                                    ScrollView {
+                                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
+                                            ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
+                                                var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                                
+                                                Button {
+                                                    shownInfo = infoRelativeIndex
+                                                    showClubInfoSheet = true
+                                                } label: {
+                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                    
+                                                    
+                                                }
+                                                //  .frame(width: screenWidth/2.2, height: screenHeight/5)
+                                                .padding(.vertical, 3)
+                                                .padding(.horizontal)
+                                                .sheet(isPresented: $showClubInfoSheet) {
+                                                    fetchClub(withId: club.clubID) { fetchedClub in
+                                                        clubs[infoRelativeIndex] = fetchedClub ?? club
+                                                    }
+                                                } content: {
+                                                    if shownInfo >= 0 {
+                                                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                                            .presentationDragIndicator(.visible)
+                                                            .presentationSizing(.page)
+                                                        
+                                                    } else {
+                                                        Text("Error! Try Again!")
+                                                            .presentationDragIndicator(.visible)
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                    .animation(.easeInOut, value: advSearchShown)
+                                    
+                                    if filteredItems.isEmpty {
+                                        Text("No Clubs Found for \"\(searchText)\"")
+                                    }
+                                    
+                                    Text("Search for Other Clubs! 🙃")
+                                        .frame(height: screenHeight/3, alignment: .top)
                                 }
-                                .animation(.easeInOut, value: advSearchShown)
+                                //  .frame(width: screenWidth/2.1)
                                 
-                                if filteredItems.isEmpty {
-                                    Text("No Clubs Found for \"\(searchText)\"")
-                                }
+                                //.padding()
                                 
-                                Text("Search for Other Clubs! 🙃")
-                                    .frame(height: screenHeight/3, alignment: .top)
                             }
-                            //  .frame(width: screenWidth/2.1)
-                            
-                            //.padding()
-                            
                         }
-                    }
-                    .animation(.smooth)                    
+                        .animation(.smooth)
+                        
+                   // }
                 }
+            
             } else {
                 ProgressView()
             }

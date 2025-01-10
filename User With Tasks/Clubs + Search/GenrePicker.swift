@@ -10,7 +10,6 @@ struct MultiGenrePickerView: View {
     ]
     
     var body: some View {
-        ScrollView(.horizontal) {
             HStack(spacing: 10) {
                 ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
                     VStack(alignment: .leading, spacing: 10) {
@@ -28,8 +27,6 @@ struct MultiGenrePickerView: View {
                 }
             }
             .padding(.horizontal)
-        }
-        .animation(.smooth)
     }
     
     func toggleGenreSelection(_ genre: String) {

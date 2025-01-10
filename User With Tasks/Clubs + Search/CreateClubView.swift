@@ -436,7 +436,6 @@ struct CreateClubView: View {
                 .padding()
                 
             }
-            .animation(.smooth)
             .textFieldStyle(.roundedBorder)
             .onAppear {
                 fetchClubs { fetchedClubs in

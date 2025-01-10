@@ -5,6 +5,7 @@ struct FeatureReportButton: View {
     @State var isShowingMailView = false
     @State var alertMessage = ""
     @State var showAlert = false
+    var uid : String
     
     // Configuration
     let recipientEmail = "sharulshah@icloud.com"
@@ -73,12 +74,13 @@ struct FeatureReportButton: View {
         • iOS Version: \(UIDevice.current.systemVersion)
         • Device Width: \(UIScreen.main.bounds.width)
         • Device Height: \(UIScreen.main.bounds.height)
+        • User UID : \(uid)
         
         Feature/ Bug Request Details:
         Please describe the issue or feature you'd like to recognize:
         
         
-        How would you achieve this? : 
+        How would you fix/ change this?: 
         
         
         Additional comments/ resources to help:

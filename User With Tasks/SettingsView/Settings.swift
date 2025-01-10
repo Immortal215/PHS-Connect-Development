@@ -82,8 +82,10 @@ struct SettingsView: View {
                 
                 HStack {
                     Spacer()
-                    FeatureReportButton()
-                        .padding()
+                    if !viewModel.isGuestUser {
+                        FeatureReportButton(uid: viewModel.uid ?? "None")
+                            .padding()
+                    }
                 }
             }
         }
