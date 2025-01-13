@@ -86,7 +86,7 @@ struct ClubCardHome: View {
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(Color(hexadecimal: "D9D9D9"))
-                        
+                            
                             
                         }
                         
@@ -97,10 +97,10 @@ struct ClubCardHome: View {
                             .bold()
                     }
                     
-//                    Text("Recent Updates")
-//                        .font(.title3)
-//                        .bold()
-//                    
+                    //                    Text("Recent Updates")
+                    //                        .font(.title3)
+                    //                        .bold()
+                    //
                     if let announcements = club.announcements {
                         ScrollView(.horizontal) {
                             LazyHStack {
@@ -126,12 +126,12 @@ struct ClubCardHome: View {
         }
         
         .animation(.easeInOut)
-        .onAppear {
-            //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
-            //                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-            //                refreshUserInfo()
-            //            }
-        }
+        // .onAppear {
+        //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
+        //                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+        //                refreshUserInfo()
+        //            }
+        //  }
     }
     
     func refreshUserInfo() {

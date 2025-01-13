@@ -245,6 +245,7 @@ struct AddAnnouncementSheet: View {
         announcement.linkText = linkText
         announcement.body = announcementBody
     }
+    
     func applyMarkdownStyle(_ markdownSyntax: String) {
         guard let range = selectedRange,
               let textRange = Range(range, in: announcementBody) else { return }

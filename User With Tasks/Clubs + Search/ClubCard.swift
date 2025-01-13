@@ -48,11 +48,11 @@ struct ClubCard: View {
                                 .fixedSize()
                             }
                             
-//                            RoundedRectangle(cornerRadius: 15)
-                             //   .stroke(.black, lineWidth: 3)
-                               // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
+                            //                            RoundedRectangle(cornerRadius: 15)
+                            //   .stroke(.black, lineWidth: 3)
+                            // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                         }
-                      //  .frame(width: screenWidth / CGFloat(imageScaler), height: screenWidth / CGFloat(imageScaler))
+                        //  .frame(width: screenWidth / CGFloat(imageScaler), height: screenWidth / CGFloat(imageScaler))
                     },
                     placeholder: {
                         ZStack {
@@ -69,12 +69,12 @@ struct ClubCard: View {
                         .font(.callout)
                         .bold()
                         .padding(.bottom, 8)
-                        
+                    
                     
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
-
+                    
                     Spacer()
                     
                     if let genres = club.genres, !genres.isEmpty {
@@ -135,7 +135,7 @@ struct ClubCard: View {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                 Image(systemName: "heart.fill")
                                     .transition(.movingParts.pop(.blue))
-                                    
+                                
                             } else {
                                 Image(systemName: "heart")
                                     .transition(
@@ -191,28 +191,28 @@ struct ClubCard: View {
             }
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) { // ensures that the announcment has not been seen and is less than a week old
                 Color.black.opacity(0.2)
-                            .cornerRadius(15)
+                    .cornerRadius(15)
                 
-                    VStack {
-            
-                        Spacer()
-                        Text("^[\(notificationCount) New Notifications](inflect:true)")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                            .padding(7)
-                            .background(Capsule().fill(Color.red))
-                    }
-                    .padding(.bottom, 10)
+                VStack {
+                    
+                    Spacer()
+                    Text("^[\(notificationCount) New Notifications](inflect:true)")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(7)
+                        .background(Capsule().fill(Color.red))
                 }
+                .padding(.bottom, 10)
+            }
         }
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
-          .animation(.easeInOut)
-        .onAppear {
-//            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
-//                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-//                refreshUserInfo()
-//            }
-        }
+        .animation(.easeInOut)
+        //    .onAppear {
+        //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
+        //                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+        //                refreshUserInfo()
+        //            }
+        //a    }
     }
     
     func refreshUserInfo() {

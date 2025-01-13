@@ -7,6 +7,7 @@ struct MeetingView: View {
     let hourHeight: CGFloat
     @State var clubName = ""
     @State var meetingInfo : Bool
+    var preview : Bool? = false 
     
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
@@ -18,7 +19,7 @@ struct MeetingView: View {
         let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
         let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
 
-        return GeometryReader { geometry in
+        GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 if meetingInfo {
                     Rectangle()
@@ -61,7 +62,7 @@ struct MeetingView: View {
                 }
             }
             .frame(height: duration)
-            .position(x: geometry.size.width / 2, y: startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, dont touch it
+            .position(x: geometry.size.width / 2, y: preview! ? 0 : startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, dont touch it
         }
 
     }
