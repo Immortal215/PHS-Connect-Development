@@ -21,7 +21,7 @@ struct CalendarView: View {
             
             Divider()
             
-            FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale)
+            FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale, clubs: $clubs)
         }
         .gesture(
             MagnifyGesture()

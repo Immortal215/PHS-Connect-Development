@@ -4,6 +4,7 @@ struct MeetingInfoView: View {
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
     @State var meeting: Club.MeetingTime
+    @Binding var clubs: [Club]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

@@ -129,7 +129,6 @@ func getClubIDByName(clubName: String, completion: @escaping (String?) -> Void) 
                let clubData = snap.value as? [String: Any],
                let name = clubData["name"] as? String,
                name == clubName {
-                
                  completion(snap.key)
                 return
             }
@@ -149,6 +148,12 @@ func getClubNameByID(clubID: String, completion: @escaping (String?) -> Void) {
         }
         completion(clubName)
     }
+}
+
+func getClubNameByIDWithClubs(clubID: String, clubs: [Club]) -> String {
+    var name = ""
+    name = clubs.first(where: {$0.clubID == clubID })?.name ?? ""
+    return name
 }
 
 func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([String]) -> Void) {

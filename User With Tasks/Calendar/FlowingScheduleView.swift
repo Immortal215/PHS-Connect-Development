@@ -8,6 +8,7 @@ struct FlowingScheduleView: View {
     let hourHeight: CGFloat = 60
     @State var selectedMeeting: Club.MeetingTime?
     @State var refresher = true
+    @Binding var clubs: [Club]
     
     var body: some View {
         ScrollView(.vertical) {
@@ -15,8 +16,8 @@ struct FlowingScheduleView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(0..<24, id: \.self) { hour in
                         Divider()
-                                .background(Color.gray.opacity(0.3))
-    
+                            .background(Color.gray.opacity(0.3))
+                        
                         Text("\(hour % 12 == 0 ? 12 : hour % 12) \(hour < 12 ? "AM" : "PM")")
                             .font(.caption)
                             .frame(width: 60, height: hourHeight * scale)
@@ -27,14 +28,14 @@ struct FlowingScheduleView: View {
                 }
                 .background(Color.gray.opacity(0.1).cornerRadius(8))
                 .cornerRadius(8)
-
+                
                 VStack {
                     HStack(spacing: 0) {
                         Spacer().frame(width: 60)
                         ZStack {
                             ForEach(sortedMeetings, id: \.startTime) { meeting in
                                 if refresher {
-                                    MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo)
+                                    MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo, clubs: $clubs)
                                         .zIndex(selectedMeeting == meeting && meetingInfo ? 1 : 0)
                                         .frame(width: UIScreen.main.bounds.width/1.1)
                                         .onTapGesture {
@@ -49,8 +50,6 @@ struct FlowingScheduleView: View {
                                                 selectedMeeting = nil
                                             }
                                             refresher = false
-                                        }
-                                        .onDisappear {
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                                 refresher = true
                                             }
@@ -66,22 +65,29 @@ struct FlowingScheduleView: View {
             .frame(minHeight: screenHeight)
         }
         .popup(isPresented: $meetingInfo) {
-            if let selectedMeeting = selectedMeeting {
-                MeetingInfoView(meeting: selectedMeeting)
+            if let selectedMeetingr = selectedMeeting {
+                
+                MeetingInfoView(meeting: selectedMeetingr, clubs: $clubs)
             }
         } customize: {
             $0
                 .type(.floater())
                 .position(.trailing)
                 .appearFrom(.rightSlide)
-                .animation(.smooth())
+                .animation(.smooth)
                 .closeOnTapOutside(false)
                 .closeOnTap(false)
-            
+                .dragToDismiss(true)
+                .dismissCallback {
+                    refresher = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        refresher = true
+                    }
+                }
         }
-
+        
     }
-
+    
     var sortedMeetings: [Club.MeetingTime] {
         meetings.sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
     }

@@ -5,9 +5,10 @@ struct MeetingView: View {
     var meeting: Club.MeetingTime
     var scale: CGFloat
     let hourHeight: CGFloat
-    @State var clubName = ""
+//    @State var clubName = ""
     @State var meetingInfo : Bool
-    var preview : Bool? = false 
+    var preview : Bool? = false
+    @Binding var clubs: [Club]
     
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
@@ -52,14 +53,19 @@ struct MeetingView: View {
                     
                     Spacer()
                     
-                    Text(clubName)
+                    Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
                         .padding(.horizontal)
                 }
-                .onAppear {
-                    getClubNameByID(clubID: meeting.clubID) { name in
-                        clubName = name ?? "Name Not Found"
-                    }
-                }
+//                .onAppear {
+//                    getClubNameByID(clubID: meeting.clubID) { name in
+//                        clubName = name ?? "Name Not Found"
+//                    }
+//                }
+//                .onChange(of: meeting) {
+//                    getClubNameByID(clubID: meeting.clubID) { name in
+//                        clubName = name ?? "Name Not Found"
+//                    }
+//                }
             }
             .frame(height: duration)
             .position(x: geometry.size.width / 2, y: preview! ? 0 : startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, dont touch it

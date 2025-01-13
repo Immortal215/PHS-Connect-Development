@@ -24,7 +24,7 @@ struct WeekCalendarView: View {
                 }
             }
             .padding()
-
+            
             HStack(spacing: 15) {
                 ForEach(getDaysInWeek(for: currentWeek), id: \.self) { date in
                     VStack {
@@ -35,7 +35,7 @@ struct WeekCalendarView: View {
                             .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
-
+                        
                         var clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                             if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
                                 result[index].count += 1
@@ -63,7 +63,7 @@ struct WeekCalendarView: View {
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
                                         .foregroundColor(.black)
-                                       // .shadow(radius: 5)
+                                    // .shadow(radius: 5)
                                         .imageScale(.small)
                                 }
                             }
@@ -95,52 +95,52 @@ struct WeekCalendarView: View {
             }
         }
     }
-
+    
     func getDaysInWeek(for date: Date) -> [Date] {
         guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return [] }
         var days: [Date] = []
         var day = weekInterval.start
-
+        
         while day < weekInterval.end {
             days.append(day)
             day = Calendar.current.date(byAdding: .day, value: 1, to: day)!
         }
-
+        
         return days
     }
-
+    
     func meetings(for date: Date) -> [Club.MeetingTime] {
         meetingTimes.filter {
             Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date)
         }
     }
-
+    
     func navigateWeek(by value: Int) {
         guard let newWeek = Calendar.current.date(byAdding: .weekOfYear, value: value, to: currentWeek) else { return }
         currentWeek = newWeek
     }
-
+    
     func weekRange(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-
+        
         guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return "" }
         let start = formatter.string(from: weekInterval.start)
         let end = formatter.string(from: weekInterval.end.addingTimeInterval(-1))
-
+        
         return "\(start) - \(end)"
     }
-
+    
     func dayOfWeek(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
         return formatter.string(from: date)
     }
-
+    
     func isToday(_ date: Date) -> Bool {
         Calendar.current.isDateInToday(date)
     }
-
+    
     func isSelected(_ date: Date) -> Bool {
         return Calendar.current.isDate(selectedDate, inSameDayAs: date)
     }
