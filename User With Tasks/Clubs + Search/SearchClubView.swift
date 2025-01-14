@@ -100,7 +100,7 @@ struct SearchClubView: View {
                                         HorizontalScrollView { // needed to be custom made in order to block the vertical refresh pull, cooked
                                             MultiGenrePickerView(selectedGenres: $selectedGenres)
                                               //  .padding(.bottom)
-                                                .onTapGesture(count: 2) {
+                                                .onTapGesture(count: 3) {
                                                     selectedGenres = []
                                                     currentSearchingBy = "Name"
                                                     filteredItems = calculateFiltered()
