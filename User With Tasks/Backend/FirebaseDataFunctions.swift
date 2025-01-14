@@ -214,8 +214,63 @@ func addMeeting(meeting: Club.MeetingTime) {
     }
 }
 
-
-
+func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) {
+    let reference = Database.database().reference()
+    
+    let oldClubReference = reference.child("clubs").child(oldMeeting.clubID)
+    
+    oldClubReference.child("meetingTimes").observeSingleEvent(of: .value) { snapshot in
+        guard var currentMeetings = snapshot.value as? [[String: Any]] else {
+            print("No meetings found in the current club.")
+            return
+        }
+        
+        currentMeetings.removeAll { meetingDict in
+            if let title = meetingDict["title"] as? String,
+               let startTime = meetingDict["startTime"] as? String,
+               let endTime = meetingDict["endTime"] as? String {
+                return title == oldMeeting.title &&
+                       startTime == oldMeeting.startTime &&
+                       endTime == oldMeeting.endTime
+            }
+            return false
+        }
+        
+        oldClubReference.child("meetingTimes").setValue(currentMeetings) { error, _ in
+            if let error = error {
+                print("Error removing meeting from old club: \(error)")
+                return
+            }
+            
+            let newClubReference = reference.child("clubs").child(newMeeting.clubID)
+            
+            newClubReference.child("meetingTimes").observeSingleEvent(of: .value) { newSnapshot in
+                var newClubMeetings: [[String: Any]] = []
+                
+                if let existingMeetings = newSnapshot.value as? [[String: Any]] {
+                    newClubMeetings = existingMeetings
+                }
+                
+                do {
+                    let data = try JSONEncoder().encode(newMeeting)
+                    if let newMeetingDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        newClubMeetings.append(newMeetingDict)
+                        
+                        newClubReference.child("meetingTimes").setValue(newClubMeetings) { addError, _ in
+                            if let addError = addError {
+                                print("Error adding meeting to new club: \(addError)")
+                            } else {
+                                dropper(title: "Moved Meeting Successfully!", subtitle: "", icon: nil)
+                            }
+                        }
+                    }
+                } catch {
+                    print("Error encoding new meeting data: \(error)")
+                }
+            }
+        }
+    }
+}
 
 // the below functions are needed to allow normal members to remove themselves from clubs
 

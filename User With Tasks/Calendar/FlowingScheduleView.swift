@@ -9,7 +9,8 @@ struct FlowingScheduleView: View {
     @State var selectedMeeting: Club.MeetingTime?
     @State var refresher = true
     @Binding var clubs: [Club]
-    
+    var viewModel: AuthenticationViewModel?
+
     var body: some View {
         ScrollView(.vertical) {
             ZStack(alignment: .topLeading) {
@@ -66,8 +67,7 @@ struct FlowingScheduleView: View {
         }
         .popup(isPresented: $meetingInfo) {
             if let selectedMeetingr = selectedMeeting {
-                
-                MeetingInfoView(meeting: selectedMeetingr, clubs: $clubs)
+                MeetingInfoView(meeting: selectedMeetingr, clubs: $clubs, viewModel: viewModel)
             }
         } customize: {
             $0

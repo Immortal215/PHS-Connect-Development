@@ -1,24 +1,42 @@
 import SwiftUI
+import SwiftUIX
 
 struct MeetingInfoView: View {
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
     @State var meeting: Club.MeetingTime
     @Binding var clubs: [Club]
+    @State var openSettings = false
+    var viewModel : AuthenticationViewModel?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(meeting.title)
-                .font(.title2)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.leading)
-                .padding(.bottom, 5)
+            HStack {
+                Text(meeting.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.leading)
+                    .padding(.bottom, 5)
+                
+                Spacer()
+                
+                if clubs.first(where: {$0.clubID == meeting.clubID})?.leaders.contains(viewModel?.userEmail ?? "") ?? false {
+                    Button {
+                        openSettings.toggle()
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .imageScale(.large)
+                            .foregroundStyle(.black)
+                    }
+                }
+            }
             
             HStack {
                 Text("Start:")
                     .fontWeight(.semibold)
                 Text(meeting.startTime)
                     .foregroundColor(.darkGray)
+                
             }
             
             HStack {
@@ -48,6 +66,13 @@ struct MeetingInfoView: View {
             }
             
             Spacer()
+        }
+        .sheet(isPresented: $openSettings) {
+            AddMeetingView(viewCloser: {
+                openSettings = false
+            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true)
+            .presentationDragIndicator(.visible)
+            .presentationSizing(.page)
         }
         .padding()
         .frame(width: screenWidth / 2.5, height: screenHeight / 1.7)

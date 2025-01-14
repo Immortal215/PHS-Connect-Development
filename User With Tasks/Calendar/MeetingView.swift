@@ -33,29 +33,36 @@ struct MeetingView: View {
                         .cornerRadius(.topTrailing, 8)
                         .cornerRadius(.bottomTrailing, 8)
                 }
-
-                HStack {
-                    Text(meeting.title)
-                        .font(.headline)
-                        .padding(8)
-                    
-                    if let desc = meeting.description {
-                        Text(.init(desc))
-                            .font(.footnote)
-                            .frame(maxWidth: UIScreen.main.bounds.width / 4, alignment: .leading)
-                    }
-                    
-                    if let location = meeting.location {
-                        Text("Location: \(location)")
-                            .font(.caption)
+                
+                HStack(alignment: .top) {
+                        Text(meeting.title)
+                            .font(.headline)
+                            .frame(maxWidth: UIScreen.main.bounds.width / 3, alignment: .topLeading)
                             .padding(8)
-                    }
-                    
-                    Spacer()
-                    
-                    Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
-                        .padding(.horizontal)
+                            .fixedSize()
+                            .lineLimit(2 * Int(scale))
+                        
+                        if let desc = meeting.description {
+                            Text(.init(desc))
+                                .font(.footnote)
+                                .frame(maxWidth: UIScreen.main.bounds.width / 3, alignment: .topLeading)
+                                .padding(8)
+                                .fixedSize()
+                                .lineLimit(2 * Int(scale))
+                        }
+                        
+                        if let location = meeting.location {
+                            Text("Location: \(location)")
+                                .font(.caption)
+                                .padding(8)
+                        }
+                        
+                        Spacer()
+                        
+                        Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
+                            .padding(8)
                 }
+                .frame(height: duration, alignment: .top)
 //                .onAppear {
 //                    getClubNameByID(clubID: meeting.clubID) { name in
 //                        clubName = name ?? "Name Not Found"

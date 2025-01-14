@@ -19,13 +19,17 @@ struct AddMeetingView: View {
     @State var selectedRange: NSRange?
     @State var isEditMenuVisible = false
     @State var showHelp = false
-
+    
     var viewCloser: (() -> Void)?
     
     @State var CreatedMeetingTime: Club.MeetingTime = Club.MeetingTime(clubID: "", startTime: "", endTime: "", title: "")
     
     @State var leaderClubs: [Club] = []
-
+    
+    @State var meetingTimeForInfo = Club.MeetingTime(clubID: "", startTime: "", endTime: "", title: "")
+    
+    var editScreen: Bool? = false
+    
     var body: some View {
         VStack(alignment: .trailing) {
             var ableToCreate: Bool {
@@ -34,13 +38,20 @@ struct AddMeetingView: View {
             
             if ableToCreate {
                 Button {
-                    addInfoToMeetingChild()
+                    if !editScreen! {
+                        addInfoToMeetingChild() // add new info
+                        addMeeting(meeting: CreatedMeetingTime) // add new meeting
+                    } else {
+                        addInfoToHelper()
+                        
+                        replaceMeeting(oldMeeting: CreatedMeetingTime, newMeeting: meetingTimeForInfo) // replace the previous meeting
+                        
+                    }
                     
-                    addMeeting(meeting: CreatedMeetingTime)
                     viewCloser?()
                 } label: {
                     Label {
-                        Text("Create Meeting")
+                        Text("\(editScreen! ? "Edit" : "Create") Meeting")
                             .font(.headline)
                             .foregroundColor(.white)
                     } icon: {
@@ -48,7 +59,7 @@ struct AddMeetingView: View {
                             .foregroundColor(.white)
                     }
                     .padding()
-                    .background(Color.green)
+                    .background(editScreen! ? .blue : .green)
                     .cornerRadius(10)
                     .shadow(radius: 5)
                 }
@@ -96,7 +107,7 @@ struct AddMeetingView: View {
                     .onChange(of: startTime) {
                         endTime = startTime.addingTimeInterval(timeDifference)
                     }
-                .padding()
+                    .padding()
                 
                 LabeledContent {
                     DatePicker("", selection: $endTime)
@@ -112,9 +123,6 @@ struct AddMeetingView: View {
                 
                 LabeledContent {
                     MarkdownTextView(text: $description, selectedRange: $selectedRange)
-                        .onChange(of: description) {
-                            addInfoToMeetingChild()
-                        }
                         .frame(height: UIScreen.main.bounds.height / 4)
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
@@ -242,10 +250,10 @@ struct AddMeetingView: View {
                 
                 if clubId != "" {
                     Button {
-                        addInfoToMeetingChild()
+                        addInfoToHelper()
                         meetingFull = true
                     } label: {
-                        MeetingView(meeting: CreatedMeetingTime, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: $leaderClubs)
+                        MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: $leaderClubs)
                             .padding()
                             .frame(width: UIScreen.main.bounds.width/1.1)
                             .foregroundStyle(.black)
@@ -254,7 +262,7 @@ struct AddMeetingView: View {
                 
                 Color.white
                     .frame(height: 400)
-
+                
             }
             .textFieldStyle(.roundedBorder)
             .onAppear {
@@ -266,31 +274,40 @@ struct AddMeetingView: View {
                     startTime = dateFromString(CreatedMeetingTime.startTime)
                     
                     endTime = dateFromString(CreatedMeetingTime.endTime)
+                } else {
+                    startTime = getFlooredCurrentTime()
                 }
                 
-                clubId = leaderClubs.first?.clubID ?? ""
+                if CreatedMeetingTime.clubID != "" {
+                    clubId = CreatedMeetingTime.clubID
+                } else {
+                    clubId = leaderClubs.first?.clubID ?? ""
+                }
                 
                 addInfoToMeetingChild()
-
-            }
-            .onChange(of: endTime) {
-                addInfoToMeetingChild()
+                addInfoToHelper()
             }
             .onChange(of: startTime) {
-                addInfoToMeetingChild()
+                addInfoToHelper()
             }
-            .onChange(of: clubId) {
-                addInfoToMeetingChild()
-            }
-            .onChange(of: title) {
-                addInfoToMeetingChild()
+            .onChange(of: endTime) {
+                addInfoToHelper()
             }
             .onChange(of: location) {
-                addInfoToMeetingChild()
+                addInfoToHelper()
+            }
+            .onChange(of: title) {
+                addInfoToHelper()
+            }
+            .onChange(of: description) {
+                addInfoToHelper()
+            }
+            .onChange(of: clubId) {
+                addInfoToHelper()
             }
         }
         .popup(isPresented: $meetingFull) {
-            MeetingInfoView(meeting: CreatedMeetingTime, clubs: $leaderClubs)
+            MeetingInfoView(meeting: meetingTimeForInfo, clubs: $leaderClubs)
         } customize: {
             $0
                 .type(.floater())
@@ -301,7 +318,7 @@ struct AddMeetingView: View {
                 .closeOnTap(false)
             
         }
-
+        
     }
     
     func addInfoToMeetingChild() {
@@ -310,12 +327,40 @@ struct AddMeetingView: View {
         CreatedMeetingTime.startTime = stringFromDate(startTime)
         CreatedMeetingTime.endTime = stringFromDate(endTime)
         
-        if location != "" {
+        if !location.isEmpty {
             CreatedMeetingTime.location = location
+        } else {
+            CreatedMeetingTime.location = nil
         }
         
-        if description != "" {
+        if !description.isEmpty {
             CreatedMeetingTime.description = description
+        } else {
+            CreatedMeetingTime.description = nil
+        }
+    }
+    
+    func addInfoToHelper() {
+        meetingTimeForInfo.clubID = clubId
+        meetingTimeForInfo.endTime = stringFromDate(endTime)
+        meetingTimeForInfo.startTime = stringFromDate(startTime)
+        
+        if title != "" {
+            meetingTimeForInfo.title = title
+        } else {
+            meetingTimeForInfo.title = "Title"
+        }
+        
+        if !location.isEmpty {
+            meetingTimeForInfo.location = location
+        } else {
+            meetingTimeForInfo.location = nil
+        }
+        
+        if !description.isEmpty {
+            meetingTimeForInfo.description = description
+        } else {
+            meetingTimeForInfo.description = nil
         }
     }
     
@@ -361,3 +406,20 @@ struct AddMeetingView: View {
     }
     
 }
+
+func getFlooredCurrentTime() -> Date {
+    let currentDate = Date()
+    let calendar = Calendar.current
+
+    let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: currentDate)
+
+    let flooredHour = components.minute ?? 0 >= 30 ? (components.hour ?? 0) + 1 : components.hour ?? 0
+
+    var flooredComponents = components
+    flooredComponents.hour = flooredHour
+    flooredComponents.minute = 0
+    flooredComponents.second = 0
+
+    return calendar.date(from: flooredComponents) ?? Date()
+}
+
