@@ -61,6 +61,7 @@ struct MeetingView: View {
                         
                         Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
                             .padding(8)
+                    .fixedSize()
                 }
                 .frame(height: duration, alignment: .top)
 //                .onAppear {
