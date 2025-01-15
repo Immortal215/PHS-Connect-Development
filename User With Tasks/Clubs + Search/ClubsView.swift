@@ -84,14 +84,13 @@ struct ClubView: View {
                             
                         }
                     }
-                    .padding()
+                    .padding(.horizontal)
                     
                     ScrollView {
                         
                         if userInfo?.userID != nil {
                             // Clubs in
                             HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Enrolled")
-                                .padding()
                             
                             // favorited clubs
 //                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")

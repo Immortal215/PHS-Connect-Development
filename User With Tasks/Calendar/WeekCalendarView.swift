@@ -6,6 +6,7 @@ struct WeekCalendarView: View {
     var viewModel: AuthenticationViewModel
     @State var currentWeek: Date = Date()
     @State var addMeetingTimeView = false
+    @State var showMonthPicker = false
     @Binding var clubs: [Club]
     
     var body: some View {
@@ -26,23 +27,36 @@ struct WeekCalendarView: View {
             .padding()
             
             HStack(spacing: 15) {
+                Button {
+                    showMonthPicker.toggle()
+                } label: {
+                    Image(systemName: "calendar")
+                        .imageScale(.large)
+                }
+                .padding()
+                .sheet(isPresented: $showMonthPicker) {
+                    MonthPickerView(selectedDate: $selectedDate, currentYear: Calendar.current.component(.year, from: selectedDate), clubs: $clubs)
+                        .frame(width: UIScreen.main.bounds.width/1.05)
+                }
+                
                 ForEach(getDaysInWeek(for: currentWeek), id: \.self) { date in
                     VStack {
                         Text(dayOfWeek(for: date))
                             .font(.caption)
+                        
                         Text("\(Calendar.current.component(.day, from: date))")
                             .font(.headline)
-                            .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
+                            .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .black)
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
                         
-                        var clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
+                        let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                             if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
                                 result[index].count += 1
                             } else {
-                                result.append((clubID: meeting.clubID, count: 1))
+                                result.append((meeting.clubID, 1))
                             }
-                        }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count})
+                        }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count })
                         
                         if !clubIDCounts.isEmpty {
                             HStack(spacing: -4) {
@@ -63,11 +77,12 @@ struct WeekCalendarView: View {
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
                                         .foregroundColor(.black)
-                                    // .shadow(radius: 5)
                                         .imageScale(.small)
                                 }
                             }
                             .bold()
+                        } else {
+                            Color.white.frame(width: 1, height: 12)
                         }
                     }
                     .onTapGesture {
@@ -89,30 +104,24 @@ struct WeekCalendarView: View {
             .sheet(isPresented: $addMeetingTimeView) {
                 AddMeetingView(viewCloser: {
                     addMeetingTimeView = false
-                }, leaderClubs: clubs.filter {$0.leaders.contains(viewModel.userEmail ?? "") })
+                }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") })
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
+            }
+            .onChange(of: selectedDate) {
+                currentWeek = selectedDate
             }
         }
     }
     
     func getDaysInWeek(for date: Date) -> [Date] {
         guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return [] }
-        var days: [Date] = []
-        var day = weekInterval.start
-        
-        while day < weekInterval.end {
-            days.append(day)
-            day = Calendar.current.date(byAdding: .day, value: 1, to: day)!
-        }
-        
-        return days
+        let startOfWeek = weekInterval.start
+        return (0..<7).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: startOfWeek) }
     }
     
     func meetings(for date: Date) -> [Club.MeetingTime] {
-        meetingTimes.filter {
-            Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date)
-        }
+        meetingTimes.filter { Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date) }
     }
     
     func navigateWeek(by value: Int) {
@@ -121,19 +130,15 @@ struct WeekCalendarView: View {
     }
     
     func weekRange(for date: Date) -> String {
+        guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return "" }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-        
-        guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return "" }
-        let start = formatter.string(from: weekInterval.start)
-        let end = formatter.string(from: weekInterval.end.addingTimeInterval(-1))
-        
-        return "\(start) - \(end)"
+        return "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: selectedDate)))"
     }
     
     func dayOfWeek(for date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
+        formatter.dateFormat = "E"
         return formatter.string(from: date)
     }
     
@@ -142,6 +147,6 @@ struct WeekCalendarView: View {
     }
     
     func isSelected(_ date: Date) -> Bool {
-        return Calendar.current.isDate(selectedDate, inSameDayAs: date)
+        Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
 }

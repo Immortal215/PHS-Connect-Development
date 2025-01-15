@@ -8,65 +8,96 @@ struct MeetingInfoView: View {
     @Binding var clubs: [Club]
     @State var openSettings = false
     var viewModel : AuthenticationViewModel?
+    @State var showMoreTitle = false
+    @State var showMoreDescription = true
+    @State var descMoreThan2 = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(meeting.title)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.leading)
-                    .padding(.bottom, 5)
-                
-                Spacer()
-                
-                if clubs.first(where: {$0.clubID == meeting.clubID})?.leaders.contains(viewModel?.userEmail ?? "") ?? false {
-                    Button {
-                        openSettings.toggle()
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .imageScale(.large)
-                            .foregroundStyle(.black)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text(meeting.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.leading)
+                            .padding(.bottom, 5)
+                            .lineLimit(showMoreTitle ? 100 : 1)
+                            .onTapGesture {
+                                showMoreTitle.toggle()
+                            }
+                        
+                        Spacer()
+                        
+                        
+                        if clubs.first(where: {$0.clubID == meeting.clubID})?.leaders.contains(viewModel?.userEmail ?? "") ?? false {
+                            VStack {
+                                Button {
+                                    openSettings.toggle()
+                                } label: {
+                                    Image(systemName: "gearshape")
+                                        .imageScale(.large)
+                                        .foregroundStyle(.black)
+                                }
+                                
+                                Spacer()
+                            }
+                        }
+                    }
+                    
+                    HStack {
+                        Text("Start:")
+                            .fontWeight(.semibold)
+                        Text(dateFromString(meeting.startTime).formatted(date: .abbreviated, time: .shortened))
+                            .foregroundColor(.darkGray)
+                        
+                    }
+                    
+                    HStack {
+                        Text("End:")
+                            .fontWeight(.semibold)
+                        Text(dateFromString(meeting.endTime).formatted(date: .abbreviated, time: .shortened))
+                            .foregroundColor(.darkGray)
+                    }
+                    
+                    if let location = meeting.location {
+                        HStack {
+                            Text("Location:")
+                                .fontWeight(.semibold)
+                            Text(.init(location))
+                                .foregroundColor(.darkGray)
+                        }
+                    }
+                    
+                    if let description = meeting.description {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Description:")
+                                .fontWeight(.semibold)
+                            Text(.init(description))
+                                .foregroundColor(.darkGray)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(showMoreDescription ? nil : 2)
+                                .background(
+                                    GeometryReader { geometry in
+                                        Color.clear
+                                            .onAppear {
+                                                calculateLines(for: geometry.size)
+                                                showMoreDescription = false 
+                                            }
+                                    }
+                                )
+                            if descMoreThan2 {
+                                Button(showMoreDescription ? "Show Less" : "Show More") {
+                                    showMoreDescription.toggle()
+                                }
+                            }
+                        }
                     }
                 }
             }
             
-            HStack {
-                Text("Start:")
-                    .fontWeight(.semibold)
-                Text(meeting.startTime)
-                    .foregroundColor(.darkGray)
-                
-            }
-            
-            HStack {
-                Text("End:")
-                    .fontWeight(.semibold)
-                Text(meeting.endTime)
-                    .foregroundColor(.darkGray)
-            }
-            
-            if let location = meeting.location {
-                HStack {
-                    Text("Location:")
-                        .fontWeight(.semibold)
-                    Text(location)
-                        .foregroundColor(.darkGray)
-                }
-            }
-            
-            if let description = meeting.description {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Description:")
-                        .fontWeight(.semibold)
-                    Text(.init(description))
-                        .foregroundColor(.darkGray)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            
-            Spacer()
         }
+        .animation(.smooth)
         .sheet(isPresented: $openSettings) {
             AddMeetingView(viewCloser: {
                 openSettings = false
@@ -84,5 +115,15 @@ struct MeetingInfoView: View {
             }
         }
         .cornerRadius(10)
+    }
+    
+    func calculateLines(for size: CGSize) {
+        let font = UIFont.preferredFont(forTextStyle: .body)
+        let lineHeight = font.lineHeight
+        let totalLines = Int(size.height / lineHeight)
+        
+        DispatchQueue.main.async {
+            descMoreThan2 = (totalLines != 2 ? totalLines > 2 : false )
+        }
     }
 }

@@ -19,7 +19,8 @@ struct AddMeetingView: View {
     @State var selectedRange: NSRange?
     @State var isEditMenuVisible = false
     @State var showHelp = false
-    
+    @State var startMinutes = 0
+    @State var endMinutes = 60
     var viewCloser: (() -> Void)?
     
     @State var CreatedMeetingTime: Club.MeetingTime = Club.MeetingTime(clubID: "", startTime: "", endTime: "", title: "")
@@ -31,6 +32,7 @@ struct AddMeetingView: View {
     var editScreen: Bool? = false
     
     var body: some View {
+        
         VStack(alignment: .trailing) {
             var ableToCreate: Bool {
                 return (title != "" && endTime > startTime && clubId != "")
@@ -258,6 +260,8 @@ struct AddMeetingView: View {
                             .frame(width: UIScreen.main.bounds.width/1.1)
                             .foregroundStyle(.black)
                     }
+                    .padding(.top, CGFloat(endMinutes - startMinutes))
+                    .offset(y: -CGFloat(endMinutes - startMinutes) / 2)
                 }
                 
                 Color.white
@@ -289,9 +293,13 @@ struct AddMeetingView: View {
             }
             .onChange(of: startTime) {
                 addInfoToHelper()
+                startMinutes = Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime)
+                endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
             }
             .onChange(of: endTime) {
                 addInfoToHelper()
+                startMinutes = Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime)
+                endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
             }
             .onChange(of: location) {
                 addInfoToHelper()
