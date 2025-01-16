@@ -83,10 +83,10 @@ struct FlowingScheduleView: View {
                     }
                     .frame(minHeight: screenHeight)
                     .onAppear {
-                        proxy.scrollTo(5, anchor: .top)
+                        proxy.scrollTo(6 * scale, anchor: .top)
                     }
+                    
                 }
-                .animation(.smooth)
                 .popup(isPresented: $meetingInfo) {
                     if let selectedMeeting = selectedMeeting {
                         MeetingInfoView(meeting: selectedMeeting, clubs: $clubs, viewModel: viewModel)
@@ -121,17 +121,27 @@ struct FlowingScheduleView: View {
     }
 
     var sortedMeetings: [Club.MeetingTime] {
-        meetings.sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
+        meetings
+            .filter { isSameDay(dateFromString($0.startTime), selectedDate) } 
+            .sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
     }
 
     func getOverlappingMeetings(for meeting: Club.MeetingTime) -> [Club.MeetingTime] {
         let meetingStart = dateFromString(meeting.startTime)
         let meetingEnd = dateFromString(meeting.endTime)
-        meetings.sorted(by: { dateFromString($0.startTime) < dateFromString($1.startTime) })
-        return meetings.filter {
+
+        let sameDayMeetings = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
+
+        return sameDayMeetings.filter {
             let start = dateFromString($0.startTime)
             let end = dateFromString($0.endTime)
             return (start < meetingEnd && end > meetingStart)
         }
     }
+
+    func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
+        let calendar = Calendar.current
+        return calendar.isDate(date1, inSameDayAs: date2)
+    }
+
 }

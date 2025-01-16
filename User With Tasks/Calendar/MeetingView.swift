@@ -43,19 +43,24 @@ struct MeetingView: View {
                         .fixedSize()
                         .lineLimit(2 * Int(scale))
                     
-                    if let desc = meeting.description {
-                        Text(.init(desc))
-                            .font(.footnote)
-                            .frame(maxWidth: UIScreen.main.bounds.width / 3.2 / CGFloat(numOfOverlapping!), alignment: .topLeading)
-                            .padding(.vertical, 8)
-                            .fixedSize()
-                            .lineLimit(2 * Int(scale))
+                    if numOfOverlapping! < 2 {
+                        if let desc = meeting.description {
+                            Text(.init(desc))
+                                .font(.footnote)
+                                .frame(maxWidth: UIScreen.main.bounds.width / 3.2, alignment: .topLeading)
+                                .fixedSize()
+                                .padding(.vertical, 8)
+                                .lineLimit(2 * Int(scale))
+                        }
                     }
                     
-                    if let location = meeting.location {
-                        Text("\(location)")
-                            .font(.caption)
-                            .padding(8)
+                    if numOfOverlapping! < 2 {
+                        if let location = meeting.location {
+                            Text("\(location)")
+                                .font(.caption)
+                                .padding(8)
+                                
+                        }
                     }
                     
                     Spacer()
@@ -65,7 +70,7 @@ struct MeetingView: View {
                         .fixedSize()
                         
                 }
-                .frame(height: duration, alignment: .top)
+                .frame(maxWidth: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .top)
                 //                .onAppear {
                 //                    getClubNameByID(clubID: meeting.clubID) { name in
                 //                        clubName = name ?? "Name Not Found"
@@ -77,7 +82,7 @@ struct MeetingView: View {
                 //                    }
                 //                }
             }
-            .frame(height: duration)
+            .frame(width: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), height: duration)
             .position(x: geometry.size.width / 2, y: preview! ? 0 : startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, dont touch it
         }
         

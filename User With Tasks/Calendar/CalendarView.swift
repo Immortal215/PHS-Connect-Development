@@ -26,11 +26,10 @@ struct CalendarView: View {
             
         }
         .gesture(
-            MagnifyGesture()
+            MagnificationGesture()
                 .onChanged { value in
-                    scale = max(0.6, min(value.magnification, 3.0))
+                    scale = max(0.6, min(value.magnitude, 3.0))
                 }
-            
         )
     }
 
