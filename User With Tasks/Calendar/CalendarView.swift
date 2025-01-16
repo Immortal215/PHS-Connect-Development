@@ -12,7 +12,7 @@ struct CalendarView: View {
 
     var body: some View {
         VStack {
-            WeekCalendarView( //double check the below
+            WeekCalendarView( // double check the below
                 meetingTimes: clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] },
                 selectedDate: $selectedDate,
                 viewModel: viewModel,

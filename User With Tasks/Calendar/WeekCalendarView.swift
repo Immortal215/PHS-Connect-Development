@@ -68,7 +68,7 @@ struct WeekCalendarView: View {
                                         
                                         if club.count > 1 {
                                             Text("\(club.count)")
-                                                .font(.system(size: 8))
+                                                .font(.system(size: 12))
                                                 .foregroundColor(.white)
                                         }
                                     }

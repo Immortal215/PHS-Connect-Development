@@ -6,7 +6,7 @@ struct MonthPickerView: View {
     @State var showDatePicker = false
     @Binding var clubs: [Club]
     @AppStorage("calendarTubeView") var isTubeView = false
-
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -19,7 +19,7 @@ struct MonthPickerView: View {
                                     .font(.title2)
                                     .bold()
                                 Divider()
-
+                                
                                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(UIScreen.main.bounds.width / 1.15 / 7), spacing: 10), count: 7), spacing: 10) {
                                     ForEach(daysInMonth(for: monthDate), id: \.self) { day in
                                         let fullDate = dayDate(for: day, monthDate: monthDate)
@@ -37,7 +37,7 @@ struct MonthPickerView: View {
                                                     result.append((meeting.clubID, 1))
                                                 }
                                             }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count })
-
+                                            
                                             if !clubIDCounts.isEmpty {
                                                 HStack {
                                                     // tube view for day
@@ -62,15 +62,15 @@ struct MonthPickerView: View {
                                                                     Circle()
                                                                         .fill(colorFromClubID(club.clubID))
                                                                         .frame(width: 12, height: 12)
-                                                            
+                                                                    
                                                                     if club.count > 1 {
                                                                         Text("\(club.count)")
-                                                                            .font(.system(size: 8))
+                                                                            .font(.system(size: 12))
                                                                             .foregroundColor(.white)
                                                                     }
                                                                 }
                                                             }
-
+                                                            
                                                             if clubIDCounts.count > 3 {
                                                                 Image(systemName: "plus")
                                                                     .foregroundColor(.black)
@@ -79,9 +79,14 @@ struct MonthPickerView: View {
                                                         }
                                                     }
                                                 }
+                                            } else {
+                                                Color.white.frame(width: 1, height: 12)
                                             }
+                                            
+                                            Spacer()
+                                            
                                         }
-                                        .frame(maxHeight: UIScreen.main.bounds.height/4)
+                                        .frame(height: isTubeView ? UIScreen.main.bounds.height / 4 : nil)
                                         .fixedSize()
                                         .onTapGesture {
                                             selectedDate = fullDate
@@ -106,7 +111,7 @@ struct MonthPickerView: View {
                             .onChange(of: selectedDate) { newDate in
                                 currentYear = Calendar.current.component(.year, from: newDate)
                             }
-
+                        
                         Button(action: {
                             isTubeView.toggle()
                         }) {
@@ -119,30 +124,30 @@ struct MonthPickerView: View {
         }
         .animation(.smooth)
     }
-
+    
     func daysInMonth(for date: Date) -> [Int] {
         guard let range = Calendar.current.range(of: .day, in: .month, for: date) else { return [] }
         return Array(range)
     }
-
+    
     func dayDate(for day: Int, monthDate: Date) -> Date {
         Calendar.current.date(byAdding: .day, value: day - 1, to: Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: monthDate))!)!
     }
-
+    
     func monthName(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM"
         return formatter.string(from: date)
     }
-
+    
     func isToday(_ date: Date) -> Bool {
         Calendar.current.isDateInToday(date)
     }
-
+    
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
-
+    
     func meetings(for date: Date) -> [Club.MeetingTime] {
         var meetingsForDate: [Club.MeetingTime] = []
         

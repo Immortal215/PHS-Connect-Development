@@ -520,6 +520,7 @@ struct SingleAnnouncementView: View {
                         } label: {
                             Text(clubName)
                                 .foregroundColor(.blue)
+                                .lineLimit(1)
                         }
                     }
                     .font(.caption)

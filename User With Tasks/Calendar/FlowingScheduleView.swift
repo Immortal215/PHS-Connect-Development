@@ -1,4 +1,5 @@
 import SwiftUI
+import PopupView
 
 struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]
@@ -45,12 +46,18 @@ struct FlowingScheduleView: View {
                         VStack {
                             HStack(spacing: 0) {
                                 Spacer().frame(width: 60)
-                                ZStack {
+                                ZStack(alignment: .leading) {
                                     ForEach(sortedMeetings, id: \.startTime) { meeting in
                                         if refresher {
-                                            MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo, clubs: $clubs)
+                                            let overlappingMeetings = getOverlappingMeetings(for: meeting)
+                                            let index = overlappingMeetings.firstIndex(of: meeting) ?? 0
+                                            let width = UIScreen.main.bounds.width / 1.1 / CGFloat(overlappingMeetings.count)
+                                            let xOffset = CGFloat(index) * width
+
+                                            MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo, clubs: $clubs, numOfOverlapping: overlappingMeetings.count)
                                                 .zIndex(selectedMeeting == meeting && meetingInfo ? 1 : 0)
-                                                .frame(width: UIScreen.main.bounds.width / 1.1)
+                                                .frame(width: width)
+                                                .offset(x: xOffset)
                                                 .onTapGesture {
                                                     if selectedMeeting != meeting {
                                                         meetingInfo = false
@@ -76,8 +83,29 @@ struct FlowingScheduleView: View {
                     }
                     .frame(minHeight: screenHeight)
                     .onAppear {
-                        proxy.scrollTo(5, anchor: .top) // ~6AM the toolbar goes 
+                        proxy.scrollTo(5, anchor: .top)
                     }
+                }
+                .animation(.smooth)
+                .popup(isPresented: $meetingInfo) {
+                    if let selectedMeeting = selectedMeeting {
+                        MeetingInfoView(meeting: selectedMeeting, clubs: $clubs, viewModel: viewModel)
+                    }
+                } customize: {
+                    $0
+                        .type(.floater())
+                        .position(.trailing)
+                        .appearFrom(.rightSlide)
+                        .animation(.smooth)
+                        .closeOnTapOutside(false)
+                        .closeOnTap(false)
+                        .dragToDismiss(true)
+                        .dismissCallback {
+                            refresher = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                refresher = true
+                            }
+                        }
                 }
                 .toolbar {
                     if isToolbarVisible {
@@ -94,5 +122,16 @@ struct FlowingScheduleView: View {
 
     var sortedMeetings: [Club.MeetingTime] {
         meetings.sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
+    }
+
+    func getOverlappingMeetings(for meeting: Club.MeetingTime) -> [Club.MeetingTime] {
+        let meetingStart = dateFromString(meeting.startTime)
+        let meetingEnd = dateFromString(meeting.endTime)
+        meetings.sorted(by: { dateFromString($0.startTime) < dateFromString($1.startTime) })
+        return meetings.filter {
+            let start = dateFromString($0.startTime)
+            let end = dateFromString($0.endTime)
+            return (start < meetingEnd && end > meetingStart)
+        }
     }
 }

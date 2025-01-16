@@ -9,6 +9,7 @@ struct MeetingView: View {
     @State var meetingInfo : Bool
     var preview : Bool? = false
     @Binding var clubs: [Club]
+    var numOfOverlapping: Int? = 1
     
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
@@ -37,7 +38,7 @@ struct MeetingView: View {
                 HStack(alignment: .top) {
                     Text(meeting.title)
                         .font(.headline)
-                        .frame(maxWidth: UIScreen.main.bounds.width / 3, alignment: .topLeading)
+                        .frame(maxWidth: UIScreen.main.bounds.width / 3 / CGFloat(numOfOverlapping!), alignment: .topLeading)
                         .padding(8)
                         .fixedSize()
                         .lineLimit(2 * Int(scale))
@@ -45,7 +46,7 @@ struct MeetingView: View {
                     if let desc = meeting.description {
                         Text(.init(desc))
                             .font(.footnote)
-                            .frame(maxWidth: UIScreen.main.bounds.width / 3.2, alignment: .topLeading)
+                            .frame(maxWidth: UIScreen.main.bounds.width / 3.2 / CGFloat(numOfOverlapping!), alignment: .topLeading)
                             .padding(.vertical, 8)
                             .fixedSize()
                             .lineLimit(2 * Int(scale))
@@ -62,6 +63,7 @@ struct MeetingView: View {
                     Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
                         .padding(8)
                         .fixedSize()
+                        
                 }
                 .frame(height: duration, alignment: .top)
                 //                .onAppear {
