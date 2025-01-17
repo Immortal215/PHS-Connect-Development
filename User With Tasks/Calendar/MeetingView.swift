@@ -5,9 +5,8 @@ struct MeetingView: View {
     var meeting: Club.MeetingTime
     var scale: CGFloat
     let hourHeight: CGFloat
-    //    @State var clubName = ""
-    @State var meetingInfo : Bool
-    var preview : Bool? = false
+    @State var meetingInfo: Bool
+    var preview: Bool? = false
     @Binding var clubs: [Club]
     var numOfOverlapping: Int? = 1
     
@@ -17,75 +16,84 @@ struct MeetingView: View {
         let startMinutes = Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime)
         let endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
         let durationMinutes = max(endMinutes - startMinutes, 0)
-        
+
         let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
         let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
-        
+
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 if meetingInfo {
                     Rectangle()
                         .fill(colorFromClubID(meeting.clubID).opacity(0.7))
-                        .cornerRadius(.topTrailing, 8)
-                        .cornerRadius(.bottomTrailing, 8)
+                        .cornerRadius(8)
                 } else {
                     Rectangle()
                         .fill(colorFromClubID(meeting.clubID).opacity(0.2))
-                        .cornerRadius(.topTrailing, 8)
-                        .cornerRadius(.bottomTrailing, 8)
+                        .cornerRadius(8)
                 }
-                
-                HStack(alignment: .top) {
-                    Text(meeting.title)
-                        .font(.headline)
-                        .frame(maxWidth: UIScreen.main.bounds.width / 3 / CGFloat(numOfOverlapping!), alignment: .topLeading)
-                        .padding(8)
-                        .fixedSize()
-                        .lineLimit(2 * Int(scale))
-                    
-                    if numOfOverlapping! < 2 {
-                        if let desc = meeting.description {
-                            Text(.init(desc))
-                                .font(.footnote)
-                                .frame(maxWidth: UIScreen.main.bounds.width / 3.2, alignment: .topLeading)
-                                .fixedSize()
-                                .padding(.vertical, 8)
-                                .lineLimit(2 * Int(scale))
-                        }
-                    }
-                    
-                    if numOfOverlapping! < 2 {
-                        if let location = meeting.location {
-                            Text("\(location)")
-                                .font(.caption)
-                                .padding(8)
-                                
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
-                        .padding(8)
-                        .fixedSize()
+
+                HStack {
+                    RoundedRectangle(cornerRadius: 15)
+                        .frame(width: 4)
+                        .foregroundStyle(colorFromClubID(meeting.clubID).opacity(0.8))
+                        .padding(4)
+                        .padding(.trailing, -8)
+
+                    VStack(alignment: .leading) {
                         
+                        if isTextVisible(lineHeight: 20, startOffset: 0, duration: duration) {
+                            Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
+                                .font(.footnote)
+                                .fixedSize()
+                                .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
+                                .lineLimit(1 * numOfOverlapping!)
+                                .bold()
+                        }
+                        
+                        if isTextVisible(lineHeight: 16, startOffset: 20, duration: duration) {
+                            HStack {
+                                Image(systemName: "person.circle")
+                                    .padding(.trailing, -4)
+                                Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
+                            }
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .font(.caption2)
+                        }
+                        
+                        if let location = meeting.location, isTextVisible(lineHeight: 16, startOffset: 36, duration: duration) {
+                            HStack {
+                                Image(systemName: "location.circle")
+                                    .padding(.trailing, -4)
+                                Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
+                            }
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .font(.caption2)
+                        }
+
+
+                        if isTextVisible(lineHeight: 16, startOffset: meeting.location == nil ? 36 : 52, duration: duration) {
+                            HStack {
+                                Image(systemName: "clock")
+                                    .padding(.trailing, -4)
+                                Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
+                            }
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .font(.caption2)
+                        }
+
+                        Spacer()
+                    }
+                    .frame(maxWidth: UIScreen.main.bounds.width / 1.3 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .topLeading)
                 }
-                .frame(maxWidth: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .top)
-                //                .onAppear {
-                //                    getClubNameByID(clubID: meeting.clubID) { name in
-                //                        clubName = name ?? "Name Not Found"
-                //                    }
-                //                }
-                //                .onChange(of: meeting) {
-                //                    getClubNameByID(clubID: meeting.clubID) { name in
-                //                        clubName = name ?? "Name Not Found"
-                //                    }
-                //                }
+                .frame(maxWidth: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .topLeading)
             }
             .frame(width: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), height: duration)
-            .position(x: geometry.size.width / 2, y: preview! ? 0 : startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, dont touch it
+            .position(x: geometry.size.width / 2, y: preview! ? 0 : startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }
-        
+    }
+
+    func isTextVisible(lineHeight: CGFloat, startOffset: CGFloat, duration: CGFloat) -> Bool {
+        return lineHeight + startOffset <= duration
     }
 }
 

@@ -17,7 +17,7 @@ struct MeetingInfoView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text(meeting.title)
+                        Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
                             .font(.title2)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
@@ -46,7 +46,7 @@ struct MeetingInfoView: View {
                     }
                     
                     HStack {
-                        Text("Start:")
+                        Text("Starts")
                             .fontWeight(.semibold)
                         Text(dateFromString(meeting.startTime).formatted(date: .abbreviated, time: .shortened))
                             .foregroundColor(.darkGray)
@@ -54,7 +54,7 @@ struct MeetingInfoView: View {
                     }
                     
                     HStack {
-                        Text("End:")
+                        Text("Ends")
                             .fontWeight(.semibold)
                         Text(dateFromString(meeting.endTime).formatted(date: .abbreviated, time: .shortened))
                             .foregroundColor(.darkGray)
@@ -64,7 +64,7 @@ struct MeetingInfoView: View {
                         HStack {
                             Text("Location:")
                                 .fontWeight(.semibold)
-                            Text(.init(location))
+                            Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                 .foregroundColor(.darkGray)
                         }
                     }

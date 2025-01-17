@@ -136,7 +136,7 @@ struct FlowingScheduleView: View {
             let start = dateFromString($0.startTime)
             let end = dateFromString($0.endTime)
             return (start < meetingEnd && end > meetingStart)
-        }
+        }.sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
     }
 
     func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
