@@ -12,8 +12,12 @@ struct FlowingScheduleView: View {
     @Binding var clubs: [Club]
     var viewModel: AuthenticationViewModel?
     var selectedDate: Date
-
     @State var isToolbarVisible = true
+
+    struct MeetingColumn {
+        let meeting: Club.MeetingTime
+        var column: Int
+    }
 
     var body: some View {
         NavigationStack {
@@ -22,7 +26,7 @@ struct FlowingScheduleView: View {
                     GeometryReader { geometry in
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) { minY in
-                                isToolbarVisible = minY < screenHeight * 0.22 // hides the date if the scrollview gets scrolled too high
+                                isToolbarVisible = minY < screenHeight * 0.22
                             }
                     }
                     .frame(height: 0)
@@ -47,33 +51,28 @@ struct FlowingScheduleView: View {
                             HStack(spacing: 0) {
                                 Spacer().frame(width: 60)
                                 ZStack(alignment: .leading) {
-                                    ForEach(sortedMeetings, id: \.startTime) { meeting in
-                                        if refresher {
-                                            let overlappingMeetings = getOverlappingMeetings(for: meeting)
-                                            let index = overlappingMeetings.firstIndex(of: meeting) ?? 0
-                                            let width = UIScreen.main.bounds.width / 1.1 / CGFloat(overlappingMeetings.count)
-                                            let xOffset = CGFloat(index) * width
+                                    if refresher {
+                                        let columnAssignments = calculateColumnAssignments()
+                                        let maxColumns = (columnAssignments.map { $0.column }.max() ?? 0) + 1
+                                        
+                                        ForEach(columnAssignments, id: \.meeting) { meetingColumn in
+                                            let width = (UIScreen.main.bounds.width / 1.1) / CGFloat(maxColumns)
+                                            let xOffset = CGFloat(meetingColumn.column + 1) * width
 
-                                            MeetingView(meeting: meeting, scale: scale, hourHeight: hourHeight, meetingInfo: selectedMeeting == meeting && meetingInfo, clubs: $clubs, numOfOverlapping: overlappingMeetings.count)
-                                                .zIndex(selectedMeeting == meeting && meetingInfo ? 1 : 0)
-                                                .frame(width: width)
-                                                .offset(x: xOffset)
-                                                .onTapGesture {
-                                                    if selectedMeeting != meeting {
-                                                        meetingInfo = false
-                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                                            selectedMeeting = meeting
-                                                            meetingInfo = true
-                                                        }
-                                                    } else {
-                                                        meetingInfo = false
-                                                        selectedMeeting = nil
-                                                    }
-                                                    refresher = false
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                                        refresher = true
-                                                    }
-                                                }
+                                            MeetingView(
+                                                meeting: meetingColumn.meeting,
+                                                scale: scale,
+                                                hourHeight: hourHeight,
+                                                meetingInfo: selectedMeeting == meetingColumn.meeting && meetingInfo,
+                                                clubs: $clubs,
+                                                numOfOverlapping: maxColumns
+                                            )
+                                            .zIndex(selectedMeeting == meetingColumn.meeting && meetingInfo ? 1 : 0)
+                                            .frame(width: width)
+                                            .offset(x: xOffset)
+                                            .onTapGesture {
+                                                handleMeetingTap(meetingColumn.meeting)
+                                            }
                                         }
                                     }
                                 }
@@ -85,7 +84,6 @@ struct FlowingScheduleView: View {
                     .onAppear {
                         proxy.scrollTo(6 * scale, anchor: .top)
                     }
-                    
                 }
                 .popup(isPresented: $meetingInfo) {
                     if let selectedMeeting = selectedMeeting {
@@ -101,10 +99,7 @@ struct FlowingScheduleView: View {
                         .closeOnTap(false)
                         .dragToDismiss(true)
                         .dismissCallback {
-                            refresher = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                refresher = true
-                            }
+                            refreshMeetings()
                         }
                 }
                 .toolbar {
@@ -120,28 +115,56 @@ struct FlowingScheduleView: View {
         }
     }
 
-    var sortedMeetings: [Club.MeetingTime] {
-        meetings
-            .filter { isSameDay(dateFromString($0.startTime), selectedDate) } 
+    func calculateColumnAssignments() -> [MeetingColumn] {
+        let sortedMeetings = meetings
+            .filter { isSameDay(dateFromString($0.startTime), selectedDate) }
             .sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
+
+        var columnAssignments: [MeetingColumn] = []
+        var activeColumns: [(endTime: Date, column: Int)] = []
+
+        for meeting in sortedMeetings {
+            let startTime = dateFromString(meeting.startTime)
+            let endTime = dateFromString(meeting.endTime)
+            
+            activeColumns.removeAll { $0.endTime <= startTime }
+            
+            let usedColumns = Set(activeColumns.map { $0.column })
+            var column = 0
+            while usedColumns.contains(column) {
+                column += 1
+            }
+            
+            columnAssignments.append(MeetingColumn(meeting: meeting, column: column))
+            activeColumns.append((endTime: endTime, column: column))
+        }
+
+        return columnAssignments
     }
 
-    func getOverlappingMeetings(for meeting: Club.MeetingTime) -> [Club.MeetingTime] {
-        let meetingStart = dateFromString(meeting.startTime)
-        let meetingEnd = dateFromString(meeting.endTime)
+    func handleMeetingTap(_ meeting: Club.MeetingTime) {
+        if selectedMeeting != meeting {
+            meetingInfo = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                selectedMeeting = meeting
+                meetingInfo = true
+            }
+        } else {
+            meetingInfo = false
+            selectedMeeting = nil
+        }
+        refreshMeetings()
+    }
 
-        let sameDayMeetings = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
-
-        return sameDayMeetings.filter {
-            let start = dateFromString($0.startTime)
-            let end = dateFromString($0.endTime)
-            return (start < meetingEnd && end > meetingStart)
-        }.sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
+    func refreshMeetings() {
+        refresher = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            refresher = true
+        }
     }
 
     func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
         let calendar = Calendar.current
         return calendar.isDate(date1, inSameDayAs: date2)
     }
-
 }

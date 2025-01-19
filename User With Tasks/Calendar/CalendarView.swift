@@ -8,7 +8,7 @@ struct CalendarView: View {
     var screenHeight = UIScreen.main.bounds.height
 
     @State var selectedDate = Date()
-    @State var scale: CGFloat = 0.6
+    @State var scale: CGFloat = 1.0
 
     var body: some View {
         VStack {

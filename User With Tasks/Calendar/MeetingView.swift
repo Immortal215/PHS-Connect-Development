@@ -1,5 +1,4 @@
 import SwiftUI
-import PopupView
 
 struct MeetingView: View {
     var meeting: Club.MeetingTime
@@ -9,7 +8,7 @@ struct MeetingView: View {
     var preview: Bool? = false
     @Binding var clubs: [Club]
     var numOfOverlapping: Int? = 1
-    
+
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
         let endTime = dateFromString(meeting.endTime)
@@ -25,11 +24,11 @@ struct MeetingView: View {
                 if meetingInfo {
                     Rectangle()
                         .fill(colorFromClubID(meeting.clubID).opacity(0.7))
-                        .cornerRadius(8)
+                        .cornerRadius(5)
                 } else {
                     Rectangle()
                         .fill(colorFromClubID(meeting.clubID).opacity(0.2))
-                        .cornerRadius(8)
+                        .cornerRadius(5)
                 }
 
                 HStack {
@@ -44,9 +43,8 @@ struct MeetingView: View {
                         if isTextVisible(lineHeight: 20, startOffset: 0, duration: duration) {
                             Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
                                 .font(.footnote)
-                                .fixedSize()
-                                .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
                                 .lineLimit(1 * numOfOverlapping!)
+                                .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
                                 .bold()
                         }
                         
@@ -55,6 +53,7 @@ struct MeetingView: View {
                                 Image(systemName: "person.circle")
                                     .padding(.trailing, -4)
                                 Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
+                                    .lineLimit(1)
                             }
                             .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
                             .font(.caption2)
@@ -65,6 +64,7 @@ struct MeetingView: View {
                                 Image(systemName: "location.circle")
                                     .padding(.trailing, -4)
                                 Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
+                                    .lineLimit(1)
                             }
                             .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
                             .font(.caption2)
@@ -76,6 +76,7 @@ struct MeetingView: View {
                                 Image(systemName: "clock")
                                     .padding(.trailing, -4)
                                 Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
+                                    .lineLimit(1)
                             }
                             .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
                             .font(.caption2)
@@ -88,7 +89,7 @@ struct MeetingView: View {
                 .frame(maxWidth: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .topLeading)
             }
             .frame(width: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), height: duration)
-            .position(x: geometry.size.width / 2, y: preview! ? 0 : startOffset + (duration / 2) + (16 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
+            .position(x: UIScreen.main.bounds.width / 1.1 / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }
     }
 

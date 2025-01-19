@@ -254,11 +254,13 @@ struct AddMeetingView: View {
                     Button {
                         addInfoToHelper()
                         meetingFull = true
-                    } label: {
+                    } label: {                                         
+
                         MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: $leaderClubs)
                             .padding()
                             .frame(width: UIScreen.main.bounds.width/1.1)
                             .foregroundStyle(.black)
+                            .offset(x: UIScreen.main.bounds.width/1.1)
                     }
                     .padding(.top, CGFloat(endMinutes - startMinutes))
                     .offset(y: -CGFloat(endMinutes - startMinutes) / 2)
