@@ -11,6 +11,7 @@ struct MeetingInfoView: View {
     @State var showMoreTitle = false
     @State var showMoreDescription = true
     @State var descMoreThan2 = false
+    var selectedDate: Date? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -101,7 +102,7 @@ struct MeetingInfoView: View {
         .sheet(isPresented: $openSettings) {
             AddMeetingView(viewCloser: {
                 openSettings = false
-            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true)
+            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true, selectedDate: selectedDate!)
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
         }

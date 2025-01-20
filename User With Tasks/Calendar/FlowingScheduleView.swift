@@ -11,7 +11,7 @@ struct FlowingScheduleView: View {
     @State var refresher = true
     @Binding var clubs: [Club]
     var viewModel: AuthenticationViewModel?
-    var selectedDate: Date
+    @Binding var selectedDate: Date
     @State var isToolbarVisible = true
 
     struct MeetingColumn {
@@ -26,6 +26,9 @@ struct FlowingScheduleView: View {
                     GeometryReader { geometry in
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) { minY in
+                                if minY > screenHeight * 0.22 {
+                                    proxy.scrollTo(0, anchor: .bottom) // needed so it doesnt crash for some reason when scrolling to top 
+                                }
                                 isToolbarVisible = minY < screenHeight * 0.22
                             }
                     }
@@ -82,12 +85,23 @@ struct FlowingScheduleView: View {
                     }
                     .frame(minHeight: screenHeight)
                     .onAppear {
-                        proxy.scrollTo(6 * scale, anchor: .top)
+                        proxy.scrollTo(5, anchor: .top)
                     }
                 }
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            if value.translation.width < -50 {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate)!
+                            }
+                            else if value.translation.width > 50 {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate)!
+                            }
+                        }
+                )
                 .popup(isPresented: $meetingInfo) {
                     if let selectedMeeting = selectedMeeting {
-                        MeetingInfoView(meeting: selectedMeeting, clubs: $clubs, viewModel: viewModel)
+                        MeetingInfoView(meeting: selectedMeeting, clubs: $clubs, viewModel: viewModel, selectedDate: selectedDate)
                     }
                 } customize: {
                     $0

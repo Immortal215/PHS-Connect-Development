@@ -7,6 +7,7 @@ import SwiftUI
 import Drops
 import SwiftUIX
 import CUIExpandableButton
+import FirebaseFirestore
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
@@ -84,37 +85,24 @@ struct ContentView: View {
                     } else {
                         ZStack {
                             if advSearchShown {
-                                TabView(selection: $selectedTab) {
-                                    SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .tabItem {
-                                            Image(systemName: "magnifyingglass")
+                                ZStack {
+                                    switch selectedTab { // unfortunately cannot use a tabview as there is no way to hide the tabbar without using .page which is also not wanted
+                                    case 0:
+                                        SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                    case 1:
+                                        if !viewModel.isGuestUser {
+                                            ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         }
-                                        .tag(0)
-                                    
-                                    if !viewModel.isGuestUser {
-                                        ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                            .tabItem {
-                                                Image(systemName: "rectangle.3.group.bubble")
-                                            }
-                                            .tag(1)
-                                        
-                                        
-                                        CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                            .tabItem {
-                                                Image(systemName: "calendar.badge.clock")
-                                            }
-                                            .tag(2)
+                                    case 2:
+                                        if !viewModel.isGuestUser {
+                                            CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        }
+                                    case 3:
+                                        SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                                    default:
+                                        EmptyView()
                                     }
-                                    
-                                    SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                                        .tabItem {
-                                            Image(systemName: "gearshape")
-                                        }
-                                        .tag(3)
-                                    
                                 }
-                                .tabViewStyle(.page(indexDisplayMode: .never))
-                                .edgesIgnoringSafeArea(.all)
                             }
                             // tab bar view
                             VStack {
@@ -155,11 +143,9 @@ struct ContentView: View {
                                     .frame(height: screenHeight / 4)
                                     .edgesIgnoringSafeArea(.all)
                                 }
-                                .frame(width:screenWidth, height: screenHeight, alignment: .bottom)
+                                .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
                                 .allowsHitTesting(false)
-                                
                             }
-                            
                         }
                         .refreshable {
                             fetchClubs { fetchedClubs in
@@ -173,7 +159,7 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                            
+                        
                             advSearchShown = !advSearchShown
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -182,18 +168,31 @@ struct ContentView: View {
                             dropper(title: "Fetched Data!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
                         }
                         .onAppear {
-                            fetchClubs { fetchedClubs in
-                                clubs = fetchedClubs
-                            }
-                            
+                            setupClubsListener()
                             if let UserID = viewModel.uid, !viewModel.isGuestUser {
                                 fetchUser(for: UserID) { user in
                                     userInfo = user
                                 }
                             }
-                            
                             advSearchShown = true
                         }
+                        .onDisappear {
+                            removeClubsListener()
+                        }
+
+//                        .onAppear {
+//                            fetchClubs { fetchedClubs in
+//                                clubs = fetchedClubs
+//                            }
+//                            
+//                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
+//                                fetchUser(for: UserID) { user in
+//                                    userInfo = user
+//                                }
+//                            }
+//                            
+//                            advSearchShown = true
+//                        }
                         
                     }
                 }
@@ -238,6 +237,28 @@ struct ContentView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         
+    }
+    
+    func setupClubsListener() {
+        let databaseRef = Database.database().reference().child("clubs")
+        databaseRef.observe(.value) { snapshot in
+            var updatedClubs: [Club] = []
+            for child in snapshot.children {
+                if let childSnapshot = child as? DataSnapshot,
+                   let clubData = try? JSONSerialization.data(withJSONObject: childSnapshot.value ?? [:]),
+                   let club = try? JSONDecoder().decode(Club.self, from: clubData) {
+                    updatedClubs.append(club)
+                }
+            }
+            DispatchQueue.main.async {
+                clubs = updatedClubs
+            }
+        }
+    }
+
+    func removeClubsListener() {
+        let databaseRef = Database.database().reference().child("clubs")
+        databaseRef.removeAllObservers()
     }
     
 }

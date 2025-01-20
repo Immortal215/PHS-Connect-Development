@@ -53,7 +53,47 @@ struct ClubInfoView: View {
                 
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .center) {
-                        VStack {
+                        VStack(alignment: .leading) {
+                            AsyncImage(
+                                url: URL(
+                                    string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
+                                ),
+                                content: { image in
+                                    ZStack {
+                                        image
+                                            .resizable()
+                                            .scaledToFit()
+                                            .clipShape(RoundedRectangle(cornerRadius: 15))
+                                        
+                                        if club.clubPhoto == nil {
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 15)
+                                                    .foregroundStyle(.blue)
+                                                Text(club.name)
+                                                    .padding()
+                                                    .foregroundStyle(.white)
+                                            }
+                                            .frame(maxWidth: screenWidth / CGFloat(6 + 0.3))
+                                            .fixedSize()
+                                        }
+                                        
+                                        //                            RoundedRectangle(cornerRadius: 15)
+                                        //   .stroke(.black, lineWidth: 3)
+                                        // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
+                                    }
+                                    //  .frame(width: screenWidth / CGFloat(imageScaler), height: screenWidth / CGFloat(imageScaler))
+                                },
+                                placeholder: {
+                                    ZStack {
+                                        Rectangle()
+                                            .stroke(.gray)
+                                        ProgressView("Loading \(club.name) Image")
+                                    }
+                                }
+                            )
+                            .frame(width: screenWidth/6, height: screenWidth/6)
+                            .padding(.vertical, -16)
+
                             Text(.init(club.abstract))
                                 .font(.body)
                                 .foregroundColor(.gray)
@@ -78,47 +118,7 @@ struct ClubInfoView: View {
                             }
                         }
                         
-                        
-                        AsyncImage(
-                            url: URL(
-                                string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
-                            ),
-                            content: { Image in
-                                ZStack {
-                                    Image
-                                        .resizable()
-                                        .scaledToFit()
-                                        .clipShape(Rectangle())
-                                    
-                                    if club.clubPhoto == nil {
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 15)
-                                                .foregroundStyle(.blue)
-                                            
-                                            Text(club.name)
-                                                .padding()
-                                                .foregroundStyle(.white)
-                                        }
-                                        .frame(maxWidth: screenWidth/5.3)
-                                        .fixedSize()
-                                    }
-                                    
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(.black, lineWidth: 3)
-                                        .frame(minWidth: screenWidth/10, minHeight: screenHeight/10)
-                                }
-                                .frame(maxWidth: screenWidth/5, maxHeight: screenHeight/5)
-                            },
-                            placeholder: {
-                                ZStack {
-                                    Rectangle()
-                                        .stroke(.gray)
-                                    ProgressView("Loading \(club.name) Image")
-                                }
-                            }
-                        )
-                        .padding()
-                        .frame(width: screenWidth/5, height: screenHeight/5)
+                    
                     }
                     
                     if viewModel.userEmail == "sharul.shah2008@gmail.com" {

@@ -31,6 +31,8 @@ struct AddMeetingView: View {
     
     var editScreen: Bool? = false
     
+    var selectedDate: Date
+    
     var body: some View {
         
         VStack(alignment: .trailing) {
@@ -281,7 +283,20 @@ struct AddMeetingView: View {
                     
                     endTime = dateFromString(CreatedMeetingTime.endTime)
                 } else {
-                    startTime = getFlooredCurrentTime()
+                    let selectedDay = Calendar.current.component(.day, from: selectedDate)
+                    let selectedMonth = Calendar.current.component(.month, from: selectedDate)
+                    let selectedYear = Calendar.current.component(.year, from: selectedDate)
+
+                    startTime = Calendar.current.date(from: DateComponents(
+                        year: selectedYear,
+                        month: selectedMonth,
+                        day: selectedDay,
+                        hour: 0,
+                        minute: 0,
+                        second: 0
+                    ))!
+
+                    startTime = getFlooredCurrentTime(startTime)
                 }
                 
                 if CreatedMeetingTime.clubID != "" {
@@ -417,19 +432,17 @@ struct AddMeetingView: View {
     
 }
 
-func getFlooredCurrentTime() -> Date {
-    let currentDate = Date()
+func getFlooredCurrentTime(_ inputDate: Date) -> Date {
     let calendar = Calendar.current
-
-    let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: currentDate)
-
-    let flooredHour = components.minute ?? 0 >= 30 ? (components.hour ?? 0) + 1 : components.hour ?? 0
-
-    var flooredComponents = components
-    flooredComponents.hour = flooredHour
-    flooredComponents.minute = 0
-    flooredComponents.second = 0
-
-    return calendar.date(from: flooredComponents) ?? Date()
+    let currentTime = Date()
+    let currentComponents = calendar.dateComponents([.hour, .minute], from: currentTime)
+    
+    let flooredHour = (currentComponents.minute ?? 0) >= 30 ? (currentComponents.hour ?? 0) + 1 : (currentComponents.hour ?? 0)
+    
+    var dateComponents = calendar.dateComponents([.year, .month, .day], from: inputDate)
+    dateComponents.hour = flooredHour
+    dateComponents.minute = 0
+    dateComponents.second = 0
+    
+    return calendar.date(from: dateComponents) ?? Date()
 }
-

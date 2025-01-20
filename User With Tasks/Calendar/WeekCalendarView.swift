@@ -82,7 +82,11 @@ struct WeekCalendarView: View {
                             }
                             .bold()
                         } else {
-                            Color.white.frame(width: 1, height: 12)
+                            ZStack {
+                                Circle()
+                                    .fill(.clear)
+                                    .frame(width: 12, height: 12)
+                            }
                         }
                     }
                     .onTapGesture {
@@ -104,7 +108,7 @@ struct WeekCalendarView: View {
             .sheet(isPresented: $addMeetingTimeView) {
                 AddMeetingView(viewCloser: {
                     addMeetingTimeView = false
-                }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") })
+                }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") }, selectedDate: selectedDate)
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
             }
@@ -112,6 +116,17 @@ struct WeekCalendarView: View {
                 currentWeek = selectedDate
             }
         }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.width < -50 {
+                        navigateWeek(by: 1)
+                    }
+                    else if value.translation.width > 50 {
+                        navigateWeek(by: -1)
+                    }
+                }
+        )
     }
     
     func getDaysInWeek(for date: Date) -> [Date] {
@@ -127,26 +142,28 @@ struct WeekCalendarView: View {
     func navigateWeek(by value: Int) {
         guard let newWeek = Calendar.current.date(byAdding: .weekOfYear, value: value, to: currentWeek) else { return }
         currentWeek = newWeek
+        
     }
     
     func weekRange(for date: Date) -> String {
         guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return "" }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-        return "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: selectedDate)))"
+        return "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: weekInterval.start)))"
     }
-    
-    func dayOfWeek(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "E"
-        return formatter.string(from: date)
-    }
-    
-    func isToday(_ date: Date) -> Bool {
-        Calendar.current.isDateInToday(date)
-    }
+
     
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
+}
+
+func dayOfWeek(for date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "E"
+    return formatter.string(from: date)
+}
+
+func isToday(_ date: Date) -> Bool {
+    Calendar.current.isDateInToday(date)
 }

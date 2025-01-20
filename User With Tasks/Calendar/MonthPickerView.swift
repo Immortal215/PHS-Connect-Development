@@ -1,4 +1,5 @@
 import SwiftUI
+import Pow
 
 struct MonthPickerView: View {
     @Binding var selectedDate: Date
@@ -28,15 +29,19 @@ struct MonthPickerView: View {
                                                 .stroke(.gray, lineWidth: 1)
                                                 .padding(-5)
                                             
-                                            let fullDate = dayDate(for: day, monthDate: monthDate)
+                                            let date = dayDate(for: day, monthDate: monthDate)
                                             VStack(alignment: .center) {
+                                                
+                                                Text(dayOfWeek(for: date))
+                                                    .font(.caption)
+                                                
                                                 Text("\(day)")
                                                     .font(.headline)
-                                                    .foregroundColor(isSelected(fullDate) ? .white : isToday(fullDate) ? .blue : .black)
+                                                    .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .black)
                                                     .padding(10)
-                                                    .background(isSelected(fullDate) ? Circle().fill(Color.blue) : isToday(fullDate) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
+                                                    .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
                                                 
-                                                let clubIDCounts = meetings(for: fullDate).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
+                                                let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                                                     if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
                                                         result[index].count += 1
                                                     } else {
@@ -59,6 +64,10 @@ struct MonthPickerView: View {
                                                                         .cornerRadius(12)
                                                                 }
                                                             }
+                                                            .transition(
+                                                                .movingParts.vanish(colorFromClubID("clubID\(Int.random(in: 0..<100))")) // chooses a random clubID for the color
+                                                            )
+                                                            
                                                             .frame(maxWidth : UIScreen.main.bounds.width / 1.15 / 7)
                                                         } else {
                                                             // circles view for day
@@ -96,7 +105,7 @@ struct MonthPickerView: View {
                                             .frame(height: isTubeView ? UIScreen.main.bounds.height / 4 : nil)
                                             .fixedSize()
                                             .onTapGesture {
-                                                selectedDate = fullDate
+                                                selectedDate = date
                                             }
                                         }
                                         
@@ -148,10 +157,10 @@ struct MonthPickerView: View {
         formatter.dateFormat = "MMMM"
         return formatter.string(from: date)
     }
-    
-    func isToday(_ date: Date) -> Bool {
-        Calendar.current.isDateInToday(date)
-    }
+//    
+//    func isToday(_ date: Date) -> Bool {
+//        Calendar.current.isDateInToday(date)
+//    }
     
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
