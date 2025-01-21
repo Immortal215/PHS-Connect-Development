@@ -14,11 +14,12 @@ struct FlowingScheduleView: View {
     @Binding var selectedDate: Date
     @State var isToolbarVisible = true
 
-    struct MeetingColumn {
+    struct MeetingColumn: Equatable {
         let meeting: Club.MeetingTime
         var column: Int
+        
     }
-
+    
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -59,8 +60,12 @@ struct FlowingScheduleView: View {
                                         let maxColumns = (columnAssignments.map { $0.column }.max() ?? 0) + 1
                                         
                                         ForEach(columnAssignments, id: \.meeting) { meetingColumn in
-                                            let width = (UIScreen.main.bounds.width / 1.1) / CGFloat(maxColumns)
-                                            let xOffset = CGFloat(meetingColumn.column + 1) * width
+                                            let allMeets = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
+                                            let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: allMeets)
+
+                                            let totalWidth = UIScreen.main.bounds.width / 1.1
+                                            let columnWidth = hasOverlap ? totalWidth / CGFloat(maxColumns) : totalWidth
+                                            let xOffset = hasOverlap ? CGFloat(meetingColumn.column + 1) * columnWidth : totalWidth
 
                                             MeetingView(
                                                 meeting: meetingColumn.meeting,
@@ -68,10 +73,11 @@ struct FlowingScheduleView: View {
                                                 hourHeight: hourHeight,
                                                 meetingInfo: selectedMeeting == meetingColumn.meeting && meetingInfo,
                                                 clubs: $clubs,
-                                                numOfOverlapping: maxColumns
+                                                numOfOverlapping: maxColumns,
+                                                hasOverlap: hasOverlap
                                             )
                                             .zIndex(selectedMeeting == meetingColumn.meeting && meetingInfo ? 1 : 0)
-                                            .frame(width: width)
+                                            .frame(width: columnWidth)
                                             .offset(x: xOffset)
                                             .onTapGesture {
                                                 handleMeetingTap(meetingColumn.meeting)
@@ -99,6 +105,10 @@ struct FlowingScheduleView: View {
                             }
                         }
                 )
+                .onChange(of: clubs) {
+                    meetingInfo = false
+                    refreshMeetings()
+                }
                 .popup(isPresented: $meetingInfo) {
                     if let selectedMeeting = selectedMeeting {
                         MeetingInfoView(meeting: selectedMeeting, clubs: $clubs, viewModel: viewModel, selectedDate: selectedDate)
@@ -128,7 +138,29 @@ struct FlowingScheduleView: View {
             }
         }
     }
+    
+    func hasOverlap(meeting: Club.MeetingTime, otherMeetings: [Club.MeetingTime]) -> Bool {
+        let meetingStart = dateFromString(meeting.startTime)
+        let meetingEnd = dateFromString(meeting.endTime)
 
+        for otherMeeting in otherMeetings {
+            if meeting == otherMeeting {
+                continue
+            }
+            
+            let otherStart = dateFromString(otherMeeting.startTime)
+            let otherEnd = dateFromString(otherMeeting.endTime)
+
+
+            if meetingStart <= otherEnd && otherStart <= meetingEnd {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    
     func calculateColumnAssignments() -> [MeetingColumn] {
         let sortedMeetings = meetings
             .filter { isSameDay(dateFromString($0.startTime), selectedDate) }
@@ -156,6 +188,7 @@ struct FlowingScheduleView: View {
         return columnAssignments
     }
 
+
     func handleMeetingTap(_ meeting: Club.MeetingTime) {
         if selectedMeeting != meeting {
             meetingInfo = false
@@ -176,9 +209,9 @@ struct FlowingScheduleView: View {
             refresher = true
         }
     }
+}
 
-    func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
-        let calendar = Calendar.current
-        return calendar.isDate(date1, inSameDayAs: date2)
-    }
+func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
+    let calendar = Calendar.current
+    return calendar.isDate(date1, inSameDayAs: date2)
 }

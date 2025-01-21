@@ -241,17 +241,30 @@ struct ContentView: View {
     
     func setupClubsListener() {
         let databaseRef = Database.database().reference().child("clubs")
-        databaseRef.observe(.value) { snapshot in
-            var updatedClubs: [Club] = []
-            for child in snapshot.children {
-                if let childSnapshot = child as? DataSnapshot,
-                   let clubData = try? JSONSerialization.data(withJSONObject: childSnapshot.value ?? [:]),
-                   let club = try? JSONDecoder().decode(Club.self, from: clubData) {
-                    updatedClubs.append(club)
+        
+        databaseRef.observe(.childAdded) { snapshot in
+            if let club = decodeClub(from: snapshot) {
+                DispatchQueue.main.async {
+                    clubs.append(club)
                 }
             }
-            DispatchQueue.main.async {
-                clubs = updatedClubs
+        }
+        
+        databaseRef.observe(.childChanged) { snapshot in
+            if let updatedClub = decodeClub(from: snapshot) {
+                DispatchQueue.main.async {
+                    if let index = clubs.firstIndex(where: { $0.clubID == updatedClub.clubID }) {
+                        clubs[index] = updatedClub
+                    }
+                }
+            }
+        }
+        
+        databaseRef.observe(.childRemoved) { snapshot in
+            if let removedClub = decodeClub(from: snapshot) {
+                DispatchQueue.main.async {
+                    clubs.removeAll(where: { $0.clubID == removedClub.clubID })
+                }
             }
         }
     }
@@ -260,6 +273,15 @@ struct ContentView: View {
         let databaseRef = Database.database().reference().child("clubs")
         databaseRef.removeAllObservers()
     }
+
+    func decodeClub(from snapshot: DataSnapshot) -> Club? {
+        guard let clubData = try? JSONSerialization.data(withJSONObject: snapshot.value ?? [:]),
+              let club = try? JSONDecoder().decode(Club.self, from: clubData) else {
+            return nil
+        }
+        return club
+    }
+
     
 }
 

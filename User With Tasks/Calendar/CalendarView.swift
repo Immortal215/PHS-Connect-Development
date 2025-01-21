@@ -7,6 +7,7 @@ struct CalendarView: View {
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
 
+    @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()
     @State var scale: CGFloat = 1.0
 
@@ -31,6 +32,12 @@ struct CalendarView: View {
                     scale = max(0.6, min(value.magnitude, 3.0))
                 }
         )
+        .onAppear {
+            selectedDate = dateFromString(storedDate)
+        }
+        .onChange(of: selectedDate) {
+            storedDate = stringFromDate(selectedDate)
+        }
     }
 
     func meetings(for date: Date) -> [Club.MeetingTime] {

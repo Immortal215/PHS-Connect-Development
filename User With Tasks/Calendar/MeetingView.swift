@@ -8,7 +8,9 @@ struct MeetingView: View {
     var preview: Bool? = false
     @Binding var clubs: [Club]
     var numOfOverlapping: Int? = 1
-
+    var screenWidth = UIScreen.main.bounds.width
+    var hasOverlap: Bool? = false
+    
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
         let endTime = dateFromString(meeting.endTime)
@@ -40,15 +42,15 @@ struct MeetingView: View {
 
                     VStack(alignment: .leading) {
                         
-                        if isTextVisible(lineHeight: 20, startOffset: 0, duration: duration) {
+                        if isTextVisible(lineHeight: 16, startOffset: 0, duration: duration) {
                             Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
                                 .font(.footnote)
-                                .lineLimit(1 * numOfOverlapping!)
+                                .lineLimit(1)
                                 .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
                                 .bold()
                         }
                         
-                        if isTextVisible(lineHeight: 16, startOffset: 20, duration: duration) {
+                        if isTextVisible(lineHeight: 16, startOffset: 16, duration: duration) {
                             HStack {
                                 Image(systemName: "person.circle")
                                     .padding(.trailing, -4)
@@ -58,8 +60,19 @@ struct MeetingView: View {
                             .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
                             .font(.caption2)
                         }
+
+                        if isTextVisible(lineHeight: 16, startOffset: 32, duration: duration) {
+                            HStack {
+                                Image(systemName: "clock")
+                                    .padding(.trailing, -4)
+                                Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .font(.caption2)
+                        }
                         
-                        if let location = meeting.location, isTextVisible(lineHeight: 16, startOffset: 36, duration: duration) {
+                        if let location = meeting.location, isTextVisible(lineHeight: 16, startOffset: 48, duration: duration) {
                             HStack {
                                 Image(systemName: "location.circle")
                                     .padding(.trailing, -4)
@@ -70,26 +83,14 @@ struct MeetingView: View {
                             .font(.caption2)
                         }
 
-
-                        if isTextVisible(lineHeight: 16, startOffset: meeting.location == nil ? 36 : 52, duration: duration) {
-                            HStack {
-                                Image(systemName: "clock")
-                                    .padding(.trailing, -4)
-                                Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
-                                    .lineLimit(1)
-                            }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
-                            .font(.caption2)
-                        }
-
                         Spacer()
                     }
-                    .frame(maxWidth: UIScreen.main.bounds.width / 1.3 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .topLeading)
+                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.3 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.3), maxHeight: duration, alignment: .topLeading)
                 }
-                .frame(maxWidth: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), maxHeight: duration, alignment: .topLeading)
+                .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration, alignment: .topLeading)
             }
-            .frame(width: UIScreen.main.bounds.width / 1.1 / CGFloat(numOfOverlapping!), height: duration)
-            .position(x: UIScreen.main.bounds.width / 1.1 / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
+            .frame(width: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), height: duration)
+            .position(x: geometry.size.width / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }
     }
 

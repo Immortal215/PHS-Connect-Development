@@ -37,7 +37,7 @@ struct AddMeetingView: View {
         
         VStack(alignment: .trailing) {
             var ableToCreate: Bool {
-                return (title != "" && endTime > startTime && clubId != "")
+                return (title != "" && endTime > startTime && clubId != "" && isSameDay(endTime, startTime))
             }
             
             if ableToCreate {
@@ -119,9 +119,9 @@ struct AddMeetingView: View {
                             timeDifference = abs(endTime.distance(to: startTime))
                         }
                 } label: {
-                    Text("End Time \(endTime <= startTime ? "(Must be after start)" : "")")
-                        .foregroundStyle(endTime <= startTime ? .red : .black)
-                        .bold(endTime <= startTime ? true : false)
+                    Text("End Time \(endTime <= startTime || !isSameDay(endTime, startTime) ? "(Must be after start)" : "")")
+                        .foregroundStyle(endTime <= startTime  || !isSameDay(endTime, startTime) ? .red : .black)
+                        .bold(endTime <= startTime || !isSameDay(endTime, startTime) ? true : false)
                 }
                 .padding()
                 

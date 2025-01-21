@@ -77,9 +77,9 @@ struct SearchClubView: View {
                                         
                                         if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                                             Button {
-                                                fetchClubs { fetchedClubs in
-                                                    self.clubs = fetchedClubs
-                                                }
+//                                                fetchClubs { fetchedClubs in
+//                                                    self.clubs = fetchedClubs
+//                                                }
                                                 createClubToggler = true
                                             } label: {
                                                 Image(systemName: "plus")
