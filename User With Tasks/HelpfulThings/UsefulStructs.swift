@@ -116,3 +116,57 @@ struct CodeSnippetView: View {
 func replaceSchoologyExtras(_ string: String) -> String {
     return string.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
 }
+
+struct CustomizableDropdown: View {
+    @Binding var selectedClubId: String
+    let leaderClubs: [Club]
+
+    @State var isExpanded: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Text(leaderClubs.first(where: { $0.clubID == selectedClubId })?.name ?? "Select a Club")
+                    Spacer()
+                    Image(systemName: "arrowtriangle.down.fill")
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .foregroundStyle(colorFromClubID(selectedClubId))
+                .padding()
+                .background(colorFromClubID(selectedClubId).opacity(0.2))
+            }
+
+            if isExpanded {
+                ForEach(leaderClubs, id: \.self) { club in
+                    if club.clubID != selectedClubId {
+                        Button {
+                            selectedClubId = club.clubID
+                            withAnimation {
+                                isExpanded = false
+                            }
+                        } label: {
+                            HStack {
+                                Text(club.name)
+                                Spacer()
+                                Image(systemName: "person.circle.fill")
+                            }
+                            .foregroundStyle(colorFromClubID(club.clubID))
+                            .padding()
+                            .background(colorFromClubID(club.clubID).opacity(0.2))
+                            
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .cornerRadius(15)
+        .fixedSize()
+    }
+}
+

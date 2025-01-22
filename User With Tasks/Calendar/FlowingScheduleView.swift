@@ -85,7 +85,7 @@ struct FlowingScheduleView: View {
                                         }
                                     }
                                 }
-                                .frame(width: UIScreen.main.bounds.width / 1.1)
+                                .frame(minWidth: UIScreen.main.bounds.width / 1.1, maxWidth: UIScreen.main.bounds.width / 1.1)
                             }
                         }
                     }

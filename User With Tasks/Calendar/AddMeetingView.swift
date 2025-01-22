@@ -237,14 +237,9 @@ struct AddMeetingView: View {
                 .padding()
                 
                 LabeledContent {
-                    Picker("", selection: $clubId) {
-                        ForEach(leaderClubs, id: \.self) { i in
-                            Text(i.name).tag(i.clubID)
-                        }
-                    }
-                    .tint(colorFromClubID(clubId))
+                    CustomizableDropdown(selectedClubId: $clubId, leaderClubs: leaderClubs)
                 } label: {
-                    Text("Club")
+                    Text("")
                 }
                 .padding()
                 
