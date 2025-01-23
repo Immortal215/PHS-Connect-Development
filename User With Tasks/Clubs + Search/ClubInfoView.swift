@@ -53,7 +53,7 @@ struct ClubInfoView: View {
                 
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .center) {
-                        VStack(alignment: .leading) {
+                        HStack(alignment: .top) {
                             AsyncImage(
                                 url: URL(
                                     string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
@@ -91,30 +91,31 @@ struct ClubInfoView: View {
                                     }
                                 }
                             )
-                            .frame(width: screenWidth/6, height: screenWidth/6)
-                            .padding(.vertical, -16)
-
-                            Text(.init(club.abstract))
-                                .font(.body)
-                                .foregroundColor(.gray)
-                                .lineLimit(abstractExpanded ? nil : 4)
-                                .background(
-                                    GeometryReader { geometry in
-                                        Color.clear
-                                            .onAppear {
-                                                calculateLines(for: geometry.size)
-                                                abstractExpanded = false
-                                            }
-                                    }
-                                )
-                            
-                            if abstractGreaterThanFour {
-                                Text(abstractExpanded ? "Show less" : "Show more")
-                                    .font(.footnote)
-                                    .foregroundColor(.blue)
-                                    .onTapGesture {
-                                        abstractExpanded.toggle()
-                                    }
+                            .frame(maxWidth: screenWidth/6, maxHeight: screenWidth/6)
+                           
+                            VStack(alignment: .leading) {
+                                Text(.init(club.abstract))
+                                    .font(.body)
+                                    .foregroundColor(.gray)
+                                    .lineLimit(abstractExpanded ? nil : 4)
+                                    .background(
+                                        GeometryReader { geometry in
+                                            Color.clear
+                                                .onAppear {
+                                                    calculateLines(for: geometry.size)
+                                                    abstractExpanded = false
+                                                }
+                                        }
+                                    )
+                                
+                                if abstractGreaterThanFour {
+                                    Text(abstractExpanded ? "Show less" : "Show more")
+                                        .font(.footnote)
+                                        .foregroundColor(.blue)
+                                        .onTapGesture {
+                                            abstractExpanded.toggle()
+                                        }
+                                }
                             }
                         }
                         
@@ -158,7 +159,7 @@ struct ClubInfoView: View {
 //                    }
                     
                     if !club.members.isEmpty {
-                        Text("Members (\(club.members.count)):")
+                        Text("Members (\(club.members.count))")
                             .font(.headline)
                         
                         if club.leaders.contains(viewModel.userEmail ?? "") {
@@ -166,7 +167,7 @@ struct ClubInfoView: View {
 
                             CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
                                 .padding(.top, -8)
-                                .frame(maxHeight: screenHeight/3)
+                                .frame(maxHeight: screenHeight/5)
                             
                         }
                     }
@@ -370,6 +371,7 @@ struct ClubInfoView: View {
                 }
             }
         }
+        .background(colorFromClubID(club.clubID).opacity(0.2))
         .onAppear {
             fetchClub(withId: club.clubID) { clubr in
                 club = clubr ?? club

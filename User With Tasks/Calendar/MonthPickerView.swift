@@ -55,20 +55,23 @@ struct MonthPickerView: View {
                                                         if isTubeView {
                                                             VStack(alignment: .leading, spacing: 5) {
                                                                 ForEach(clubIDCounts, id: \.clubID) { club in
-                                                                    Text("(\(club.count)) \(getClubNameByIDWithClubs(clubID: club.clubID, clubs: clubs))")
-                                                                        .font(Font.custom("SF MONO", size: 12))
-                                                                        .lineLimit(1)
-                                                                        .foregroundColor(.black)
-                                                                        .padding(8)
-                                                                        .background(colorFromClubID(club.clubID).opacity(0.2))
-                                                                        .cornerRadius(12)
+                                                                    Button {
+                                                                        // add code here later for like a view of all of the meetings under that clubId and like you can select one to see the info and then edit
+                                                                    } label: {
+                                                                        Text("(\(club.count)) \(getClubNameByIDWithClubs(clubID: club.clubID, clubs: clubs))")
+                                                                            .font(Font.custom("SF MONO", size: 12))
+                                                                            .lineLimit(1)
+                                                                            .foregroundColor(.black)
+                                                                            .padding(8)
+                                                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                                                            .background(colorFromClubID(club.clubID).opacity(0.2))
+                                                                            .cornerRadius(12)
+                                                                    }
                                                                 }
                                                             }
                                                             .transition(
                                                                 .movingParts.vanish(colorFromClubID("clubID\(Int.random(in: 0..<100))")) // chooses a random clubID for the color
                                                             )
-                                                            
-                                                            .frame(maxWidth : UIScreen.main.bounds.width / 1.15 / 7)
                                                         } else {
                                                             // circles view for day
                                                             HStack(spacing: -4) {
