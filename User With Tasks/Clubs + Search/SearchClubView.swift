@@ -38,7 +38,7 @@ struct SearchClubView: View {
                             VStack {
                                 ZStack(alignment: .leading) {
                                     HStack {
-                                        SearchBar("Search all clubs by \(currentSearchingBy)", text: $searchText, isEditing: $isSearching)
+                                        SearchBar("Search For Clubs", text: $searchText, isEditing: $isSearching)
                                             .onChange(of: searchText) {
                                                 filteredItems = calculateFiltered()
                                             }
@@ -77,9 +77,9 @@ struct SearchClubView: View {
                                         
                                         if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                                             Button {
-//                                                fetchClubs { fetchedClubs in
-//                                                    self.clubs = fetchedClubs
-//                                                }
+                                                //                                                fetchClubs { fetchedClubs in
+                                                //                                                    self.clubs = fetchedClubs
+                                                //                                                }
                                                 createClubToggler = true
                                             } label: {
                                                 Image(systemName: "plus")
@@ -96,23 +96,23 @@ struct SearchClubView: View {
                                     .padding()
                                 }
                                 
-                                    if currentSearchingBy == "Genre" {
-                                        HorizontalScrollView { // needed to be custom made in order to block the vertical refresh pull, cooked
-                                            MultiGenrePickerView(selectedGenres: $selectedGenres)
-                                              //  .padding(.bottom)
-                                                .onTapGesture(count: 3) {
-                                                    selectedGenres = []
-                                                    currentSearchingBy = "Name"
-                                                    filteredItems = calculateFiltered()
-                                                }
-                                                .onAppear {  // needed for when you open tags from a clubInfo view
-                                                    filteredItems = calculateFiltered()
-                                                }
-                                        }
-                                        .frame(height: screenHeight/11)
-                                        .padding(.top, -24)
+                                if currentSearchingBy == "Genre" {
+                                    HorizontalScrollView { // needed to be custom made in order to block the vertical refresh pull, cooked
+                                        MultiGenrePickerView(selectedGenres: $selectedGenres)
+                                        //  .padding(.bottom)
+                                            .onTapGesture(count: 3) {
+                                                selectedGenres = []
+                                                currentSearchingBy = "Name"
+                                                filteredItems = calculateFiltered()
+                                            }
+                                            .onAppear {  // needed for when you open tags from a clubInfo view
+                                                filteredItems = calculateFiltered()
+                                            }
                                     }
-                                   
+                                    .frame(height: screenHeight/11)
+                                    .padding(.top, -24)
+                                }
+                                
                                 
                                 
                                 if !searchText.isEmpty {
@@ -122,41 +122,46 @@ struct SearchClubView: View {
                                 
                                 // clubs view with search
                                 ScrollView {
-                                    ScrollView {
-                                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
-                                            ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
-                                                var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                                
-                                                Button {
-                                                    shownInfo = infoRelativeIndex
-                                                    showClubInfoSheet = true
-                                                } label: {
-                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                    ScrollViewReader { proxy in
+                                        ScrollView(.vertical) {
+                                            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
+                                                ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
+                                                    var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                                     
-                                                    
-                                                }
-                                                //  .frame(width: screenWidth/2.2, height: screenHeight/5)
-                                                .padding(.vertical, 3)
-                                                .padding(.horizontal)
-                                                .sheet(isPresented: $showClubInfoSheet) {
-                                                    fetchClub(withId: club.clubID) { fetchedClub in
-                                                        clubs[infoRelativeIndex] = fetchedClub ?? club
-                                                    }
-                                                } content: {
-                                                    if shownInfo >= 0 {
-                                                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
-                                                            .presentationDragIndicator(.visible)
-                                                            .presentationSizing(.page)
+                                                    Button {
+                                                        shownInfo = infoRelativeIndex
+                                                        showClubInfoSheet = true
+                                                    } label: {
+                                                        ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
                                                         
-                                                    } else {
-                                                        Text("Error! Try Again!")
-                                                            .presentationDragIndicator(.visible)
+                                                        
+                                                    }
+                                                    //  .frame(width: screenWidth/2.2, height: screenHeight/5)
+                                                    .padding(.vertical, 3)
+                                                    .padding(.horizontal)
+                                                    .sheet(isPresented: $showClubInfoSheet) {
+                                                        fetchClub(withId: club.clubID) { fetchedClub in
+                                                            clubs[infoRelativeIndex] = fetchedClub ?? club
+                                                        }
+                                                    } content: {
+                                                        if shownInfo >= 0 {
+                                                            ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                                                .presentationDragIndicator(.visible)
+                                                                .presentationSizing(.page)
+                                                            
+                                                        } else {
+                                                            Text("Error! Try Again!")
+                                                                .presentationDragIndicator(.visible)
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
+                                        .animation(.easeInOut, value: advSearchShown)
+                                        .onChange(of: selectedGenres) {
+                                            proxy.scrollTo(0, anchor: .top)
+                                        }
                                     }
-                                    .animation(.easeInOut, value: advSearchShown)
                                     
                                     if filteredItems.isEmpty {
                                         Text("No Clubs Found for \"\(searchText)\"")
@@ -165,6 +170,8 @@ struct SearchClubView: View {
                                     Text("Search for Other Clubs! 🙃")
                                         .frame(height: screenHeight/3, alignment: .top)
                                 }
+                                
+                            
                                 //  .frame(width: screenWidth/2.1)
                                 
                                 //.padding()

@@ -43,11 +43,18 @@ struct MeetingView: View {
                     VStack(alignment: .leading) {
                         
                         if isTextVisible(lineHeight: 16, startOffset: 0, duration: duration) {
-                            Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
-                                .font(.footnote)
-                                .lineLimit(1)
-                                .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
-                                .bold()
+                            HStack {
+                                Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
+                                
+                                if meeting.description != nil {
+                                    Image(systemName: "text.alignleft")
+                                    
+                                }
+                            }
+                            .font(.footnote)
+                            .lineLimit(1)
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
+                            .bold()
                         }
                         
                         if isTextVisible(lineHeight: 16, startOffset: 16, duration: duration) {

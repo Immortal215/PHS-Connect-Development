@@ -59,6 +59,14 @@ struct FlowingScheduleView: View {
                                         let columnAssignments = calculateColumnAssignments()
                                         let maxColumns = (columnAssignments.map { $0.column }.max() ?? 0) + 1
                                         
+                                        ZStack {
+                                            Rectangle()
+                                                .fill(.clear)
+                                                .cornerRadius(5)
+                                        }
+                                            .position(x: UIScreen.main.bounds.width / 1.1 / -2)
+                                            .frame(width: UIScreen.main.bounds.width / 1.1, height: 1)
+
                                         ForEach(columnAssignments, id: \.meeting) { meetingColumn in
                                             let allMeets = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
                                             let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: allMeets)
@@ -85,7 +93,7 @@ struct FlowingScheduleView: View {
                                         }
                                     }
                                 }
-                                .frame(minWidth: UIScreen.main.bounds.width / 1.1, maxWidth: UIScreen.main.bounds.width / 1.1)
+                                .frame(width: UIScreen.main.bounds.width / 1.1)
                             }
                         }
                     }
@@ -184,7 +192,7 @@ struct FlowingScheduleView: View {
             columnAssignments.append(MeetingColumn(meeting: meeting, column: column))
             activeColumns.append((endTime: endTime, column: column))
         }
-
+        
         return columnAssignments
     }
 
