@@ -121,8 +121,8 @@ struct SearchClubView: View {
                                 }
                                 
                                 // clubs view with search
-                                ScrollView {
-                                    ScrollViewReader { proxy in
+                                ScrollViewReader { proxy in
+                                    ScrollView {
                                         ScrollView(.vertical) {
                                             LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],spacing: 16) {
                                                 ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
@@ -156,19 +156,26 @@ struct SearchClubView: View {
                                                     }
                                                 }
                                             }
+                                            
+                                            
                                         }
+                                        .id(1)
                                         .animation(.easeInOut, value: advSearchShown)
-                                        .onChange(of: selectedGenres) {
-                                            proxy.scrollTo(0, anchor: .top)
+                                        
+                                        if filteredItems.isEmpty {
+                                            Text("No Clubs Found for \"\(searchText)\"")
                                         }
+                                        
+                                        Text("Search for Other Clubs! 🙃")
+                                            .frame(height: screenHeight/3, alignment: .top)
                                     }
-                                    
-                                    if filteredItems.isEmpty {
-                                        Text("No Clubs Found for \"\(searchText)\"")
+                                    .animation(.easeInOut, value: selectedGenres)
+                                    .onChange(of: selectedGenres) {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                            proxy.scrollTo(1, anchor: .top)
+                                        }
+                                        
                                     }
-                                    
-                                    Text("Search for Other Clubs! 🙃")
-                                        .frame(height: screenHeight/3, alignment: .top)
                                 }
                                 
                             

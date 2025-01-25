@@ -1,5 +1,6 @@
 import SwiftUI
 import PopupView
+import SwiftUIX
 
 struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]
@@ -46,6 +47,7 @@ struct FlowingScheduleView: View {
                                     .frame(width: 60, height: hourHeight * scale)
                                     .bold()
                                     .background(Color(hexadecimal: "#D4F1F4"))
+                                    .id(hour)
                             }
                         }
                         .background(Color.gray.opacity(0.1).cornerRadius(8))
@@ -98,8 +100,10 @@ struct FlowingScheduleView: View {
                         }
                     }
                     .frame(minHeight: screenHeight)
-                    .onAppear {
-                        proxy.scrollTo(5, anchor: .top)
+                    .onAppearOnce {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
+                            proxy.scrollTo(6, anchor: .top) // scroll to 6 am
+                        }
                     }
                 }
                 .gesture(
