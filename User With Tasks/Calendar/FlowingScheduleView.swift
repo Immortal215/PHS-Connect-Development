@@ -164,7 +164,7 @@ struct FlowingScheduleView: View {
             let otherEnd = dateFromString(otherMeeting.endTime)
 
 
-            if meetingStart <= otherEnd && otherStart <= meetingEnd {
+            if (meetingStart < otherEnd && otherStart <= meetingEnd) || (meetingStart <= otherEnd && otherStart < meetingEnd) { // for events that start at time of other start
                 return true
             }
         }
