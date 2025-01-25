@@ -210,7 +210,7 @@ struct SearchClubView: View {
                 .closeOnTap(false)
             
         }
-        .onAppear {
+        .onAppearOnce {
             filteredItems = calculateFiltered()
         }
         .onChange(of: sharedGenre) {
