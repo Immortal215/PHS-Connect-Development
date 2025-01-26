@@ -14,7 +14,9 @@ struct FlowingScheduleView: View {
     var viewModel: AuthenticationViewModel?
     @Binding var selectedDate: Date
     @State var isToolbarVisible = true
-
+    @State var draggedMeeting: Club.MeetingTime?
+    @State var dragOffset: CGSize = .zero
+    
     struct MeetingColumn: Equatable {
         let meeting: Club.MeetingTime
         var column: Int
@@ -87,12 +89,95 @@ struct FlowingScheduleView: View {
                                                 hasOverlap: hasOverlap
                                             )
                                             .zIndex(selectedMeeting == meetingColumn.meeting && meetingInfo ? 1 : 0)
+                                            .opacity(draggedMeeting == meetingColumn.meeting ? 0.0 : 1.0)
                                             .frame(width: columnWidth)
                                             .offset(x: xOffset)
                                             .onTapGesture {
                                                 handleMeetingTap(meetingColumn.meeting)
                                             }
+                                            .gesture(
+                                                clubs.first(where: { $0.clubID == meetingColumn.meeting.clubID })?.leaders.contains(viewModel?.userEmail ?? "") == true
+                                                ? LongPressGesture(minimumDuration: 1)
+                                                    .sequenced(before: DragGesture())
+                                                    .onChanged { value in
+                                                        switch value {
+                                                        case .first(true): // long press is active
+                                                            break
+                                                        case .second(true, let dragValue): // drag gesture after long press
+                                                            if let dragValue = dragValue {
+                                                                draggedMeeting = meetingColumn.meeting
+                                                                dragOffset = dragValue.translation
+                                                            }
+                                                        default:
+                                                            break
+                                                        }
+                                                    }
+                                                    .onEnded { value in
+                                                        switch value {
+                                                        case .second(true, let dragValue): // drag gesture ended
+                                                            if let dragValue = dragValue, let draggedMeeting = draggedMeeting {
+                                                                var newMeeting = draggedMeeting
+                                                                
+                                                                let roundedStartTime = roundToNearest15Minutes(date: dateFromString(draggedMeeting.startTime))
+                                                                let roundedEndTime = roundToNearest15Minutes(date: dateFromString(draggedMeeting.endTime))
+                                                                
+                                                                let intervalHeight = scale * 15
+                                                                let intervalsMoved = Int(dragValue.translation.height / intervalHeight)
+                                                                
+                                                                newMeeting.startTime = stringFromDate(
+                                                                    Calendar.current.date(byAdding: .minute, value: intervalsMoved * 15, to: roundedStartTime)!
+                                                                )
+                                                                newMeeting.endTime = stringFromDate(
+                                                                    Calendar.current.date(byAdding: .minute, value: intervalsMoved * 15, to: roundedEndTime)!
+                                                                )
+                                                                
+                                                                replaceMeeting(oldMeeting: draggedMeeting, newMeeting: newMeeting)
+                                                            }
+
+                                                            draggedMeeting = nil
+                                                            dragOffset = .zero
+
+                                                        default:
+                                                            break
+                                                        }
+                                                    }
+                                                : nil // no gesture if the condition is false
+                                            )
+                                            
+                                            
                                         }
+                                        
+                                        // floating dragged meeting
+                                        if let meeting = draggedMeeting {
+                                            let roundedStartTime = roundToNearest15Minutes(date: dateFromString(meeting.startTime))
+                                            let intervalHeight = scale * 15
+                                            let intervalsMoved = Int(dragOffset.height / intervalHeight)
+                                            
+                                            let formattedTime = Calendar.current.date(byAdding: .minute, value: intervalsMoved * 15, to: roundedStartTime)!.formatted(date: .omitted, time: .shortened)
+                                                MeetingView(
+                                                    meeting: meeting,
+                                                    scale: scale,
+                                                    hourHeight: hourHeight,
+                                                    meetingInfo: true,
+                                                    clubs: $clubs,
+                                                    numOfOverlapping: 1,
+                                                    hasOverlap: false
+                                                )
+                                                .opacity(0.7)
+                                                .offset(x: UIScreen.main.bounds.width / 1.1, y: dragOffset.height)
+                                                .zIndex(100)
+                                                
+                                                Text(formattedTime)
+                                                    .font(.headline)
+                                                    .padding(8)
+                                                    .background(colorFromClubID(meeting.clubID))
+                                                    .cornerRadius(8)
+                                                    .foregroundColor(.white)
+                                                    .offset(y: dragOffset.height - 20)
+                                                    .zIndex(101)
+                                            
+                                        }
+
                                     }
                                 }
                                 .frame(width: UIScreen.main.bounds.width / 1.1)
@@ -226,4 +311,16 @@ struct FlowingScheduleView: View {
 func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
     let calendar = Calendar.current
     return calendar.isDate(date1, inSameDayAs: date2)
+}
+
+func roundToNearest15Minutes(date: Date) -> Date {
+    let calendar = Calendar.current
+    let minuteInterval = 15
+    let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+    
+    let minute = components.minute ?? 0
+    let roundedMinute = (minute / minuteInterval) * minuteInterval
+    let adjustedMinute = minute % minuteInterval >= minuteInterval / 2 ? roundedMinute + minuteInterval : roundedMinute
+    
+    return calendar.date(bySetting: .minute, value: adjustedMinute % 60, of: date)!
 }

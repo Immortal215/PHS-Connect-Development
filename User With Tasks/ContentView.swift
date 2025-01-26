@@ -214,7 +214,6 @@ struct ContentView: View {
                     .transition(.movingParts.anvil)
             }
         }
-        .textSelection(.enabled)
         .onChange(of: selectedTab) {
             _ = networkMonitor.isConnected
         }
