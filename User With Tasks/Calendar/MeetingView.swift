@@ -6,7 +6,7 @@ struct MeetingView: View {
     let hourHeight: CGFloat
     @State var meetingInfo: Bool
     var preview: Bool? = false
-    @Binding var clubs: [Club]
+    @State var clubs: [Club]
     var numOfOverlapping: Int? = 1
     var screenWidth = UIScreen.main.bounds.width
     var hasOverlap: Bool? = false
@@ -59,20 +59,20 @@ struct MeetingView: View {
                         
                         if isTextVisible(lineHeight: 16, startOffset: 16, duration: duration) {
                             HStack {
-                                Image(systemName: "person.circle")
+                                Image(systemName: "clock")
                                     .padding(.trailing, -4)
-                                Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
+                                Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
                                     .lineLimit(1)
                             }
                             .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
                             .font(.caption2)
                         }
-
+                        
                         if isTextVisible(lineHeight: 16, startOffset: 32, duration: duration) {
                             HStack {
-                                Image(systemName: "clock")
+                                Image(systemName: "person.circle")
                                     .padding(.trailing, -4)
-                                Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
+                                Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
                                     .lineLimit(1)
                             }
                             .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))

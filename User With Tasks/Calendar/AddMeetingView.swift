@@ -253,7 +253,7 @@ struct AddMeetingView: View {
                         meetingFull = true
                     } label: {                                         
 
-                        MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: $leaderClubs)
+                        MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: leaderClubs)
                             .padding()
                             .frame(width: UIScreen.main.bounds.width/1.1)
                             .foregroundStyle(.black)
@@ -327,7 +327,7 @@ struct AddMeetingView: View {
             }
         }
         .popup(isPresented: $meetingFull) {
-            MeetingInfoView(meeting: meetingTimeForInfo, clubs: $leaderClubs)
+            MeetingInfoView(meeting: meetingTimeForInfo, clubs: leaderClubs)
         } customize: {
             $0
                 .type(.floater())

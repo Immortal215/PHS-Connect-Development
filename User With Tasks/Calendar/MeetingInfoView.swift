@@ -5,7 +5,7 @@ struct MeetingInfoView: View {
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
     @State var meeting: Club.MeetingTime
-    @Binding var clubs: [Club]
+    @State var clubs: [Club]
     @State var openSettings = false
     var viewModel : AuthenticationViewModel?
     @State var showMoreTitle = false

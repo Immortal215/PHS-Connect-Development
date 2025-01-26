@@ -84,7 +84,7 @@ struct FlowingScheduleView: View {
                                                 scale: scale,
                                                 hourHeight: hourHeight,
                                                 meetingInfo: selectedMeeting == meetingColumn.meeting && meetingInfo,
-                                                clubs: $clubs,
+                                                clubs: clubs,
                                                 numOfOverlapping: maxColumns,
                                                 hasOverlap: hasOverlap
                                             )
@@ -159,7 +159,7 @@ struct FlowingScheduleView: View {
                                                     scale: scale,
                                                     hourHeight: hourHeight,
                                                     meetingInfo: true,
-                                                    clubs: $clubs,
+                                                    clubs: clubs,
                                                     numOfOverlapping: 1,
                                                     hasOverlap: false
                                                 )
@@ -173,7 +173,7 @@ struct FlowingScheduleView: View {
                                                     .background(colorFromClubID(meeting.clubID))
                                                     .cornerRadius(8)
                                                     .foregroundColor(.white)
-                                                    .offset(y: dragOffset.height - 20)
+                                                    .offset(y: dragOffset.height)
                                                     .zIndex(101)
                                             
                                         }
@@ -208,7 +208,7 @@ struct FlowingScheduleView: View {
                 }
                 .popup(isPresented: $meetingInfo) {
                     if let selectedMeeting = selectedMeeting {
-                        MeetingInfoView(meeting: selectedMeeting, clubs: $clubs, viewModel: viewModel, selectedDate: selectedDate)
+                        MeetingInfoView(meeting: selectedMeeting, clubs: clubs, viewModel: viewModel, selectedDate: selectedDate)
                     }
                 } customize: {
                     $0

@@ -25,6 +25,7 @@ struct ClubInfoView: View {
     @State var abstractGreaterThanFour = false
     @Binding var userInfo: Personal?
     @Environment(\.presentationMode) var presentationMode
+    @State var meetingFull = false 
 
     var body: some View {
         
@@ -127,7 +128,7 @@ struct ClubInfoView: View {
                     }
                     
                     if !club.leaders.isEmpty {
-                        Text("Leaders (\(club.leaders.count)):")
+                        Text("Leaders (\(club.leaders.count))")
                             .font(.headline)
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
                             ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
@@ -138,7 +139,7 @@ struct ClubInfoView: View {
                     }
                     
                     if let meetingTime = club.normalMeetingTime {
-                        Text("Normal Meeting Time:")
+                        Text("Normal Meeting Time")
                             .font(.headline)
                         
                         Text("\(meetingTime)")
@@ -146,17 +147,26 @@ struct ClubInfoView: View {
                             .padding(.top, -8)
                     }
                     
-//                    if let meetingTimes = club.meetingTimes {
-//                        Text("Meeting Times:")
-//                            .font(.headline)
-//                        ForEach(meetingTimes.keys.sorted(), id: \.self) { day in
-//                            if let times = meetingTimes[day] {
-//                                Text("\(day): \(times.joined(separator: ", "))")
-//                                    .font(.subheadline)
-//                                    .padding(.top, -8)
-//                            }
-//                        }
-//                    }
+                    if let meetingTimes = club.meetingTimes, !meetingTimes.isEmpty {
+                        if let closestMeeting = meetingTimes.sorted(by: {dateFromString($0.startTime) < dateFromString($1.startTime)}).filter({ meeting in
+                            return dateFromString(meeting.startTime) >= Date()
+                        }).first {
+                            
+                            Text("Next Meeting (\(dateFromString(closestMeeting.startTime).formatted(date: .abbreviated, time: .omitted)))")
+                                .font(.headline)
+                            
+                            Button {
+                                meetingFull.toggle()
+                            } label: {
+                                MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 2, hasOverlap: true)
+                                    .padding(.vertical)
+                                    .frame(width: UIScreen.main.bounds.width / 1.1 / 2)
+                                    .foregroundStyle(.black)
+                                    .offset(x: UIScreen.main.bounds.width / 1.1 / 2)
+                            }
+                         
+                        }
+                    }
                     
                     if !club.members.isEmpty {
                         Text("Members (\(club.members.count))")
@@ -244,7 +254,7 @@ struct ClubInfoView: View {
                         AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")), userInfo: $userInfo)
                     }
                     
-                    Text("Location:")
+                    Text("Location")
                         .font(.headline)
                     Text(club.location)
                         .font(.subheadline)
@@ -253,7 +263,7 @@ struct ClubInfoView: View {
                 
                     
                     HStack {
-                        Text("Schoology Code: ")
+                        Text("Schoology Code")
                             .font(.headline)
                         
                         CodeSnippetView(code: club.schoologyCode)
@@ -262,7 +272,7 @@ struct ClubInfoView: View {
                     
                     if let genres = club.genres, !genres.isEmpty {
                         VStack(alignment: .leading) {
-                            Text("Genres:")
+                            Text("Genres")
                                 .font(.headline)
                             
                             HStack {
@@ -299,6 +309,22 @@ struct ClubInfoView: View {
                 
                 Color.white
                     .frame(height: screenHeight/10)
+            }
+            .popup(isPresented: $meetingFull) {
+                if let closestMeeting = club.meetingTimes!.sorted(by: {dateFromString($0.startTime) < dateFromString($1.startTime)}).filter({ meeting in
+                    return dateFromString(meeting.startTime) >= Date()
+                }).first {
+                    MeetingInfoView(meeting: closestMeeting, clubs: [club])
+                }
+            } customize: {
+                $0
+                    .type(.floater())
+                    .position(.trailing)
+                    .appearFrom(.rightSlide)
+                    .animation(.smooth())
+                    .closeOnTapOutside(false)
+                    .closeOnTap(false)
+                
             }
             .foregroundStyle(.black)
             .animation(.easeInOut, value: abstractExpanded) // smooth transition with whenever u expand abstract to show more
