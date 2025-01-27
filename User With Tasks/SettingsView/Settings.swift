@@ -60,6 +60,7 @@ struct SettingsView: View {
                         uid = nil
                         userInfo = nil
                         showSignInView = true
+                        removeClubsListener()
                     } catch {
                         print("Error signing out: \(error.localizedDescription)")
                     }

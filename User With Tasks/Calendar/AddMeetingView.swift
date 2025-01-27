@@ -21,6 +21,9 @@ struct AddMeetingView: View {
     @State var showHelp = false
     @State var startMinutes = 0
     @State var endMinutes = 60
+    @State var visibleBy: [String] = []
+    @State var visibleByWho = "Everyone"
+    
     var viewCloser: (() -> Void)?
     
     @State var CreatedMeetingTime: Club.MeetingTime = Club.MeetingTime(clubID: "", startTime: "", endTime: "", title: "")
@@ -238,10 +241,69 @@ struct AddMeetingView: View {
                 
                 LabeledContent {
                     CustomizableDropdown(selectedClubId: $clubId, leaderClubs: leaderClubs)
+                        .onChange(of: clubId) {
+                            visibleByWho = "Everyone"
+                        }
+                    
+                    Picker("", selection: $visibleByWho) {
+                        Text("Everyone").tag("Everyone")
+                        Text("Only Leaders").tag("Only Leaders")
+                        Text("Custom").tag("Custom")
+                    }
+                    .onChange(of: visibleByWho) {
+                            switch visibleByWho {
+                            case "Everyone":
+                                visibleBy = []
+                            case "Only Leaders":
+                                if let leaders = leaderClubs.first(where: {$0.clubID == clubId})?.leaders {
+                                    visibleBy = leaders
+                                }
+                            case "Custom":
+                                visibleBy = []
+                            default:
+                                visibleBy = []
+                                
+                            }
+                    }
                 } label: {
-                    Text("")
+                    Text(visibleBy.joined(separator: (", ")))
                 }
                 .padding()
+                
+                if visibleByWho == "Custom" {
+                    HorizontalScrollView {
+                        if let members = leaderClubs.first(where: {$0.clubID == clubId})?.members {
+                            LazyHGrid(rows: Array(repeating: GridItem(.flexible()), count: 2)) {
+                                ForEach(members, id: \.self) { i in
+                                    ZStack {
+                                        if visibleBy.contains(i) {
+                                            RoundedRectangle(cornerRadius: 15)
+                                                .stroke(.green, lineWidth: 3)
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 15)
+                                                .stroke(.gray, lineWidth: 3)
+                                        }
+                                        
+                                        Text("\(i)")
+                                            .padding()
+                                            .font(.footnote)
+                                    }
+                                    .fixedSize()
+                                    .onTapGesture {
+                                        if let index = visibleBy.firstIndex(of: i) {
+                                            visibleBy.remove(at: index)
+                                        } else {
+                                            visibleBy.append(i)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding()
+                        }
+                    }
+                    .padding()
+                    .frame(height: UIScreen.main.bounds.height / 4)
+                }
                 
                 Text("Preview:")
                     .font(.headline)
@@ -251,8 +313,8 @@ struct AddMeetingView: View {
                     Button {
                         addInfoToHelper()
                         meetingFull = true
-                    } label: {                                         
-
+                    } label: {
+                        
                         MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: leaderClubs)
                             .padding()
                             .frame(width: UIScreen.main.bounds.width/1.1)
@@ -269,6 +331,12 @@ struct AddMeetingView: View {
             }
             .textFieldStyle(.roundedBorder)
             .onAppear {
+                if CreatedMeetingTime.clubID != "" {
+                    clubId = CreatedMeetingTime.clubID
+                } else {
+                    clubId = leaderClubs.first?.clubID ?? ""
+                }
+                
                 if CreatedMeetingTime.title != "" {
                     title = CreatedMeetingTime.title
                     location = CreatedMeetingTime.location ?? ""
@@ -277,11 +345,23 @@ struct AddMeetingView: View {
                     startTime = dateFromString(CreatedMeetingTime.startTime)
                     
                     endTime = dateFromString(CreatedMeetingTime.endTime)
+                    visibleBy = CreatedMeetingTime.visibleByArray ?? []
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        
+                        if visibleBy.isEmpty {
+                            visibleByWho = "Everyone"
+                        } else if visibleBy == leaderClubs.first(where: { $0.clubID == clubId })?.leaders {
+                            visibleByWho = "Only Leaders"
+                        } else {
+                            visibleByWho = "Custom"
+                        }
+                    }
+                    
                 } else {
                     let selectedDay = Calendar.current.component(.day, from: selectedDate)
                     let selectedMonth = Calendar.current.component(.month, from: selectedDate)
                     let selectedYear = Calendar.current.component(.year, from: selectedDate)
-
+                    
                     startTime = Calendar.current.date(from: DateComponents(
                         year: selectedYear,
                         month: selectedMonth,
@@ -290,14 +370,8 @@ struct AddMeetingView: View {
                         minute: 0,
                         second: 0
                     ))!
-
+                    
                     startTime = getFlooredCurrentTime(startTime)
-                }
-                
-                if CreatedMeetingTime.clubID != "" {
-                    clubId = CreatedMeetingTime.clubID
-                } else {
-                    clubId = leaderClubs.first?.clubID ?? ""
                 }
                 
                 addInfoToMeetingChild()
@@ -314,6 +388,9 @@ struct AddMeetingView: View {
                 endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
             }
             .onChange(of: location) {
+                addInfoToHelper()
+            }
+            .onChange(of: visibleBy) {
                 addInfoToHelper()
             }
             .onChange(of: title) {
@@ -353,6 +430,12 @@ struct AddMeetingView: View {
             CreatedMeetingTime.location = nil
         }
         
+        if !visibleBy.isEmpty {
+            CreatedMeetingTime.visibleByArray = visibleBy
+        } else {
+            CreatedMeetingTime.visibleByArray = nil
+        }
+        
         if !description.isEmpty {
             CreatedMeetingTime.description = description
         } else {
@@ -369,6 +452,12 @@ struct AddMeetingView: View {
             meetingTimeForInfo.title = title
         } else {
             meetingTimeForInfo.title = "Title"
+        }
+        
+        if !visibleBy.isEmpty {
+            meetingTimeForInfo.visibleByArray = visibleBy
+        } else {
+            meetingTimeForInfo.visibleByArray = nil
         }
         
         if !location.isEmpty {

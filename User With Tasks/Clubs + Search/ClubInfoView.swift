@@ -92,7 +92,7 @@ struct ClubInfoView: View {
                                     }
                                 }
                             )
-                            .frame(maxWidth: screenWidth/6, maxHeight: screenWidth/6)
+                            .frame(maxWidth: screenWidth/6, maxHeight: screenWidth/6, alignment: .topLeading)
                            
                             VStack(alignment: .leading) {
                                 Text(.init(club.abstract))
@@ -177,7 +177,7 @@ struct ClubInfoView: View {
 
                             CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
                                 .padding(.top, -8)
-                                .frame(maxHeight: screenHeight/5)
+                                .frame(maxHeight: screenHeight/6)
                             
                         }
                     }

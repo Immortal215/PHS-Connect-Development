@@ -14,7 +14,13 @@ struct CalendarView: View {
     var body: some View {
         VStack {
             WeekCalendarView( // double check the below
-                meetingTimes: clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] },
+                meetingTimes: clubs
+                    .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
+                    .flatMap { club in
+                        club.meetingTimes?.filter { meeting in
+                            meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true
+                        } ?? []
+                    },
                 selectedDate: $selectedDate,
                 viewModel: viewModel,
                 clubs: $clubs
@@ -41,7 +47,15 @@ struct CalendarView: View {
     }
 
     func meetings(for date: Date) -> [Club.MeetingTime] {
-        clubs.filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")}.flatMap { $0.meetingTimes ?? [] }.filter { Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date) }
+        clubs
+            .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
+            .flatMap { club in
+                club.meetingTimes?.filter { meeting in
+                    (meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true) &&
+                    Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
+                } ?? []
+            }
+
     }
 }
 

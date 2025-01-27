@@ -26,6 +26,7 @@ struct ContentView: View {
     @AppStorage("uid") var uid: String?
     @State var clubs: [Club] = []
     @State var userInfo: Personal? = nil
+    
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -148,9 +149,9 @@ struct ContentView: View {
                             }
                         }
                         .refreshable {
-                            fetchClubs { fetchedClubs in
-                                clubs = fetchedClubs
-                            }
+//                            fetchClubs { fetchedClubs in
+//                                clubs = fetchedClubs
+//                            } // pulls a lot of data
                             
                             if !viewModel.isGuestUser {
                                 if let UserID = viewModel.uid {
@@ -165,7 +166,7 @@ struct ContentView: View {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                 advSearchShown = !advSearchShown
                             }
-                            dropper(title: "Fetched Data!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
+                            dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
                         }
                         .onAppear {
                             setupClubsListener()
@@ -268,11 +269,6 @@ struct ContentView: View {
         }
     }
 
-    func removeClubsListener() {
-        let databaseRef = Database.database().reference().child("clubs")
-        databaseRef.removeAllObservers()
-    }
-
     func decodeClub(from snapshot: DataSnapshot) -> Club? {
         guard let clubData = try? JSONSerialization.data(withJSONObject: snapshot.value ?? [:]),
               let club = try? JSONDecoder().decode(Club.self, from: clubData) else {
@@ -300,4 +296,9 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
         accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)
+}
+
+func removeClubsListener() {
+    let databaseRef = Database.database().reference().child("clubs")
+    databaseRef.removeAllObservers()
 }

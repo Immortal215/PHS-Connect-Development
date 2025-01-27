@@ -60,6 +60,7 @@ struct ClubCardHome: View {
                                 .stroke(.gray)
                             ProgressView("Loading \(club.name) Image")
                         }
+                        .frame(width: screenWidth/4, height: screenWidth/4)
                     }
                 )
                 .padding()

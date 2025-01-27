@@ -42,13 +42,13 @@ struct MeetingView: View {
 
                     VStack(alignment: .leading) {
                         
-                        if isTextVisible(lineHeight: 16, startOffset: 0, duration: duration) {
+                        if isTextVisible(lineHeight: 15, startOffset: 0, duration: duration) {
                             HStack {
                                 Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
                                 
                                 if meeting.description != nil {
                                     Image(systemName: "text.alignleft")
-                                    
+                                        .font(.caption2)
                                 }
                             }
                             .font(.footnote)
@@ -57,7 +57,7 @@ struct MeetingView: View {
                             .bold()
                         }
                         
-                        if isTextVisible(lineHeight: 16, startOffset: 16, duration: duration) {
+                        if isTextVisible(lineHeight: 14, startOffset: 15, duration: duration) {
                             HStack {
                                 Image(systemName: "clock")
                                     .padding(.trailing, -4)
@@ -68,7 +68,7 @@ struct MeetingView: View {
                             .font(.caption2)
                         }
                         
-                        if isTextVisible(lineHeight: 16, startOffset: 32, duration: duration) {
+                        if isTextVisible(lineHeight: 14, startOffset: 29, duration: duration) {
                             HStack {
                                 Image(systemName: "person.circle")
                                     .padding(.trailing, -4)
@@ -79,7 +79,7 @@ struct MeetingView: View {
                             .font(.caption2)
                         }
                         
-                        if let location = meeting.location, isTextVisible(lineHeight: 16, startOffset: 48, duration: duration) {
+                        if let location = meeting.location, isTextVisible(lineHeight: 14, startOffset: 42, duration: duration) {
                             HStack {
                                 Image(systemName: "location.circle")
                                     .padding(.trailing, -4)
@@ -92,7 +92,7 @@ struct MeetingView: View {
 
                         Spacer()
                     }
-                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.3 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.3), maxHeight: duration, alignment: .topLeading)
+                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) - 16 : (screenWidth / 1.1) - 16, maxHeight: duration, alignment: .topLeading)
                 }
                 .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration, alignment: .topLeading)
             }

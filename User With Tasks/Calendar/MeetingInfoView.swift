@@ -10,6 +10,7 @@ struct MeetingInfoView: View {
     var viewModel : AuthenticationViewModel?
     @State var showMoreTitle = false
     @State var showMoreDescription = true
+    @State var showMoreLocation = false
     @State var descMoreThan2 = false
     var selectedDate: Date? = nil
     
@@ -62,17 +63,22 @@ struct MeetingInfoView: View {
                     }
                     
                     if let location = meeting.location {
-                        HStack {
-                            Text("Location:")
+                        HStack(alignment: .top) {
+                            Text("Location")
                                 .fontWeight(.semibold)
+                            
                             Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                 .foregroundColor(.darkGray)
+                                .lineLimit(showMoreLocation ? 100 : 1)
+                                .onTapGesture {
+                                    showMoreLocation.toggle()
+                                }
                         }
                     }
                     
                     if let description = meeting.description {
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("Description:")
+                            Text("Description")
                                 .fontWeight(.semibold)
                             Text(.init(description))
                                 .foregroundColor(.darkGray)
