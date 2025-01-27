@@ -18,7 +18,8 @@ struct CalendarView: View {
                     .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
                     .flatMap { club in
                         club.meetingTimes?.filter { meeting in
-                            meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true
+                            meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || club.leaders.contains(viewModel.userEmail ?? "")
+
                         } ?? []
                     },
                 selectedDate: $selectedDate,
@@ -51,7 +52,7 @@ struct CalendarView: View {
             .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
             .flatMap { club in
                 club.meetingTimes?.filter { meeting in
-                    (meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true) &&
+                    (meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || club.leaders.contains(viewModel.userEmail ?? "")) &&
                     Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
                 } ?? []
             }
