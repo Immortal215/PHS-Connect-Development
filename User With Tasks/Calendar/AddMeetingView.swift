@@ -239,39 +239,40 @@ struct AddMeetingView: View {
                 }
                 .padding()
                 
-                LabeledContent {
-                    CustomizableDropdown(selectedClubId: $clubId, leaderClubs: leaderClubs)
-                        .onChange(of: clubId) {
-                            visibleByWho = "Everyone"
-                        }
-                    
-                    Picker("", selection: $visibleByWho) {
-                        Text("Everyone").tag("Everyone")
-                        Text("Only Leaders").tag("Only Leaders")
-                        Text("Custom").tag("Custom")
-                    }
-                    .onChange(of: visibleByWho) {
-                            switch visibleByWho {
-                            case "Everyone":
-                                visibleBy = []
-                            case "Only Leaders":
-                                if let leaders = leaderClubs.first(where: {$0.clubID == clubId})?.leaders {
-                                    visibleBy = leaders
-                                }
-                            case "Custom":
-                                visibleBy = []
-                            default:
-                                visibleBy = []
-                                
+                    LabeledContent {
+                        CustomizableDropdown(selectedClubId: $clubId, leaderClubs: leaderClubs)
+                            .onChange(of: clubId) {
+                                visibleByWho = "Everyone"
                             }
+                        
+                        Picker("", selection: $visibleByWho) {
+                            Text("Everyone").tag("Everyone")
+                            Text("Only Leaders").tag("Only Leaders")
+                            Text("Custom (And Leaders)").tag("Custom")
+                        }
+                        .onChange(of: visibleByWho) {
+                            if let leaders = leaderClubs.first(where: {$0.clubID == clubId})?.leaders {
+                                switch visibleByWho {
+                                case "Everyone":
+                                    visibleBy = []
+                                case "Only Leaders":
+                                    visibleBy = leaders
+                                case "Custom":
+                                    visibleBy = visibleBy.filter({!leaders.contains($0)}) // needed so when editing a club with custom people, it doesnt reset visibleBy to empty [].
+                                default:
+                                    visibleBy = []
+                                    
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(.init(visibleBy.joined(separator: (", "))))
                     }
-                } label: {
-                    Text(visibleBy.joined(separator: (", ")))
-                }
-                .padding()
+                    .padding()
+                
                 
                 if visibleByWho == "Custom" {
-                    HorizontalScrollView {
+                    ScrollView(.horizontal) {
                         if let members = leaderClubs.first(where: {$0.clubID == clubId})?.members {
                             LazyHGrid(rows: Array(repeating: GridItem(.flexible()), count: 2)) {
                                 ForEach(members, id: \.self) { i in
