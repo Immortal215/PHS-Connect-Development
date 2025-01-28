@@ -344,8 +344,8 @@ struct AddMeetingView: View {
                     description = CreatedMeetingTime.description ?? ""
                     
                     startTime = dateFromString(CreatedMeetingTime.startTime)
+                    timeDifference = abs(dateFromString(CreatedMeetingTime.endTime).distance(to: startTime))
                     
-                    endTime = dateFromString(CreatedMeetingTime.endTime)
                     visibleBy = CreatedMeetingTime.visibleByArray ?? []
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         
