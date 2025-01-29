@@ -9,7 +9,7 @@ struct CalendarView: View {
 
     @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()
-    @State var scale: CGFloat = 1.0
+    @State var scale = 0.7
 
     var body: some View {
         VStack {

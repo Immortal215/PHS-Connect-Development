@@ -5,7 +5,7 @@ import SwiftUIX
 struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]
     var screenHeight: CGFloat
-    @Binding var scale: CGFloat
+    @Binding var scale: Double
     @State var meetingInfo = false
     let hourHeight: CGFloat = 60
     @State var selectedMeeting: Club.MeetingTime?
@@ -186,9 +186,9 @@ struct FlowingScheduleView: View {
                     }
                     .frame(minHeight: screenHeight)
                     .onAppearOnce {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
-                            proxy.scrollTo(6, anchor: .top) // scroll to 6 am
-                        }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
+                                proxy.scrollTo(6, anchor: .top) // scroll to 6 am
+                            }
                     }
                 }
                 .gesture(

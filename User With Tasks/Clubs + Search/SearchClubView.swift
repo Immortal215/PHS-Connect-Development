@@ -85,7 +85,7 @@ struct SearchClubView: View {
                                             Image(systemName: "plus")
                                                 .foregroundStyle(.green)
                                         }
-                                        .sheet(isPresented: $createClubToggler) {
+                                        .fullScreenCover(isPresented: $createClubToggler) {
                                             CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
                                                 .presentationDragIndicator(.visible)
                                                 .presentationSizing(.page)
@@ -138,9 +138,7 @@ struct SearchClubView: View {
                                                 .padding(.vertical, 3)
                                                 .padding(.horizontal)
                                                 .sheet(isPresented: $showClubInfoSheet) {
-                                                    fetchClub(withId: club.clubID) { fetchedClub in
-                                                        clubs[infoRelativeIndex] = fetchedClub ?? club
-                                                    }
+                                                   
                                                 } content: {
                                                     if shownInfo >= 0 {
                                                         ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
@@ -209,7 +207,7 @@ struct SearchClubView: View {
             
         }
         .onAppearOnce {
-            filteredItems = calculateFiltered()
+             filteredItems = calculateFiltered()
         }
         .onChange(of: sharedGenre) {
             if sharedGenre != "" {
@@ -217,6 +215,10 @@ struct SearchClubView: View {
                 sharedGenre = ""
             }
         }
+        .onChange(of: clubs) {
+            filteredItems = calculateFiltered()
+        }
+        .animation(.smooth, value: currentSearchingBy)
     }
     
     func calculateFiltered() -> [Club] {

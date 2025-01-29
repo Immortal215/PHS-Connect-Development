@@ -46,21 +46,9 @@ struct MeetingInfoView: View {
                             }
                         }
                     }
-                    
-                    HStack {
-                        Text("Starts")
-                            .fontWeight(.semibold)
-                        Text(dateFromString(meeting.startTime).formatted(date: .abbreviated, time: .shortened))
+    
+                        Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
                             .foregroundColor(.darkGray)
-                        
-                    }
-                    
-                    HStack {
-                        Text("Ends")
-                            .fontWeight(.semibold)
-                        Text(dateFromString(meeting.endTime).formatted(date: .abbreviated, time: .shortened))
-                            .foregroundColor(.darkGray)
-                    }
                     
                     if let location = meeting.location {
                         HStack(alignment: .top) {

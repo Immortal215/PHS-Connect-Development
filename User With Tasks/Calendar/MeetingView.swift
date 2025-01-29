@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MeetingView: View {
     var meeting: Club.MeetingTime
-    var scale: CGFloat
+    var scale: Double
     let hourHeight: CGFloat
     @State var meetingInfo: Bool
     var preview: Bool? = false
@@ -92,11 +92,11 @@ struct MeetingView: View {
 
                         Spacer()
                     }
-                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) - 16 : (screenWidth / 1.1) - 16, maxHeight: duration, alignment: .topLeading)
+                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) - 16 : (screenWidth / 1.1) - 16, maxHeight: duration + 1, alignment: .topLeading)
                 }
-                .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration, alignment: .topLeading)
+                .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration + 1, alignment: .topLeading)
             }
-            .frame(width: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), height: duration)
+            .frame(width: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), height: duration + 1)
             .position(x: geometry.size.width / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }
     }
