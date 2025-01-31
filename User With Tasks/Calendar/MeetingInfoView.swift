@@ -16,7 +16,7 @@ struct MeetingInfoView: View {
     @State var attendingMoreThan2 = false
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
@@ -77,12 +77,12 @@ struct MeetingInfoView: View {
                     
                     if let description = meeting.description {
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("Description")
+                            Text("Notes")
                                 .fontWeight(.semibold)
                             Text(.init(description))
                                 .foregroundColor(.darkGray)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .lineLimit(showMoreDescription ? nil : 2)
+                                .lineLimit(showMoreDescription ? nil : 4)
                                 .onTapGesture {
                                     showMoreDescription.toggle()
                                 }
@@ -104,10 +104,11 @@ struct MeetingInfoView: View {
                                     Color.clear
                                         .onAppear {
                                             calculateLines(for: geometry.size)
-                                            showMoreDescription = false
+                                            showMoreAttending = false
                                         }
                                 }
                             )
+                        
                         if attendingMoreThan2 {
                             Button(showMoreAttending ? "Show Less" : "Show More") {
                                 showMoreAttending.toggle()
@@ -132,7 +133,7 @@ struct MeetingInfoView: View {
             .presentationSizing(.page)
         }
         .padding()
-        .frame(width: screenWidth / 2.5, height: screenHeight / 1.7)
+        .frame(width: screenWidth / 2.5)
         .background {
             ZStack {
                 Color.white

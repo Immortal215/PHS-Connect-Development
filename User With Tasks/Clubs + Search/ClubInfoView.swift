@@ -334,10 +334,10 @@ struct ClubInfoView: View {
                 }
             } customize: {
                 $0
-                    .type(.floater())
+                    .type(.default)
                     .position(.trailing)
                     .appearFrom(.rightSlide)
-                    .animation(.smooth())
+                    .animation(.snappy)
                     .closeOnTapOutside(false)
                     .closeOnTap(false)
                 

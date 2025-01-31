@@ -10,6 +10,8 @@ struct CalendarView: View {
     @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()
     @State var scale = 0.7
+    @State var offset: CGSize = .zero
+    @State var initialTouchLocation: CGPoint = .zero
 
     var body: some View {
         VStack {
@@ -34,12 +36,18 @@ struct CalendarView: View {
             
         }
         .gesture(
-            MagnificationGesture()
-                .onChanged { value in
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8, blendDuration: 0.2)) {
-                        scale = max(0.6, min(value.magnitude, 3.0))
+            SimultaneousGesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                            scale = max(0.6, min(value.magnitude, 3.0))
+                    },
+                DragGesture()
+                    .onChanged { value in
+                        if value.translation.width != 0 || value.translation.height != 0 {
+                            offset = CGSize(width: value.translation.width, height: value.translation.height)
+                        }
                     }
-                }
+            )
         )
         .onAppear {
             selectedDate = dateFromString(storedDate)

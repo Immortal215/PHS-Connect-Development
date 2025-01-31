@@ -168,17 +168,26 @@ struct AddMeetingView: View {
                     
                 } label: {
                     VStack(alignment: .leading) {
-                        Image(systemName: "questionmark.circle")
-                            .foregroundColor(.blue)
-                            .onTapGesture {
-                                showHelp = true
-                                
-                            }
-                        
-                            .padding(.bottom)
+//                        Image(systemName: "questionmark.circle")
+//                            .foregroundColor(.blue)
+//                            .onTapGesture {
+//                                showHelp = true
+//                                
+//                            }
+//                        
+//                            .padding(.bottom)
                         
                         Text("Enter Announcement Info (Markdown Supported)")
-                        
+                            .padding(.bottom)
+                        Text(.init("""
+                    Markdown Syntax Help:
+                    - **Bold**: `**bold text**`
+                    - *Italic*: `*italic text*`
+                    - ~Strikethrough~: `~strikethrough text~` 
+                    - Link: `https://url` 
+                    - Email: `email@gmail.com`
+                    """))
+                        .font(.caption2)
                     }
                     
                     // all markdown buttons
@@ -250,7 +259,7 @@ struct AddMeetingView: View {
                         Picker("", selection: $visibleByWho) {
                             Text("Everyone").tag("Everyone")
                             Text("Only Leaders").tag("Only Leaders")
-                            Text("Custom (And Leaders)").tag("Custom")
+                            Text("Custom").tag("Custom")
                         }
                         .onChange(of: visibleByWho) {
                             if let leaders = leaderClubs.first(where: {$0.clubID == clubId})?.leaders {
@@ -377,7 +386,7 @@ struct AddMeetingView: View {
                     startTime = getFlooredCurrentTime(startTime)
                 }
                 
-                addInfoToMeetingChild()
+              //  addInfoToMeetingChild()
                 addInfoToHelper()
             }
             .onChange(of: startTime) {
@@ -410,10 +419,10 @@ struct AddMeetingView: View {
             MeetingInfoView(meeting: meetingTimeForInfo, clubs: leaderClubs)
         } customize: {
             $0
-                .type(.floater())
+                .type(.default)
                 .position(.trailing)
                 .appearFrom(.rightSlide)
-                .animation(.smooth())
+                .animation(.snappy)
                 .closeOnTapOutside(false)
                 .closeOnTap(false)
             

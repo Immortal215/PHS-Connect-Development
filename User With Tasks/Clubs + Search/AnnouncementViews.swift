@@ -88,17 +88,17 @@ struct AddAnnouncementSheet: View {
                     
                 } label: {
                     VStack(alignment: .leading) {
-                        Image(systemName: "questionmark.circle")
-                            .foregroundColor(.blue)
-                            .onTapGesture {
-                                areUSure = false
-                                showHelp = true
-                                
-                            }
-                            .padding(.bottom)
+//                        Image(systemName: "questionmark.circle")
+//                            .foregroundColor(.blue)
+//                            .onTapGesture {
+//                                areUSure = false
+//                                showHelp = true
+//                                
+//                            }
+//                            .padding(.bottom)
                         
                         Text("Enter Announcement Info (Markdown Supported)")
-                            .padding()
+                            .padding(.bottom)
                         Text(.init("""
                     Markdown Syntax Help:
                     - **Bold**: `**bold text**`
@@ -168,7 +168,7 @@ struct AddAnnouncementSheet: View {
                         
                     }
                     .fixedSize()
-                    .foregroundStyle(.clear) // bring back if needed
+                     // bring back if needed
                     
                 }
                 .padding()

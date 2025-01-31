@@ -26,7 +26,7 @@ struct FlowingScheduleView: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
-                ScrollView(.vertical) {
+                ScrollView(.vertical, showsIndicators: false) {
                     GeometryReader { geometry in
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) { minY in
@@ -117,7 +117,6 @@ struct FlowingScheduleView: View {
                                                         case .second(true, let dragValue): // drag gesture ended
                                                             if let dragValue = dragValue, let draggedMeeting = draggedMeeting {
                                                                 var newMeeting = draggedMeeting
-                                                                
                                                                 let roundedStartTime = roundToNearest15Minutes(date: dateFromString(draggedMeeting.startTime))
                                                                 let roundedEndTime = roundToNearest15Minutes(date: dateFromString(draggedMeeting.endTime))
                                                                 
@@ -133,7 +132,6 @@ struct FlowingScheduleView: View {
                                                                 
                                                                 replaceMeeting(oldMeeting: draggedMeeting, newMeeting: newMeeting)
                                                             }
-
                                                             draggedMeeting = nil
                                                             dragOffset = .zero
 
@@ -212,10 +210,10 @@ struct FlowingScheduleView: View {
                     }
                 } customize: {
                     $0
-                        .type(.floater())
+                        .type(.default)
                         .position(.trailing)
                         .appearFrom(.rightSlide)
-                        .animation(.smooth)
+                        .animation(.snappy)
                         .closeOnTapOutside(false)
                         .closeOnTap(false)
                         .dragToDismiss(true)

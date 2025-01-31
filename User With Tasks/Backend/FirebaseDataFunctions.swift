@@ -238,35 +238,9 @@ func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) 
         
         oldClubReference.child("meetingTimes").setValue(currentMeetings) { error, _ in
             if let error = error {
-                print("Error removing meeting from old club: \(error)")
-                return
-            }
-            
-            let newClubReference = reference.child("clubs").child(newMeeting.clubID)
-            
-            newClubReference.child("meetingTimes").observeSingleEvent(of: .value) { newSnapshot in
-                var newClubMeetings: [[String: Any]] = []
-                
-                if let existingMeetings = newSnapshot.value as? [[String: Any]] {
-                    newClubMeetings = existingMeetings
-                }
-                
-                do {
-                    let data = try JSONEncoder().encode(newMeeting)
-                    if let newMeetingDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        newClubMeetings.append(newMeetingDict)
-                        
-                        newClubReference.child("meetingTimes").setValue(newClubMeetings) { addError, _ in
-                            if let addError = addError {
-                                print("Error adding meeting to new club: \(addError)")
-                            } else {
-                                dropper(title: "Moved Meeting Successfully!", subtitle: "", icon: nil)
-                            }
-                        }
-                    }
-                } catch {
-                    print("Error encoding new meeting data: \(error)")
-                }
+                print("Error removing old meeting: \(error)")
+            } else {
+                addMeeting(meeting: newMeeting)
             }
         }
     }
