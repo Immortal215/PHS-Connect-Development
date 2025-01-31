@@ -52,7 +52,6 @@ struct AddMeetingView: View {
                         addInfoToHelper()
                         
                         replaceMeeting(oldMeeting: CreatedMeetingTime, newMeeting: meetingTimeForInfo) // replace the previous meeting
-                        
                     }
                     
                     viewCloser?()

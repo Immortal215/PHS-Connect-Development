@@ -244,7 +244,7 @@ struct CreateClubView: View {
                 // schoology code
                 LabeledContent {
                     TextField("Schoology Code (Required)", text: $schoology)
-                        .padding()
+                      //  .padding()
                         .onAppear {
                             if schoology != "" {
                                 clubType = schoology.contains("Course") ? "Course" : "Group"
@@ -271,7 +271,7 @@ struct CreateClubView: View {
                 
                 LabeledContent {
                     TextField("Club Location (Required)", text: $location)
-                        .padding()
+                       // .padding()
                 } label: {
                     Text("Club Location \(location.isEmpty ? "(Required)" : "")")
                         .foregroundStyle(location.isEmpty ? .red : .black)

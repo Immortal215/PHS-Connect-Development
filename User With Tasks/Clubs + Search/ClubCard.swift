@@ -163,7 +163,7 @@ struct ClubCard: View {
                         .padding(.top)
                         .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
                         .alert(isPresented: $youSureYouWantToLeave) {
-                            Alert(title: Text("Leave Club?"), primaryButton: .destructive(Text("Leave Club"), action: {
+                            Alert(title: Text("Leave \(club.name)?"), primaryButton: .destructive(Text("Leave Club"), action: {
                                 if let email = viewModel.userEmail {
                                     club.members.remove(at: club.members.firstIndex(of: email)!)
                                     removeMemberFromClub(clubID: club.clubID, emailToRemove: email)

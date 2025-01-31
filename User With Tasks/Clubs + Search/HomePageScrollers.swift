@@ -45,8 +45,8 @@ struct HomePageScrollers: View {
                                 if shownInfo >= 0 {
                                     ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
                                         .presentationDragIndicator(.visible)
-                                        .presentationSizing(.page)
-                                    
+                                        .frame(width: UIScreen.main.bounds.width/1.05)
+
                                 } else {
                                     Text("Error! Try Again!")
                                         .presentationDragIndicator(.visible)

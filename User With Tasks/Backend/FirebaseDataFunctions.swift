@@ -14,7 +14,7 @@ func addClub(club: Club) {
         let data = try JSONEncoder().encode(club)
         if let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
             clubRefrence.setValue(dictionary)
-            dropper(title: "Added Club!", subtitle: "", icon: UIImage(systemName: "externaldrive.fill.badge.plus"))
+//            dropper(title: "Added Club!", subtitle: "", icon: UIImage(systemName: "externaldrive.fill.badge.plus"))
         }
     } catch {
         print("Error encoding club data: \(error)")

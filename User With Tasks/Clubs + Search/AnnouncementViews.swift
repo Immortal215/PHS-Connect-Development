@@ -37,7 +37,6 @@ struct AddAnnouncementSheet: View {
                 
                 LabeledContent {
                     TextField("Enter announcement title...", text: $announcementTitle)
-                        .padding()
                         .textFieldStyle(.roundedBorder)
                         .padding(.horizontal)
                         .onChange(of: announcementTitle) {
@@ -45,7 +44,6 @@ struct AddAnnouncementSheet: View {
                         }
                 } label: {
                     Text("Enter Announcement Title:")
-                    Spacer()
                 }
                 .padding()
                 
@@ -97,10 +95,19 @@ struct AddAnnouncementSheet: View {
                                 showHelp = true
                                 
                             }
-                        
                             .padding(.bottom)
                         
                         Text("Enter Announcement Info (Markdown Supported)")
+                            .padding()
+                        Text(.init("""
+                    Markdown Syntax Help:
+                    - **Bold**: `**bold text**`
+                    - *Italic*: `*italic text*`
+                    - ~Strikethrough~: `~strikethrough text~` 
+                    - Link: `https://url` 
+                    - Email: `email@gmail.com`
+                    """))
+                        .font(.caption2)
                         
                     }
                     
@@ -161,6 +168,8 @@ struct AddAnnouncementSheet: View {
                         
                     }
                     .fixedSize()
+                    .foregroundStyle(.clear) // bring back if needed
+                    
                 }
                 .padding()
                 
@@ -560,7 +569,7 @@ struct SingleAnnouncementView: View {
                 if let cluber = clubs.first(where: { $0.clubID == announcement.clubID }) {
                     ClubInfoView(club: cluber, viewModel: viewModel, userInfo: $userInfo)
                         .presentationDragIndicator(.visible)
-                        .presentationSizing(.page)
+                        .frame(width: UIScreen.main.bounds.width/1.05)
                         .foregroundColor(nil)
                 } else {
                     Text("Club not found")

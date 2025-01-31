@@ -9,11 +9,11 @@ struct MeetingInfoView: View {
     @State var openSettings = false
     var viewModel : AuthenticationViewModel?
     @State var showMoreTitle = false
-    @State var showMoreDescription = true
+    @State var showMoreDescription = false
     @State var showMoreLocation = false
-    @State var descMoreThan2 = false
+    @State var showMoreAttending = true
     var selectedDate: Date? = nil
-    
+    @State var attendingMoreThan2 = false
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ScrollView {
@@ -24,7 +24,7 @@ struct MeetingInfoView: View {
                             .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
                             .padding(.bottom, 5)
-                            .lineLimit(showMoreTitle ? 100 : 1)
+                            .lineLimit(showMoreTitle ? nil : 1)
                             .onTapGesture {
                                 showMoreTitle.toggle()
                             }
@@ -46,9 +46,19 @@ struct MeetingInfoView: View {
                             }
                         }
                     }
-    
-                        Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
+                    .padding(.bottom, -8)
+                    
+                    Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
+                        .foregroundStyle(colorFromClubID(meeting.clubID))
+                        .bold()
+                                        
+                    Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
                             .foregroundColor(.darkGray)
+                            .bold()
+                    
+                    if meeting.location != nil || meeting.description != nil{
+                        Divider()
+                    }
                     
                     if let location = meeting.location {
                         HStack(alignment: .top) {
@@ -57,11 +67,12 @@ struct MeetingInfoView: View {
                             
                             Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                 .foregroundColor(.darkGray)
-                                .lineLimit(showMoreLocation ? 100 : 1)
+                                .lineLimit(showMoreLocation ? nil : 1)
                                 .onTapGesture {
                                     showMoreLocation.toggle()
                                 }
                         }
+                        .font(.callout)
                     }
                     
                     if let description = meeting.description {
@@ -72,22 +83,42 @@ struct MeetingInfoView: View {
                                 .foregroundColor(.darkGray)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .lineLimit(showMoreDescription ? nil : 2)
-                                .background(
-                                    GeometryReader { geometry in
-                                        Color.clear
-                                            .onAppear {
-                                                calculateLines(for: geometry.size)
-                                                showMoreDescription = false 
-                                            }
-                                    }
-                                )
-                            if descMoreThan2 {
-                                Button(showMoreDescription ? "Show Less" : "Show More") {
+                                .onTapGesture {
                                     showMoreDescription.toggle()
                                 }
+                        }
+                        .font(.callout)
+                    }
+                    
+                    Divider()
+
+                    if let peopleAttending = meeting.visibleByArray {
+
+                        Text(.init(peopleAttending.joined(separator: ", ")))
+                            .font(.caption)
+                            .foregroundColor(.darkGray)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(showMoreAttending ? nil : 2)
+                            .background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            calculateLines(for: geometry.size)
+                                            showMoreDescription = false
+                                        }
+                                }
+                            )
+                        if attendingMoreThan2 {
+                            Button(showMoreAttending ? "Show Less" : "Show More") {
+                                showMoreAttending.toggle()
                             }
                         }
+                    } else {
+                        Text("All Club Members")
+                            .font(.caption)
                     }
+                    
+                    Color.clear.frame(height: screenHeight/3)
                 }
             }
             
@@ -118,7 +149,7 @@ struct MeetingInfoView: View {
         let totalLines = Int(size.height / lineHeight)
         
         DispatchQueue.main.async {
-            descMoreThan2 = (totalLines != 2 ? totalLines > 2 : false )
+            attendingMoreThan2 = (totalLines != 2 ? totalLines > 2 : false )
         }
     }
 }

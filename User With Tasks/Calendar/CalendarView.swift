@@ -36,7 +36,9 @@ struct CalendarView: View {
         .gesture(
             MagnificationGesture()
                 .onChanged { value in
-                    scale = max(0.6, min(value.magnitude, 3.0))
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8, blendDuration: 0.2)) {
+                        scale = max(0.6, min(value.magnitude, 3.0))
+                    }
                 }
         )
         .onAppear {

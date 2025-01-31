@@ -25,7 +25,8 @@ struct ClubInfoView: View {
     @State var abstractGreaterThanFour = false
     @Binding var userInfo: Personal?
     @Environment(\.presentationMode) var presentationMode
-    @State var meetingFull = false 
+    @State var meetingFull = false
+    @State var refresher = true
 
     var body: some View {
         
@@ -130,10 +131,14 @@ struct ClubInfoView: View {
                     if !club.leaders.isEmpty {
                         Text("Leaders (\(club.leaders.count))")
                             .font(.headline)
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
-                            ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
-                                CodeSnippetView(code: leader)
-                                    .padding(.top, leader == club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.first ? -8 : 0)
+                        
+                        ScrollView(.horizontal) {
+                            LazyHGrid(rows: [GridItem(.flexible())]) {
+                                ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
+                                    CodeSnippetView(code: leader)
+                                        .padding(1)
+                                        .padding(.trailing, 8)
+                                }
                             }
                         }
                     }
@@ -155,15 +160,26 @@ struct ClubInfoView: View {
                             Text("Next Meeting (\(dateFromString(closestMeeting.startTime).formatted(date: .abbreviated, time: .omitted)))")
                                 .font(.headline)
                             
-                            Button {
-                                meetingFull.toggle()
-                            } label: {
-                                MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 2, hasOverlap: true)
-                                    .padding(.vertical)
-                                    .frame(width: UIScreen.main.bounds.width / 1.1 / 2)
-                                    .foregroundStyle(.black)
-                                    .offset(x: UIScreen.main.bounds.width / 1.1 / 2)
-                            }
+                                Button {
+                                    meetingFull.toggle()
+                                    refresher.toggle()
+                                } label: {
+                                    if refresher { // when refreshing, it does not look like anything changes, this is so monkey to do tho, have to figure a better way to refresh the view
+                                        
+                                        MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
+                                            .padding(.vertical)
+                                            .frame(width: UIScreen.main.bounds.width / 1.1)
+                                            .foregroundStyle(.black)
+                                            .offset(x: UIScreen.main.bounds.width / 1.1)
+                                    } else {
+                                        MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
+                                            .padding(.vertical)
+                                            .frame(width: UIScreen.main.bounds.width / 1.1)
+                                            .foregroundStyle(.black)
+                                            .offset(x: UIScreen.main.bounds.width / 1.1)
+                                    }
+                                }
+                            
                          
                         }
                     }
