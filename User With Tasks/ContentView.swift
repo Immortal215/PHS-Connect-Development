@@ -26,6 +26,8 @@ struct ContentView: View {
     @AppStorage("uid") var uid: String?
     @State var clubs: [Club] = []
     @State var userInfo: Personal? = nil
+    @AppStorage("calendarScale") var scale = 0.7
+    @AppStorage("calendarPoint") var calendarScrollPoint = 6
     
     var body: some View {
         VStack {
@@ -86,24 +88,41 @@ struct ContentView: View {
                     } else {
                         ZStack {
                             if advSearchShown {
-                                ZStack {
-                                    switch selectedTab { // unfortunately cannot use a tabview as there is no way to hide the tabbar without using .page which is also not wanted
-                                    case 0:
+//                                ZStack {
+//                                    switch selectedTab { // unfortunately cannot use a tabview as there is no way to hide the tabbar without using .page which is also not wanted
+//                                    case 0:
+//                                        SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+//                                    case 1:
+//                                        if !viewModel.isGuestUser {
+//                                            ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+//                                        }
+//                                    case 2:
+//                                        if !viewModel.isGuestUser {
+//                                            CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+//                                        }
+//                                    case 3:
+//                                        SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+//                                    default:
+//                                        EmptyView()
+//                                    }
+//                                }
+//                                
+                                Group {
+                                    if selectedTab == 0 {
                                         SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    case 1:
+                                    } else if selectedTab == 1 {
                                         if !viewModel.isGuestUser {
                                             ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         }
-                                    case 2:
+                                    }  else if selectedTab == 2 {
                                         if !viewModel.isGuestUser {
                                             CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         }
-                                    case 3:
+                                    } else if selectedTab == 3 {
                                         SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                                    default:
-                                        EmptyView()
                                     }
                                 }
+                                .transition(.opacity)
                             }
                             // tab bar view
                             VStack {
@@ -127,7 +146,7 @@ struct ContentView: View {
                                             .padding(.horizontal)
                                         
                                     }
-                                    .padding(.bottom, 20)
+                                    .padding(.bottom, selectedTab == 3 ? 20 : 0)
                                     .fixedSize()
                                     .bold()
                                 }
@@ -149,9 +168,9 @@ struct ContentView: View {
                             }
                         }
                         .refreshable {
-//                            fetchClubs { fetchedClubs in
-//                                clubs = fetchedClubs
-//                            } // pulls a lot of data
+                            //                            fetchClubs { fetchedClubs in
+                            //                                clubs = fetchedClubs
+                            //                            } // pulls a lot of data
                             
                             if !viewModel.isGuestUser {
                                 if let UserID = viewModel.uid {
@@ -160,7 +179,9 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                        
+                            
+                            calendarScrollPoint = 6
+                            scale = 0.7
                             advSearchShown = !advSearchShown
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -176,24 +197,26 @@ struct ContentView: View {
                                 }
                             }
                             advSearchShown = true
+                            calendarScrollPoint = 12
+                            
                         }
                         .onDisappear {
                             removeClubsListener()
                         }
-
-//                        .onAppear {
-//                            fetchClubs { fetchedClubs in
-//                                clubs = fetchedClubs
-//                            }
-//                            
-//                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
-//                                fetchUser(for: UserID) { user in
-//                                    userInfo = user
-//                                }
-//                            }
-//                            
-//                            advSearchShown = true
-//                        }
+                        
+                        //                        .onAppear {
+                        //                            fetchClubs { fetchedClubs in
+                        //                                clubs = fetchedClubs
+                        //                            }
+                        //
+                        //                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
+                        //                                fetchUser(for: UserID) { user in
+                        //                                    userInfo = user
+                        //                                }
+                        //                            }
+                        //
+                        //                            advSearchShown = true
+                        //                        }
                         
                     }
                 }
@@ -268,7 +291,7 @@ struct ContentView: View {
             }
         }
     }
-
+    
     func decodeClub(from snapshot: DataSnapshot) -> Club? {
         guard let clubData = try? JSONSerialization.data(withJSONObject: snapshot.value ?? [:]),
               let club = try? JSONDecoder().decode(Club.self, from: clubData) else {
@@ -276,7 +299,7 @@ struct ContentView: View {
         }
         return club
     }
-
+    
     
 }
 

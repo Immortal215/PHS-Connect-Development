@@ -9,9 +9,9 @@ struct CalendarView: View {
 
     @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()
-    @State var scale = 0.7
+    @AppStorage("calendarScale") var scale = 0.7
+    @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @State var offset: CGSize = .zero
-    @State var initialTouchLocation: CGPoint = .zero
 
     var body: some View {
         VStack {

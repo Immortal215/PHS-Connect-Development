@@ -16,7 +16,8 @@ struct FlowingScheduleView: View {
     @State var isToolbarVisible = true
     @State var draggedMeeting: Club.MeetingTime?
     @State var dragOffset: CGSize = .zero
-    
+    @AppStorage("calendarPoint") var calendarScrollPoint = 6
+
     struct MeetingColumn: Equatable {
         let meeting: Club.MeetingTime
         var column: Int
@@ -185,7 +186,7 @@ struct FlowingScheduleView: View {
                     .frame(minHeight: screenHeight)
                     .onAppearOnce {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
-                                proxy.scrollTo(6, anchor: .top) // scroll to 6 am
+                                    proxy.scrollTo(calendarScrollPoint, anchor: .top) // scroll to 6 am
                             }
                     }
                 }
