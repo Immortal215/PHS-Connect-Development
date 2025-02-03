@@ -105,13 +105,3 @@ struct MeetingView: View {
         return lineHeight + startOffset <= duration
     }
 }
-
-func colorFromClubID(_ clubID: String) -> Color {
-    let number = Int(clubID.dropFirst(6)) ?? 0
-    
-    let red = CGFloat((number * 50) % 255) / 255.0
-    let green = CGFloat((number * 30) % 255) / 255.0
-    let blue = CGFloat((number * 20) % 255) / 255.0
-    
-    return Color(red: red, green: green, blue: blue)
-}

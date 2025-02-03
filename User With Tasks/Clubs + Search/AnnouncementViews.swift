@@ -97,7 +97,7 @@ struct AddAnnouncementSheet: View {
 //                            }
 //                            .padding(.bottom)
                         
-                        Text("Enter Announcement Info (Markdown Supported)")
+                        Text("Announcement Description")
                             .padding(.bottom)
                         Text(.init("""
                     Markdown Syntax Help:

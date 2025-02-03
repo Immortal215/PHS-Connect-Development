@@ -34,7 +34,7 @@ struct MeetingInfoView: View {
                                         .foregroundColor(.blue)
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 9).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).padding(.bottom, 5).offset(x: 9))
+                                        .padding(.bottom, 5).offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).padding(.bottom, 5).offset(x: 7))
                                 }
                             }
                             .onTapGesture {

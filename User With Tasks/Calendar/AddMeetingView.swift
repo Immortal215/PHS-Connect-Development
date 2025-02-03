@@ -23,6 +23,7 @@ struct AddMeetingView: View {
     @State var endMinutes = 60
     @State var visibleBy: [String] = []
     @State var visibleByWho = "Everyone"
+    @State var refresher = false
     
     var viewCloser: (() -> Void)?
     
@@ -177,7 +178,7 @@ struct AddMeetingView: View {
 //                        
 //                            .padding(.bottom)
                         
-                        Text("Enter Announcement Info (Markdown Supported)")
+                        Text("Notes")
                             .padding(.bottom)
                         Text(.init("""
                     Markdown Syntax Help:
@@ -324,14 +325,22 @@ struct AddMeetingView: View {
                 if clubId != "" {
                     Button {
                         addInfoToHelper()
-                        meetingFull = true
+                        meetingFull.toggle()
+                        refresher.toggle()
                     } label: {
-                        
-                        MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: false, preview: true, clubs: leaderClubs)
-                            .padding()
-                            .frame(width: UIScreen.main.bounds.width/1.1)
-                            .foregroundStyle(.black)
-                            .offset(x: UIScreen.main.bounds.width/1.1)
+                        if refresher {
+                            MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: leaderClubs)
+                                .padding()
+                                .frame(width: UIScreen.main.bounds.width/1.1)
+                                .foregroundStyle(.black)
+                                .offset(x: UIScreen.main.bounds.width/1.1)
+                        } else {
+                            MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: leaderClubs)
+                                .padding()
+                                .frame(width: UIScreen.main.bounds.width/1.1)
+                                .foregroundStyle(.black)
+                                .offset(x: UIScreen.main.bounds.width/1.1)
+                        }
                     }
                     .padding(.top, CGFloat(endMinutes - startMinutes))
                     .offset(y: -CGFloat(endMinutes - startMinutes) / 2)

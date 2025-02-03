@@ -11,111 +11,117 @@ struct MonthPickerView: View {
     var body: some View {
         NavigationView {
             VStack {
-                ScrollView {
-                    VStack {
-                        ForEach(0..<12, id: \.self) { monthOffset in
-                            let monthDate = Calendar.current.date(from: DateComponents(year: currentYear, month: monthOffset + 1))!
-                            VStack(alignment: .leading) {
-                                Text(monthName(for: monthDate))
-                                    .font(.title2)
-                                    .bold()
-                                    .padding(.top)
-                                Divider()
-                                
-                                LazyVGrid(columns: Array(repeating: GridItem(.fixed(UIScreen.main.bounds.width / 1.15 / 7), spacing: 10), count: 7), spacing: 10) {
-                                    ForEach(daysInMonth(for: monthDate), id: \.self) { day in
-                                        ZStack {
-                                            Rectangle()
-                                                .stroke(.gray, lineWidth: 1)
-                                                .padding(-5)
-                                            
-                                            let date = dayDate(for: day, monthDate: monthDate)
-                                            VStack(alignment: .center) {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack {
+                            ForEach(0..<12, id: \.self) { monthOffset in
+                                let monthDate = Calendar.current.date(from: DateComponents(year: currentYear, month: monthOffset + 1))!
+                                VStack(alignment: .leading) {
+                                    Text(monthName(for: monthDate))
+                                        .font(.title2)
+                                        .bold()
+                                        .padding(.top)
+                                    Divider()
+                                    
+                                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(UIScreen.main.bounds.width / 1.15 / 7), spacing: 10), count: 7), spacing: 10) {
+                                        ForEach(daysInMonth(for: monthDate), id: \.self) { day in
+                                            ZStack {
+                                                Rectangle()
+                                                    .stroke(.gray, lineWidth: 1)
+                                                    .padding(-5)
                                                 
-                                                Text(dayOfWeek(for: date))
-                                                    .font(.caption)
-                                                
-                                                Text("\(day)")
-                                                    .font(.headline)
-                                                    .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .black)
-                                                    .padding(10)
-                                                    .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
-                                                
-                                                let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
-                                                    if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
-                                                        result[index].count += 1
-                                                    } else {
-                                                        result.append((meeting.clubID, 1))
-                                                    }
-                                                }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count })
-                                                
-                                                if !clubIDCounts.isEmpty {
-                                                    HStack {
-                                                        // tube view for day
-                                                        if isTubeView {
-                                                            VStack(alignment: .leading, spacing: 5) {
-                                                                ForEach(clubIDCounts, id: \.clubID) { club in
-                                                                    Button {
-                                                                        // add code here later for like a view of all of the meetings under that clubId and like you can select one to see the info and then edit
-                                                                    } label: {
-                                                                        Text("(\(club.count)) \(getClubNameByIDWithClubs(clubID: club.clubID, clubs: clubs))")
-                                                                            .font(Font.custom("SF MONO", size: 12))
-                                                                            .lineLimit(1)
-                                                                            .foregroundColor(.black)
-                                                                            .padding(8)
-                                                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                                                            .background(colorFromClubID(club.clubID).opacity(0.2))
-                                                                            .cornerRadius(12)
-                                                                    }
-                                                                }
-                                                            }
-                                                            .transition(
-                                                                .movingParts.vanish(colorFromClubID("clubID\(Int.random(in: 0..<100))")) // chooses a random clubID for the color
-                                                            )
+                                                let date = dayDate(for: day, monthDate: monthDate)
+                                                VStack(alignment: .center) {
+                                                    
+                                                    Text(dayOfWeek(for: date))
+                                                        .font(.caption)
+                                                    
+                                                    Text("\(day)")
+                                                        .font(.headline)
+                                                        .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .black)
+                                                        .padding(10)
+                                                        .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
+                                                    
+                                                    let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
+                                                        if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
+                                                            result[index].count += 1
                                                         } else {
-                                                            // circles view for day
-                                                            HStack(spacing: -4) {
-                                                                ForEach(clubIDCounts.prefix(3), id: \.clubID) { club in
-                                                                    ZStack {
-                                                                        Circle()
-                                                                            .fill(colorFromClubID(club.clubID))
-                                                                            .frame(width: 12, height: 12)
-                                                                        
-                                                                        if club.count > 1 {
-                                                                            Text("\(club.count)")
-                                                                                .font(.system(size: 10))
-                                                                                .foregroundColor(.white)
+                                                            result.append((meeting.clubID, 1))
+                                                        }
+                                                    }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count })
+                                                    
+                                                    if !clubIDCounts.isEmpty {
+                                                        HStack {
+                                                            // tube view for day
+                                                            if isTubeView {
+                                                                VStack(alignment: .leading, spacing: 5) {
+                                                                    ForEach(clubIDCounts, id: \.clubID) { club in
+                                                                        Button {
+                                                                            // add code here later for like a view of all of the meetings under that clubId and like you can select one to see the info and then edit
+                                                                        } label: {
+                                                                            Text("(\(club.count)) \(getClubNameByIDWithClubs(clubID: club.clubID, clubs: clubs))")
+                                                                                .font(Font.custom("SF MONO", size: 12))
+                                                                                .lineLimit(1)
+                                                                                .foregroundColor(.black)
+                                                                                .padding(8)
+                                                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                                                .background(colorFromClubID(club.clubID).opacity(0.2))
+                                                                                .cornerRadius(12)
                                                                         }
                                                                     }
                                                                 }
-                                                                
-                                                                if clubIDCounts.count > 3 {
-                                                                    Image(systemName: "plus")
-                                                                        .foregroundColor(.black)
-                                                                        .imageScale(.small)
+                                                                .transition(
+                                                                    .movingParts.vanish(colorFromClubID("clubID\(Int.random(in: 0..<100))")) // chooses a random clubID for the color
+                                                                )
+                                                            } else {
+                                                                // circles view for day
+                                                                HStack(spacing: -4) {
+                                                                    ForEach(clubIDCounts.prefix(3), id: \.clubID) { club in
+                                                                        ZStack {
+                                                                            Circle()
+                                                                                .fill(colorFromClubID(club.clubID))
+                                                                                .frame(width: 12, height: 12)
+                                                                            
+                                                                            if club.count > 1 {
+                                                                                Text("\(club.count)")
+                                                                                    .font(.system(size: 10))
+                                                                                    .foregroundColor(.white)
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    if clubIDCounts.count > 3 {
+                                                                        Image(systemName: "plus")
+                                                                            .foregroundColor(.black)
+                                                                            .imageScale(.small)
+                                                                    }
                                                                 }
+                                                                .bold()
                                                             }
-                                                            .bold()
                                                         }
+                                                    } else {
+                                                        Color.white.frame(width: 1, height: 12)
                                                     }
-                                                } else {
-                                                    Color.white.frame(width: 1, height: 12)
+                                                    
+                                                    Spacer()
+                                                    
                                                 }
-                                                
-                                                Spacer()
-                                                
+                                                .frame(height: isTubeView ? UIScreen.main.bounds.height / 4 : nil)
+                                                .fixedSize()
+                                                .onTapGesture {
+                                                    selectedDate = date
+                                                }
                                             }
-                                            .frame(height: isTubeView ? UIScreen.main.bounds.height / 4 : nil)
-                                            .fixedSize()
-                                            .onTapGesture {
-                                                selectedDate = date
-                                            }
+                                            
                                         }
-                                        
                                     }
                                 }
+                                .padding(.horizontal)
+                                .id(monthOffset)
                             }
-                            .padding(.horizontal)
+                        }
+                        .onAppear {
+                            proxy.scrollTo(Calendar.current.component(.month, from: selectedDate) - 1, anchor: .top)
                         }
                     }
                 }
