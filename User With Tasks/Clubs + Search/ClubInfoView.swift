@@ -104,7 +104,7 @@ struct ClubInfoView: View {
                                         GeometryReader { geometry in
                                             Color.clear
                                                 .onAppear {
-                                                    calculateLines(for: geometry.size)
+                                                    calculateLines(size: geometry.size, variable: $abstractGreaterThanFour, maxLines: 4, textStyle: .body)
                                                     abstractExpanded = false
                                                 }
                                         }
@@ -418,16 +418,6 @@ struct ClubInfoView: View {
             fetchClub(withId: club.clubID) { clubr in
                 club = clubr ?? club
             }
-        }
-    }
-
-    func calculateLines(for size: CGSize) {
-        let font = UIFont.preferredFont(forTextStyle: .body)
-        let lineHeight = font.lineHeight
-        let totalLines = Int(size.height / lineHeight)
-        
-        DispatchQueue.main.async {
-            abstractGreaterThanFour = (totalLines != 4 ? totalLines > 4 : false )
         }
     }
     

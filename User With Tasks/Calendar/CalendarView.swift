@@ -32,7 +32,7 @@ struct CalendarView: View {
             Divider()
             
                 FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale, clubs: $clubs, viewModel: viewModel, selectedDate: $selectedDate)
-
+                .padding(.top, -8)
             
         }
         .gesture(

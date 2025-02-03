@@ -13,7 +13,6 @@ struct FlowingScheduleView: View {
     @Binding var clubs: [Club]
     var viewModel: AuthenticationViewModel?
     @Binding var selectedDate: Date
-    @State var isToolbarVisible = true
     @State var draggedMeeting: Club.MeetingTime?
     @State var dragOffset: CGSize = .zero
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
@@ -34,7 +33,6 @@ struct FlowingScheduleView: View {
                                 if minY > screenHeight * 0.22 {
                                     proxy.scrollTo(0, anchor: .bottom) // needed so it doesnt crash for some reason when scrolling to top 
                                 }
-                                isToolbarVisible = minY < screenHeight * 0.22
                             }
                     }
                     .frame(height: 0)
@@ -190,6 +188,17 @@ struct FlowingScheduleView: View {
                             }
                     }
                 }
+                .overlay(alignment: .top, content: {
+                    Button {
+                        
+                    } label: {
+                        Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                            .bold()
+                            .font(.headline)
+                    }
+                    .padding(.top, 8)
+                        .buttonStyle(.borderedProminent)
+                })
                 .gesture(
                     DragGesture()
                         .onEnded { value in
@@ -221,15 +230,6 @@ struct FlowingScheduleView: View {
                         .dismissCallback {
                             refreshMeetings()
                         }
-                }
-                .toolbar {
-                    if isToolbarVisible {
-                        ToolbarItem(placement: .principal) {
-                            Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
-                                .bold()
-                                .font(.headline)
-                        }
-                    }
                 }
             }
         }

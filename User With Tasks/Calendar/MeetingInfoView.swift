@@ -8,11 +8,14 @@ struct MeetingInfoView: View {
     @State var clubs: [Club]
     @State var openSettings = false
     var viewModel : AuthenticationViewModel?
-    @State var showMoreTitle = false
-    @State var showMoreDescription = false
-    @State var showMoreLocation = false
+    @State var showMoreTitle = true
+    @State var showMoreDescription = true
+    @State var showMoreLocation = true
     @State var showMoreAttending = true
     var selectedDate: Date? = nil
+    @State var titleMoreThan4 = false
+    @State var locationMoreThan1 = false
+    @State var descMoreThan9 = false
     @State var attendingMoreThan2 = false
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -24,10 +27,30 @@ struct MeetingInfoView: View {
                             .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
                             .padding(.bottom, 5)
-                            .lineLimit(showMoreTitle ? nil : 1)
-                            .onTapGesture {
-                                showMoreTitle.toggle()
+                            .lineLimit(showMoreTitle ? nil : 4)
+                            .overlay(alignment: .bottomTrailing) {
+                                if titleMoreThan4 {
+                                    Text(showMoreTitle ? "" : "..+")
+                                        .foregroundColor(.blue)
+                                        .font(.title2)
+                                        .bold()
+                                        .padding(.bottom, 5).offset(x: 9).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).padding(.bottom, 5).offset(x: 9))
+                                }
                             }
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showMoreTitle.toggle()
+                                }
+                            }
+                            .background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            calculateLines(size: geometry.size, variable: $titleMoreThan4, maxLines: 4, textStyle: .title2)
+                                            showMoreTitle = false
+                                        }
+                                }
+                            )
                         
                         Spacer()
                         
@@ -51,10 +74,10 @@ struct MeetingInfoView: View {
                     Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
                         .foregroundStyle(colorFromClubID(meeting.clubID))
                         .bold()
-                                        
+                    
                     Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
-                            .foregroundColor(.darkGray)
-                            .bold()
+                        .foregroundColor(.darkGray)
+                        .bold()
                     
                     if meeting.location != nil || meeting.description != nil{
                         Divider()
@@ -68,11 +91,31 @@ struct MeetingInfoView: View {
                             Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                 .foregroundColor(.darkGray)
                                 .lineLimit(showMoreLocation ? nil : 1)
-                                .onTapGesture {
-                                    showMoreLocation.toggle()
+                                .overlay(alignment: .bottomTrailing) {
+                                    if locationMoreThan1 {
+                                        Text(showMoreLocation ? "" : "..+")
+                                            .foregroundColor(.blue)
+                                            .font(.callout)
+                                            .offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).offset(x: 7))
+                                    }
                                 }
+                                .onTapGesture {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        showMoreLocation.toggle()
+                                    }
+                                }
+                                .background(
+                                    GeometryReader { geometry in
+                                        Color.clear
+                                            .onAppear {
+                                                calculateLines(size: geometry.size, variable: $locationMoreThan1, maxLines: 1, textStyle: .callout)
+                                                showMoreLocation = false
+                                            }
+                                    }
+                                )
                         }
                         .font(.callout)
+                        .padding(.trailing)
                     }
                     
                     if let description = meeting.description {
@@ -82,18 +125,38 @@ struct MeetingInfoView: View {
                             Text(.init(description))
                                 .foregroundColor(.darkGray)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .lineLimit(showMoreDescription ? nil : 4)
-                                .onTapGesture {
-                                    showMoreDescription.toggle()
+                                .lineLimit(showMoreDescription ? nil : 9)
+                                .overlay(alignment: .bottomTrailing) {
+                                    if descMoreThan9 {
+                                        Text(showMoreDescription ? "" : "..+")
+                                            .foregroundColor(.blue)
+                                            .font(.callout)
+                                            .offset(x: -1).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).offset(x: -1))
+                                    }
                                 }
+                                .onTapGesture {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        showMoreDescription.toggle()
+                                    }
+                                }
+                                .background(
+                                    GeometryReader { geometry in
+                                        Color.clear
+                                            .onAppear {
+                                                calculateLines(size: geometry.size, variable: $descMoreThan9, maxLines: 9, textStyle: .callout)
+                                                showMoreDescription = false
+                                            }
+                                    }
+                                )
                         }
                         .font(.callout)
+                        .padding(.trailing)
                     }
                     
                     Divider()
-
+                    
                     if let peopleAttending = meeting.visibleByArray {
-
+                        
                         Text(.init(peopleAttending.joined(separator: ", ")))
                             .font(.caption)
                             .foregroundColor(.darkGray)
@@ -103,7 +166,7 @@ struct MeetingInfoView: View {
                                 GeometryReader { geometry in
                                     Color.clear
                                         .onAppear {
-                                            calculateLines(for: geometry.size)
+                                            calculateLines(size: geometry.size, variable: $attendingMoreThan2, maxLines: 2, textStyle: .caption)
                                             showMoreAttending = false
                                         }
                                 }
@@ -143,14 +206,5 @@ struct MeetingInfoView: View {
         }
         .cornerRadius(10)
     }
-    
-    func calculateLines(for size: CGSize) {
-        let font = UIFont.preferredFont(forTextStyle: .body)
-        let lineHeight = font.lineHeight
-        let totalLines = Int(size.height / lineHeight)
-        
-        DispatchQueue.main.async {
-            attendingMoreThan2 = (totalLines != 2 ? totalLines > 2 : false )
-        }
-    }
+
 }
