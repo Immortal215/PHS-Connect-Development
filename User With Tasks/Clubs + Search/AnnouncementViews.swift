@@ -564,8 +564,6 @@ struct SingleAnnouncementView: View {
             }
         }
         .sheet(isPresented: $showInfo) {
-            if let userInfo = userInfo {
-                
                 if let cluber = clubs.first(where: { $0.clubID == announcement.clubID }) {
                     ClubInfoView(club: cluber, viewModel: viewModel, userInfo: $userInfo)
                         .presentationDragIndicator(.visible)
@@ -574,7 +572,6 @@ struct SingleAnnouncementView: View {
                 } else {
                     Text("Club not found")
                 }
-            }
         }
         .padding(fullView! ? 0 : 16)
         .background {

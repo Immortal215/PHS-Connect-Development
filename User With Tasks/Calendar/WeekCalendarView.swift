@@ -108,7 +108,7 @@ struct WeekCalendarView: View {
             .sheet(isPresented: $addMeetingTimeView) {
                 AddMeetingView(viewCloser: {
                     addMeetingTimeView = false
-                }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") }, selectedDate: selectedDate)
+                }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") }, selectedDate: selectedDate, userInfo: .constant(nil))
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
             }

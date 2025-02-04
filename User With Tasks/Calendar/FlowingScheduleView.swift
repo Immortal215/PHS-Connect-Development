@@ -16,6 +16,7 @@ struct FlowingScheduleView: View {
     @State var draggedMeeting: Club.MeetingTime?
     @State var dragOffset: CGSize = .zero
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
+    @Binding var userInfo: Personal?
 
     struct MeetingColumn: Equatable {
         let meeting: Club.MeetingTime
@@ -67,17 +68,17 @@ struct FlowingScheduleView: View {
                                                 .fill(.clear)
                                                 .cornerRadius(5)
                                         }
-                                            .position(x: UIScreen.main.bounds.width / 1.1 / -2)
-                                            .frame(width: UIScreen.main.bounds.width / 1.1, height: 1)
-
+                                        .position(x: UIScreen.main.bounds.width / 1.1 / -2)
+                                        .frame(width: UIScreen.main.bounds.width / 1.1, height: 1)
+                                        
                                         ForEach(columnAssignments, id: \.meeting) { meetingColumn in
                                             let allMeets = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
                                             let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: allMeets)
-
+                                            
                                             let totalWidth = UIScreen.main.bounds.width / 1.1
                                             let columnWidth = hasOverlap ? totalWidth / CGFloat(maxColumns) : totalWidth
                                             let xOffset = hasOverlap ? CGFloat(meetingColumn.column + 1) * columnWidth : totalWidth
-
+                                            
                                             MeetingView(
                                                 meeting: meetingColumn.meeting,
                                                 scale: scale,
@@ -133,7 +134,7 @@ struct FlowingScheduleView: View {
                                                             }
                                                             draggedMeeting = nil
                                                             dragOffset = .zero
-
+                                                            
                                                         default:
                                                             break
                                                         }
@@ -151,54 +152,67 @@ struct FlowingScheduleView: View {
                                             let intervalsMoved = Int(dragOffset.height / intervalHeight)
                                             
                                             let formattedTime = Calendar.current.date(byAdding: .minute, value: intervalsMoved * 15, to: roundedStartTime)!.formatted(date: .omitted, time: .shortened)
-                                                MeetingView(
-                                                    meeting: meeting,
-                                                    scale: scale,
-                                                    hourHeight: hourHeight,
-                                                    meetingInfo: true,
-                                                    clubs: clubs,
-                                                    numOfOverlapping: 1,
-                                                    hasOverlap: false
-                                                )
-                                                .opacity(0.7)
-                                                .offset(x: UIScreen.main.bounds.width / 1.1, y: dragOffset.height)
-                                                .zIndex(100)
-                                                
-                                                Text(formattedTime)
-                                                    .font(.headline)
-                                                    .padding(8)
-                                                    .background(colorFromClubID(meeting.clubID))
-                                                    .cornerRadius(8)
-                                                    .foregroundColor(.white)
-                                                    .offset(y: dragOffset.height)
-                                                    .zIndex(101)
+                                            MeetingView(
+                                                meeting: meeting,
+                                                scale: scale,
+                                                hourHeight: hourHeight,
+                                                meetingInfo: true,
+                                                clubs: clubs,
+                                                numOfOverlapping: 1,
+                                                hasOverlap: false
+                                            )
+                                            .opacity(0.7)
+                                            .offset(x: UIScreen.main.bounds.width / 1.1, y: dragOffset.height)
+                                            .zIndex(100)
+                                            
+                                            Text(formattedTime)
+                                                .font(.headline)
+                                                .padding(8)
+                                                .background(colorFromClubID(meeting.clubID))
+                                                .cornerRadius(8)
+                                                .foregroundColor(.white)
+                                                .offset(y: dragOffset.height)
+                                                .zIndex(101)
                                             
                                         }
-
+                                        
                                     }
                                 }
                                 .frame(width: UIScreen.main.bounds.width / 1.1)
                             }
                         }
                     }
+                    .highPriorityGesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                        scale = max(0.6, min(value.magnitude, 3.0))
+                                }
+                    )
                     .frame(minHeight: screenHeight)
                     .onAppearOnce {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
-                                    proxy.scrollTo(calendarScrollPoint, anchor: .top) // scroll to 6 am
-                            }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
+                            proxy.scrollTo(calendarScrollPoint, anchor: .top) // scroll to 6 am
+                        }
                     }
                 }
                 .overlay(alignment: .top, content: {
-                    Button {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue)
                         
-                    } label: {
-                        Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
-                            .bold()
-                            .font(.headline)
+                        DatePicker("", selection: $selectedDate, displayedComponents: [.date])
+                            .labelsHidden()
+                            .colorInvert()
+                            .tint(.black)
                     }
+                    .fixedSize()
                     .padding(.top, 8)
-                        .buttonStyle(.borderedProminent)
+
                 })
+                .onChange(of: selectedDate) {
+                    let closestHour = Calendar.current.component(.hour, from: dateFromString(meetings.sorted(by: { dateFromString($0.startTime) < dateFromString($1.startTime)}).first?.startTime ?? String()))
+                    proxy.scrollTo(closestHour - 1, anchor: .top)
+                }
                 .gesture(
                     DragGesture()
                         .onEnded { value in
@@ -216,7 +230,7 @@ struct FlowingScheduleView: View {
                 }
                 .popup(isPresented: $meetingInfo) {
                     if let selectedMeeting = selectedMeeting {
-                        MeetingInfoView(meeting: selectedMeeting, clubs: clubs, viewModel: viewModel, selectedDate: selectedDate)
+                        MeetingInfoView(meeting: selectedMeeting, clubs: clubs, viewModel: viewModel, selectedDate: selectedDate, userInfo: $userInfo)
                     }
                 } customize: {
                     $0
@@ -238,7 +252,7 @@ struct FlowingScheduleView: View {
     func hasOverlap(meeting: Club.MeetingTime, otherMeetings: [Club.MeetingTime]) -> Bool {
         let meetingStart = dateFromString(meeting.startTime)
         let meetingEnd = dateFromString(meeting.endTime)
-
+        
         for otherMeeting in otherMeetings {
             if meeting == otherMeeting {
                 continue
@@ -246,25 +260,25 @@ struct FlowingScheduleView: View {
             
             let otherStart = dateFromString(otherMeeting.startTime)
             let otherEnd = dateFromString(otherMeeting.endTime)
-
-
+            
+            
             if (meetingStart < otherEnd && otherStart < meetingEnd) { // for events that start at time of other start
                 return true
             }
         }
-
+        
         return false
     }
-
+    
     
     func calculateColumnAssignments() -> [MeetingColumn] {
         let sortedMeetings = meetings
             .filter { isSameDay(dateFromString($0.startTime), selectedDate) }
             .sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
-
+        
         var columnAssignments: [MeetingColumn] = []
         var activeColumns: [(endTime: Date, column: Int)] = []
-
+        
         for meeting in sortedMeetings {
             let startTime = dateFromString(meeting.startTime)
             let endTime = dateFromString(meeting.endTime)
@@ -283,8 +297,8 @@ struct FlowingScheduleView: View {
         
         return columnAssignments
     }
-
-
+    
+    
     func handleMeetingTap(_ meeting: Club.MeetingTime) {
         if selectedMeeting != meeting {
             meetingInfo = false
@@ -298,7 +312,7 @@ struct FlowingScheduleView: View {
         }
         refreshMeetings()
     }
-
+    
     func refreshMeetings() {
         refresher = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {

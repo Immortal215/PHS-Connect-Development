@@ -112,7 +112,6 @@ struct MonthPickerView: View {
                                                     selectedDate = date
                                                 }
                                             }
-                                            
                                         }
                                     }
                                 }

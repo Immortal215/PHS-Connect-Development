@@ -24,7 +24,6 @@ struct AddMeetingView: View {
     @State var visibleBy: [String] = []
     @State var visibleByWho = "Everyone"
     @State var refresher = false
-    
     var viewCloser: (() -> Void)?
     
     @State var CreatedMeetingTime: Club.MeetingTime = Club.MeetingTime(clubID: "", startTime: "", endTime: "", title: "")
@@ -36,6 +35,8 @@ struct AddMeetingView: View {
     var editScreen: Bool? = false
     
     var selectedDate: Date
+    
+    @Binding var userInfo: Personal?
     
     var body: some View {
         
@@ -425,7 +426,7 @@ struct AddMeetingView: View {
             }
         }
         .popup(isPresented: $meetingFull) {
-            MeetingInfoView(meeting: meetingTimeForInfo, clubs: leaderClubs)
+            MeetingInfoView(meeting: meetingTimeForInfo, clubs: leaderClubs, userInfo: $userInfo)
         } customize: {
             $0
                 .type(.default)

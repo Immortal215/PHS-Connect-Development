@@ -17,6 +17,9 @@ struct MeetingInfoView: View {
     @State var locationMoreThan1 = false
     @State var descMoreThan9 = false
     @State var attendingMoreThan2 = false
+    @State var showInfo = false
+    @Binding var userInfo: Personal?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ScrollView(showsIndicators: false) {
@@ -31,10 +34,9 @@ struct MeetingInfoView: View {
                             .overlay(alignment: .bottomTrailing) {
                                 if titleMoreThan4 {
                                     Text(showMoreTitle ? "" : "..+")
-                                        .foregroundColor(.blue)
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).padding(.bottom, 5).offset(x: 7))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -71,9 +73,14 @@ struct MeetingInfoView: View {
                     }
                     .padding(.bottom, -8)
                     
-                    Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
-                        .foregroundStyle(colorFromClubID(meeting.clubID))
-                        .bold()
+                    Button {
+                        showInfo.toggle()
+                    } label: {
+                        Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
+                            .foregroundStyle(colorFromClubID(meeting.clubID))
+                            .bold()
+                    }
+                    
                     
                     Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
                         .foregroundColor(.darkGray)
@@ -94,8 +101,8 @@ struct MeetingInfoView: View {
                                 .overlay(alignment: .bottomTrailing) {
                                     if locationMoreThan1 {
                                         Text(showMoreLocation ? "" : "..+")
-                                            .foregroundColor(.blue)
                                             .font(.callout)
+                                            .foregroundColor(.darkGray)
                                             .offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).offset(x: 7))
                                     }
                                 }
@@ -129,7 +136,7 @@ struct MeetingInfoView: View {
                                 .overlay(alignment: .bottomTrailing) {
                                     if descMoreThan9 {
                                         Text(showMoreDescription ? "" : "..+")
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.darkGray)
                                             .font(.callout)
                                             .offset(x: -1).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).offset(x: -1))
                                     }
@@ -185,13 +192,25 @@ struct MeetingInfoView: View {
                     Color.clear.frame(height: screenHeight/3)
                 }
             }
+            .sheet(isPresented: $showInfo) {
+                if userInfo != nil {
+                    if let cluber = clubs.first(where: { $0.clubID == meeting.clubID }) {
+                        ClubInfoView(club: cluber, viewModel: viewModel!, userInfo: $userInfo)
+                            .presentationDragIndicator(.visible)
+                            .frame(width: UIScreen.main.bounds.width/1.05)
+                            .foregroundColor(nil)
+                    } else {
+                        Text("Club not found")
+                    }
+                }
+            }
             
         }
         .animation(.smooth)
         .sheet(isPresented: $openSettings) {
             AddMeetingView(viewCloser: {
                 openSettings = false
-            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true, selectedDate: selectedDate!)
+            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true, selectedDate: selectedDate!, userInfo: $userInfo)
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
         }

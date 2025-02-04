@@ -330,7 +330,7 @@ struct ClubInfoView: View {
                 if let closestMeeting = club.meetingTimes!.sorted(by: {dateFromString($0.startTime) < dateFromString($1.startTime)}).filter({ meeting in
                     return dateFromString(meeting.startTime) >= Date()
                 }).first {
-                    MeetingInfoView(meeting: closestMeeting, clubs: [club])
+                    MeetingInfoView(meeting: closestMeeting, clubs: [club], userInfo: $userInfo)
                 }
             } customize: {
                 $0

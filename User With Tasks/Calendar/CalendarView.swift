@@ -31,24 +31,10 @@ struct CalendarView: View {
             
             Divider()
             
-                FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale, clubs: $clubs, viewModel: viewModel, selectedDate: $selectedDate)
+            FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale, clubs: $clubs, viewModel: viewModel, selectedDate: $selectedDate, userInfo: $userInfo)
                 .padding(.top, -8)
             
         }
-        .gesture(
-            SimultaneousGesture(
-                MagnificationGesture()
-                    .onChanged { value in
-                            scale = max(0.6, min(value.magnitude, 3.0))
-                    },
-                DragGesture()
-                    .onChanged { value in
-                        if value.translation.width != 0 || value.translation.height != 0 {
-                            offset = CGSize(width: value.translation.width, height: value.translation.height)
-                        }
-                    }
-            )
-        )
         .onAppear {
             selectedDate = dateFromString(storedDate)
         }
