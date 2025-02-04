@@ -211,7 +211,7 @@ struct FlowingScheduleView: View {
                 })
                 .onChange(of: selectedDate) {
                     let closestHour = Calendar.current.component(.hour, from: dateFromString(meetings.sorted(by: { dateFromString($0.startTime) < dateFromString($1.startTime)}).first?.startTime ?? String()))
-                    proxy.scrollTo(closestHour - 1, anchor: .top)
+                    proxy.scrollTo(closestHour > 0 ? closestHour - 1 : closestHour, anchor: .top)
                 }
                 .gesture(
                     DragGesture()
