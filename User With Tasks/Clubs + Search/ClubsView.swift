@@ -49,8 +49,8 @@ struct ClubView: View {
                     HStack {
                        Text("Home")
                             .bold()
-                            .font(.largeTitle)
-                    
+                            .font(.title)
+
                         Spacer()
                         
                         Button {
@@ -85,7 +85,7 @@ struct ClubView: View {
                         }
                     }
                     .padding(.horizontal)
-                    
+                    .padding(.bottom, -8)
                     ScrollView {
                         
                         if userInfo?.userID != nil {
@@ -97,6 +97,7 @@ struct ClubView: View {
                         }
                     }
                 }
+                .padding()
             } else {
                 ProgressView()
             }

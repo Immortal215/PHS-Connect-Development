@@ -14,9 +14,10 @@ struct SettingsView: View {
     @AppStorage("userImage") var userImage: String?
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
+    @AppStorage("darkMode") var darkMode = false 
     
     var body: some View {
-        ScrollView {
+        Form {
             VStack(alignment: .center) {
                 if !viewModel.isGuestUser {
                     AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
@@ -49,6 +50,8 @@ struct SettingsView: View {
                     Text(favoriteText)
                         .padding()
                 }
+                
+                Toggle("Dark Mode", isOn: $darkMode)
                 
                 Button {
                     do {

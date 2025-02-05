@@ -17,11 +17,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct User_with_TasksApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(.light)
+                .preferredColorScheme(darkMode ? .dark : .light)
         }
         
     }

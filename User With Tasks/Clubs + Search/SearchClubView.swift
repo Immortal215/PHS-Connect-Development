@@ -30,71 +30,77 @@ struct SearchClubView: View {
         ZStack {
             if advSearchShown {
                 VStack {
-                    Text("Search For More Clubs")
-                        .font(.largeTitle)
-                        .bold()
+                    HStack {
+                        Text("Search")
+                            .font(.title)
+                            .bold()
+                        
+                        Spacer()
+                        
+                        ZStack(alignment: .leading) {
+                            HStack {
+                                SearchBar("Search For Clubs", text: $searchText, isEditing: $isSearching)
+                                    .onChange(of: searchText) {
+                                        filteredItems = calculateFiltered()
+                                    }
+                                    .frame(width: screenWidth/3)
+                                // .disabled(currentSearchingBy == "Genre" ? true : false)
+                                Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
+                                    .bold()
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 8)
+                                    .background(currentSearchingBy == "Genre" ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
+                                    .foregroundColor(currentSearchingBy == "Genre" ? .white : .black)
+                                    .buttonStyle(.borderedProminent)
+                                    .cornerRadius(15)
+                                    .onTapGesture {
+                                        if currentSearchingBy == "Genre" {
+                                            currentSearchingBy = "Name"
+                                        } else {
+                                            currentSearchingBy = "Genre"
+                                        }
+                                    }
+                                    .fixedSize(horizontal: true, vertical: false)
+                                
+                                Text("Sort")
+                                    .bold()
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 8)
+                                    .background(sortingMenu ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
+                                    .foregroundColor(sortingMenu ? .white : .black)
+                                    .buttonStyle(.borderedProminent)
+                                    .cornerRadius(15)
+                                    .onTapGesture {
+                                        sortingMenu.toggle()
+                                    }
+                                    .fixedSize(horizontal: true, vertical: false)
+                                
+                                
+                                if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
+                                    Button {
+                                        //                                                fetchClubs { fetchedClubs in
+                                        //                                                    self.clubs = fetchedClubs
+                                        //                                                }
+                                        createClubToggler = true
+                                    } label: {
+                                        Image(systemName: "plus")
+                                            .foregroundStyle(.green)
+                                    }
+                                    .fullScreenCover(isPresented: $createClubToggler) {
+                                        CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
+                                            .presentationDragIndicator(.visible)
+                                            .presentationSizing(.page)
+                                    }
+                                    .padding(.leading)
+                                }
+                            }
+                            .padding()
+                        }
+                    }
+                    .padding(.bottom, -8)
                     
                     HStack {
                         VStack {
-                            ZStack(alignment: .leading) {
-                                HStack {
-                                    SearchBar("Search For Clubs", text: $searchText, isEditing: $isSearching)
-                                        .onChange(of: searchText) {
-                                            filteredItems = calculateFiltered()
-                                        }
-                                        .frame(width: screenWidth/3)
-                                    // .disabled(currentSearchingBy == "Genre" ? true : false)
-                                    Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
-                                        .bold()
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 8)
-                                        .background(currentSearchingBy == "Genre" ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
-                                        .foregroundColor(currentSearchingBy == "Genre" ? .white : .black)
-                                        .buttonStyle(.borderedProminent)
-                                        .cornerRadius(15)
-                                        .onTapGesture {
-                                            if currentSearchingBy == "Genre" {
-                                                currentSearchingBy = "Name"
-                                            } else {
-                                                currentSearchingBy = "Genre"
-                                            }
-                                        }
-                                        .fixedSize(horizontal: true, vertical: false)
-                                    
-                                    Text("Sort")
-                                        .bold()
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 8)
-                                        .background(sortingMenu ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
-                                        .foregroundColor(sortingMenu ? .white : .black)
-                                        .buttonStyle(.borderedProminent)
-                                        .cornerRadius(15)
-                                        .onTapGesture {
-                                            sortingMenu.toggle()
-                                        }
-                                        .fixedSize(horizontal: true, vertical: false)
-                                    
-                                    
-                                    if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
-                                        Button {
-                                            //                                                fetchClubs { fetchedClubs in
-                                            //                                                    self.clubs = fetchedClubs
-                                            //                                                }
-                                            createClubToggler = true
-                                        } label: {
-                                            Image(systemName: "plus")
-                                                .foregroundStyle(.green)
-                                        }
-                                        .fullScreenCover(isPresented: $createClubToggler) {
-                                            CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
-                                                .presentationDragIndicator(.visible)
-                                                .presentationSizing(.page)
-                                        }
-                                        .padding(.leading)
-                                    }
-                                }
-                                .padding()
-                            }
                             
                             if currentSearchingBy == "Genre" {
                                 HorizontalScrollView { // needed to be custom made in order to block the vertical refresh pull, cooked
@@ -187,7 +193,7 @@ struct SearchClubView: View {
                 .onChange(of: selectedGenres) {
                     filteredItems = calculateFiltered()
                 }
-            
+                .padding()
             } else {
                 ProgressView()
             }

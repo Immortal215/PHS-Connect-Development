@@ -123,6 +123,8 @@ struct ContentView: View {
                                     }
                                 }
                                 .transition(.opacity)
+                            } else {
+                                ProgressView()
                             }
                             // tab bar view
                             VStack {
@@ -202,6 +204,8 @@ struct ContentView: View {
                         }
                         .onDisappear {
                             removeClubsListener()
+                            clubs = []
+                            userInfo = nil
                         }
                         
                         //                        .onAppear {

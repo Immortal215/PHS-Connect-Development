@@ -74,7 +74,9 @@ struct MeetingInfoView: View {
                     .padding(.bottom, -8)
                     
                     Button {
-                        showInfo.toggle()
+                        if userInfo != nil {
+                            showInfo.toggle()
+                        }
                     } label: {
                         Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
                             .foregroundStyle(colorFromClubID(meeting.clubID))

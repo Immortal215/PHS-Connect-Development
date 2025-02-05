@@ -536,8 +536,9 @@ struct SingleAnnouncementView: View {
                     .foregroundColor(.gray)
                     
                     Text(announcement.title.isEmpty ? "Title" : announcement.title)
-                        .font(.title)
+                        .font(.headline)
                         .bold()
+                        .lineLimit(fullView! ? 5 : 1)
                     
                     Text(.init(announcement.body.isEmpty ? "Body" : announcement.body))
                         .font(.body)
