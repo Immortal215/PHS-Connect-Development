@@ -24,7 +24,7 @@ struct TabBarButton: View {
                     // .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
                 }
                 //  .offset(y: selectedTab == index ? -20 : 0.0 )
-                .foregroundColor(selectedTab == index ? .blue : .black)
+                .foregroundColor(selectedTab == index ? .blue : .primary)
                 .brightness(0.1)
             }
         }

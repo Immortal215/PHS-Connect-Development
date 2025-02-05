@@ -123,6 +123,7 @@ struct ContentView: View {
                                     }
                                 }
                                 .transition(.opacity)
+                                .ignoresSafeArea(edges: .all)
                             } else {
                                 ProgressView()
                             }
@@ -148,7 +149,6 @@ struct ContentView: View {
                                             .padding(.horizontal)
                                         
                                     }
-                                    .padding(.bottom, selectedTab == 3 ? 20 : 0)
                                     .fixedSize()
                                     .bold()
                                 }
@@ -158,7 +158,7 @@ struct ContentView: View {
                             .background {
                                 HStack {
                                     LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color.white]),
+                                        gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
                                         startPoint: .top,
                                         endPoint: .bottom
                                     )
@@ -167,6 +167,7 @@ struct ContentView: View {
                                 }
                                 .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
                                 .allowsHitTesting(false)
+                                .offset(y: 10)
                             }
                         }
                         .refreshable {

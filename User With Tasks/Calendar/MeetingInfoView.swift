@@ -19,6 +19,7 @@ struct MeetingInfoView: View {
     @State var attendingMoreThan2 = false
     @State var showInfo = false
     @Binding var userInfo: Personal?
+    @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -28,6 +29,7 @@ struct MeetingInfoView: View {
                         Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
                             .font(.title2)
                             .fontWeight(.bold)
+                            .foregroundStyle(.primary)
                             .multilineTextAlignment(.leading)
                             .padding(.bottom, 5)
                             .lineLimit(showMoreTitle ? nil : 4)
@@ -36,7 +38,7 @@ struct MeetingInfoView: View {
                                     Text(showMoreTitle ? "" : "..+")
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).padding(.bottom, 5).offset(x: 6))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.systemBackground).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -85,7 +87,7 @@ struct MeetingInfoView: View {
                     
                     
                     Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
-                        .foregroundColor(.darkGray)
+                        .foregroundColor(darkMode ? .gray : .darkGray)
                         .bold()
                     
                     if meeting.location != nil || meeting.description != nil{
@@ -96,16 +98,17 @@ struct MeetingInfoView: View {
                         HStack(alignment: .top) {
                             Text("Location")
                                 .fontWeight(.semibold)
-                            
+                                .foregroundStyle(.primary)
+
                             Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
-                                .foregroundColor(.darkGray)
+                                .foregroundColor(darkMode ? .gray : .darkGray)
                                 .lineLimit(showMoreLocation ? nil : 1)
                                 .overlay(alignment: .bottomTrailing) {
                                     if locationMoreThan1 {
                                         Text(showMoreLocation ? "" : "..+")
                                             .font(.callout)
-                                            .foregroundColor(.darkGray)
-                                            .offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).offset(x: 7))
+                                            .foregroundColor(darkMode ? .gray : .darkGray)
+                                            .offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.systemBackground).offset(x: 7))
                                     }
                                 }
                                 .onTapGesture {
@@ -131,16 +134,17 @@ struct MeetingInfoView: View {
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Notes")
                                 .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
                             Text(.init(description))
-                                .foregroundColor(.darkGray)
+                                .foregroundColor(darkMode ? .gray : .darkGray)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .lineLimit(showMoreDescription ? nil : 9)
                                 .overlay(alignment: .bottomTrailing) {
                                     if descMoreThan9 {
                                         Text(showMoreDescription ? "" : "..+")
-                                            .foregroundColor(.darkGray)
+                                            .foregroundColor(darkMode ? .gray : .darkGray)
                                             .font(.callout)
-                                            .offset(x: -1).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.white).offset(x: -1))
+                                            .offset(x: -1).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.systemBackground).offset(x: -1))
                                     }
                                 }
                                 .onTapGesture {
@@ -168,7 +172,7 @@ struct MeetingInfoView: View {
                         
                         Text(.init(peopleAttending.joined(separator: ", ")))
                             .font(.caption)
-                            .foregroundColor(.darkGray)
+                            .foregroundColor(darkMode ? .gray : .darkGray)
                             .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(showMoreAttending ? nil : 2)
                             .background(
@@ -208,6 +212,8 @@ struct MeetingInfoView: View {
             }
             
         }
+        .saturation(darkMode ? 1.3 : 1.0)
+        .brightness(darkMode ? 0.3 : 0.0)
         .animation(.smooth)
         .sheet(isPresented: $openSettings) {
             AddMeetingView(viewCloser: {
@@ -220,10 +226,11 @@ struct MeetingInfoView: View {
         .frame(width: screenWidth / 2.5)
         .background {
             ZStack {
-                Color.white
+                Color(UIColor.systemBackground)
                 
-                colorFromClubID(meeting.clubID).opacity(0.2)
+                colorFromClubID(meeting.clubID).opacity(0.2).saturation(darkMode ? 1.3 : 1.0).brightness(darkMode ? 0.3 : 0.0)
             }
+
         }
         .cornerRadius(10)
     }

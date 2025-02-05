@@ -85,6 +85,7 @@ struct ClubView: View {
                         }
                     }
                     .padding(.horizontal)
+                    .padding(.top)
                     .padding(.bottom, -8)
                     ScrollView {
                         

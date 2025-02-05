@@ -10,7 +10,8 @@ struct MeetingView: View {
     var numOfOverlapping: Int? = 1
     var screenWidth = UIScreen.main.bounds.width
     var hasOverlap: Bool? = false
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
         let endTime = dateFromString(meeting.endTime)
@@ -96,6 +97,8 @@ struct MeetingView: View {
                 }
                 .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration + 1, alignment: .topLeading)
             }
+            .saturation(darkMode ? 1.3 : 1.0)
+            .brightness(darkMode ? 0.3 : 0.0)
             .frame(width: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), height: duration + 1)
             .position(x: geometry.size.width / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }

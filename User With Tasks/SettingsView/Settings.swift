@@ -18,41 +18,50 @@ struct SettingsView: View {
     
     var body: some View {
         Form {
-            VStack(alignment: .center) {
+            HStack(alignment: .top) {
                 if !viewModel.isGuestUser {
                     AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
                         image
                             .resizable()
-                            .clipShape(Circle())
+                            .clipShape(RoundedRectangle(cornerRadius: 15))
                             .frame(width: 100, height: 100)
-                            .overlay(Circle().stroke(lineWidth: 3))
+                            .overlay(RoundedRectangle(cornerRadius: 15).stroke(lineWidth: 5))
                     } placeholder: {
                         ZStack {
-                            Circle().stroke(.gray)
+                            RoundedRectangle(cornerRadius: 15).stroke(.gray)
                             ProgressView("Loading...")
                         }
                         .frame(width: 100, height: 100)
                     }
-                    .padding()
+                    .padding(.trailing)
                 }
                 
-                Text(viewModel.userName ?? "No name")
-                    .font(.largeTitle)
-                    .bold()
-                
-                Text(viewModel.userEmail ?? "No Email")
-                
-                Text("User Type: \(viewModel.userType ?? "Not Found")")
-                
-                Text("User UID (ONLY USE FOR TESTING) : \(viewModel.uid ?? "Not Found")")
-                
-                if !viewModel.isGuestUser {
-                    Text(favoriteText)
-                        .padding()
+                VStack(alignment: .leading) {
+                    Text(viewModel.userName ?? "No name")
+                        .font(.largeTitle)
+                        .bold()
+                    
+                    Text(viewModel.userEmail ?? "No Email")
+                    
+                    Text("\(viewModel.userType ?? "User Type Not Found")")
                 }
                 
-                Toggle("Dark Mode", isOn: $darkMode)
+                Spacer()
                 
+                VStack(alignment: .trailing) {
+                    Text("User UID (ONLY USE FOR TESTING) : \(viewModel.uid ?? "Not Found")")
+                    
+                    if !viewModel.isGuestUser {
+                        Text(favoriteText)
+                    }
+                }
+                
+            }
+            .padding()
+            
+            Toggle("Dark Mode (NOT COMPLETED)", isOn: $darkMode)
+                .padding()
+            HStack {
                 Button {
                     do {
                         try AuthenticationManager.shared.signOut()
@@ -82,10 +91,6 @@ struct SettingsView: View {
                 .padding()
                 .fixedSize()
                 
-
-            }
-                        
-            HStack {
                 Spacer()
                 if !viewModel.isGuestUser {
                     FeatureReportButton(uid: viewModel.uid ?? "None")
@@ -93,9 +98,6 @@ struct SettingsView: View {
                 }
             }
         }
-        .padding()
-        .frame(height: UIScreen.main.bounds.height)
-        .animation(.snappy)
         .onAppear {
             if !viewModel.isGuestUser {
                 if let UserID = viewModel.uid {
