@@ -46,7 +46,7 @@ struct WeekCalendarView: View {
                         
                         Text("\(Calendar.current.component(.day, from: date))")
                             .font(.headline)
-                            .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .black)
+                            .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
                         
@@ -76,7 +76,7 @@ struct WeekCalendarView: View {
                                 
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
-                                        .foregroundColor(.black)
+                                        .foregroundColor(.primary)
                                         .imageScale(.small)
                                 }
                             }

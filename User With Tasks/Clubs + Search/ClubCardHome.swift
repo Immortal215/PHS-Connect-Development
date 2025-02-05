@@ -20,7 +20,7 @@ struct ClubCardHome: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
-                .foregroundStyle(Color(hexadecimal: "#F2F2F2"))
+                .foregroundStyle(Color(UIColor.systemGray6))
             
             
             HStack {
@@ -115,7 +115,7 @@ struct ClubCardHome: View {
                     }
                 }
                 .padding()
-                .foregroundStyle(.black)
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 
                 
@@ -123,7 +123,6 @@ struct ClubCardHome: View {
                 Spacer()
                 
             }
-            
         }
         
         .animation(.easeInOut)

@@ -17,12 +17,12 @@ struct ClubCard: View {
     @State var infoRelativeIndex: Int
     @Binding var userInfo: Personal?
     @State var youSureYouWantToLeave = false
-    @Binding var selectedGenres : [String]
+    @Binding var selectedGenres: [String]
     
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
-                .foregroundStyle(Color(hexadecimal: "#F2F2F2"))
+                .foregroundStyle(Color(UIColor.systemGray6))
             
             HStack {
                 AsyncImage(
@@ -47,17 +47,12 @@ struct ClubCard: View {
                                 .frame(maxWidth: screenWidth / CGFloat(imageScaler + 0.3))
                                 .fixedSize()
                             }
-                            
-                            //                            RoundedRectangle(cornerRadius: 15)
-                            //   .stroke(.black, lineWidth: 3)
-                            // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                         }
-                        //  .frame(width: screenWidth / CGFloat(imageScaler), height: screenWidth / CGFloat(imageScaler))
                     },
                     placeholder: {
                         ZStack {
                             Rectangle()
-                                .stroke(.gray)
+                                .stroke(Color.gray)
                             ProgressView("Loading \(club.name) Image")
                         }
                     }
@@ -69,11 +64,12 @@ struct ClubCard: View {
                         .font(.callout)
                         .bold()
                         .padding(.bottom, 8)
-                    
-                    
+                        .foregroundColor(.primary)
+
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
+                        .foregroundColor(.secondary)
                     
                     Spacer()
                     
@@ -92,20 +88,18 @@ struct ClubCard: View {
                             .font(.caption)
                     }
                 }
-                .foregroundStyle(.black)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: screenWidth / 2.8)
                 .padding()
                 
                 VStack(alignment: .trailing) {
                     
-                    // Info "Button"
-                        Image(
-                            systemName: club.leaders.contains(viewModel.userEmail ?? "") ?
-                            "pencil" : "info.circle"
-                        )
-                        .allowsHitTesting(false)
+                    Image(
+                        systemName: club.leaders.contains(viewModel.userEmail ?? "") ?
+                        "pencil" : "info.circle"
+                    )
+                    .allowsHitTesting(false)
                     
-                    // Favorite Button + enroll
                     if !viewModel.isGuestUser {
                         Button {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
@@ -123,13 +117,15 @@ struct ClubCard: View {
                         } label: {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                 Image(systemName: "heart.fill")
-                                    .transition(.movingParts.pop(.blue))
+                                    .foregroundStyle(.red)
+                                    .transition(.movingParts.pop(.red))
                                 
                             } else {
                                 Image(systemName: "heart")
                                     .transition(
                                         .asymmetric(insertion: .opacity, removal: .movingParts.vanish(Color(white: 0.8), mask: Circle()))
                                     )
+                                    .foregroundStyle(.primary)
                             }
                         }
                         .padding(.top)
@@ -137,7 +133,6 @@ struct ClubCard: View {
                         
                         Spacer()
                         
-                        // Enroll Button
                         Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Enroll" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Enrolled") {
                             if let email = viewModel.userEmail {
                                 if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) {
@@ -178,7 +173,7 @@ struct ClubCard: View {
                 }
                 .padding()
             }
-            if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) { // ensures that the announcment has not been seen and is less than a week old
+            if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
                 Color.black.opacity(0.2)
                     .cornerRadius(15)
                 
@@ -196,12 +191,6 @@ struct ClubCard: View {
         }
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.easeInOut)
-        //    .onAppear {
-        //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
-        //                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-        //                refreshUserInfo()
-        //            }
-        //a    }
     }
     
     func refreshUserInfo() {

@@ -38,7 +38,7 @@ struct MonthPickerView: View {
                                                     
                                                     Text("\(day)")
                                                         .font(.headline)
-                                                        .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .black)
+                                                        .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                                                         .padding(10)
                                                         .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
                                                     
@@ -62,7 +62,7 @@ struct MonthPickerView: View {
                                                                             Text("(\(club.count)) \(getClubNameByIDWithClubs(clubID: club.clubID, clubs: clubs))")
                                                                                 .font(Font.custom("SF MONO", size: 12))
                                                                                 .lineLimit(1)
-                                                                                .foregroundColor(.black)
+                                                                                .foregroundColor(.primary)
                                                                                 .padding(8)
                                                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                                                                 .background(colorFromClubID(club.clubID).opacity(0.2))
@@ -92,7 +92,7 @@ struct MonthPickerView: View {
                                                                     
                                                                     if clubIDCounts.count > 3 {
                                                                         Image(systemName: "plus")
-                                                                            .foregroundColor(.black)
+                                                                            .foregroundColor(.primary)
                                                                             .imageScale(.small)
                                                                     }
                                                                 }
@@ -100,7 +100,7 @@ struct MonthPickerView: View {
                                                             }
                                                         }
                                                     } else {
-                                                        Color.white.frame(width: 1, height: 12)
+                                                        Color.clear.frame(width: 1, height: 12)
                                                     }
                                                     
                                                     Spacer()

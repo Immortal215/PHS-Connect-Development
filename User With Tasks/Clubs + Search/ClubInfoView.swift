@@ -98,7 +98,7 @@ struct ClubInfoView: View {
                             VStack(alignment: .leading) {
                                 Text(.init(club.abstract))
                                     .font(.body)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.secondary)
                                     .lineLimit(abstractExpanded ? nil : 4)
                                     .background(
                                         GeometryReader { geometry in
@@ -274,7 +274,6 @@ struct ClubInfoView: View {
                         .font(.headline)
                     Text(club.location)
                         .font(.subheadline)
-                        .foregroundStyle(.black)
                         .padding(.top, -8)
                 
                     
@@ -323,7 +322,7 @@ struct ClubInfoView: View {
                 }
                 .padding()
                 
-                Color.white
+                Color.systemBackground
                     .frame(height: screenHeight/10)
             }
             .popup(isPresented: $meetingFull) {
@@ -342,7 +341,7 @@ struct ClubInfoView: View {
                     .closeOnTap(false)
                 
             }
-            .foregroundStyle(.black)
+            .foregroundStyle(.primary)
             .animation(.easeInOut, value: abstractExpanded) // smooth transition with whenever u expand abstract to show more
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -350,7 +349,7 @@ struct ClubInfoView: View {
                         .font(.title)
                         .bold()
                         .padding(.top)
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.primary)
 
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -413,7 +412,7 @@ struct ClubInfoView: View {
                 }
             }
         }
-        .background(colorFromClubID(club.clubID).opacity(0.2))
+    //    .background(colorFromClubID(club.clubID).opacity(0.2))
         .onAppear {
             fetchClub(withId: club.clubID) { clubr in
                 club = clubr ?? club

@@ -43,12 +43,16 @@ struct FlowingScheduleView: View {
                             ForEach(0..<24, id: \.self) { hour in
                                 Divider()
                                     .background(Color.gray.opacity(0.3))
-
-                                Text("\(hour % 12 == 0 ? 12 : hour % 12) \(hour < 12 ? "AM" : "PM")")
-                                    .font(.caption)
+                                    .offset(x : 60)
+                                    .overlay(alignment: .leading) {
+                                        Text("\(hour % 12 == 0 ? 12 : hour % 12) \(hour < 12 ? "AM" : "PM")")
+                                            .font(.caption)
+                                            .bold()
+                                            .padding(.leading)
+                                    }
+                                
+                                Color.clear
                                     .frame(width: 60, height: hourHeight * scale)
-                                    .bold()
-                                    .background(Color(hexadecimal: "#D4F1F4"))
                                     .id(hour)
                             }
                         }
@@ -203,7 +207,7 @@ struct FlowingScheduleView: View {
                         DatePicker("", selection: $selectedDate, displayedComponents: [.date])
                             .labelsHidden()
                             .colorInvert()
-                            .tint(.black)
+                            .tint(.primary)
                     }
                     .fixedSize()
                     .padding(.top, 8)

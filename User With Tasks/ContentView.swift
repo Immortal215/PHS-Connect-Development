@@ -88,39 +88,37 @@ struct ContentView: View {
                     } else {
                         ZStack {
                             if advSearchShown {
-//                                ZStack {
-//                                    switch selectedTab { // unfortunately cannot use a tabview as there is no way to hide the tabbar without using .page which is also not wanted
-//                                    case 0:
-//                                        SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-//                                    case 1:
-//                                        if !viewModel.isGuestUser {
-//                                            ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-//                                        }
-//                                    case 2:
-//                                        if !viewModel.isGuestUser {
-//                                            CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-//                                        }
-//                                    case 3:
-//                                        SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-//                                    default:
-//                                        EmptyView()
-//                                    }
-//                                }
-//                                
-                                Group {
-                                    if selectedTab == 0 {
-                                        SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    } else if selectedTab == 1 {
-                                        if !viewModel.isGuestUser {
-                                            ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        }
-                                    }  else if selectedTab == 2 {
-                                        if !viewModel.isGuestUser {
-                                            CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        }
-                                    } else if selectedTab == 3 {
-                                        SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                                    }
+                                //                                ZStack {
+                                //                                    switch selectedTab { // unfortunately cannot use a tabview as there is no way to hide the tabbar without using .page which is also not wanted
+                                //                                    case 0:
+                                //                                        SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                //                                    case 1:
+                                //                                        if !viewModel.isGuestUser {
+                                //                                            ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                //                                        }
+                                //                                    case 2:
+                                //                                        if !viewModel.isGuestUser {
+                                //                                            CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                //                                        }
+                                //                                    case 3:
+                                //                                        SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                                //                                    default:
+                                //                                        EmptyView()
+                                //                                    }
+                                //                                }
+                                //
+                                ZStack {
+                                    SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        .opacity(selectedTab == 0 ? 1 : 0)
+                                    
+                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        .opacity(selectedTab == 1 ? 1 : 0)
+                                    
+                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        .opacity(selectedTab == 2 ? 1 : 0)
+                                    
+                                    SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                                        .opacity(selectedTab == 3 ? 1 : 0)
                                 }
                                 .transition(.opacity)
                                 .ignoresSafeArea(edges: .all)

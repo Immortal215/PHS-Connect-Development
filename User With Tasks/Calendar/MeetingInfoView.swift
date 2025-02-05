@@ -66,7 +66,7 @@ struct MeetingInfoView: View {
                                 } label: {
                                     Image(systemName: "gearshape")
                                         .imageScale(.large)
-                                        .foregroundStyle(.black)
+                                        .foregroundColor(darkMode ? .white : .accentColor)
                                 }
                                 
                                 Spacer()

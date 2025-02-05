@@ -559,7 +559,7 @@ struct SingleAnnouncementView: View {
                         .italic()
                 }
                 .padding()
-                .foregroundStyle(.black)
+                .foregroundStyle(.primary)
                 
                 Spacer()
             }
