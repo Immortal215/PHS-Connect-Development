@@ -25,7 +25,8 @@ struct SearchClubView: View {
     @State var filteredItems: [Club] = []
     @AppStorage("sharedGenre") var sharedGenre = ""
     @State var selectedGenres: [String] = []
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         ZStack {
             if advSearchShown {
@@ -34,6 +35,7 @@ struct SearchClubView: View {
                         Text("Search")
                             .font(.title)
                             .bold()
+                            .padding()
                         
                         Spacer()
                         
@@ -86,7 +88,7 @@ struct SearchClubView: View {
                                         Image(systemName: "plus")
                                             .foregroundStyle(.green)
                                     }
-                                    .fullScreenCover(isPresented: $createClubToggler) {
+                                    .sheet(isPresented: $createClubToggler) {
                                         CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
                                             .presentationDragIndicator(.visible)
                                             .presentationSizing(.page)
