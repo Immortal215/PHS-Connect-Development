@@ -116,6 +116,7 @@ struct WeekCalendarView: View {
                 currentWeek = selectedDate
             }
         }
+        .padding(.top)
         .gesture(
             DragGesture()
                 .onEnded { value in

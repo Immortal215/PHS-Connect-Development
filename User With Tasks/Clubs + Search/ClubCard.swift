@@ -190,7 +190,7 @@ struct ClubCard: View {
             }
         }
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
-        .animation(.easeInOut)
+        .animation(.snappy)
     }
     
     func refreshUserInfo() {

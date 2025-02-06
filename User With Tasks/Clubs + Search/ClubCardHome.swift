@@ -124,7 +124,6 @@ struct ClubCardHome: View {
                 
             }
         }
-        
         .animation(.easeInOut)
         // .onAppear {
         //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {

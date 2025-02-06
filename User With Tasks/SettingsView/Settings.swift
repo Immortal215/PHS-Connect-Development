@@ -59,7 +59,7 @@ struct SettingsView: View {
             }
             .padding()
             
-            Toggle("Dark Mode (NOT COMPLETED)", isOn: $darkMode)
+            Toggle("Dark Mode", isOn: $darkMode)
                 .padding()
             HStack {
                 Button {

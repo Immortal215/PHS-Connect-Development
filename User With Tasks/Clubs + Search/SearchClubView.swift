@@ -115,36 +115,49 @@ struct SearchClubView: View {
                                     .font(.headline)
                                     .foregroundColor(.primary)
                             }
-                            
+                            ZStack {
+                                if filteredItems.isEmpty {
+                                    ProgressView("Loading Clubs...")
+                                }
                             ScrollViewReader { proxy in
                                 ScrollView {
-                                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
-                                        ForEach(Array(filteredItems.enumerated()), id: \.element.name) { (index, club) in
-                                            
-                                            
-                                            var infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                            
-                                            Button {
-                                                shownInfo = infoRelativeIndex
-                                                showClubInfoSheet = true
-                                            } label: {
-                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
-                                            }
-                                            .padding(.vertical, 3)
-                                            .padding(.horizontal)
-                                            .sheet(isPresented: $showClubInfoSheet) {
-                                                if shownInfo >= 0 {
-                                                    ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
-                                                        .presentationDragIndicator(.visible)
-                                                        .frame(width: UIScreen.main.bounds.width / 1.05)
-                                                } else {
-                                                    Text("Error! Try Again!")
-                                                        .presentationDragIndicator(.visible)
-                                                        .foregroundColor(.red)
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because the other one slowly loads everything in which looks weird to some people. 
+                                        
+                                        ForEach(chunkedItems.indices, id: \.self) { rowIndex in
+                                            HStack(spacing: 16) {
+                                                ForEach(chunkedItems[rowIndex], id: \.name) { club in
+                                                    let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                                    
+                                                    Button {
+                                                        shownInfo = infoRelativeIndex
+                                                        showClubInfoSheet = true
+                                                    } label: {
+                                                        ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                    }
+                                                    .padding(.vertical, 3)
+                                                    .padding(.horizontal)
+                                                    .sheet(isPresented: $showClubInfoSheet) {
+                                                        if shownInfo >= 0 {
+                                                            ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                                                .presentationDragIndicator(.visible)
+                                                                .frame(width: UIScreen.main.bounds.width / 1.05)
+                                                        } else {
+                                                            Text("Error! Try Again!")
+                                                                .presentationDragIndicator(.visible)
+                                                                .foregroundColor(.red)
+                                                        }
+                                                    }
+                                                }
+                                                if rowIndex == chunkedItems.count - 1 && filteredItems.count % 2 != 0 {
+                                                    Color.clear.frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5) // so if odd number of clubs then the bottom doesnt take up the entire width
+
                                                 }
                                             }
                                         }
                                     }
+                                    .animation(.smooth)
+                                    .id(1)
                                     
                                     if filteredItems.isEmpty {
                                         Text("No Clubs Found for \"\(searchText)\"")
@@ -161,7 +174,13 @@ struct SearchClubView: View {
                                         proxy.scrollTo(1, anchor: .top)
                                     }
                                 }
+                                .onChange(of: searchText) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                        proxy.scrollTo(1, anchor: .top)
+                                    }
+                                }
                             }
+                        }
                         }
                     }
                     .animation(.smooth, value: filteredItems)
@@ -269,3 +288,8 @@ struct SearchClubView: View {
     }
 }
 
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map { Array(self[$0..<Swift.min($0 + size, count)]) }
+    }
+}

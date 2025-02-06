@@ -142,7 +142,7 @@ struct CreateClubView: View {
                     TextField("Club Name (Required)", text: $clubTitle)
                 } label: {
                     Text("Club Name \(clubTitle.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(clubTitle.isEmpty ? .red : .black)
+                        .foregroundStyle(clubTitle.isEmpty ? .red : .primary)
                         .bold(clubTitle.isEmpty ? true : false)
                 }
                 .padding()
@@ -152,7 +152,7 @@ struct CreateClubView: View {
                     TextField("Club Description (Required)", text: $clubDesc)
                 } label: {
                     Text("Short Description \(clubDesc.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(clubDesc.isEmpty ? .red : .black)
+                        .foregroundStyle(clubDesc.isEmpty ? .red : .primary)
                         .bold(clubDesc.isEmpty ? true : false)
                 }
                 .padding()
@@ -171,7 +171,7 @@ struct CreateClubView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 } label: {
                     Text("Club Abstract \(clubAbstract.isEmpty ? "\n(Required)" : "")")
-                        .foregroundStyle(clubAbstract.isEmpty ? .red : .black)
+                        .foregroundStyle(clubAbstract.isEmpty ? .red : .primary)
                         .bold(clubAbstract.isEmpty ? true : false)
                     Spacer()
                 }
@@ -264,7 +264,7 @@ struct CreateClubView: View {
                     
                 } label: {
                     Text("Schoology Code \(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? "(Set to NONE)" : "")")
-                        .foregroundStyle(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? .red : .black)
+                        .foregroundStyle(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? .red : .primary)
                         .bold(schoology.replacingOccurrences(of: "-", with: "").count < 13 ? true : false)
                 }
                 .padding()
@@ -274,7 +274,7 @@ struct CreateClubView: View {
                        // .padding()
                 } label: {
                     Text("Club Location \(location.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(location.isEmpty ? .red : .black)
+                        .foregroundStyle(location.isEmpty ? .red : .primary)
                         .bold(location.isEmpty ? true : false)
                 }
                 .padding()
@@ -404,7 +404,7 @@ struct CreateClubView: View {
                     } label: {
                         Text(genres.count > 4 ? "Genres (Max 5)" : "Genres")
                             .bold(genres.count > 4)
-                            .foregroundStyle(genres.count > 4 ? .red : .black )
+                            .foregroundStyle(genres.count > 4 ? .red : .primary )
                     }
                     .padding()
                     

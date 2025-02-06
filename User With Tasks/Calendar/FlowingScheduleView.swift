@@ -206,8 +206,15 @@ struct FlowingScheduleView: View {
                         
                         DatePicker("", selection: $selectedDate, displayedComponents: [.date])
                             .labelsHidden()
-                            .colorInvert()
-                            .tint(.primary)
+                            .colorMultiply(.white)
+                            .foregroundStyle(.white)
+                            .foregroundColor(.white)
+                            .tint(.white)
+                            .overlay(alignment: .center) {
+                                Text(String(selectedDate.formatted(date: .abbreviated, time: .omitted)))
+                                    .foregroundStyle(.white)
+                                    .offset(x: 1)
+                            }
                     }
                     .fixedSize()
                     .padding(.top, 8)

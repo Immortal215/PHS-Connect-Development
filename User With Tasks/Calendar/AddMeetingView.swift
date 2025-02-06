@@ -98,7 +98,7 @@ struct AddMeetingView: View {
                     TextField("Meeting Title", text: $title)
                 } label: {
                     Text("Meeting Title \(title.isEmpty ? "(Required)" : "")")
-                        .foregroundStyle(title.isEmpty ? .red : .black)
+                        .foregroundStyle(title.isEmpty ? .red : .primary)
                         .bold(title.isEmpty ? true : false)
                 }
                 .padding()
@@ -107,7 +107,7 @@ struct AddMeetingView: View {
                     TextField("Meeting Location", text: $location)
                 } label: {
                     Text("Location")
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.primary)
                 }
                 .padding()
                 
@@ -126,7 +126,7 @@ struct AddMeetingView: View {
                     let isInvalidEndTime = endTime <= startTime || !isSameDay(endTime, startTime)
                     let isTooShort = startTime.distance(to: endTime) / 60 < 15 // has to divide by 60 because distance gives seconds not minutes
                     Text("End Time \(isInvalidEndTime ? "(Must be after start)" : (isTooShort ? "(Must be at least 15 mins after)" : ""))")
-                        .foregroundStyle(isInvalidEndTime || isTooShort ? .red : .black)
+                        .foregroundStyle(isInvalidEndTime || isTooShort ? .red : .primary)
                         .bold(isInvalidEndTime || isTooShort)
 
                 }
@@ -333,13 +333,13 @@ struct AddMeetingView: View {
                             MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: leaderClubs)
                                 .padding()
                                 .frame(width: UIScreen.main.bounds.width/1.1)
-                                .foregroundStyle(.black)
+                                .foregroundStyle(.primary)
                                 .offset(x: UIScreen.main.bounds.width/1.1)
                         } else {
                             MeetingView(meeting: meetingTimeForInfo, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: leaderClubs)
                                 .padding()
                                 .frame(width: UIScreen.main.bounds.width/1.1)
-                                .foregroundStyle(.black)
+                                .foregroundStyle(.primary)
                                 .offset(x: UIScreen.main.bounds.width/1.1)
                         }
                     }
@@ -347,7 +347,7 @@ struct AddMeetingView: View {
                     .offset(y: -CGFloat(endMinutes - startMinutes) / 2)
                 }
                 
-                Color.white
+                Color.systemBackground
                     .frame(height: 400)
                 
             }
