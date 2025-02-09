@@ -63,7 +63,7 @@ struct WeekCalendarView: View {
                                 ForEach(clubIDCounts.prefix(3), id: \.clubID) { club in
                                     ZStack {
                                         Circle()
-                                            .fill(colorFromClubID(club.clubID))
+                                            .fill(colorFromClubID(club: clubs.first(where: {$0.clubID == club.clubID})!))
                                             .frame(width: 12, height: 12)
                                         
                                         if club.count > 1 {

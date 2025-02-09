@@ -26,18 +26,18 @@ struct MeetingView: View {
             ZStack(alignment: .topLeading) {
                 if meetingInfo {
                     Rectangle()
-                        .fill(colorFromClubID(meeting.clubID).opacity(0.7))
+                        .fill(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.7))
                         .cornerRadius(5)
                 } else {
                     Rectangle()
-                        .fill(colorFromClubID(meeting.clubID).opacity(0.2))
+                        .fill(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2))
                         .cornerRadius(5)
                 }
 
                 HStack {
                     RoundedRectangle(cornerRadius: 15)
                         .frame(width: 4)
-                        .foregroundStyle(colorFromClubID(meeting.clubID).opacity(0.8))
+                        .foregroundStyle(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.8))
                         .padding(4)
                         .padding(.trailing, -8)
 
@@ -54,7 +54,7 @@ struct MeetingView: View {
                             }
                             .font(.footnote)
                             .lineLimit(1)
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
                             .bold()
                         }
                         
@@ -65,7 +65,7 @@ struct MeetingView: View {
                                 Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
                         
@@ -76,7 +76,7 @@ struct MeetingView: View {
                                 Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
                         
@@ -87,19 +87,19 @@ struct MeetingView: View {
                                 Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(meeting.clubID).opacity(0.6))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
 
                         Spacer()
                     }
-                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) - 16 : (screenWidth / 1.1) - 16, maxHeight: duration + 1, alignment: .topLeading)
+                    .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) - 16 : (screenWidth / 1.1) - 16, maxHeight: duration, alignment: .topLeading)
                 }
-                .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration + 1, alignment: .topLeading)
+                .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), maxHeight: duration, alignment: .topLeading)
             }
             .saturation(darkMode ? 1.3 : 1.0)
             .brightness(darkMode ? 0.3 : 0.0)
-            .frame(width: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), height: duration + 1)
+            .frame(width: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) : (screenWidth / 1.1), height: duration)
             .position(x: geometry.size.width / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }
     }

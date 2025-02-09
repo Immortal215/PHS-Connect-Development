@@ -136,9 +136,9 @@ struct CustomizableDropdown: View {
                     Image(systemName: "arrowtriangle.down.fill")
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
-                .foregroundStyle(colorFromClubID(selectedClubId))
+                .foregroundStyle(colorFromClubID(club: leaderClubs.first(where: {$0.clubID == selectedClubId})))
                 .padding()
-                .background(colorFromClubID(selectedClubId).opacity(0.2))
+                .background(colorFromClubID(club: leaderClubs.first(where: {$0.clubID == selectedClubId})).opacity(0.2))
             }
 
             if isExpanded {
@@ -155,9 +155,9 @@ struct CustomizableDropdown: View {
                                 Spacer()
                                 Image(systemName: "person.circle.fill")
                             }
-                            .foregroundStyle(colorFromClubID(club.clubID))
+                            .foregroundStyle(colorFromClubID(club: club))
                             .padding()
-                            .background(colorFromClubID(club.clubID).opacity(0.2))
+                            .background(colorFromClubID(club: club).opacity(0.2))
                             
                         }
                         .buttonStyle(.plain)

@@ -172,7 +172,7 @@ struct FlowingScheduleView: View {
                                             Text(formattedTime)
                                                 .font(.headline)
                                                 .padding(8)
-                                                .background(colorFromClubID(meeting.clubID))
+                                                .background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
                                                 .cornerRadius(8)
                                                 .foregroundColor(.white)
                                                 .offset(y: dragOffset.height)

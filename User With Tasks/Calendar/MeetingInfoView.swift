@@ -38,7 +38,7 @@ struct MeetingInfoView: View {
                                     Text(showMoreTitle ? "" : "..+")
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.systemBackground).padding(.bottom, 5).offset(x: 6))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).background(Color.systemBackground).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -81,7 +81,7 @@ struct MeetingInfoView: View {
                         }
                     } label: {
                         Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
-                            .foregroundStyle(colorFromClubID(meeting.clubID))
+                            .foregroundStyle(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
                             .bold()
                     }
                     
@@ -108,7 +108,7 @@ struct MeetingInfoView: View {
                                         Text(showMoreLocation ? "" : "..+")
                                             .font(.callout)
                                             .foregroundColor(darkMode ? .gray : .darkGray)
-                                            .offset(x: 7).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.systemBackground).offset(x: 7))
+                                            .offset(x: 7).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).background(Color.systemBackground).offset(x: 7))
                                     }
                                 }
                                 .onTapGesture {
@@ -144,7 +144,7 @@ struct MeetingInfoView: View {
                                         Text(showMoreDescription ? "" : "..+")
                                             .foregroundColor(darkMode ? .gray : .darkGray)
                                             .font(.callout)
-                                            .offset(x: -1).background(colorFromClubID(meeting.clubID).opacity(0.2).background(Color.systemBackground).offset(x: -1))
+                                            .offset(x: -1).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).background(Color.systemBackground).offset(x: -1))
                                     }
                                 }
                                 .onTapGesture {
@@ -228,7 +228,7 @@ struct MeetingInfoView: View {
             ZStack {
                 Color(UIColor.systemBackground)
                 
-                colorFromClubID(meeting.clubID).opacity(0.2).saturation(darkMode ? 1.3 : 1.0).brightness(darkMode ? 0.3 : 0.0)
+                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).saturation(darkMode ? 1.3 : 1.0).brightness(darkMode ? 0.3 : 0.0)
             }
 
         }
