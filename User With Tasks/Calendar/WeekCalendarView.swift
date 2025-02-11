@@ -8,7 +8,8 @@ struct WeekCalendarView: View {
     @State var addMeetingTimeView = false
     @State var showMonthPicker = false
     @Binding var clubs: [Club]
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         VStack {
             HStack {
@@ -30,8 +31,12 @@ struct WeekCalendarView: View {
                 Button {
                     showMonthPicker.toggle()
                 } label: {
-                    Image(systemName: "calendar")
-                        .imageScale(.large)
+                    if !showMonthPicker {
+                        Image(systemName: "calendar")
+                            .imageScale(.large)
+                    } else {
+                        ProgressView()
+                    }
                 }
                 .padding()
                 .sheet(isPresented: $showMonthPicker) {
@@ -89,6 +94,8 @@ struct WeekCalendarView: View {
                             }
                         }
                     }
+                    .saturation(darkMode ? 1.3 : 1.0)
+                    .brightness(darkMode ? 0.3 : 0.0)
                     .onTapGesture {
                         selectedDate = date
                     }

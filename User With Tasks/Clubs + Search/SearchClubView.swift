@@ -53,7 +53,7 @@ struct SearchClubView: View {
                                     .padding(.horizontal)
                                     .padding(.vertical, 8)
                                     .background(currentSearchingBy == "Genre" ? Color.accentColor.opacity(0.7) : Color.gray.opacity(0.2))
-                                    .foregroundColor(sortingMenu ? .white : .primary)
+                                    .foregroundColor(currentSearchingBy == "Genre" ? .white : .primary)
                                     .cornerRadius(15)
                                     .onTapGesture {
                                         currentSearchingBy = (currentSearchingBy == "Genre") ? "Name" : "Genre"
@@ -108,6 +108,7 @@ struct SearchClubView: View {
                                 }
                                 .frame(height: screenHeight / 11)
                                 .padding(.top, -24)
+                                .animation(.smooth, value: currentSearchingBy == "Genre")
                             }
                             
                             if !searchText.isEmpty {
@@ -122,7 +123,7 @@ struct SearchClubView: View {
                             ScrollViewReader { proxy in
                                 ScrollView {
                                     VStack(alignment: .leading, spacing: 10) {
-                                        let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because the other one slowly loads everything in which looks weird to some people. 
+                                        let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because the other one fly loads everything in which looks weird to some people.
                                         
                                         ForEach(chunkedItems.indices, id: \.self) { rowIndex in
                                             HStack(spacing: 16) {
@@ -185,6 +186,9 @@ struct SearchClubView: View {
                     }
                     .animation(.smooth, value: filteredItems)
                 }
+                .onAppear {
+                    filteredItems = calculateFiltered()
+                }
                 .onChange(of: selectedGenres) {
                     filteredItems = calculateFiltered()
                 }
@@ -204,9 +208,6 @@ struct SearchClubView: View {
                 .animation(.smooth())
                 .closeOnTapOutside(false)
                 .closeOnTap(false)
-        }
-        .onAppear {
-            filteredItems = calculateFiltered()
         }
         .onChange(of: sharedGenre) {
             if !sharedGenre.isEmpty {

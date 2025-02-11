@@ -185,7 +185,7 @@ struct ContentView: View {
                             scale = 0.7
                             advSearchShown = !advSearchShown
                             
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                 advSearchShown = !advSearchShown
                             }
                             dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
