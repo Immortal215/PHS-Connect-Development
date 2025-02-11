@@ -138,9 +138,6 @@ struct MonthPickerView: View {
                             .onAppear {
                                 proxy.scrollTo(Calendar.current.component(.month, from: selectedDate) - 1, anchor: .top)
                             }
-                            .onChange(of: isTubeView) {
-                                loadMeetings()
-                            }
                         }
                     }
                 }
@@ -160,6 +157,7 @@ struct MonthPickerView: View {
                         
                         Button(action: {
                             isTubeView.toggle()
+                            loadMeetings()
                         }) {
                             Image(systemName: isTubeView ? "list.bullet" : "circle.grid.2x2.fill")
                                 .foregroundColor(.blue)
