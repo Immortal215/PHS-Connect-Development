@@ -156,6 +156,16 @@ struct FlowingScheduleView: View {
                                             let intervalsMoved = Int(dragOffset.height / intervalHeight)
                                             
                                             let formattedTime = Calendar.current.date(byAdding: .minute, value: intervalsMoved * 15, to: roundedStartTime)!.formatted(date: .omitted, time: .shortened)
+                                            
+                                            let startTime = dateFromString(meeting.startTime)
+                                            let endTime = dateFromString(meeting.endTime)
+                                            let startMinutes = Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime)
+                                            let endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
+                                            let durationMinutes = max(endMinutes - startMinutes, 0)
+
+                                            let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
+                                            let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
+                                            
                                             MeetingView(
                                                 meeting: meeting,
                                                 scale: scale,
@@ -168,16 +178,15 @@ struct FlowingScheduleView: View {
                                             .opacity(0.7)
                                             .offset(x: UIScreen.main.bounds.width / 1.1, y: dragOffset.height)
                                             .zIndex(100)
-                                            
-                                            Text(formattedTime)
-                                                .font(.headline)
-                                                .padding(8)
-                                                .background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
-                                                .cornerRadius(8)
-                                                .foregroundColor(.white)
-                                                .offset(y: dragOffset.height)
-                                                .zIndex(101)
-                                            
+                                            .overlay(alignment: .topLeading) {
+                                                Text(formattedTime)
+                                                    .font(.headline)
+                                                    .padding(8)
+                                                    .background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
+                                                    .cornerRadius(8)
+                                                    .foregroundColor(.white)
+                                                    .offset(y: startOffset + duration + 20 + dragOffset.height)
+                                            }
                                         }
                                         
                                     }
