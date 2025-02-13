@@ -26,6 +26,7 @@ struct SearchClubView: View {
     @AppStorage("sharedGenre") var sharedGenre = ""
     @State var selectedGenres: [String] = []
     @AppStorage("darkMode") var darkMode = false
+    @State var loadingClubs = false
     
     var body: some View {
         ZStack {
@@ -38,14 +39,15 @@ struct SearchClubView: View {
                             .padding()
                             .foregroundColor(.primary)
                         
+                        if loadingClubs {
+                            ProgressView()
+                        }
+                        
                         Spacer()
                         
                         ZStack(alignment: .leading) {
                             HStack {
                                 SearchBar("Search For Clubs", text: $searchText, isEditing: $isSearching)
-                                    .onChange(of: searchText) {
-                                        filteredItems = calculateFiltered()
-                                    }
                                     .frame(width: screenWidth / 3)
                                 
                                 Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
@@ -100,11 +102,13 @@ struct SearchClubView: View {
                                         .onTapGesture(count: 3) {
                                             selectedGenres = []
                                             currentSearchingBy = "Name"
-                                            filteredItems = calculateFiltered()
+                                            DispatchQueue.global(qos: .userInitiated).async {
+                                                sleep(1)
+                                                filteredItems = calculateFiltered()
+                                                loadingClubs = false
+                                            }
                                         }
-                                        .onAppear {
-                                            filteredItems = calculateFiltered()
-                                        }
+                                    
                                 }
                                 .frame(height: screenHeight / 11)
                                 .padding(.top, -24)
@@ -117,79 +121,93 @@ struct SearchClubView: View {
                                     .foregroundColor(.primary)
                             }
                             ZStack {
-                                if filteredItems.isEmpty {
+                                if filteredItems.isEmpty && selectedGenres.isEmpty && searchText.isEmpty {
                                     ProgressView("Loading Clubs...")
+                                    
                                 }
-                            ScrollViewReader { proxy in
-                                ScrollView {
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because the other one fly loads everything in which looks weird to some people.
-                                        
-                                        ForEach(chunkedItems.indices, id: \.self) { rowIndex in
-                                            HStack(spacing: 16) {
-                                                ForEach(chunkedItems[rowIndex], id: \.name) { club in
-                                                    let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                                    
-                                                    Button {
-                                                        shownInfo = infoRelativeIndex
-                                                        showClubInfoSheet = true
-                                                    } label: {
-                                                        ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
-                                                    }
-                                                    .padding(.vertical, 3)
-                                                    .padding(.horizontal)
-                                                    .sheet(isPresented: $showClubInfoSheet) {
-                                                        if shownInfo >= 0 {
-                                                            ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
-                                                                .presentationDragIndicator(.visible)
-                                                                .frame(width: UIScreen.main.bounds.width / 1.05)
-                                                        } else {
-                                                            Text("Error! Try Again!")
-                                                                .presentationDragIndicator(.visible)
-                                                                .foregroundColor(.red)
+                                ScrollViewReader { proxy in
+                                    ScrollView {
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because the other one fly loads everything in which looks weird to some people.
+                                            
+                                            ForEach(chunkedItems.indices, id: \.self) { rowIndex in
+                                                HStack(spacing: 16) {
+                                                    ForEach(chunkedItems[rowIndex], id: \.name) { club in
+                                                        let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                                        
+                                                        Button {
+                                                            shownInfo = infoRelativeIndex
+                                                            showClubInfoSheet = true
+                                                        } label: {
+                                                            ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                        }
+                                                        .padding(.vertical, 3)
+                                                        .padding(.horizontal)
+                                                        .onAppearOnce {
+                                                            loadingClubs = false
+                                                        }
+                                                        .sheet(isPresented: $showClubInfoSheet) {
+                                                            if shownInfo >= 0 {
+                                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                                                    .presentationDragIndicator(.visible)
+                                                                    .frame(width: UIScreen.main.bounds.width / 1.05)
+                                                            } else {
+                                                                Text("Error! Try Again!")
+                                                                    .presentationDragIndicator(.visible)
+                                                                    .foregroundColor(.red)
+                                                            }
                                                         }
                                                     }
-                                                }
-                                                if rowIndex == chunkedItems.count - 1 && filteredItems.count % 2 != 0 {
-                                                    Color.clear.frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5) // so if odd number of clubs then the bottom doesnt take up the entire width
-
+                                                    if rowIndex == chunkedItems.count - 1 && filteredItems.count % 2 != 0 {
+                                                        Color.clear.frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5) // so if odd number of clubs then the bottom doesnt take up the entire width
+                                                        
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                    .animation(.smooth)
-                                    .id(1)
-                                    
-                                    if filteredItems.isEmpty {
-                                        Text("No Clubs Found for \"\(searchText)\"")
+                                        .animation(.smooth)
+                                        .id(1)
+                                        
+                                        if filteredItems.isEmpty {
+                                            Text("No Clubs Found for \"\(searchText)\"")
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        Text("Search for Other Clubs! 🙃")
+                                            .frame(height: screenHeight / 3, alignment: .top)
                                             .foregroundColor(.secondary)
                                     }
-                                    
-                                    Text("Search for Other Clubs! 🙃")
-                                        .frame(height: screenHeight / 3, alignment: .top)
-                                        .foregroundColor(.secondary)
-                                }
-                                .animation(.easeInOut, value: selectedGenres)
-                                .onChange(of: selectedGenres) {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                        proxy.scrollTo(1, anchor: .top)
+                                    .animation(.smooth)
+                                    .onChange(of: selectedGenres) {
+                                        
+                                        let selectedGenresBuffer = selectedGenres
+                                        loadingClubs = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                            if selectedGenresBuffer == selectedGenres {
+                                                filteredItems = calculateFiltered()
+                                                loadingClubs = false
+                                                proxy.scrollTo(1, anchor: .top)
+                                            }
+                                        }
                                     }
-                                }
-                                .onChange(of: searchText) {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                        proxy.scrollTo(1, anchor: .top)
+                                    .onChange(of: searchText) {
+                                        let searchTextBuffer = searchText
+                                        loadingClubs = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                            if searchTextBuffer == searchText {
+                                                filteredItems = calculateFiltered()
+                                                loadingClubs = false
+                                                proxy.scrollTo(1, anchor: .top)
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
                         }
                     }
                     .animation(.smooth, value: filteredItems)
                 }
                 .onAppear {
-                    filteredItems = calculateFiltered()
-                }
-                .onChange(of: selectedGenres) {
                     filteredItems = calculateFiltered()
                 }
                 .padding()
@@ -215,7 +233,8 @@ struct SearchClubView: View {
                 sharedGenre = ""
             }
         }
-        .onChange(of: clubs) {
+        .onAppear {
+            sleep(1)
             filteredItems = calculateFiltered()
         }
         .animation(.smooth, value: currentSearchingBy)
@@ -223,6 +242,7 @@ struct SearchClubView: View {
     }
     
     func calculateFiltered() -> [Club] {
+        loadingClubs = true
         if searchText.isEmpty {
             return clubs
                 .filter { club in

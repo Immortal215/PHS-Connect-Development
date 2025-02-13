@@ -144,7 +144,7 @@ struct MeetingInfoView: View {
                                         Text(showMoreDescription ? "" : "..+")
                                             .foregroundColor(darkMode ? .gray : .darkGray)
                                             .font(.callout)
-                                            .offset(x: -1).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).background(Color.systemBackground).offset(x: -1))
+                                            .offset(x: -1).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.2 : 0.2).background(.systemBackground).offset(x: -1))
                                     }
                                 }
                                 .onTapGesture {
@@ -224,15 +224,12 @@ struct MeetingInfoView: View {
         }
         .padding()
         .frame(width: screenWidth / 2.5)
-        .background {
-            ZStack {
-                Color(UIColor.systemBackground)
-                
-                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).saturation(darkMode ? 1.3 : 1.0).brightness(darkMode ? 0.3 : 0.0)
-            }
-
-        }
+        .background (
+            colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground)
+                    
+        )
         .cornerRadius(10)
     }
 
 }
+

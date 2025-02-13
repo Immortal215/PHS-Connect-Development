@@ -160,7 +160,7 @@ struct ContentView: View {
                                         startPoint: .top,
                                         endPoint: .bottom
                                     )
-                                    .frame(height: screenHeight / 5)
+                                    .frame(height: screenHeight / 6)
                                     .edgesIgnoringSafeArea(.all)
                                 }
                                 .frame(width: screenWidth, height: screenHeight, alignment: .bottom)

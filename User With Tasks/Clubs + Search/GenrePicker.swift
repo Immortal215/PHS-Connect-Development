@@ -57,5 +57,6 @@ struct GenreTag: View {
             }
             .fixedSize(horizontal: true, vertical: false)
             .font(.subheadline)
+            .animation(.smooth)
     }
 }
