@@ -234,8 +234,9 @@ struct SearchClubView: View {
             }
         }
         .onAppear {
-            sleep(1)
-            filteredItems = calculateFiltered()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                filteredItems = calculateFiltered()
+            }
         }
         .animation(.smooth, value: currentSearchingBy)
         

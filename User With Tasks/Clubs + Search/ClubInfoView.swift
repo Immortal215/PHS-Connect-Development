@@ -397,10 +397,15 @@ struct ClubInfoView: View {
                                 } label: {
                                     if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
                                         Image(systemName: "heart.fill")
-                                            .transition(.movingParts.pop(.blue))
+                                            .foregroundStyle(.red)
+                                            .transition(.movingParts.pop(.red))
+                                        
                                     } else {
                                         Image(systemName: "heart")
-                                            .transition(.identity)
+                                            .transition(
+                                                .asymmetric(insertion: .opacity, removal: .movingParts.vanish(Color(white: 0.8), mask: Circle()))
+                                            )
+                                            .foregroundStyle(.primary)
                                     }
                                 }
                                 .padding(.top)
