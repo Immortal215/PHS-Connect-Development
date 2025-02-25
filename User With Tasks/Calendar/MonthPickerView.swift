@@ -9,7 +9,7 @@ struct MonthPickerView: View {
     @AppStorage("calendarTubeView") var isTubeView = true
     @AppStorage("darkMode") var darkMode = false
     @State var isLoading = true
-
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -117,7 +117,6 @@ struct MonthPickerView: View {
                                                                     Spacer()
                                                                 }
                                                                 .frame(height: isTubeView ? UIScreen.main.bounds.height / 4 : nil)
-                                                                .fixedSize()
                                                                 .onTapGesture {
                                                                     selectedDate = date
                                                                 }
@@ -193,15 +192,15 @@ struct MonthPickerView: View {
         formatter.dateFormat = "MMMM"
         return formatter.string(from: date)
     }
-
+    
     func isToday(_ date: Date) -> Bool {
         Calendar.current.isDateInToday(date)
     }
-
+    
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
-
+    
     func meetings(for date: Date) -> [(clubID: String, count: Int)] {
         var meetingsForDate: [Club.MeetingTime] = []
         
