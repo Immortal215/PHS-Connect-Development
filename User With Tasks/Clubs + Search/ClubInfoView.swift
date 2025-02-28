@@ -27,6 +27,7 @@ struct ClubInfoView: View {
     @Environment(\.presentationMode) var presentationMode
     @State var meetingFull = false
     @State var refresher = true
+    @AppStorage("debugTools") var debugTools = false
 
     var body: some View {
         
@@ -124,8 +125,8 @@ struct ClubInfoView: View {
                     
                     }
                     
-                    if viewModel.userEmail == "sharul.shah2008@gmail.com" {
-                        Text("Club Id (only for devs) : \(club.clubID)")
+                    if debugTools {
+                        Text("Club Id \(club.clubID)")
                     }
                     
                     if !club.leaders.isEmpty {

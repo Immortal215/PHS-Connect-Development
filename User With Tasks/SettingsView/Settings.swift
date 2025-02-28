@@ -14,7 +14,8 @@ struct SettingsView: View {
     @AppStorage("userImage") var userImage: String?
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
-    @AppStorage("darkMode") var darkMode = false 
+    @AppStorage("darkMode") var darkMode = false
+    @AppStorage("debugTools") var debugTools = false
     
     var body: some View {
         Form {
@@ -48,19 +49,24 @@ struct SettingsView: View {
                 
                 Spacer()
                 
-                VStack(alignment: .trailing) {
-                    Text("User UID (ONLY USE FOR TESTING) : \(viewModel.uid ?? "Not Found")")
-                    
-                    if !viewModel.isGuestUser {
-                        Text(favoriteText)
+                if debugTools {
+                    VStack(alignment: .trailing) {
+                        Text("User UID (ONLY USE FOR TESTING) : \(viewModel.uid ?? "Not Found")")
+                        
+                        if !viewModel.isGuestUser {
+                            Text(favoriteText)
+                        }
                     }
                 }
-                
             }
             .padding()
             
             Toggle("Dark Mode", isOn: $darkMode)
                 .padding()
+            
+            Toggle("Debug Tools", isOn: $debugTools)
+                .padding()
+            
             HStack {
                 Button {
                     do {
@@ -99,7 +105,7 @@ struct SettingsView: View {
             }
         }
         .onAppear {
-            if !viewModel.isGuestUser {
+            if !viewModel.isGuestUser && debugTools {
                 if let UserID = viewModel.uid {
                     fetchUser(for: UserID) { user in
                         userInfo = user
