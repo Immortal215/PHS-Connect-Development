@@ -38,6 +38,7 @@ struct SearchClubView: View {
                             .bold()
                             .padding()
                             .foregroundColor(.primary)
+                            .animation(.smooth)
                         
                         if loadingClubs {
                             ProgressView()
@@ -143,8 +144,10 @@ struct SearchClubView: View {
                                                         }
                                                         .padding(.vertical, 3)
                                                         .padding(.horizontal)
-                                                        .onAppearOnce {
-                                                            loadingClubs = false
+                                                        .onAppear {
+                                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                loadingClubs = false
+                                                            }
                                                         }
                                                         .sheet(isPresented: $showClubInfoSheet) {
                                                             if shownInfo >= 0 {
@@ -209,6 +212,7 @@ struct SearchClubView: View {
                 }
                 .onAppear {
                     filteredItems = calculateFiltered()
+                    
                 }
                 .padding()
             } else {
