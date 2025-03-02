@@ -16,6 +16,8 @@ struct SettingsView: View {
     @AppStorage("uid") var uid: String?
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("debugTools") var debugTools = false
+    @State var isChangelogShown = false
+    @ObservedObject var changeLogViewModel = ChangelogViewModel()
     
     var body: some View {
         Form {
@@ -67,40 +69,69 @@ struct SettingsView: View {
             Toggle("Debug Tools", isOn: $debugTools)
                 .padding()
             
-            HStack {
-                Button {
-                    do {
-                        try AuthenticationManager.shared.signOut()
-                        userEmail = nil
-                        userName = nil
-                        userImage = nil
-                        userType = nil
-                        uid = nil
-                        userInfo = nil
-                        showSignInView = true
-                        removeClubsListener()
-                    } catch {
-                        print("Error signing out: \(error.localizedDescription)")
-                    }
-                } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(lineWidth: 3)
-                        HStack {
-                            Image(systemName: "person")
-                            Text("Logout")
+            Button {
+            } label: {
+                HStack {
+                    Spacer()
+                    Button {
+                        isChangelogShown.toggle()
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(lineWidth: 3)
+                            HStack {
+                                Image(systemName: "arrow.up.circle")
+                                Text("Release Notes")
+                            }
+                            .padding()
                         }
-                        .padding()
+                        .foregroundColor(.blue)
                     }
-                    .foregroundColor(.red)
-                }
-                .padding()
-                .fixedSize()
-                
-                Spacer()
-                if !viewModel.isGuestUser {
-                    FeatureReportButton(uid: viewModel.uid ?? "None")
-                        .padding()
+                    .padding()
+                    .fixedSize()
+                    .sheet(isPresented: $isChangelogShown) {
+                        ChangelogSheetView(
+                            currentVersion: changeLogViewModel.currentVersion,
+                            history: changeLogViewModel.history
+                        )
+                        .fontDesign(.monospaced)
+
+                    }
+                    
+                    if !viewModel.isGuestUser {
+                        FeatureReportButton(uid: viewModel.uid ?? "None")
+                            .padding()
+                    }
+                    
+                    Button {
+                        do {
+                            try AuthenticationManager.shared.signOut()
+                            userEmail = nil
+                            userName = nil
+                            userImage = nil
+                            userType = nil
+                            uid = nil
+                            userInfo = nil
+                            showSignInView = true
+                            removeClubsListener()
+                        } catch {
+                            print("Error signing out: \(error.localizedDescription)")
+                        }
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(lineWidth: 3)
+                            HStack {
+                                Image(systemName: "person")
+                                Text("Logout")
+                            }
+                            .padding()
+                        }
+                        .foregroundColor(.red)
+                    }
+                    .padding()
+                    .fixedSize()
+                    
                 }
             }
         }

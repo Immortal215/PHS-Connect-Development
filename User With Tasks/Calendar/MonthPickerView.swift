@@ -9,6 +9,7 @@ struct MonthPickerView: View {
     @AppStorage("calendarTubeView") var isTubeView = true
     @AppStorage("darkMode") var darkMode = false
     @State var isLoading = true
+    var viewModel: AuthenticationViewModel
     
     var body: some View {
         NavigationView {
@@ -204,7 +205,7 @@ struct MonthPickerView: View {
     func meetings(for date: Date) -> [(clubID: String, count: Int)] {
         var meetingsForDate: [Club.MeetingTime] = []
         
-        for club in clubs {
+        for club in clubs.filter{$0.leaders.contains(viewModel.userEmail ?? "") || $0.members.contains(viewModel.userEmail ?? "")} {
             let clubMeetings = club.meetingTimes?.filter { meeting in
                 Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
             } ?? []

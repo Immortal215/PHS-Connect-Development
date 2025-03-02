@@ -40,7 +40,7 @@ struct WeekCalendarView: View {
                 }
                 .padding()
                 .sheet(isPresented: $showMonthPicker) {
-                    MonthPickerView(selectedDate: $selectedDate, currentYear: Calendar.current.component(.year, from: selectedDate), clubs: $clubs)
+                    MonthPickerView(selectedDate: $selectedDate, currentYear: Calendar.current.component(.year, from: selectedDate), clubs: $clubs, viewModel: viewModel)
                         .frame(width: UIScreen.main.bounds.width/1.05)
                 }
                 

@@ -357,7 +357,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = 9SP33R5K89;
+				DEVELOPMENT_TEAM = BWYT76Q3DS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
@@ -370,8 +370,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Sharul1.User-with-Tasks";
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Sharul2.User-with-Tasks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -387,7 +387,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = 9SP33R5K89;
+				DEVELOPMENT_TEAM = BWYT76Q3DS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
@@ -400,8 +400,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Sharul1.User-with-Tasks";
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Sharul2.User-with-Tasks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
