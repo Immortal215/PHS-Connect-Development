@@ -20,72 +20,77 @@ class ChangelogViewModel: ObservableObject {
 struct ChangelogSheetView: View {
     let currentVersion: ChangelogEntry
     let history: [ChangelogEntry]
-    @State private var isShowingFullHistory = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Version \(.init(currentVersion.version))")
-                    .font(.title2)
-                    .bold()
-                
-                Text(currentVersion.date)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                ForEach(currentVersion.changes, id: \ .self) { change in
-                    Text("• \(change)")
-                        .padding(.vertical, 2)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 32) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Version \(currentVersion.version)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text(currentVersion.date)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(currentVersion.changes, id: \.self) { change in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text("•")
+                                        .foregroundColor(.secondary)
+                                    Text(change)
+                                }
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+                    
+                    if !history.isEmpty {
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        ForEach(Array(history.enumerated()), id: \.element.id) { index, entry in
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Version \(entry.version)")
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                
+                                Text(entry.date)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(entry.changes, id: \.self) { change in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(.secondary)
+                                            Text(change)
+                                        }
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                            
+                            if index < history.count - 1 {
+                                Divider()
+                                    .padding(.vertical, 8)
+                            }
+                        }
+                    }
                 }
-                
-                Spacer()
-                
-                Button(action: {
-                    isShowingFullHistory.toggle()
-                }) {
-                    Text("Show More")
-                        .fontWeight(.semibold)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-                .padding(.bottom)
-                .sheet(isPresented: $isShowingFullHistory) {
-                    FullChangelogView(history: history)
-                }
+                .padding(24)
             }
-            .padding()
             .navigationTitle("Release Notes")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing: Button("Done") {
-                dismiss()
-            })
-        }
-    }
-}
-
-struct FullChangelogView: View {
-    let history: [ChangelogEntry]
-    @Environment(\.dismiss) var dismiss
-    
-    var body: some View {
-        NavigationView {
-            List(history) { entry in
-                Section(header: Text(.init("Version \(entry.version) - \(entry.date)"))) {
-                    ForEach(entry.changes, id: \ .self) { change in
-                        Text("• \(change)")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
                     }
                 }
             }
-            .listStyle(InsetGroupedListStyle())
-            .navigationTitle("All Updates")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing: Button("Done") {
-                dismiss()
-            })
         }
     }
 }

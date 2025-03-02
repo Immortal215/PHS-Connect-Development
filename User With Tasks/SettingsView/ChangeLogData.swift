@@ -5,9 +5,9 @@ struct ChangelogData {
         version: "0.2.0 Beta",
         date: "2025-03-01",
         changes: [
-            "Fixed Many User Bugs.",
-            "Improved App Speed.",
-            "Added Change Log"
+            "Fixed many user bugs.",
+            "Improved app speed.",
+            "Added change log."
         ]
     )
     
