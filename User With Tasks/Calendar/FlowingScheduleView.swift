@@ -31,6 +31,7 @@ struct FlowingScheduleView: View {
                     GeometryReader { geometry in
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) { minY in
+                            
                                 if minY > screenHeight * 0.22 {
                                     proxy.scrollTo(0, anchor: .bottom) // needed so it doesnt crash for some reason when scrolling to top
                                 }
