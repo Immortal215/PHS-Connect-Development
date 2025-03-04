@@ -38,7 +38,7 @@ struct MeetingInfoView: View {
                                     Text(showMoreTitle ? "" : "..+")
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).background(Color.systemBackground).padding(.bottom, 5).offset(x: 6))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground).brightness(darkMode ? -0.3 : 0.0).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -108,7 +108,10 @@ struct MeetingInfoView: View {
                                         Text(showMoreLocation ? "" : "..+")
                                             .font(.callout)
                                             .foregroundColor(darkMode ? .gray : .darkGray)
-                                            .offset(x: 7).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2).background(Color.systemBackground).offset(x: 7))
+                                            .offset(x: 7)    .background (
+                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground).offset(x:7)
+                                                    .brightness(darkMode ? -0.3 : 0.0)
+                                            )
                                     }
                                 }
                                 .onTapGesture {
@@ -144,7 +147,11 @@ struct MeetingInfoView: View {
                                         Text(showMoreDescription ? "" : "..+")
                                             .foregroundColor(darkMode ? .gray : .darkGray)
                                             .font(.callout)
-                                            .offset(x: -1).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.2 : 0.2).background(.systemBackground).offset(x: -1))
+                                            .offset(x: -1)
+                                            .background (
+                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground).offset(x:-1)
+                                                    .brightness(darkMode ? -0.3 : 0.0)
+                                            )
                                     }
                                 }
                                 .onTapGesture {
