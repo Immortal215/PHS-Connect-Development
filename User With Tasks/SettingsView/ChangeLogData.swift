@@ -7,6 +7,7 @@ struct ChangelogData {
         changes: [
             "Fixed many user bugs.",
             "Improved app speed.",
+            "Equalized colors.",
             "Added change log."
         ]
     )

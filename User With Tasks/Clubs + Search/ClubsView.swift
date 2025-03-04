@@ -143,5 +143,5 @@ struct ClubView: View {
                 .closeOnTap(false)
                 .animation(.easeInOut)
         }
-            }
+    }
 }

@@ -5,11 +5,13 @@ struct FilterPopupView: View {
     @Binding var isPopupVisible: Bool
     @Binding var isAscending: Bool
     @State var rotationAngle = 0
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Filter Options")
                 .font(.headline)
+                .foregroundStyle(.primary)
 
             Button(action: {
                         isAscending.toggle()
@@ -50,7 +52,7 @@ struct FilterPopupView: View {
         }
         .padding()
         .fixedSize()
-        .background(Color(.systemBackground))
+        .background(darkMode ? .systemGray4 : .systemGray6)
         .cornerRadius(15)
         .shadow(radius: 10)
         .padding()

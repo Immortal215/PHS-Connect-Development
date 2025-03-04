@@ -221,7 +221,12 @@ struct SearchClubView: View {
         }
         .popup(isPresented: $sortingMenu) {
             FilterPopupView(isPopupVisible: $sortingMenu, isAscending: $ascendingStyle)
-                .onDisappear { filteredItems = calculateFiltered() }
+                .onDisappear {
+                    filteredItems = calculateFiltered()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        loadingClubs = false
+                    }
+                }
         } customize: {
             $0
                 .type(.floater())

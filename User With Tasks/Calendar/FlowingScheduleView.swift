@@ -32,12 +32,12 @@ struct FlowingScheduleView: View {
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) { minY in
                                 if minY > screenHeight * 0.22 {
-                                    proxy.scrollTo(0, anchor: .bottom) // needed so it doesnt crash for some reason when scrolling to top 
+                                    proxy.scrollTo(0, anchor: .bottom) // needed so it doesnt crash for some reason when scrolling to top
                                 }
                             }
                     }
                     .frame(height: 0)
-
+                    
                     ZStack(alignment: .topLeading) {
                         VStack(alignment: .leading, spacing: 0) {
                             ForEach(0..<24, id: \.self) { hour in
@@ -58,7 +58,7 @@ struct FlowingScheduleView: View {
                         }
                         .background(Color.gray.opacity(0.1).cornerRadius(8))
                         .cornerRadius(8)
-
+                        
                         VStack {
                             HStack(spacing: 0) {
                                 Spacer().frame(width: 60)
@@ -196,10 +196,10 @@ struct FlowingScheduleView: View {
                         }
                     }
                     .highPriorityGesture(
-                            MagnificationGesture()
-                                .onChanged { value in
-                                        scale = max(0.6, min(value.magnitude, 3.0))
-                                }
+                        MagnificationGesture()
+                            .onChanged { value in
+                                scale = max(0.6, min(value.magnitude, 3.0))
+                            }
                     )
                     .frame(minHeight: screenHeight)
                     .onAppearOnce {
@@ -227,7 +227,7 @@ struct FlowingScheduleView: View {
                     }
                     .fixedSize()
                     .padding(.top, 8)
-
+                    
                 })
                 .onChange(of: selectedDate) {
                     let closestHour = Calendar.current.component(.hour, from: dateFromString(meetings.sorted(by: { dateFromString($0.startTime) < dateFromString($1.startTime)}).first?.startTime ?? String()))
