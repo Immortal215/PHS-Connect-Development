@@ -18,6 +18,8 @@ struct SettingsView: View {
     @AppStorage("debugTools") var debugTools = false
     @State var isChangelogShown = false
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
+    @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen = "0.1.0"
+    let mostRecentVersion = "0.2.0"
     
     var body: some View {
         Form {
@@ -37,6 +39,9 @@ struct SettingsView: View {
                         .frame(width: 100, height: 100)
                     }
                     .padding(.trailing)
+                    .onTapGesture(count: 5) {
+                        debugTools.toggle()
+                    }
                 }
                 
                 VStack(alignment: .leading) {
@@ -66,24 +71,24 @@ struct SettingsView: View {
             Toggle("Dark Mode", isOn: $darkMode)
                 .padding()
             
-            Toggle("Debug Tools", isOn: $debugTools)
-                .padding()
-            
             Button {
             } label: {
                 HStack {
                     Spacer()
                     Button {
+                        mostRecentVersionSeen = mostRecentVersion
                         isChangelogShown.toggle()
                     } label: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(lineWidth: 3)
+                                .stroke(.blue, lineWidth: 3)
+                                .fill(mostRecentVersion != mostRecentVersionSeen ? .blue : .clear)
                             HStack {
                                 Image(systemName: "arrow.up.circle")
                                 Text("Release Notes")
                             }
                             .padding()
+                            .foregroundStyle(mostRecentVersion != mostRecentVersionSeen ? .white : .blue)
                         }
                         .foregroundColor(.blue)
                     }

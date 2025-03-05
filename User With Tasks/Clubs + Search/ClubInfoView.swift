@@ -389,20 +389,21 @@ struct ClubInfoView: View {
                                             clubID: club.clubID
                                         )
                                         refreshUserInfo()
-                                        dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
+                                        dropper(title: "Club Unpinned", subtitle: club.name, icon: UIImage(systemName: "pin"))
                                     } else {
                                         addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
                                         refreshUserInfo()
-                                        dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
+                                        dropper(title: "Club Pinned", subtitle: club.name, icon: UIImage(systemName: "pin.fill"))
                                     }
                                 } label: {
                                     if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                        Image(systemName: "heart.fill")
+                                        Image(systemName: "pin.fill")
                                             .foregroundStyle(.red)
+                                            .shadow(radius: 5)
                                             .transition(.movingParts.pop(.red))
-                                        
+
                                     } else {
-                                        Image(systemName: "heart")
+                                        Image(systemName: "pin")
                                             .transition(
                                                 .asymmetric(insertion: .opacity, removal: .movingParts.vanish(Color(white: 0.8), mask: Circle()))
                                             )

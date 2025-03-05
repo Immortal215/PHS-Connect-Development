@@ -190,22 +190,6 @@ struct ContentView: View {
                             }
                             dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
                         }
-                        .onAppear {
-                            setupClubsListener()
-                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
-                                fetchUser(for: UserID) { user in
-                                    userInfo = user
-                                }
-                            }
-                            advSearchShown = true
-                            calendarScrollPoint = 12
-                            
-                        }
-                        .onDisappear {
-                            removeClubsListener()
-                            clubs = []
-                            userInfo = nil
-                        }
                         
                         //                        .onAppear {
                         //                            fetchClubs { fetchedClubs in
@@ -225,6 +209,22 @@ struct ContentView: View {
                 }
                 .onChange(of: showSignInView) {
                     dropper(title: showSignInView ? "Logged Out" : "Logged In", subtitle: "", icon: UIImage(systemName: "person"))
+                }
+                .onAppear {
+                    setupClubsListener()
+                    if let UserID = viewModel.uid, !viewModel.isGuestUser {
+                        fetchUser(for: UserID) { user in
+                            userInfo = user
+                        }
+                    }
+                    advSearchShown = true
+                    calendarScrollPoint = 12
+            
+                }
+                .onDisappear {
+                    removeClubsListener()
+                    clubs = []
+                    userInfo = nil
                 }
                 .onAppear {
                     if viewModel.userEmail != nil {

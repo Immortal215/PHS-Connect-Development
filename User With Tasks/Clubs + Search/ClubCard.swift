@@ -18,7 +18,8 @@ struct ClubCard: View {
     @Binding var userInfo: Personal?
     @State var youSureYouWantToLeave = false
     @Binding var selectedGenres: [String]
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
@@ -108,23 +109,23 @@ struct ClubCard: View {
                                     clubID: club.clubID
                                 )
                                 refreshUserInfo()
-                                dropper(title: "Club Unfavorited", subtitle: club.name, icon: UIImage(systemName: "heart"))
+                                dropper(title: "Club Unpinned", subtitle: club.name, icon: UIImage(systemName: "pin"))
                             } else {
                                 addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
                                 refreshUserInfo()
-                                dropper(title: "Club Favorited", subtitle: club.name, icon: UIImage(systemName: "heart.fill"))
+                                dropper(title: "Club Pinned", subtitle: club.name, icon: UIImage(systemName: "pin.fill"))
                             }
                         } label: {
                             if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
-                                Image(systemName: "heart.fill")
+                                Image(systemName: "pin.fill")
                                     .foregroundStyle(.red)
-                                    .transition(.movingParts.pop(.red))
-                                
-                            } else {
-                                Image(systemName: "heart")
+                                    .shadow(color: darkMode ? .red : .clear, radius: 3)
                                     .transition(
-                                        .asymmetric(insertion: .opacity, removal: .movingParts.vanish(Color(white: 0.8), mask: Circle()))
+                                        .asymmetric(insertion: .movingParts.pop(.red), removal: .movingParts.vanish(.red))
                                     )
+                            } else {
+                                Image(systemName: "pin")
+
                                     .foregroundStyle(.primary)
                             }
                         }
@@ -133,21 +134,21 @@ struct ClubCard: View {
                         
                         Spacer()
                         
-                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Enroll" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Enrolled") {
+                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
                             if let email = viewModel.userEmail {
-                                if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) {
-                                    if var cluber =  club.pendingMemberRequests {
+                                if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
+                                    if var cluber = club.pendingMemberRequests { // if the club has a pendingmemberrequests
                                         cluber.insert(email)
                                         club.pendingMemberRequests = cluber
                                         addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
-                                    } else {
+                                    } else { // if the club does not have a pending member requets
                                         club.pendingMemberRequests = [email]
                                         addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
                                     }
-                                } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) {
+                                } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) { // remove from pending requests
                                     club.pendingMemberRequests?.remove(email)
                                     removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
-                                } else {
+                                } else { // leave club if you are member
                                     if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
                                         youSureYouWantToLeave.toggle()
                                     }
