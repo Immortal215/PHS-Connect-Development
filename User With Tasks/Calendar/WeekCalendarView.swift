@@ -101,7 +101,7 @@ struct WeekCalendarView: View {
                     }
                 }
                 
-                if !viewModel.isGuestUser {
+                if clubs.filter({ $0.leaders.contains(viewModel.userEmail ?? "") }).count > 0 {
                     Button {
                         addMeetingTimeView.toggle()
                     } label: {

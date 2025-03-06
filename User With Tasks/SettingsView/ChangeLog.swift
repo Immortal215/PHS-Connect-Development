@@ -35,8 +35,11 @@ struct ChangelogSheetView: View {
                     changelogSection(for: currentVersion, isCurrentVersion: true)
                     
                     if !history.isEmpty {
-                        Divider()
+                        RoundedRectangle(cornerRadius: 15)
+                            .frame(height: 5)
                             .padding(.vertical, 8)
+                            .foregroundStyle(.cyan)
+                            .shadow(color: .cyan, radius: 3)
                         
                         ForEach(history.indices, id: \ .self) { index in
                             changelogSection(for: history[index], isCurrentVersion: false)
@@ -67,8 +70,8 @@ struct ChangelogSheetView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Version \(entry.version)")
                 .font(isCurrentVersion ? .title2 : .title3)
-                .fontWeight(.bold)
-            
+                .fontWeight(isCurrentVersion ? .black : .bold)
+                .foregroundStyle(isCurrentVersion ? .green : .blue)
             Text(entry.date)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
@@ -93,20 +96,24 @@ struct ChangelogSheetView: View {
                             .padding(.leading)
                         } label: {
                             changeTitleView(title: change.title)
+
                         }
                     } else {
                         changeTitleView(title: change.title)
+
                     }
                 }
             }
             .padding(.top, 4)
+            .foregroundStyle(isCurrentVersion ? .green : .blue)
+            .tint(isCurrentVersion ? .green : .blue)
+
         }
     }
     
     func changeTitleView(title: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text("•")
-                .foregroundColor(.blue)
             Text(title)
         }
     }

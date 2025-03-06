@@ -28,7 +28,8 @@ struct ContentView: View {
     @State var userInfo: Personal? = nil
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
-    
+    @ObservedObject var keyboardResponder = KeyboardResponder()
+
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -125,48 +126,78 @@ struct ContentView: View {
                             } else {
                                 ProgressView()
                             }
-                            // tab bar view
-                            VStack {
-                                Spacer()
-                                
-                                ZStack {
-                                    HStack {
-                                        
+                            
+                            if keyboardResponder.currentHeight > 0 {
+                                VStack(alignment: .center, spacing: 16) {
                                         TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
-                                            .padding(.horizontal)
-                                        
                                         if !viewModel.isGuestUser {
                                             TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
+                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                        }
+                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                }
+                                .bold()
+                                .padding()
+                                .background(Color.systemBackground.opacity(0.95))
+                                .cornerRadius(10)
+                                .shadow(radius: 5)
+                           //     .transition(.push(from: .bottom))
+                                .asymmetricTransition(insertion: .opacity, removal: .opacity)
+                              //  .animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
+                                .fixedSize()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                                .offset(y: 75)
+                                
+                            } else {
+                                VStack {
+                                    Spacer()
+                                    
+                                    ZStack {
+                                        HStack {
+                                            
+                                            TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
                                                 .padding(.horizontal)
                                             
-                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                            if !viewModel.isGuestUser {
+                                                TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
+                                                    .padding(.horizontal)
+                                                
+                                                TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                                    .padding(.horizontal)
+                                            }
+                                            
+                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
                                                 .padding(.horizontal)
+                                            
                                         }
-                                        
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
-                                            .padding(.horizontal)
-                                        
+                                        .fixedSize()
+                                        .bold()
                                     }
-                                    .fixedSize()
-                                    .bold()
+                                    
+                                    
                                 }
-                                
-                                
-                            }
-                            .background {
-                                HStack {
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                    .frame(height: screenHeight / 6)
-                                    .edgesIgnoringSafeArea(.all)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                                //.transition(.push(from: .top))
+                                .asymmetricTransition(insertion: .opacity, removal: .opacity)
+                                //.animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
+                                .background {
+                                    HStack {
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                        .frame(height: screenHeight / 6)
+                                        .edgesIgnoringSafeArea(.all)
+                                    }
+                                    .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
+                                    .allowsHitTesting(false)
+                                    .offset(y: 10)
                                 }
-                                .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
-                                .allowsHitTesting(false)
-                                .offset(y: 10)
                             }
+                        
+                                    
+                            
                         }
                         .refreshable {
                             //                            fetchClubs { fetchedClubs in
@@ -241,6 +272,7 @@ struct ContentView: View {
                     .transition(.movingParts.anvil)
             }
         }
+        .scrollDismissesKeyboard(.immediately)
         .textSelection(.enabled)
         .onChange(of: selectedTab) {
             _ = networkMonitor.isConnected
