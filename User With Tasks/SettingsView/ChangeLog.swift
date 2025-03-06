@@ -1,10 +1,16 @@
 import SwiftUI
 
+struct Change: Identifiable {
+    let id = UUID()
+    let title: String
+    let notes: [String]?
+}
+
 struct ChangelogEntry: Identifiable {
     var id: String { version }
     let version: String
     let date: String
-    let changes: [String]
+    let changes: [Change]
 }
 
 class ChangelogViewModel: ObservableObject {
@@ -26,52 +32,14 @@ struct ChangelogSheetView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Version \(currentVersion.version)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        Text(currentVersion.date)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(currentVersion.changes, id: \.self) { change in
-                                HStack(alignment: .top, spacing: 8) {
-                                    Text("•")
-                                        .foregroundColor(.secondary)
-                                    Text(change)
-                                }
-                            }
-                        }
-                        .padding(.top, 4)
-                    }
+                    changelogSection(for: currentVersion, isCurrentVersion: true)
                     
                     if !history.isEmpty {
                         Divider()
                             .padding(.vertical, 8)
                         
-                        ForEach(Array(history.enumerated()), id: \.element.id) { index, entry in
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Version \(entry.version)")
-                                    .font(.title3)
-                                    .fontWeight(.bold)
-                                
-                                Text(entry.date)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(entry.changes, id: \.self) { change in
-                                        HStack(alignment: .top, spacing: 8) {
-                                            Text("•")
-                                                .foregroundColor(.secondary)
-                                            Text(change)
-                                        }
-                                    }
-                                }
-                                .padding(.top, 4)
-                            }
+                        ForEach(history.indices, id: \ .self) { index in
+                            changelogSection(for: history[index], isCurrentVersion: false)
                             
                             if index < history.count - 1 {
                                 Divider()
@@ -91,6 +59,55 @@ struct ChangelogSheetView: View {
                     }
                 }
             }
+        }
+    }
+    
+    @ViewBuilder
+    func changelogSection(for entry: ChangelogEntry, isCurrentVersion: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Version \(entry.version)")
+                .font(isCurrentVersion ? .title2 : .title3)
+                .fontWeight(.bold)
+            
+            Text(entry.date)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(entry.changes) { change in
+                    if let notes = change.notes, !notes.isEmpty {
+                        DisclosureGroup {
+                            VStack(alignment: .leading) {
+                                ForEach(notes, id: \ .self) { note in
+                                    HStack {
+                                        Image(systemName: "arrow.turn.down.right")
+                                        Text(note)
+                                        
+                                        Spacer()
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    
+                                }
+                            }
+                            .padding(.leading)
+                        } label: {
+                            changeTitleView(title: change.title)
+                        }
+                    } else {
+                        changeTitleView(title: change.title)
+                    }
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+    
+    func changeTitleView(title: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("•")
+                .foregroundColor(.blue)
+            Text(title)
         }
     }
 }

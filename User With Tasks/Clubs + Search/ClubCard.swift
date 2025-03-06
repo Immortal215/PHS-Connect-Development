@@ -134,7 +134,7 @@ struct ClubCard: View {
                         
                         Spacer()
                         
-                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Requested" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
+                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Applied" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
                             if let email = viewModel.userEmail {
                                 if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
                                     if var cluber = club.pendingMemberRequests { // if the club has a pendingmemberrequests

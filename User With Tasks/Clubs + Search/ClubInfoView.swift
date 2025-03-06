@@ -201,30 +201,40 @@ struct ClubInfoView: View {
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
                         if let cluber = club.pendingMemberRequests {
-                            ForEach(Array(cluber), id: \.self) { i in
+                            if !cluber.isEmpty {
+                                Text("Pending Requests")
+                                    .font(.headline)
+                            }
+                            ScrollView(.horizontal) {
                                 HStack {
-                                    Text(i)
-                                    
-                                    Button {
-                                        club.pendingMemberRequests?.remove(i)
-                                        club.members.append(i)
-                                        addClub(club: club)
-                                    } label: {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(.green)
+                                    ForEach(Array(cluber), id: \.self) { i in
+                                        HStack {
+                                            Text(i)
+                                            
+                                            Button {
+                                                club.pendingMemberRequests?.remove(i)
+                                                club.members.append(i)
+                                                addClub(club: club)
+                                            } label: {
+                                                Image(systemName: "checkmark.circle")
+                                                    .foregroundStyle(.green)
+                                            }
+                                            .imageScale(.large)
+                                            
+                                            Button {
+                                                club.pendingMemberRequests?.remove(i)
+                                                addClub(club: club)
+                                            } label: {
+                                                Image(systemName: "xmark.circle")
+                                                    .foregroundStyle(.red)
+                                            }
+                                            .imageScale(.large)
+                                        }
+                                        
+                                        if i != Array(cluber).last! {
+                                            Divider()
+                                        }
                                     }
-                                    .imageScale(.large)
-                                    .padding()
-                                    
-                                    Button {
-                                        club.pendingMemberRequests?.remove(i)
-                                        addClub(club: club)
-                                    } label: {
-                                        Image(systemName: "xmark")
-                                            .foregroundStyle(.red)
-                                    }
-                                    .imageScale(.large)
-                                    .padding()
                                 }
                             }
                         }
