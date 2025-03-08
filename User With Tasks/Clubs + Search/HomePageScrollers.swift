@@ -61,6 +61,7 @@ struct HomePageScrollers: View {
                     Text("Join Clubs!")
                         .font(.largeTitle)
                         .bold()
+                        .foregroundStyle(.primary)
                 }
             }
             

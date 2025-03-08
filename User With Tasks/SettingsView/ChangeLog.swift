@@ -93,7 +93,7 @@ struct ChangelogSheetView: View {
                                     
                                 }
                             }
-                            .padding(.leading)
+                            .padding(.leading, 24)
                         } label: {
                             changeTitleView(title: change.title)
 

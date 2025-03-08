@@ -89,7 +89,7 @@ struct ClubView: View {
                     .padding(.bottom, -8)
                     ScrollView {
                         
-                        if userInfo?.userID != nil {
+                        if clubs.count > 1 {
                             // Clubs in
                             HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Enrolled")
                             

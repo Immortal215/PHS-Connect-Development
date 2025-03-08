@@ -337,7 +337,7 @@ func removePendingMemberRequest(clubID: String, emailToRemove: String) {
                     print("Error removing email from pending requests: \(error.localizedDescription)")
                 } else {
                     print("Email removed from pending requests successfully.")
-                    dropper(title: "Join Request Canceled!", subtitle: "", icon: nil)
+                    dropper(title: "Join Request Cancelled!", subtitle: "", icon: nil)
                 }
             }
         } else {
