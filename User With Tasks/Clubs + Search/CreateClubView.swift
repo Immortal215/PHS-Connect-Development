@@ -46,7 +46,7 @@ struct CreateClubView: View {
         
         VStack(alignment: .trailing) {
             HStack(alignment: .center) {
-                Toggle("Request Required", isOn: Binding(
+                Toggle("Join Request Required", isOn: Binding(
                     get: { requestNeeded ?? false },
                     set: { requestNeeded = $0 ? true : nil }
                 ))

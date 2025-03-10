@@ -134,7 +134,7 @@ struct ClubCard: View {
                         
                         Spacer()
                         
-                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Applied" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
+                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false && club.requestNeeded != nil) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false && club.requestNeeded != nil) ? "Applied" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
                             if let email = viewModel.userEmail {
                                 if let requestNeeded = club.requestNeeded { // if you need to request to join
                                     if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
@@ -168,7 +168,7 @@ struct ClubCard: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .padding(.top)
-                        .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
+                        .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false && club.requestNeeded != nil) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false && club.requestNeeded != nil) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
                         .alert(isPresented: $youSureYouWantToLeave) {
                             Alert(title: Text("Leave \(club.name)?"), primaryButton: .destructive(Text("Leave Club"), action: {
                                 if let email = viewModel.userEmail {
@@ -199,7 +199,7 @@ struct ClubCard: View {
                         .background(Capsule().fill(Color.red))
                 }
                 .padding(.bottom, 10)
-            }  
+            }
         }
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
