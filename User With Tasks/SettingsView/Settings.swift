@@ -20,7 +20,6 @@ struct SettingsView: View {
     @State var isChangelogShown = false
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
     @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen = "0.1.0 Alpha"
-    let mostRecentVersion = "0.2.0 Alpha"
     var screenHeight = UIScreen.main.bounds.height
     
     var body: some View {
@@ -100,19 +99,19 @@ struct SettingsView: View {
                     Spacer()
                         
                     Button {
-                        mostRecentVersionSeen = mostRecentVersion
+                        mostRecentVersionSeen = changeLogViewModel.currentVersion.version
                         isChangelogShown.toggle()
                     } label: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(.blue, lineWidth: 3)
-                                .fill(mostRecentVersion != mostRecentVersionSeen ? .blue : .clear)
+                                .fill(changeLogViewModel.currentVersion.version != mostRecentVersionSeen ? .blue : .clear)
                             HStack {
                                 Image(systemName: "arrow.up.circle")
                                 Text("Release Notes")
                             }
                             .padding()
-                            .foregroundStyle(mostRecentVersion != mostRecentVersionSeen ? .white : .blue)
+                            .foregroundStyle(changeLogViewModel.currentVersion.version != mostRecentVersionSeen ? .white : .blue)
                         }
                         .foregroundColor(.blue)
                     }
@@ -170,10 +169,10 @@ struct SettingsView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing) {
-                    Text("Version \(mostRecentVersion)")
+                    Text("Version \(changeLogViewModel.currentVersion.version)")
                         .monospaced()
                         .font(.body)
-                    Text("Prospect High School - Immortal215")
+                    Text("\(changeLogViewModel.currentVersion.date)\nProspect High School - Immortal215")
                         .font(.caption2)
                 }
                 .foregroundStyle(.secondary)

@@ -6,7 +6,8 @@ struct FeatureReportButton: View {
     @State var alertMessage = ""
     @State var showAlert = false
     var uid : String
-    
+    @ObservedObject var changeLogViewModel = ChangelogViewModel()
+
     // Configuration
     let recipientEmail = "sharulshah@icloud.com"
     let subject = "Feature Report"
@@ -67,7 +68,7 @@ struct FeatureReportButton: View {
         }
     }
     
-    private func createEmailTemplate() -> String {
+    func createEmailTemplate() -> String {
         """
         Device Information:
         • Model: \(UIDevice.current.model)
@@ -75,6 +76,7 @@ struct FeatureReportButton: View {
         • Device Width: \(UIScreen.main.bounds.width)
         • Device Height: \(UIScreen.main.bounds.height)
         • User UID : \(uid)
+        • App Version : \(changeLogViewModel.currentVersion.version)
         
         Feature/ Bug Request Details:
         Please describe the issue or feature you'd like to recognize:

@@ -190,6 +190,29 @@ func addAnnouncement(announcement: Club.Announcements) {
     }
 }
 
+func addPersonSeen(announcement: Club.Announcements, memberEmail: String) {
+    let databaseRef = Database.database().reference()
+    let clubRef = databaseRef.child("clubs").child(announcement.clubID).child("announcements").child(announcement.date)
+
+    clubRef.child("peopleSeen").observeSingleEvent(of: .value) { snapshot in
+        var peopleSeen = snapshot.value as? [String] ?? []
+
+        if peopleSeen.contains(memberEmail.lowercased()) {
+            print("Error: Member already in the peopleSeen.")
+            return
+        }
+
+        peopleSeen.append(memberEmail.lowercased())
+
+        clubRef.child("peopleSeen").setValue(Array(Set(peopleSeen))) { error, _ in
+            if let error = error {
+                print("Error adding member to peopleseen: \(error.localizedDescription)")
+            } else {
+                print("Member added to peopleseen successfully.")
+            }
+        }
+    }
+}
 func addMeeting(meeting: Club.MeetingTime) {
     let reference = Database.database().reference()
     let clubReference = reference.child("clubs").child(meeting.clubID)

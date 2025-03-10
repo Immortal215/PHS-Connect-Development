@@ -27,38 +27,60 @@ struct ChangelogSheetView: View {
     let currentVersion: ChangelogEntry
     let history: [ChangelogEntry]
     @Environment(\.dismiss) var dismiss
+    @State var versionNumToSee: String?
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 32) {
-                    changelogSection(for: currentVersion, isCurrentVersion: true)
-                    
-                    if !history.isEmpty {
-                        RoundedRectangle(cornerRadius: 15)
-                            .frame(height: 5)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(.cyan)
-                            .shadow(color: .cyan, radius: 3)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 32) {
+                        changelogSection(for: currentVersion, isCurrentVersion: true)
+                            .id(currentVersion.version)
                         
-                        ForEach(history.indices, id: \ .self) { index in
-                            changelogSection(for: history[index], isCurrentVersion: false)
+                        if !history.isEmpty {
+                            RoundedRectangle(cornerRadius: 15)
+                                .frame(height: 5)
+                                .padding(.vertical, 8)
+                                .foregroundStyle(.cyan)
+                                .shadow(color: .cyan, radius: 3)
                             
-                            if index < history.count - 1 {
-                                Divider()
-                                    .padding(.vertical, 8)
+                            ForEach(history.indices, id: \ .self) { index in
+                                changelogSection(for: history[index], isCurrentVersion: false)
+                                    .id(history[index].version)
+                                
+                                if index < history.count - 1 {
+                                    Divider()
+                                        .padding(.vertical, 8)
+                                }
                             }
                         }
                     }
+                    .padding(24)
                 }
-                .padding(24)
-            }
-            .navigationTitle("Release Notes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                .onChange(of: versionNumToSee) {
+                    proxy.scrollTo(versionNumToSee, anchor: .top)
+                }
+                .navigationTitle("Release Notes")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Menu("\(versionNumToSee ?? "Jump to version")") {
+                            Picker("", selection: $versionNumToSee) {
+                                Text("Version \(currentVersion.version)")
+                                    .tag(currentVersion.version)
+                                
+                                ForEach(history.indices, id: \.self) { i in
+                                    Text("Version \(history[i].version)")
+                                        .tag(history[i].version)
+                                }
+                            }
+                            //.labelsHidden()
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -82,13 +104,15 @@ struct ChangelogSheetView: View {
                         DisclosureGroup {
                             VStack(alignment: .leading) {
                                 ForEach(notes, id: \ .self) { note in
-                                    HStack {
+                                    HStack(alignment: .top) {
                                         Image(systemName: "arrow.turn.down.right")
-                                        Text(note)
                                         
+                                        Text(note)
+                                            .multilineTextAlignment(.leading)
+                                            .offset(y: -8)
                                         Spacer()
                                     }
-                                    .font(.subheadline)
+                                    .font(.footnote)
                                     .foregroundColor(.secondary)
                                     
                                 }
@@ -115,6 +139,8 @@ struct ChangelogSheetView: View {
         HStack(alignment: .top, spacing: 8) {
             Text("•")
             Text(title)
+                .multilineTextAlignment(.leading)
+                .font(.callout)
         }
     }
 }

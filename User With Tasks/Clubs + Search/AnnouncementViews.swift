@@ -356,6 +356,8 @@ struct AnnouncementsView: View {
                                     
                                     var mutableAnnouncement = selected.announcement
                                     
+                                    addPersonSeen(announcement: mutableAnnouncement, memberEmail: (viewModel.userEmail ?? ""))
+                                    
                                     if let peopleSeen = mutableAnnouncement.peopleSeen {
                                         if !peopleSeen.contains(viewModel.userEmail ?? "") {
                                             mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
@@ -364,7 +366,6 @@ struct AnnouncementsView: View {
                                         mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
                                     }
                                     
-                                    addAnnouncement(announcement: mutableAnnouncement)
                                     announcements[selected.id] = mutableAnnouncement
                                 }
                                 .presentationDragIndicator(.visible)
@@ -474,6 +475,8 @@ struct AllAnnouncementsView: View {
                         
                         var mutableAnnouncement = selected.announcement
                         
+                        addPersonSeen(announcement: mutableAnnouncement, memberEmail: (viewModel.userEmail ?? ""))
+                        
                         if let peopleSeen = mutableAnnouncement.peopleSeen {
                             if !peopleSeen.contains(viewModel.userEmail ?? "") {
                                 mutableAnnouncement.peopleSeen?.append(viewModel.userEmail ?? "")
@@ -482,7 +485,6 @@ struct AllAnnouncementsView: View {
                             mutableAnnouncement.peopleSeen = [viewModel.userEmail ?? ""]
                         }
                         
-                        addAnnouncement(announcement: mutableAnnouncement)
                         announcements[selected.id] = mutableAnnouncement
                     }
                     .presentationDragIndicator(.visible)
