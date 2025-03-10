@@ -210,6 +210,7 @@ struct ContentView: View {
                                     .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
                                     .allowsHitTesting(false)
                                     .offset(y: 10)
+                                    .hidden(selectedTab == 3)
                                 }
                             }
                         

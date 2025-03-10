@@ -3,6 +3,7 @@ import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
+import Pow
 
 struct SettingsView: View {
     var viewModel: AuthenticationViewModel
@@ -18,11 +19,12 @@ struct SettingsView: View {
     @AppStorage("debugTools") var debugTools = false
     @State var isChangelogShown = false
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
-    @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen = "0.1.0"
-    let mostRecentVersion = "0.2.0"
+    @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen = "0.1.0 Alpha"
+    let mostRecentVersion = "0.2.0 Alpha"
+    var screenHeight = UIScreen.main.bounds.height
     
     var body: some View {
-        Form {
+        VStack {
             HStack(alignment: .top) {
                 if !viewModel.isGuestUser {
                     AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
@@ -68,13 +70,35 @@ struct SettingsView: View {
             }
             .padding()
             
-            Toggle("Dark Mode", isOn: $darkMode)
-                .padding()
+            Divider()
             
             Button {
             } label: {
                 HStack {
+                    Button {
+                        darkMode.toggle()
+                    } label: {
+                        HStack {
+                            Text("\(darkMode ? "Dark" : "Light") Mode")
+                            
+                            if darkMode {
+                                Image(systemName: "moon.fill")
+
+                            } else {
+                                Image(systemName: "sun.max.fill")
+
+                            }
+                        }
+                        .imageScale(.large)
+                        .padding(8)
+                    }
+                    .padding()
+                    .buttonStyle(.borderedProminent)
+                    .fixedSize()
+                    .tint(darkMode ? .purple : .yellow)
+                    
                     Spacer()
+                        
                     Button {
                         mostRecentVersionSeen = mostRecentVersion
                         isChangelogShown.toggle()
@@ -100,7 +124,7 @@ struct SettingsView: View {
                             history: changeLogViewModel.history
                         )
                         .fontDesign(.monospaced)
-
+                        
                     }
                     
                     if !viewModel.isGuestUser {
@@ -139,7 +163,26 @@ struct SettingsView: View {
                     
                 }
             }
+            
+            Spacer()
+            
+            HStack {
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    Text("Version \(mostRecentVersion)")
+                        .monospaced()
+                        .font(.body)
+                    Text("Prospect High School - Immortal215")
+                        .font(.caption2)
+                }
+                .foregroundStyle(.secondary)
+            }
+            .padding()
         }
+        .frame(maxHeight: screenHeight - screenHeight/6 - 36)
+        .padding()
+        .background(Color.systemGray6.cornerRadius(15).padding())
         .onAppear {
             if !viewModel.isGuestUser && debugTools {
                 if let UserID = viewModel.uid {
