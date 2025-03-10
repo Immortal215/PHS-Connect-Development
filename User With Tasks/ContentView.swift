@@ -69,6 +69,23 @@ struct ContentView: View {
                                     .padding(.horizontal)
                                     .frame(width: screenWidth/3)
                                     
+                                    HStack {
+                                          Rectangle()
+                                              .fill(Color.gray.opacity(0.3))
+                                              .frame(height: 1)
+                                          
+                                          Text("or")
+                                              .font(.subheadline)
+                                              .foregroundColor(.gray)
+                                              .padding(.horizontal, 10)
+                                          
+                                          Rectangle()
+                                              .fill(Color.gray.opacity(0.3))
+                                              .frame(height: 1)
+                                      }
+                                      .padding(.horizontal)
+                                      .frame(width: screenWidth/4)
+                                    
                                     Button {
                                         viewModel.signInAsGuest()
                                         showSignInView = false

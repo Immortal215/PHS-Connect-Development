@@ -136,21 +136,32 @@ struct ClubCard: View {
                         
                         Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) ? "Applied" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
                             if let email = viewModel.userEmail {
-                                if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
-                                    if var cluber = club.pendingMemberRequests { // if the club has a pendingmemberrequests
-                                        cluber.insert(email)
-                                        club.pendingMemberRequests = cluber
-                                        addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
-                                    } else { // if the club does not have a pending member requets
-                                        club.pendingMemberRequests = [email]
-                                        addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
+                                if let requestNeeded = club.requestNeeded { // if you need to request to join
+                                    if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
+                                        if var cluber = club.pendingMemberRequests { // if the club has a pendingmemberrequests
+                                            cluber.insert(email)
+                                            club.pendingMemberRequests = cluber
+                                            addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
+                                        } else { // if the club does not have a pending member requets
+                                            club.pendingMemberRequests = [email]
+                                            addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
+                                        }
+                                    } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) { // remove from pending requests
+                                        club.pendingMemberRequests?.remove(email)
+                                        removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
+                                    } else { // leave club if you are member
+                                        if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
+                                            youSureYouWantToLeave.toggle()
+                                        }
                                     }
-                                } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) { // remove from pending requests
-                                    club.pendingMemberRequests?.remove(email)
-                                    removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
-                                } else { // leave club if you are member
-                                    if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
-                                        youSureYouWantToLeave.toggle()
+                                } else {
+                                    if !club.members.contains(email) && !club.leaders.contains(email) {
+                                        club.members.append(email)
+                                        addMemberToClub(clubID: club.clubID, memberEmail: email)
+                                    } else {
+                                        if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
+                                            youSureYouWantToLeave.toggle()
+                                        }
                                     }
                                 }
                             }
@@ -188,7 +199,7 @@ struct ClubCard: View {
                         .background(Capsule().fill(Color.red))
                 }
                 .padding(.bottom, 10)
-            }
+            }  
         }
         .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)

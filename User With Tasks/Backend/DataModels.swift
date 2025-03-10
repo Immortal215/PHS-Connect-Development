@@ -23,7 +23,7 @@ struct Club: Codable, Equatable, Hashable {
     var location: String
     var instagram: String? // Instagram link
     var clubColor: String? // color
-    var haveToRequest: Bool?
+    var requestNeeded: Bool?
 
     struct Announcements: Codable, Equatable, Hashable {
         var date: String

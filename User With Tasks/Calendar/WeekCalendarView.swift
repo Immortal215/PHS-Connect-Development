@@ -9,6 +9,7 @@ struct WeekCalendarView: View {
     @State var showMonthPicker = false
     @Binding var clubs: [Club]
     @AppStorage("darkMode") var darkMode = false
+    @State var appear = Array(repeating: false, count: 3)
 
     var body: some View {
         VStack {
@@ -65,10 +66,10 @@ struct WeekCalendarView: View {
                         
                         if !clubIDCounts.isEmpty {
                             HStack(spacing: -4) {
-                                ForEach(clubIDCounts.prefix(3), id: \.clubID) { club in
+                                ForEach(Array(clubIDCounts.prefix(3).enumerated()), id: \.element.clubID) { index, club in
                                     ZStack {
                                         Circle()
-                                            .fill(colorFromClubID(club: clubs.first(where: {$0.clubID == club.clubID})!))
+                                            .fill(colorFromClubID(club: clubs.first(where: { $0.clubID == club.clubID })!))
                                             .frame(width: 12, height: 12)
                                         
                                         if club.count > 1 {
@@ -77,8 +78,17 @@ struct WeekCalendarView: View {
                                                 .foregroundColor(.white)
                                         }
                                     }
+                                    .opacity(appear[index] ? 1 : 0)
+                                    .offset(y: appear[index] ? 0 : -20)
+                                    .animation(.easeIn(duration: 0.3), value: appear[index])
+                                    .onAppear {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + Double(index + 1)) {
+                                            appear[index] = true
+                                        }
+                                    }
                                 }
-                                
+
+                                    
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
                                         .foregroundColor(.primary)

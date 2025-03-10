@@ -273,6 +273,31 @@ func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) 
 //    }
 //}
 
+func addMemberToClub(clubID: String, memberEmail: String) {
+    let databaseRef = Database.database().reference()
+    let clubRef = databaseRef.child("clubs").child(clubID)
+
+    clubRef.child("members").observeSingleEvent(of: .value) { snapshot in
+        var members = snapshot.value as? [String] ?? []
+
+        if members.contains(memberEmail.lowercased()) {
+            print("Error: Member already in the members.")
+            return
+        }
+
+        members.append(memberEmail.lowercased())
+
+        clubRef.child("members").setValue(Array(Set(members))) { error, _ in
+            if let error = error {
+                print("Error adding member to members: \(error.localizedDescription)")
+            } else {
+                print("Member added to pending requests successfully.")
+                dropper(title: "Joined Club!", subtitle: "", icon: nil)
+            }
+        }
+    }
+}
+
 func removeMemberFromClub(clubID: String, emailToRemove: String) {
     let databaseRef = Database.database().reference()
     let clubRef = databaseRef.child("clubs").child(clubID)
@@ -307,7 +332,7 @@ func addPendingMemberRequest(clubID: String, memberEmail: String) {
         if pendingRequests.contains(memberEmail.lowercased()) {
             print("Error: Member already in the pending requests.")
             return
-        }
+        } 
 
         pendingRequests.append(memberEmail.lowercased())
 

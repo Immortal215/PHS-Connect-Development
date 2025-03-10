@@ -31,6 +31,7 @@ struct CreateClubView: View {
     @State var selectedLeaders: Set<String> = []
     @State var selectedMembers: Set<String> = []
     @State var selectedGenres: Set<String> = []
+    @State var requestNeeded: Bool?
     
     var viewCloser: (() -> Void)?
     
@@ -44,17 +45,30 @@ struct CreateClubView: View {
         }
         
         VStack(alignment: .trailing) {
-            if abletoCreate {
+            HStack {
+                Text("Request Required")
+                    .padding()
+                    .padding(.trailing, -16)
+                
+                Toggle("", isOn: Binding(
+                    get: { requestNeeded ?? false },
+                    set: { requestNeeded = $0 ? true : nil }
+                ))
+                .labelsHidden()
+                .padding()
+                
+                Spacer()
+                if abletoCreate {
                 Button {
                     if clubId == "" {
                         let lastClub = clubs.sorted {
                             Int($0.clubID.replacingOccurrences(of: "clubID", with: ""))! <
-                            Int($1.clubID.replacingOccurrences(of: "clubID", with: ""))!
+                                Int($1.clubID.replacingOccurrences(of: "clubID", with: ""))!
                         }.last!
                         let lastDigit = Int(lastClub.clubID.replacingOccurrences(of: "clubID", with: ""))!
                         CreatedClub.clubID = "clubID\(lastDigit + 1)"
-
-                       // CreatedClub.clubID = "clubID\(Int(clubs.sorted(by: { $0.clubID < $1.clubID }).last!.clubID.last!)! + 1)"
+                        
+                        // CreatedClub.clubID = "clubID\(Int(clubs.sorted(by: { $0.clubID < $1.clubID }).last!.clubID.last!)! + 1)"
                     } else {
                         CreatedClub.clubID = clubId
                     }
@@ -75,7 +89,7 @@ struct CreateClubView: View {
                     CreatedClub.abstract = clubAbstract
                     CreatedClub.location = location
                     CreatedClub.leaders = leaders
-                    
+                    CreatedClub.requestNeeded = requestNeeded
                     if !members.isEmpty {
                         CreatedClub.members = members
                     } else {
@@ -88,7 +102,7 @@ struct CreateClubView: View {
                     } else {
                         CreatedClub.genres = ["Non-Competitive"]
                     }
-                                        
+                    
                     // optional additions, needed to keep optional
                     if clubPhoto != "" {
                         CreatedClub.clubPhoto = clubPhoto
@@ -136,7 +150,7 @@ struct CreateClubView: View {
                 .padding(.top)
                 .padding(.trailing)
             }
-            
+            }
             ScrollView {
                 LabeledContent {
                     TextField("Club Name (Required)", text: $clubTitle)
@@ -458,6 +472,7 @@ struct CreateClubView: View {
                 if let meet = CreatedClub.normalMeetingTime {
                     normalMeet = meet
                 }
+                requestNeeded = CreatedClub.requestNeeded
                 
             }
         }
