@@ -10,7 +10,9 @@ struct ChangelogData {
             Change(title: "Equalized colors", notes: ["Adjusted dark mode color matching"]),
             Change(title: "Added change log", notes: ["Displays version history", "Users can view past updates"]),
             Change(title: "Made club requesting optional as a setting", notes: nil),
-            Change(title: "Page switcher moves when keyboard is on screen", notes: nil)
+            Change(title: "Page switcher moves when keyboard is on screen", notes: nil),
+            Change(title: "Minor Ui Tweaks", notes: nil)
+
         ]
     )
     

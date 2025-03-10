@@ -45,16 +45,12 @@ struct CreateClubView: View {
         }
         
         VStack(alignment: .trailing) {
-            HStack {
-                Text("Request Required")
-                    .padding()
-                    .padding(.trailing, -16)
-                
-                Toggle("", isOn: Binding(
+            HStack(alignment: .center) {
+                Toggle("Request Required", isOn: Binding(
                     get: { requestNeeded ?? false },
                     set: { requestNeeded = $0 ? true : nil }
                 ))
-                .labelsHidden()
+                .fixedSize()
                 .padding()
                 
                 Spacer()
