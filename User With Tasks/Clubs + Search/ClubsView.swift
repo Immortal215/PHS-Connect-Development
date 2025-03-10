@@ -128,7 +128,7 @@ struct ClubView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: screenHeight/1.8)
-            .background(Color.systemBackground)
+            .background(Color(UIColor.systemGray6))
             .cornerRadius(16)
             .shadow(color: .secondary, radius: 10)
             .padding()
