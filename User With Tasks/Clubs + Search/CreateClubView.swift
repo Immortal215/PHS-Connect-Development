@@ -32,6 +32,7 @@ struct CreateClubView: View {
     @State var selectedMembers: Set<String> = []
     @State var selectedGenres: Set<String> = []
     @State var requestNeeded: Bool?
+    @State var instagram: String?
     
     var viewCloser: (() -> Void)?
     
@@ -86,6 +87,8 @@ struct CreateClubView: View {
                     CreatedClub.location = location
                     CreatedClub.leaders = leaders
                     CreatedClub.requestNeeded = requestNeeded
+                    CreatedClub.instagram = instagram
+                    
                     if !members.isEmpty {
                         CreatedClub.members = members
                     } else {
@@ -299,6 +302,11 @@ struct CreateClubView: View {
                 }
                 .padding()
                 
+                LabeledContent("Instagram Username") {
+                    TextField("Instagram Username", text: $instagram)
+                }
+                .padding()
+                
                 DisclosureGroup("Edit Members", isExpanded: $memberDisclosureExpanded) {
                     VStack {
                         HStack {
@@ -461,7 +469,7 @@ struct CreateClubView: View {
                 schoology = CreatedClub.schoologyCode
                 location = CreatedClub.location
                 genres = CreatedClub.genres ?? []
-                
+                instagram = CreatedClub.instagram
                 if let photo = CreatedClub.clubPhoto {
                     clubPhoto = photo
                 }

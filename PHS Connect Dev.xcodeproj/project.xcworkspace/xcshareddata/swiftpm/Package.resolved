@@ -1,5 +1,5 @@
 {
-  "originHash" : "88fe1f39eabad7a3997601df9c4958adc337029dc93fa8e4c955230cec46eacf",
+  "originHash" : "bc54cbdcbe5624665dba09d80d3afbcfd702655cd88cede93674cf86b0b46e6e",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "c89ed571ae140f8eb1142735e6e23d7bb8c34cb2",
         "version" : "1.7.5"
+      }
+    },
+    {
+      "identity" : "changelogkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/andrealufino/ChangelogKit.git",
+      "state" : {
+        "revision" : "54e19fd72ded00d8591d4f1d8dc9a495871fca5e",
+        "version" : "1.3.3"
       }
     },
     {

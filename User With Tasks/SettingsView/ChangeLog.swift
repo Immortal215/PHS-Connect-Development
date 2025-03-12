@@ -4,6 +4,8 @@ struct Change: Identifiable {
     let id = UUID()
     let title: String
     let notes: [String]?
+    var color: Color?
+    var symbol: String?
 }
 
 struct ChangelogEntry: Identifiable {

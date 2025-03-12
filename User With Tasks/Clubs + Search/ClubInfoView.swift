@@ -296,6 +296,10 @@ struct ClubInfoView: View {
                         
                     }
                     
+                    if let username = club.instagram {
+                        InstagramLinkButton(username: username)
+                    }
+
                     if let genres = club.genres, !genres.isEmpty {
                         VStack(alignment: .leading) {
                             Text("Genres")

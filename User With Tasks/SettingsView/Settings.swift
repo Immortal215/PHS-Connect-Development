@@ -4,6 +4,7 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 import Pow
+import ChangelogKit
 
 struct SettingsView: View {
     var viewModel: AuthenticationViewModel
@@ -21,6 +22,8 @@ struct SettingsView: View {
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
     @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen = "0.1.0 Alpha"
     var screenHeight = UIScreen.main.bounds.height
+    @State var isNewChangeLogShown = false
+    @State var recentVersionForChangelogLibrary : Changelog = Changelog.init(version: "0.1.0 Alpha", features: [])
     
     var body: some View {
         VStack {
@@ -181,6 +184,18 @@ struct SettingsView: View {
             }
             .padding()
         }
+        .onAppear {
+            if mostRecentVersionSeen != changeLogViewModel.currentVersion.version {
+                var features : [Changelog.Feature] = []
+                for i in changeLogViewModel.currentVersion.changes {
+                    features.append(Changelog.Feature(symbol: i.symbol ?? "", title: i.title, description: i.notes?.map { "* \($0)" }.joined(separator: "\n") ?? "", color: i.color ?? .blue))
+                }
+                
+                recentVersionForChangelogLibrary = Changelog(version: changeLogViewModel.currentVersion.version, features: features)
+                isNewChangeLogShown = true
+            }
+        }
+        .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary)
         .frame(maxHeight: screenHeight - screenHeight/6 - 36)
         .padding()
         .background(Color.systemGray6.cornerRadius(15).padding())
