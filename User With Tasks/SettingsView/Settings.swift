@@ -169,12 +169,14 @@ struct SettingsView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing) {
+                    Text("Update \(changeLogViewModel.currentVersion.date)\nProspect High School - Immortal215")
+                        .font(.caption2)
+                    
                     Text("Version \(changeLogViewModel.currentVersion.version)")
                         .monospaced()
                         .font(.body)
-                    Text("\(changeLogViewModel.currentVersion.date)\nProspect High School - Immortal215")
-                        .font(.caption2)
                 }
+                .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
             }
             .padding()

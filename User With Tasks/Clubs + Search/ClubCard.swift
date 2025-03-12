@@ -19,7 +19,7 @@ struct ClubCard: View {
     @State var youSureYouWantToLeave = false
     @Binding var selectedGenres: [String]
     @AppStorage("darkMode") var darkMode = false
-
+    
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 15)
@@ -66,7 +66,7 @@ struct ClubCard: View {
                         .bold()
                         .padding(.bottom, 8)
                         .foregroundColor(.primary)
-
+                    
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
@@ -125,7 +125,7 @@ struct ClubCard: View {
                                     )
                             } else {
                                 Image(systemName: "pin")
-
+                                
                                     .foregroundStyle(.primary)
                             }
                         }
@@ -134,7 +134,12 @@ struct ClubCard: View {
                         
                         Spacer()
                         
-                        Button(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false && club.requestNeeded != nil) ? "Join" : (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false && club.requestNeeded != nil) ? "Applied" : club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" : "Member") {
+                        Button(
+                            club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" :
+                                club.members.contains(viewModel.userEmail ?? "") ? "Member" :
+                                (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) && club.requestNeeded != nil ? "Applied" :
+                                "Join"
+                        ){
                             if let email = viewModel.userEmail {
                                 if let requestNeeded = club.requestNeeded { // if you need to request to join
                                     if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
@@ -168,12 +173,17 @@ struct ClubCard: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .padding(.top)
-                        .tint(!club.members.contains(viewModel.userEmail ?? "") && !club.leaders.contains(viewModel.userEmail ?? "") && !(club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false && club.requestNeeded != nil) ? .blue : ((club.pendingMemberRequests?.contains(viewModel.userEmail ?? "")) ?? false && club.requestNeeded != nil) ? .yellow : club.leaders.contains(viewModel.userEmail ?? "") ? .purple : .green)
+                        .tint(club.leaders.contains(viewModel.userEmail ?? "") ? .purple :
+                                club.members.contains(viewModel.userEmail ?? "") ? .green :
+                                (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) && club.requestNeeded != nil ? .yellow :
+                                .blue)
                         .alert(isPresented: $youSureYouWantToLeave) {
                             Alert(title: Text("Leave \(club.name)?"), primaryButton: .destructive(Text("Leave Club"), action: {
                                 if let email = viewModel.userEmail {
                                     club.members.remove(at: club.members.firstIndex(of: email)!)
                                     removeMemberFromClub(clubID: club.clubID, emailToRemove: email)
+                                    club.pendingMemberRequests?.remove(email)
+                                    removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
                                 }
                             }), secondaryButton: .cancel() )
                         }

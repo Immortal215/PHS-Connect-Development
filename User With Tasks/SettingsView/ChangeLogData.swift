@@ -3,9 +3,10 @@ import SwiftUI
 struct ChangelogData {
     static let currentVersion = ChangelogEntry(
         version: "0.2.5 Alpha",
-        date: "2025-03-24",
+        date: "03-24-2025",
         changes: [
             Change(title: "Fixed announcement viewing bug", notes: ["Announcement viewing previously did not change the announcement viewing status for non-leaders"]),
+            Change(title: "Feature report now works with any email carrier, not just apple mail", notes: nil),
             Change(title: "Minor ui tweaks", notes: nil)
         ]
     )
@@ -13,7 +14,7 @@ struct ChangelogData {
     static let history: [ChangelogEntry] = [
         ChangelogEntry(
             version: "0.2.0 Alpha",
-            date: "2025-03-10",
+            date: "03-10-2025",
             changes: [
                 Change(title: "Fixed many user bugs", notes: ["Resolved feature report button logging out", "Resolved start-up user crashes", "Fixed other minor issues"]),
                 Change(title: "Improved app speed", notes: ["Optimized database queries", "Started implementing caching"]),
@@ -27,7 +28,7 @@ struct ChangelogData {
         ),
         ChangelogEntry(
             version: "0.1.0 Alpha",
-            date: "2025-02-28",
+            date: "02-28-2025",
             changes: [
                 Change(title: "Initial alpha release", notes: ["Basic functionality introduced", "Includes core features"])
             ]

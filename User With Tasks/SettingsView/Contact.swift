@@ -5,20 +5,18 @@ struct FeatureReportButton: View {
     @State var isShowingMailView = false
     @State var alertMessage = ""
     @State var showAlert = false
-    var uid : String
+    var uid: String
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
 
-    // Configuration
     let recipientEmail = "sharulshah@icloud.com"
     let subject = "Feature Report"
-    
+
     var body: some View {
         Button(action: {
             if MFMailComposeViewController.canSendMail() {
                 isShowingMailView = true
             } else {
-                alertMessage = "Email is not configured on this device"
-                showAlert = true
+                openGmailApp()
             }
         }) {
             HStack {
@@ -67,7 +65,7 @@ struct FeatureReportButton: View {
             )
         }
     }
-    
+
     func createEmailTemplate() -> String {
         """
         Device Information:
@@ -77,30 +75,44 @@ struct FeatureReportButton: View {
         • Device Height: \(UIScreen.main.bounds.height)
         • User UID : \(uid)
         • App Version : \(changeLogViewModel.currentVersion.version)
-        
+
         Feature/ Bug Request Details:
         Please describe the issue or feature you'd like to recognize:
-        
-        
+
+
         How would you fix/ change this?: 
-        
-        
+
+
         Additional comments/ resources to help:
-        
+
         """
+    }
+
+    func openGmailApp() {
+        let encodedBody = createEmailTemplate().addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let gmailURLString = "googlegmail://co?to=\(recipientEmail)&subject=\(subject)&body=\(encodedBody)"
+        let mailtoURLString = "mailto:\(recipientEmail)?subject=\(subject)&body=\(encodedBody)"
+
+        if let gmailURL = URL(string: gmailURLString), UIApplication.shared.canOpenURL(gmailURL) {
+            UIApplication.shared.open(gmailURL)
+        } else if let mailtoURL = URL(string: mailtoURLString) {
+            UIApplication.shared.open(mailtoURL)
+        } else {
+            alertMessage = "No email app available. Please set up an email account."
+            showAlert = true
+        }
     }
 }
 
-// Mail View Representative
 struct MailView: UIViewControllerRepresentable {
     @Binding var isShowing: Bool
     let result: (Result<MFMailComposeResult, Error>) -> Void
     let content: MailContent
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-    
+
     func makeUIViewController(context: Context) -> MFMailComposeViewController {
         let mailComposer = MFMailComposeViewController()
         mailComposer.mailComposeDelegate = context.coordinator
@@ -109,16 +121,16 @@ struct MailView: UIViewControllerRepresentable {
         mailComposer.setMessageBody(content.message, isHTML: false)
         return mailComposer
     }
-    
+
     func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
-    
+
     class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
         let parent: MailView
-        
+
         init(_ parent: MailView) {
             self.parent = parent
         }
-        
+
         func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
             if let error = error {
                 parent.result(.failure(error))

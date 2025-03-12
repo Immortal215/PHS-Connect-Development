@@ -35,7 +35,6 @@ struct ChangelogSheetView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 32) {
                         changelogSection(for: currentVersion, isCurrentVersion: true)
-                            .id(currentVersion.version)
                         
                         if !history.isEmpty {
                             RoundedRectangle(cornerRadius: 15)
@@ -43,19 +42,21 @@ struct ChangelogSheetView: View {
                                 .padding(.vertical, 8)
                                 .foregroundStyle(.cyan)
                                 .shadow(color: .cyan, radius: 3)
+                                .id(history[0].version)
                             
                             ForEach(history.indices, id: \ .self) { index in
                                 changelogSection(for: history[index], isCurrentVersion: false)
-                                    .id(history[index].version)
                                 
                                 if index < history.count - 1 {
                                     Divider()
                                         .padding(.vertical, 8)
+                                        .id(history[index + 1].version)
                                 }
                             }
                         }
                     }
                     .padding(24)
+                    .id(currentVersion.version)
                 }
                 .onChange(of: versionNumToSee) {
                     proxy.scrollTo(versionNumToSee, anchor: .top)
@@ -109,7 +110,7 @@ struct ChangelogSheetView: View {
                                         
                                         Text(note)
                                             .multilineTextAlignment(.leading)
-                                            .offset(y: -8)
+                                            .offset(y: -2)
                                         Spacer()
                                     }
                                     .font(.footnote)
