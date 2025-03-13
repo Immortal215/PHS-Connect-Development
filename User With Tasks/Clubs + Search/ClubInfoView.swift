@@ -185,11 +185,10 @@ struct ClubInfoView: View {
                         }
                     }
                     
-                    if !club.members.isEmpty {
-                        Text("Members (\(club.members.count))")
-                            .font(.headline)
-                        
                         if club.leaders.contains(viewModel.userEmail ?? "") {
+                            Text("Members (\(club.members.count))")
+                                .font(.headline)
+                            
                             var mem = club.members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
 
                             CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
@@ -197,7 +196,7 @@ struct ClubInfoView: View {
                                 .frame(maxHeight: screenHeight/6)
                             
                         }
-                    }
+                    
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
                         if let cluber = club.pendingMemberRequests {

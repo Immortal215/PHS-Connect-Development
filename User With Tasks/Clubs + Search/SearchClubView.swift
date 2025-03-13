@@ -27,6 +27,8 @@ struct SearchClubView: View {
     @State var selectedGenres: [String] = []
     @AppStorage("darkMode") var darkMode = false
     @State var loadingClubs = false
+    @State var scales : [String : CGFloat] = [:]
+    @State var zindexs : [String : Double] = [:]
     
     var body: some View {
         ZStack {
@@ -136,12 +138,48 @@ struct SearchClubView: View {
                                                     ForEach(chunkedItems[rowIndex], id: \.name) { club in
                                                         let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                                         
-                                                        Button {
-                                                            shownInfo = infoRelativeIndex
-                                                            showClubInfoSheet = true
-                                                        } label: {
-                                                            ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                        ZStack {
+                                                                Button {
+                                                                    shownInfo = infoRelativeIndex
+                                                                    showClubInfoSheet = true
+                                                                } label: {
+                                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                                }
                                                         }
+                                                        .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
+                                                            guard let newFavorites = newValue else { return }
+                                                            
+                                                            if newFavorites.contains(club.clubID), !(oldValue ?? []).contains(club.clubID) {
+                                                                withAnimation {
+                                                                    scales[club.clubID] = 1.5
+                                                                    zindexs[club.clubID] = 100.0
+                                                                }
+                                                            }
+                                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                scales[club.clubID] = 1.0
+                                                                zindexs[club.clubID] = 0.0
+                                                            }
+                                                        }
+                                                        .onChange(of: clubs[infoRelativeIndex]) { oldClub, newClub in
+                                                            guard let userEmail = viewModel.userEmail else { return }
+
+                                                            let userWasAdded = (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail))
+
+                                                            if userWasAdded {
+                                                                withAnimation {
+                                                                    scales[club.clubID] = 1.5
+                                                                    zindexs[club.clubID] = 100.0
+                                                                }
+                                                                
+                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                    scales[club.clubID] = 1.0
+                                                                    zindexs[club.clubID] = 0.0
+                                                                }
+                                                            }
+                                                        }
+                                                        .zIndex(zindexs[club.clubID] ?? 0.0)
+                                                        .scaleEffect(CGFloat(scales[club.clubID] ?? 1.0))
+                                                        .offset(x: (chunkedItems[rowIndex][0] == club ? 1 : -1) * (zindexs[club.clubID] == 100.0 ? (screenWidth * 1/3) - 100 : 0), y: zindexs[club.clubID] == 100.0 ? -300 : 0.0)
                                                         .padding(.vertical, 3)
                                                         .padding(.horizontal)
                                                         .onAppear {
@@ -201,6 +239,44 @@ struct SearchClubView: View {
                                                 filteredItems = calculateFiltered()
                                                 loadingClubs = false
                                                 proxy.scrollTo(1, anchor: .top)
+                                            }
+                                        }
+                                    }
+                                    .onChange(of: userInfo?.favoritedClubs ?? []) {
+                                        let favClubsBuffer = userInfo?.favoritedClubs ?? []
+                                        loadingClubs = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                            if favClubsBuffer == userInfo?.favoritedClubs ?? [] {
+                                                filteredItems = calculateFiltered()
+                                                loadingClubs = false
+                                            }
+                                        }
+                                    }
+                                    .onChange(of: clubs) { oldClubs, newClubs in
+                                        guard let userEmail = viewModel.userEmail else { return }
+
+                                        let userWasAdded = newClubs.contains { newClub in
+                                            if let oldClub = oldClubs.first(where: { $0.clubID == newClub.clubID }) {
+                                                return (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail)) || (!oldClub.leaders.contains(userEmail) && newClub.leaders.contains(userEmail))
+                                            } else {
+                                                return false
+                                            }
+                                        }
+                                        
+                                        let userWasRemoved = newClubs.contains { newClub in
+                                            if let oldClub = oldClubs.first(where: { $0.clubID == newClub.clubID }) {
+                                                return (oldClub.members.contains(userEmail) && !newClub.members.contains(userEmail)) || (oldClub.leaders.contains(userEmail) && !newClub.leaders.contains(userEmail))
+                                            } else {
+                                                return false
+                                            }
+                                        }
+
+
+                                        if userWasAdded || userWasRemoved {
+                                            loadingClubs = true
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                filteredItems = calculateFiltered()
+                                                loadingClubs = false
                                             }
                                         }
                                     }
@@ -267,6 +343,9 @@ struct SearchClubView: View {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
                 }
                 .sorted {
+                    ($0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")) && !($1.members.contains(viewModel.userEmail ?? "") || $1.leaders.contains(viewModel.userEmail ?? ""))
+                }
+                .sorted {
                     userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
                     !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                 }
@@ -310,6 +389,9 @@ struct SearchClubView: View {
                 }
                 .sorted {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
+                }
+                .sorted {
+                    ($0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")) && !($1.members.contains(viewModel.userEmail ?? "") || $1.leaders.contains(viewModel.userEmail ?? ""))
                 }
                 .sorted {
                     userInfo?.favoritedClubs.contains($0.clubID) ?? false &&

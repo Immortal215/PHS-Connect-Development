@@ -138,7 +138,7 @@ struct ClubCard: View {
                             club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" :
                                 club.members.contains(viewModel.userEmail ?? "") ? "Member" :
                                 (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) && club.requestNeeded != nil ? "Applied" :
-                                "Join"
+                                (club.requestNeeded != nil ? "Apply" : "Join")
                         ){
                             if let email = viewModel.userEmail {
                                 if let requestNeeded = club.requestNeeded { // if you need to request to join
@@ -202,7 +202,7 @@ struct ClubCard: View {
                 VStack {
                     
                     Spacer()
-                    Text("^[\(notificationCount) New Notifications](inflect:true)")
+                    Text("^[\(notificationCount) New Notifications](inflect:true)") // thingy to nake sure the text plurals stay consistent 
                         .font(.subheadline)
                         .foregroundColor(.white)
                         .padding(7)
