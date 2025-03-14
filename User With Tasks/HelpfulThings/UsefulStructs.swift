@@ -170,3 +170,36 @@ struct CustomizableDropdown: View {
     }
 }
 
+struct CustomToggleSwitch: View {
+    @Binding var boolean: Bool
+    var colors : [Color]
+    var images : [String]
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(boolean ? colors[0].opacity(0.4) : colors[1].opacity(0.4))
+                .frame(width: 60, height: 30)
+            
+            HStack {
+               if !boolean { Spacer() }
+                
+                Circle()
+                    .fill(boolean ? colors[0] : colors[1])
+                    .frame(width: 26, height: 26)
+                    .overlay(
+                        Image(systemName: boolean ? images[0] : images[1])
+                            .foregroundColor(.white)
+                            .imageScale(.small)
+                    )
+                    .padding(2)
+                if boolean { Spacer() }
+            }
+        }
+        .frame(width: 60, height: 30)
+        .onTapGesture {
+            boolean.toggle()
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: boolean)
+    }
+}

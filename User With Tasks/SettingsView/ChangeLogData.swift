@@ -8,7 +8,7 @@ struct ChangelogData {
             Change(title: "Fixed announcement viewing bug", notes: ["Announcement viewing previously did not change the announcement viewing status for non-leaders"], color: .green, symbol: "document"),
             Change(title: "Feature report now works with any email carrier, not just apple mail", notes: nil, color: .red, symbol: "mail"),
             Change(title: "Instagram for clubs added", notes: nil, color: .purple, symbol: "camera"),
-            Change(title: "Minor ui tweaks", notes: nil, color: .yellow, symbol: "pencil"),
+            Change(title: "Major ui tweaks", notes: ["Cool custom animations for club search", "Lots more ui improvements"], color: .yellow, symbol: "pencil"),
         ]
     )
     

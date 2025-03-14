@@ -29,7 +29,8 @@ struct SearchClubView: View {
     @State var loadingClubs = false
     @State var scales : [String : CGFloat] = [:]
     @State var zindexs : [String : Double] = [:]
-    
+    @AppStorage("Animations+") var animationsPlus = false
+
     var body: some View {
         ZStack {
             if advSearchShown {
@@ -131,7 +132,7 @@ struct SearchClubView: View {
                                 ScrollViewReader { proxy in
                                     ScrollView {
                                         VStack(alignment: .leading, spacing: 10) {
-                                            let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because the other one fly loads everything in which looks weird to some people.
+                                            let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because normal vgrid fly loads everything in which looks weird to some people.
                                             
                                             ForEach(chunkedItems.indices, id: \.self) { rowIndex in
                                                 HStack(spacing: 16) {
@@ -139,63 +140,71 @@ struct SearchClubView: View {
                                                         let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                                         
                                                         ZStack {
-                                                                Button {
-                                                                    shownInfo = infoRelativeIndex
-                                                                    showClubInfoSheet = true
-                                                                } label: {
-                                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
-                                                                }
+                                                            Button {
+                                                                shownInfo = infoRelativeIndex
+                                                                showClubInfoSheet = true
+                                                            } label: {
+                                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                            }
                                                         }
                                                         .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
-                                                            guard let newFavorites = newValue else { return }
-                                                            
-                                                            if newFavorites.contains(club.clubID), !(oldValue ?? []).contains(club.clubID) {
-                                                                withAnimation {
-                                                                    scales[club.clubID] = 1.5
-                                                                    zindexs[club.clubID] = 100.0
+                                                            if animationsPlus {
+                                                                guard let newFavorites = newValue else { return }
+                                                                
+                                                                if newFavorites.contains(club.clubID), !(oldValue ?? []).contains(club.clubID) {
+                                                                    withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))){
+                                                                        proxy.scrollTo(1, anchor: .top)
+                                                                        scales[club.clubID] = 1.5
+                                                                        zindexs[club.clubID] = 100.0
+                                                                    }
+                                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                        withAnimation(.easeInOut){
+                                                                            scales[club.clubID] = 1.0
+                                                                        }
+                                                                        withAnimation {
+                                                                            zindexs[club.clubID] = 0.0
+                                                                        }
+                                                                        
+                                                                    }
                                                                 }
                                                             }
-                                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                scales[club.clubID] = 1.0
-                                                                zindexs[club.clubID] = 0.0
-                                                            }
+                                                            
                                                         }
                                                         .onChange(of: clubs[infoRelativeIndex]) { oldClub, newClub in
-                                                            guard let userEmail = viewModel.userEmail else { return }
-
-                                                            let userWasAdded = (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail))
-
-                                                            if userWasAdded {
-                                                                withAnimation {
-                                                                    scales[club.clubID] = 1.5
-                                                                    zindexs[club.clubID] = 100.0
-                                                                }
+                                                            if animationsPlus {
+                                                                guard let userEmail = viewModel.userEmail else { return }
                                                                 
-                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                    scales[club.clubID] = 1.0
-                                                                    zindexs[club.clubID] = 0.0
+                                                                let userWasAdded = (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail))
+                                                                
+                                                                if userWasAdded {
+                                                                    
+                                                                    withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))){
+                                                                        proxy.scrollTo(1, anchor: .top)
+                                                                        scales[club.clubID] = 1.5
+                                                                        zindexs[club.clubID] = 100.0
+                                                                    }
+                                                                    
+                                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                        withAnimation(.easeInOut){
+                                                                            scales[club.clubID] = 1.0
+                                                                        }
+                                                                        withAnimation {
+                                                                            zindexs[club.clubID] = 0.0
+                                                                        }
+                                                                        
+                                                                    }
                                                                 }
                                                             }
                                                         }
                                                         .zIndex(zindexs[club.clubID] ?? 0.0)
                                                         .scaleEffect(CGFloat(scales[club.clubID] ?? 1.0))
-                                                        .offset(x: (chunkedItems[rowIndex][0] == club ? 1 : -1) * (zindexs[club.clubID] == 100.0 ? (screenWidth * 1/3) - 100 : 0), y: zindexs[club.clubID] == 100.0 ? -300 : 0.0)
+                                                        .offset(y: scales[club.clubID] == 1.5 ? -positionOfClub(clubID: club.clubID) : 0)
+                                                        .offset(x: (chunkedItems[rowIndex][0] == club ? 1 : -1) * (zindexs[club.clubID] == 100.0 ? (screenWidth * 1/3) - 100 : 0))
                                                         .padding(.vertical, 3)
                                                         .padding(.horizontal)
                                                         .onAppear {
                                                             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                                                 loadingClubs = false
-                                                            }
-                                                        }
-                                                        .sheet(isPresented: $showClubInfoSheet) {
-                                                            if shownInfo >= 0 {
-                                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
-                                                                    .presentationDragIndicator(.visible)
-                                                                    .frame(width: UIScreen.main.bounds.width / 1.05)
-                                                            } else {
-                                                                Text("Error! Try Again!")
-                                                                    .presentationDragIndicator(.visible)
-                                                                    .foregroundColor(.red)
                                                             }
                                                         }
                                                     }
@@ -217,6 +226,17 @@ struct SearchClubView: View {
                                         Text("Search for Other Clubs! 🙃")
                                             .frame(height: screenHeight / 3, alignment: .top)
                                             .foregroundColor(.secondary)
+                                    }
+                                    .sheet(isPresented: $showClubInfoSheet) {
+                                        if shownInfo >= 0 {
+                                            ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                                .presentationDragIndicator(.visible)
+                                                .frame(width: UIScreen.main.bounds.width / 1.05)
+                                        } else {
+                                            Text("Error! Try Again!")
+                                                .presentationDragIndicator(.visible)
+                                                .foregroundColor(.red)
+                                        }
                                     }
                                     .animation(.smooth)
                                     .onChange(of: selectedGenres) {
@@ -254,7 +274,7 @@ struct SearchClubView: View {
                                     }
                                     .onChange(of: clubs) { oldClubs, newClubs in
                                         guard let userEmail = viewModel.userEmail else { return }
-
+                                        
                                         let userWasAdded = newClubs.contains { newClub in
                                             if let oldClub = oldClubs.first(where: { $0.clubID == newClub.clubID }) {
                                                 return (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail)) || (!oldClub.leaders.contains(userEmail) && newClub.leaders.contains(userEmail))
@@ -270,8 +290,8 @@ struct SearchClubView: View {
                                                 return false
                                             }
                                         }
-
-
+                                        
+                                        
                                         if userWasAdded || userWasRemoved {
                                             loadingClubs = true
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -399,6 +419,14 @@ struct SearchClubView: View {
                 }
         }
     }
+    
+    func positionOfClub(clubID: String) -> CGFloat {
+        guard let clubIndex = filteredItems.firstIndex(where: { $0.clubID == clubID }) else { return 0 }
+        let clubHeight: CGFloat = screenHeight / 5
+        let spacing: CGFloat = 16
+        return CGFloat(clubIndex / 2) * (clubHeight + spacing) - screenHeight/3
+    }
+    
 }
 
 extension Array {

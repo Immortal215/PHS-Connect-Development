@@ -199,7 +199,7 @@ struct ClubInfoView: View {
                     
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
-                        if let cluber = club.pendingMemberRequests {
+                        if let cluber = club.pendingMemberRequests, club.requestNeeded != nil {
                             if !cluber.isEmpty {
                                 Text("Pending Requests")
                                     .font(.headline)

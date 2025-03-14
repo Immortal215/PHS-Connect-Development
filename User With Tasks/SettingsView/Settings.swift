@@ -24,6 +24,7 @@ struct SettingsView: View {
     var screenHeight = UIScreen.main.bounds.height
     @State var isNewChangeLogShown = false
     @State var recentVersionForChangelogLibrary : Changelog = Changelog.init(version: "0.1.0 Alpha", features: [])
+    @AppStorage("Animations+") var animationsPlus = false 
     
     var body: some View {
         VStack {
@@ -76,31 +77,52 @@ struct SettingsView: View {
             
             Button {
             } label: {
-                HStack {
+                HStack(spacing: 16) {
+//                    Button {
+//                        darkMode.toggle()
+//                    } label: {
+//                        HStack {
+//                            Text("\(darkMode ? "Dark" : "Light") Mode")
+//                            
+//                            if darkMode {
+//                                Image(systemName: "moon.fill")
+//
+//                            } else {
+//                                Image(systemName: "sun.max.fill")
+//
+//                            }
+//                        }
+//                        .imageScale(.large)
+//                        .padding(8)
+//                    }
+//                    .padding()
+//                    .buttonStyle(.borderedProminent)
+//                    .tint(darkMode ? .purple : .yellow)
+                    CustomToggleSwitch(boolean: $darkMode, colors: [.purple, .yellow], images: ["moon.fill", "sun.max.fill"])
+
                     Button {
-                        darkMode.toggle()
+                        animationsPlus.toggle()
                     } label: {
                         HStack {
-                            Text("\(darkMode ? "Dark" : "Light") Mode")
+                            Text("\(animationsPlus ? "Lots of" : "Light") Animations")
                             
-                            if darkMode {
-                                Image(systemName: "moon.fill")
+                            if animationsPlus {
+                                Image(systemName: "star.fill")
 
                             } else {
-                                Image(systemName: "sun.max.fill")
+                                Image(systemName: "star.slash.fill")
 
                             }
                         }
                         .imageScale(.large)
                         .padding(8)
                     }
-                    .padding()
                     .buttonStyle(.borderedProminent)
+                    .tint(animationsPlus ? .blue : .orange)
                     .fixedSize()
-                    .tint(darkMode ? .purple : .yellow)
                     
                     Spacer()
-                        
+                    
                     Button {
                         mostRecentVersionSeen = changeLogViewModel.currentVersion.version
                         isChangelogShown.toggle()
@@ -118,8 +140,6 @@ struct SettingsView: View {
                         }
                         .foregroundColor(.blue)
                     }
-                    .padding()
-                    .fixedSize()
                     .sheet(isPresented: $isChangelogShown) {
                         ChangelogSheetView(
                             currentVersion: changeLogViewModel.currentVersion,
@@ -128,10 +148,11 @@ struct SettingsView: View {
                         .fontDesign(.monospaced)
                         
                     }
+                    .fixedSize()
                     
                     if !viewModel.isGuestUser {
                         FeatureReportButton(uid: viewModel.uid ?? "None")
-                            .padding()
+                            .fixedSize()
                     }
                     
                     Button {
@@ -160,11 +181,12 @@ struct SettingsView: View {
                         }
                         .foregroundColor(.red)
                     }
-                    .padding()
                     .fixedSize()
                     
                 }
+                .frame(height: 30)
             }
+            .padding()
             
             Spacer()
             
