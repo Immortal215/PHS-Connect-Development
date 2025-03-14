@@ -5,6 +5,7 @@ import GoogleSignInSwift
 import SwiftUI
 import Pow
 import ChangelogKit
+import Combine
 
 struct SettingsView: View {
     var viewModel: AuthenticationViewModel
@@ -25,7 +26,9 @@ struct SettingsView: View {
     @State var isNewChangeLogShown = false
     @State var recentVersionForChangelogLibrary : Changelog = Changelog.init(version: "0.1.0 Alpha", features: [])
     @AppStorage("Animations+") var animationsPlus = false 
-    
+    @State var darkModeBuffer = false
+    @State var debounceCancellable: AnyCancellable?
+
     var body: some View {
         VStack {
             HStack(alignment: .top) {
@@ -78,49 +81,25 @@ struct SettingsView: View {
             Button {
             } label: {
                 HStack(spacing: 16) {
-//                    Button {
-//                        darkMode.toggle()
-//                    } label: {
-//                        HStack {
-//                            Text("\(darkMode ? "Dark" : "Light") Mode")
-//                            
-//                            if darkMode {
-//                                Image(systemName: "moon.fill")
-//
-//                            } else {
-//                                Image(systemName: "sun.max.fill")
-//
-//                            }
-//                        }
-//                        .imageScale(.large)
-//                        .padding(8)
-//                    }
-//                    .padding()
-//                    .buttonStyle(.borderedProminent)
-//                    .tint(darkMode ? .purple : .yellow)
-                    CustomToggleSwitch(boolean: $darkMode, colors: [.purple, .yellow], images: ["moon.fill", "sun.max.fill"])
-
-                    Button {
-                        animationsPlus.toggle()
-                    } label: {
-                        HStack {
-                            Text("\(animationsPlus ? "Lots of" : "Light") Animations")
+                    CustomToggleSwitch(boolean: $darkModeBuffer, colors: [.purple, .yellow], images: ["moon.fill", "sun.max.fill"])
+                        .onChange(of: darkModeBuffer) { newValue in
+                            debounceCancellable?.cancel()
                             
-                            if animationsPlus {
-                                Image(systemName: "star.fill")
-
-                            } else {
-                                Image(systemName: "star.slash.fill")
-
-                            }
+                            debounceCancellable = Just(newValue)
+                                .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
+                                .sink { finalValue in
+                                        darkMode = finalValue
+                                    
+                                }
                         }
-                        .imageScale(.large)
-                        .padding(8)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(animationsPlus ? .blue : .orange)
-                    .fixedSize()
                     
+                    CustomToggleSwitch(boolean: $animationsPlus, colors: [.blue, .orange], images: ["star.fill", "star.slash.fill"])
+                    Text("\(animationsPlus ? "Lots of" : "Light") Animations")
+                        .onTapGesture {
+                            animationsPlus.toggle()
+                        }
+                        .foregroundStyle(animationsPlus ? .blue : .orange)
+
                     Spacer()
                     
                     Button {
@@ -216,6 +195,7 @@ struct SettingsView: View {
                 recentVersionForChangelogLibrary = Changelog(version: changeLogViewModel.currentVersion.version, features: features)
                 isNewChangeLogShown = true
             }
+            darkModeBuffer = darkMode
         }
         .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary)
         .frame(maxHeight: screenHeight - screenHeight/6 - 36)
