@@ -17,7 +17,8 @@ struct HomePageScrollers: View {
     @State var screenWidth = UIScreen.main.bounds.width
     @Binding var userInfo: Personal?
     @State var scrollerOf : String
-    
+    @AppStorage("selectedTab") var selectedTab = 3
+
     var body: some View {
         VStack(alignment: .leading) {
             ScrollView(.vertical, showsIndicators: false) {
@@ -58,10 +59,15 @@ struct HomePageScrollers: View {
                     //   .fixedSize(horizontal: false, vertical: false)
                     // .fixedSize()
                 } else {
-                    Text("Join Clubs!")
+                    HStack(alignment: .center) {
+                        Button("Join Clubs!") {
+                            selectedTab = 0
+                        }
                         .font(.largeTitle)
                         .bold()
-                        .foregroundStyle(.primary)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.extraLarge)
+                    }
                 }
             }
             

@@ -26,11 +26,11 @@ struct SettingsView: View {
     var screenHeight = UIScreen.main.bounds.height
     @State var isNewChangeLogShown = false
     @State var recentVersionForChangelogLibrary : Changelog = Changelog.init(version: "0.1.0 Alpha", features: [])
-    @AppStorage("Animations+") var animationsPlus = false 
+    @AppStorage("Animations+") var animationsPlus = false
     @State var darkModeBuffer = false
     @State var animationsPlusBuffer = false
     @State var debounceCancellable: AnyCancellable?
-
+    
     var body: some View {
         VStack {
             HStack(alignment: .top) {
@@ -90,7 +90,7 @@ struct SettingsView: View {
                             debounceCancellable = Just(newValue)
                                 .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
                                 .sink { finalValue in
-                                        darkMode = finalValue
+                                    darkMode = finalValue
                                     
                                 }
                         }
@@ -99,7 +99,7 @@ struct SettingsView: View {
                         .onChange(of: animationsPlusBuffer) { newValue in // to make the animation smoother when toggling
                             animationsPlus = animationsPlusBuffer
                         }
-                        Text("\(animationsPlus ? "Animations+" : "Basic Animations")")
+                    Text("\(animationsPlus ? "Animations+" : "Basic Animations")")
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                 animationsPlusBuffer.toggle()
@@ -107,7 +107,7 @@ struct SettingsView: View {
                         }
                         .shimmering(active: animationsPlus, gradient: Gradient(colors: [.black.opacity(0.3), .black, .black.opacity(0.3)]))
                         .foregroundStyle(animationsPlus ? .blue : .orange)
-                        
+                    
                     Spacer()
                     
                     Button {
@@ -137,10 +137,9 @@ struct SettingsView: View {
                     }
                     .fixedSize()
                     
-                    if !viewModel.isGuestUser {
-                        FeatureReportButton(uid: viewModel.uid ?? "None")
-                            .fixedSize()
-                    }
+                    FeatureReportButton(uid: viewModel.uid ?? "None")
+                        .fixedSize()
+                    
                     
                     Button {
                         do {

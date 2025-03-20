@@ -409,6 +409,7 @@ struct SearchClubView: View {
             }
         }
         .onAppear {
+            
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 filteredItems = calculateFiltered()
             }

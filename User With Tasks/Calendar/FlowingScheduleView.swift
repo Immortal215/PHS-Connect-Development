@@ -49,7 +49,8 @@ struct FlowingScheduleView: View {
                                         Text("\(hour % 12 == 0 ? 12 : hour % 12) \(hour < 12 ? "AM" : "PM")")
                                             .font(.caption)
                                             .bold()
-                                            .padding(.leading)
+                                            .padding(.leading, 16)
+                                            .hidden(hour == 0)
                                     }
                                 
                                 Color.clear
@@ -59,6 +60,13 @@ struct FlowingScheduleView: View {
                         }
                         .background(Color.gray.opacity(0.1).cornerRadius(8))
                         .cornerRadius(8)
+                        .overlay(alignment: .topLeading) {
+                            Text("12 AM") // have to do this otherwise the top gets clipped
+                                .font(.caption)
+                                .bold()
+                                .padding(.leading, 15)
+                                .offset(y: -7)
+                        }
                         
                         VStack {
                             HStack(spacing: 0) {
@@ -196,6 +204,7 @@ struct FlowingScheduleView: View {
                             }
                         }
                     }
+                    .padding(.top, 8)
                     .highPriorityGesture(
                         MagnificationGesture()
                             .onChanged { value in
@@ -209,6 +218,7 @@ struct FlowingScheduleView: View {
                         }
                     }
                 }
+                .padding(.top, -8)
                 .overlay(alignment: .top, content: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8)

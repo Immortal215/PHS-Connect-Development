@@ -6,6 +6,7 @@ import SwiftUI
 import FirebaseDatabase
 import Pow
 import SwiftUIX
+import Shimmer
 
 struct ClubCardHome: View {
     @State var club: Club
@@ -56,9 +57,9 @@ struct ClubCardHome: View {
                     },
                     placeholder: {
                         ZStack {
-                            Rectangle()
-                                .stroke(.gray)
-                            ProgressView("Loading \(club.name) Image")
+                            RoundedRectangle(cornerRadius: 15)
+                                .foregroundStyle(.gray)
+                                .shimmering()
                         }
                         .frame(width: screenWidth/4, height: screenWidth/4)
                     }

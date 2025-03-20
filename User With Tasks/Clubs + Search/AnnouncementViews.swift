@@ -543,6 +543,7 @@ struct SingleAnnouncementView: View {
                         .lineLimit(fullView! ? 5 : 1)
                     
                     Text(.init(announcement.body.isEmpty ? "Body" : announcement.body))
+                        .textSelection(.enabled)
                         .font(.body)
                         .lineLimit(fullView! ? 100 : 3)
                     

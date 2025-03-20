@@ -21,7 +21,8 @@ struct ClubView: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
     @State var notificationBellClicked = false
-    
+    @AppStorage("selectedTab") var selectedTab = 3
+
     var body: some View {
 //        var filteredClubsFavorite: [Club] {
 //            return clubs

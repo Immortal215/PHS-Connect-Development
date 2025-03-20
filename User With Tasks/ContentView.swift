@@ -227,6 +227,9 @@ struct ContentView: View {
                             }
                             advSearchShown = true
                             calendarScrollPoint = 12
+                            if !viewModel.isGuestUser && selectedTab == 0 {
+                                selectedTab = 1
+                            }
                         }
                         .refreshable {
                             //                            fetchClubs { fetchedClubs in
@@ -292,7 +295,6 @@ struct ContentView: View {
             }
         }
         .scrollDismissesKeyboard(.immediately)
-        .textSelection(.enabled)
         .onChange(of: selectedTab) {
             _ = networkMonitor.isConnected
         }

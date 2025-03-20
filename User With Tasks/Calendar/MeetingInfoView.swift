@@ -139,6 +139,7 @@ struct MeetingInfoView: View {
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
                             Text(.init(description))
+                                .textSelection(.enabled)
                                 .foregroundColor(darkMode ? .gray : .darkGray)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .lineLimit(showMoreDescription ? nil : 9)
