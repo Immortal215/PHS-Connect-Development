@@ -98,5 +98,5 @@
 
 ## Contact
 
-For questions or suggestions, please reach out to the development team.
+For questions or suggestions, please reach out to the development team | sharulshah@icloud.com
 
