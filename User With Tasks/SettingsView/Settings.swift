@@ -206,9 +206,12 @@ struct SettingsView: View {
             darkModeBuffer = darkMode
             animationsPlusBuffer = animationsPlus
         }
-        .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary, onDismiss: {
-            mostRecentVersionSeen = changeLogViewModel.currentVersion.version
-        })
+        .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary)
+        .onChange(of: isNewChangeLogShown) { old, new in
+            if old == true && new == false {  // onDismis dont work for some reason with this libary
+                mostRecentVersionSeen = changeLogViewModel.currentVersion.version
+            }
+        }
         .frame(maxHeight: screenHeight - screenHeight/6 - 36)
         .padding()
         .background(Color.systemGray6.cornerRadius(15).padding())
