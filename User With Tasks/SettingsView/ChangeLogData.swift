@@ -2,14 +2,13 @@ import SwiftUI
 
 struct ChangelogData {
     static let currentVersion = ChangelogEntry(
-        version: "0.2.5 Alpha",
+        version: "0.2.4 Alpha",
         date: "03-24-2025",
         changes: [
-            Change(title: "Fixed announcement viewing bug", notes: ["Announcement viewing previously did not change the announcement viewing status for non-leaders"], color: .green, symbol: "document"),
-            Change(title: "Feature report now works with any email carrier, not just apple mail", notes: nil, color: .red, symbol: "mail"),
-            Change(title: "Instagram for clubs added", notes: nil, color: .purple, symbol: "camera"),
-            Change(title: "User bugs squashed", notes: nil , color: .blue, symbol: "bug"),
-            Change(title: "Major ui tweaks", notes: ["Cool custom animations for club search", "Lots more ui improvements"], color: .yellow, symbol: "pencil"),
+            Change(title: "Fixed many user bugs", notes: ["Fixed announcement viewing bug", "Fixed other minor issues"], color: .green, symbol: "document"),
+            Change(title: "Feature report now works with any email carrier", notes: ["Previously only worked with Apple Mail"], color: .red, symbol: "mail"),
+            Change(title: "Instagram for clubs added", notes: ["Clubs can now link their Instagram profiles"], color: .purple, symbol: "camera"),
+            Change(title: "Major UI tweaks", notes: ["Cool custom animations for club search", "Lots more UI improvements"], color: .yellow, symbol: "pencil"),
         ]
     )
     
