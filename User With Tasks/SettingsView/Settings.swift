@@ -6,6 +6,7 @@ import SwiftUI
 import Pow
 import ChangelogKit
 import Combine
+import Shimmer
 
 struct SettingsView: View {
     var viewModel: AuthenticationViewModel
@@ -27,6 +28,7 @@ struct SettingsView: View {
     @State var recentVersionForChangelogLibrary : Changelog = Changelog.init(version: "0.1.0 Alpha", features: [])
     @AppStorage("Animations+") var animationsPlus = false 
     @State var darkModeBuffer = false
+    @State var animationsPlusBuffer = false
     @State var debounceCancellable: AnyCancellable?
 
     var body: some View {
@@ -82,7 +84,7 @@ struct SettingsView: View {
             } label: {
                 HStack(spacing: 16) {
                     CustomToggleSwitch(boolean: $darkModeBuffer, colors: [.purple, .yellow], images: ["moon.fill", "sun.max.fill"])
-                        .onChange(of: darkModeBuffer) { newValue in
+                        .onChange(of: darkModeBuffer) { newValue in // need all this stuff to make sure that when dark mode is changing (with a lil lag) it does not impede the switching animation which would look like lag
                             debounceCancellable?.cancel()
                             
                             debounceCancellable = Just(newValue)
@@ -93,13 +95,19 @@ struct SettingsView: View {
                                 }
                         }
                     
-                    CustomToggleSwitch(boolean: $animationsPlus, colors: [.blue, .orange], images: ["star.fill", "star.slash.fill"])
-                    Text("\(animationsPlus ? "Lots of" : "Light") Animations")
-                        .onTapGesture {
-                            animationsPlus.toggle()
+                    CustomToggleSwitch(boolean: $animationsPlusBuffer, colors: [.blue, .orange], images: ["star.fill", "star.slash.fill"])
+                        .onChange(of: animationsPlusBuffer) { newValue in // to make the animation smoother when toggling
+                            animationsPlus = animationsPlusBuffer
                         }
+                        Text("\(animationsPlus ? "Animations+" : "Basic Animations")")
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                animationsPlusBuffer.toggle()
+                            }
+                        }
+                        .shimmering(active: animationsPlus, gradient: Gradient(colors: [.black.opacity(0.3), .black, .black.opacity(0.3)]))
                         .foregroundStyle(animationsPlus ? .blue : .orange)
-
+                        
                     Spacer()
                     
                     Button {
@@ -189,15 +197,18 @@ struct SettingsView: View {
             if mostRecentVersionSeen != changeLogViewModel.currentVersion.version {
                 var features : [Changelog.Feature] = []
                 for i in changeLogViewModel.currentVersion.changes {
-                    features.append(Changelog.Feature(symbol: i.symbol ?? "", title: i.title, description: i.notes?.map { "* \($0)" }.joined(separator: "\n") ?? "", color: i.color ?? .blue))
+                    features.append(Changelog.Feature(symbol: i.symbol ?? "", title: i.title, description: i.notes?.map { "- \($0)" }.joined(separator: "\n") ?? "", color: i.color ?? .blue))
                 }
                 
                 recentVersionForChangelogLibrary = Changelog(version: changeLogViewModel.currentVersion.version, features: features)
                 isNewChangeLogShown = true
             }
             darkModeBuffer = darkMode
+            animationsPlusBuffer = animationsPlus
         }
-        .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary)
+        .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary, onDismiss: {
+            mostRecentVersionSeen = changeLogViewModel.currentVersion.version
+        })
         .frame(maxHeight: screenHeight - screenHeight/6 - 36)
         .padding()
         .background(Color.systemGray6.cornerRadius(15).padding())

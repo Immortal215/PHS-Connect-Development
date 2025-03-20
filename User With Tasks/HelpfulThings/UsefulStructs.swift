@@ -120,9 +120,9 @@ func replaceSchoologyExtras(_ string: String) -> String {
 struct CustomizableDropdown: View {
     @Binding var selectedClubId: String
     let leaderClubs: [Club]
-
+    
     @State var isExpanded: Bool = false
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
@@ -140,7 +140,7 @@ struct CustomizableDropdown: View {
                 .padding()
                 .background(colorFromClubID(club: leaderClubs.first(where: {$0.clubID == selectedClubId})).opacity(0.2))
             }
-
+            
             if isExpanded {
                 ForEach(leaderClubs, id: \.self) { club in
                     if club.clubID != selectedClubId {
@@ -182,7 +182,7 @@ struct CustomToggleSwitch: View {
                 .frame(width: 60, height: 30)
             
             HStack {
-               if !boolean { Spacer() }
+                if !boolean { Spacer() }
                 
                 Circle()
                     .fill(boolean ? colors[0] : colors[1])
@@ -198,8 +198,9 @@ struct CustomToggleSwitch: View {
         }
         .frame(width: 60, height: 30)
         .onTapGesture {
-            boolean.toggle()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                boolean.toggle()
+            }
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: boolean)
     }
 }

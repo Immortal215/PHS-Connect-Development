@@ -6,6 +6,7 @@ import SwiftUI
 import FirebaseDatabase
 import Pow
 import SwiftUIX
+import Shimmer
 
 struct ClubCard: View {
     @State var club: Club

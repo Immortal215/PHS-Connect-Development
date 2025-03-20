@@ -6,6 +6,7 @@ struct FilterPopupView: View {
     @Binding var isAscending: Bool
     @State var rotationAngle = 0
     @AppStorage("darkMode") var darkMode = false
+    var onSubmit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -41,6 +42,7 @@ struct FilterPopupView: View {
         
             Button(action: {
                 isPopupVisible = false
+                onSubmit()
             }) {
                 Text("Apply Filters")
                     .frame(maxWidth: .infinity)
@@ -51,10 +53,10 @@ struct FilterPopupView: View {
             }
         }
         .padding()
-        .fixedSize()
-        .background(darkMode ? .systemGray4 : .systemGray6)
+        .fixedSize(horizontal: true, vertical: false)
+        .background(darkMode ? .systemGray4 : .systemGray5)
         .cornerRadius(15)
-        .shadow(radius: 10)
+       // .shadow(radius: 10)
         .padding()
     }
 }

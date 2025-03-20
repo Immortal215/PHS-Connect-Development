@@ -6,6 +6,8 @@ import SwiftUI
 import FirebaseDatabase
 import Pow
 import SwiftUIX
+import Shimmer
+import PopupView
 
 struct SearchClubView: View {
     @Binding var clubs: [Club]
@@ -30,6 +32,7 @@ struct SearchClubView: View {
     @State var scales : [String : CGFloat] = [:]
     @State var zindexs : [String : Double] = [:]
     @AppStorage("Animations+") var animationsPlus = false
+    @AppStorage("selectedTab") var selectedTab = 3
 
     var body: some View {
         ZStack {
@@ -74,7 +77,9 @@ struct SearchClubView: View {
                                     .foregroundColor(sortingMenu ? .white : .primary)
                                     .cornerRadius(15)
                                     .onTapGesture {
-                                        sortingMenu.toggle()
+                                        if !loadingClubs {
+                                            sortingMenu.toggle()
+                                        }
                                     }
                                     .fixedSize(horizontal: true, vertical: false)
                                 
@@ -134,98 +139,163 @@ struct SearchClubView: View {
                                         VStack(alignment: .leading, spacing: 10) {
                                             let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because normal vgrid fly loads everything in which looks weird to some people.
                                             
-                                            ForEach(chunkedItems.indices, id: \.self) { rowIndex in
-                                                HStack(spacing: 16) {
-                                                    ForEach(chunkedItems[rowIndex], id: \.name) { club in
-                                                        let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
-                                                        
-                                                        ZStack {
-                                                            Button {
-                                                                shownInfo = infoRelativeIndex
-                                                                showClubInfoSheet = true
-                                                            } label: {
-                                                                ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                    //        if loadingClubs { // if empty do the cool loading thing
+//                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
+//                                                    ForEach(0..<min(filteredItems.count, 8), id: \.self) { _ in
+//                                                        ZStack {
+//                                                            RoundedRectangle(cornerRadius: 15)
+//                                                                .foregroundStyle(Color(UIColor.systemGray6))
+//                                                            
+//                                                            HStack {
+//                                                                ZStack {
+//                                                                    RoundedRectangle(cornerRadius: 15)
+//                                                                        .foregroundStyle(Color.gray)
+//                                                                        .frame(width: screenHeight / 6.3, height: screenHeight / 6.3)
+//                                                                }
+//                                                                .shimmering()
+//                                                                .padding()
+//                                                                
+//                                                                VStack(alignment: .leading, spacing: 8) {
+//                                                                    RoundedRectangle(cornerRadius: 5)
+//                                                                        .foregroundStyle(Color.gray)
+//                                                                        .frame(height: 20)
+//                                                                        .shimmering()
+//                                                                    
+//                                                                    RoundedRectangle(cornerRadius: 5)
+//                                                                        .foregroundStyle(Color.gray)
+//                                                                        .frame(height: 15)
+//                                                                        .shimmering()
+//                                                                    
+//                                                                    Spacer()
+//                                                                    
+//                                                                    RoundedRectangle(cornerRadius: 5)
+//                                                                        .foregroundStyle(Color.gray)
+//                                                                        .frame(height: 15)
+//                                                                        .shimmering()
+//                                                                }
+//                                                                .frame(width: screenWidth / 2.8)
+//                                                                .padding(.leading)
+//                                                                
+//                                                                Spacer()
+//                                                                
+//                                                                VStack {
+//                                                                    RoundedRectangle(cornerRadius: 5)
+//                                                                        .foregroundStyle(Color.gray)
+//                                                                        .frame(width: 30, height: 30)
+//                                                                        .shimmering()
+//                                                                    
+//                                                                    Spacer()
+//                                                                    
+//                                                                    RoundedRectangle(cornerRadius: 10)
+//                                                                        .foregroundStyle(Color.gray)
+//                                                                        .frame(width: screenWidth / 5, height: 30)
+//                                                                        .shimmering()
+//                                                                }
+//                                                                .padding()
+//                                                            }
+//                                                        }
+//                                                        .shimmering()
+//                                                        .frame(width: screenWidth / 2.2, height: screenHeight / 5.2)
+//                                                    }
+//                                                }
+//                                                .animation(nil)
+                                                //     ProgressView("Loading Clubs...")
+                                        //    } else {
+                                                
+                                                ForEach(chunkedItems.indices, id: \.self) { rowIndex in
+                                                    HStack(spacing: 16) {
+                                                        ForEach(chunkedItems[rowIndex], id: \.name) { club in
+                                                            let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                                                            
+                                                            ZStack {
+                                                                Button {
+                                                                    shownInfo = infoRelativeIndex
+                                                                    showClubInfoSheet = true
+                                                                } label: {
+                                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                                }
                                                             }
-                                                        }
-                                                        .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
-                                                            if animationsPlus {
-                                                                guard let newFavorites = newValue else { return }
-                                                                
-                                                                if newFavorites.contains(club.clubID), !(oldValue ?? []).contains(club.clubID) {
-                                                                    withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))){
-                                                                        proxy.scrollTo(1, anchor: .top)
-                                                                        scales[club.clubID] = 1.5
-                                                                        zindexs[club.clubID] = 100.0
-                                                                    }
-                                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                        withAnimation(.easeInOut){
-                                                                            scales[club.clubID] = 1.0
+                                                            .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
+                                                                if animationsPlus && selectedTab == 0 {
+                                                                    guard let newFavorites = newValue else { return }
+                                                                    
+                                                                    if newFavorites.contains(club.clubID), !(oldValue ?? []).contains(club.clubID) {
+                                                                        withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))) {
+                                                                            proxy.scrollTo(1, anchor: .top)
+                                                                            scales[club.clubID] = 1.5
+                                                                            zindexs[club.clubID] = 100.0
                                                                         }
-                                                                        withAnimation {
-                                                                            zindexs[club.clubID] = 0.0
+                                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                            withAnimation(.easeInOut){
+                                                                                scales[club.clubID] = 1.0
+                                                                            }
+                                                                            withAnimation {
+                                                                                zindexs[club.clubID] = 0.0
+                                                                            }
+                                                                            
+                                                                        }
+                                                                    }
+                                                                }
+                                                                
+                                                            }
+                                                            .onChange(of: clubs[infoRelativeIndex]) { oldClub, newClub in
+                                                                if animationsPlus && selectedTab == 0 {
+                                                                    guard let userEmail = viewModel.userEmail else { return }
+                                                                    
+                                                                    let userWasAdded = (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail))
+                                                                    
+                                                                    if userWasAdded {
+                                                                        
+                                                                        withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))){
+                                                                            proxy.scrollTo(1, anchor: .top)
+                                                                            scales[club.clubID] = 1.5
+                                                                            zindexs[club.clubID] = 100.0
                                                                         }
                                                                         
+                                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                            withAnimation(.easeInOut){
+                                                                                scales[club.clubID] = 1.0
+                                                                            }
+                                                                            withAnimation {
+                                                                                zindexs[club.clubID] = 0.0
+                                                                            }
+                                                                            
+                                                                        }
                                                                     }
                                                                 }
                                                             }
+                                                            .zIndex(zindexs[club.clubID] ?? 0.0)
+                                                            .scaleEffect(CGFloat(scales[club.clubID] ?? 1.0))
+                                                            .offset(y: scales[club.clubID] == 1.5 ? -positionOfClub(clubID: club.clubID) : 0)
+                                                            .offset(x: (chunkedItems[rowIndex][0] == club ? 1 : -1) * (zindexs[club.clubID] == 100.0 ? (screenWidth * 1/3) - 100 : 0))
+                                                            .padding(.vertical, 3)
+                                                            .padding(.horizontal)
+                                                            .onAppear {
+                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                                    loadingClubs = false
+                                                                }
+                                                            }
+                                                        }
+                                                        if rowIndex == chunkedItems.count - 1 && filteredItems.count % 2 != 0 {
+                                                            Color.clear.frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5) // so if odd number of clubs then the bottom doesnt take up the entire width
                                                             
                                                         }
-                                                        .onChange(of: clubs[infoRelativeIndex]) { oldClub, newClub in
-                                                            if animationsPlus {
-                                                                guard let userEmail = viewModel.userEmail else { return }
-                                                                
-                                                                let userWasAdded = (!oldClub.members.contains(userEmail) && newClub.members.contains(userEmail))
-                                                                
-                                                                if userWasAdded {
-                                                                    
-                                                                    withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))){
-                                                                        proxy.scrollTo(1, anchor: .top)
-                                                                        scales[club.clubID] = 1.5
-                                                                        zindexs[club.clubID] = 100.0
-                                                                    }
-                                                                    
-                                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                        withAnimation(.easeInOut){
-                                                                            scales[club.clubID] = 1.0
-                                                                        }
-                                                                        withAnimation {
-                                                                            zindexs[club.clubID] = 0.0
-                                                                        }
-                                                                        
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                        .zIndex(zindexs[club.clubID] ?? 0.0)
-                                                        .scaleEffect(CGFloat(scales[club.clubID] ?? 1.0))
-                                                        .offset(y: scales[club.clubID] == 1.5 ? -positionOfClub(clubID: club.clubID) : 0)
-                                                        .offset(x: (chunkedItems[rowIndex][0] == club ? 1 : -1) * (zindexs[club.clubID] == 100.0 ? (screenWidth * 1/3) - 100 : 0))
-                                                        .padding(.vertical, 3)
-                                                        .padding(.horizontal)
-                                                        .onAppear {
-                                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                loadingClubs = false
-                                                            }
-                                                        }
-                                                    }
-                                                    if rowIndex == chunkedItems.count - 1 && filteredItems.count % 2 != 0 {
-                                                        Color.clear.frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5) // so if odd number of clubs then the bottom doesnt take up the entire width
-                                                        
                                                     }
                                                 }
-                                            }
-                                        }
+                                    //    }
+                                    }
                                         .animation(.smooth)
                                         .id(1)
+
                                         
                                         if filteredItems.isEmpty {
                                             Text("No Clubs Found for \"\(searchText)\"")
                                                 .foregroundColor(.secondary)
                                         }
                                         
-                                        Text("Search for Other Clubs! 🙃")
-                                            .frame(height: screenHeight / 3, alignment: .top)
-                                            .foregroundColor(.secondary)
+//                                        Text("Search for Other Clubs! 🙃")
+//                                            .frame(height: screenHeight / 3, alignment: .top)
+//                                            .foregroundColor(.secondary)
                                     }
                                     .sheet(isPresented: $showClubInfoSheet) {
                                         if shownInfo >= 0 {
@@ -307,8 +377,8 @@ struct SearchClubView: View {
                     .animation(.smooth, value: filteredItems)
                 }
                 .onAppear {
-                    filteredItems = calculateFiltered()
                     
+                        filteredItems = calculateFiltered()
                 }
                 .padding()
             } else {
@@ -316,19 +386,19 @@ struct SearchClubView: View {
             }
         }
         .popup(isPresented: $sortingMenu) {
-            FilterPopupView(isPopupVisible: $sortingMenu, isAscending: $ascendingStyle)
-                .onDisappear {
-                    filteredItems = calculateFiltered()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        loadingClubs = false
-                    }
+            FilterPopupView(isPopupVisible: $sortingMenu, isAscending: $ascendingStyle, onSubmit: {
+                filteredItems = calculateFiltered()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    loadingClubs = false
                 }
+            })
+            .padding(.top, 100)
         } customize: {
             $0
-                .type(.floater())
-                .position(.trailing)
+                .type(.default)
+                .position(.topTrailing)
                 .appearFrom(.rightSlide)
-                .animation(.smooth())
+                //.animation(.smooth())
                 .closeOnTapOutside(false)
                 .closeOnTap(false)
         }

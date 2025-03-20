@@ -59,7 +59,9 @@ struct ContentView: View {
                                         Task {
                                             do {
                                                 try await viewModel.signInGoogle()
-                                                showSignInView = false
+                                                withAnimation(.smooth) {
+                                                    showSignInView = false
+                                                }
                                             } catch {
                                                 print(error)
                                             }
@@ -127,16 +129,16 @@ struct ContentView: View {
                                 //
                                 ZStack {
                                     SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .opacity(selectedTab == 0 ? 1 : 0)
+                                        .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same
                                     
                                     ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .opacity(selectedTab == 1 ? 1 : 0)
+                                        .opacity(selectedTab == 1 ? 1 : 0)// keep INDEX the same
                                     
                                     CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .opacity(selectedTab == 2 ? 1 : 0)
+                                        .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
                                     
                                     SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                                        .opacity(selectedTab == 3 ? 1 : 0)
+                                        .opacity(selectedTab == 3 ? 1 : 0) // keep INDEX the same
                                 }
                                 .transition(.opacity)
                                 .ignoresSafeArea(edges: .all)
@@ -145,13 +147,13 @@ struct ContentView: View {
                             }
                             
                             if keyboardResponder.currentHeight > 0 {
-                                VStack(alignment: .center, spacing: 16) {
-                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
+                                VStack(alignment: .center, spacing: 16) { // KEEP INDEXS THE SAME FOR ALL THE BELOW
+                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
                                         if !viewModel.isGuestUser {
-                                            TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
-                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                            TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
                                         }
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                                 }
                                 .bold()
                                 .padding()
@@ -172,18 +174,18 @@ struct ContentView: View {
                                     ZStack {
                                         HStack {
                                             
-                                            TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
+                                            TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
                                                 .padding(.horizontal)
                                             
                                             if !viewModel.isGuestUser {
-                                                TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
+                                                TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
                                                     .padding(.horizontal)
                                                 
-                                                TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                                TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
                                                     .padding(.horizontal)
                                             }
                                             
-                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
+                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                                                 .padding(.horizontal)
                                             
                                         }
@@ -216,6 +218,15 @@ struct ContentView: View {
                         
                                     
                             
+                        }
+                        .onAppear {
+                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
+                                fetchUser(for: UserID) { user in
+                                    userInfo = user
+                                }
+                            }
+                            advSearchShown = true
+                            calendarScrollPoint = 12
                         }
                         .refreshable {
                             //                            fetchClubs { fetchedClubs in
@@ -259,23 +270,13 @@ struct ContentView: View {
                 .onChange(of: showSignInView) {
                     dropper(title: showSignInView ? "Logged Out" : "Logged In", subtitle: "", icon: UIImage(systemName: "person"))
                 }
-                .onAppear {
-                    setupClubsListener()
-                    if let UserID = viewModel.uid, !viewModel.isGuestUser {
-                        fetchUser(for: UserID) { user in
-                            userInfo = user
-                        }
-                    }
-                    advSearchShown = true
-                    calendarScrollPoint = 12
-            
-                }
                 .onDisappear {
                     removeClubsListener()
                     clubs = []
                     userInfo = nil
                 }
                 .onAppear {
+                    setupClubsListener()
                     if viewModel.userEmail != nil {
                         showSignInView = false
                     } else {

@@ -23,7 +23,7 @@ struct InstagramSafariView: UIViewControllerRepresentable {
 
 struct InstagramLinkButton: View {
     let username: String
-    @State private var showingSafari = false
+    @State var showingSafari = false
     
     var instagramUrl: URL {
         URL(string: "https://www.instagram.com/\(username)/")!
@@ -34,7 +34,6 @@ struct InstagramLinkButton: View {
             showingSafari = true
         }) {
             HStack {
-                // Instagram icon
                 Image(systemName: "camera")
                     .font(.title3)
                 
