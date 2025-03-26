@@ -228,7 +228,9 @@ struct ContentView: View {
                             advSearchShown = true
                             calendarScrollPoint = 12
                             if !viewModel.isGuestUser && selectedTab == 0 {
-                                selectedTab = 1
+                                selectedTab = 1 // home
+                            } else if  selectedTab == 0 {
+                                selectedTab = 3 // settings
                             }
                         }
                         .refreshable {

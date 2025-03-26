@@ -136,11 +136,11 @@ struct SearchClubView: View {
                                 }
                                 ScrollViewReader { proxy in
                                     ScrollView {
-                                        VStack(alignment: .leading, spacing: 10) {
+                                        LazyVStack(alignment: .leading, spacing: 10) {
                                             let chunkedItems = filteredItems.chunked(into: 2) // have to do custom vgrid because normal vgrid fly loads everything in which looks weird to some people.
-                                            
-                                    //        if loadingClubs { // if empty do the cool loading thing
-//                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
+//                                            
+//                                            if loadingClubs { // if empty do the cool loading thing
+//                                                LazyVGrid(columns: Array(repeating: GridItem(), count: 2), spacing: 16) {
 //                                                    ForEach(0..<min(filteredItems.count, 8), id: \.self) { _ in
 //                                                        ZStack {
 //                                                            RoundedRectangle(cornerRadius: 15)
@@ -166,7 +166,6 @@ struct SearchClubView: View {
 //                                                                        .frame(height: 15)
 //                                                                        .shimmering()
 //                                                                    
-//                                                                    Spacer()
 //                                                                    
 //                                                                    RoundedRectangle(cornerRadius: 5)
 //                                                                        .foregroundStyle(Color.gray)
@@ -188,7 +187,7 @@ struct SearchClubView: View {
 //                                                                    
 //                                                                    RoundedRectangle(cornerRadius: 10)
 //                                                                        .foregroundStyle(Color.gray)
-//                                                                        .frame(width: screenWidth / 5, height: 30)
+//                                                                        .frame(width: screenWidth / 6, height: 30)
 //                                                                        .shimmering()
 //                                                                }
 //                                                                .padding()
@@ -212,24 +211,25 @@ struct SearchClubView: View {
                                                                     shownInfo = infoRelativeIndex
                                                                     showClubInfoSheet = true
                                                                 } label: {
-                                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                                    ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, userInfo: $userInfo, selectedGenres: $selectedGenres)
                                                                 }
                                                             }
+                                                            .id(club.clubID)
                                                             .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
                                                                 if animationsPlus && selectedTab == 0 {
                                                                     guard let newFavorites = newValue else { return }
                                                                     
                                                                     if newFavorites.contains(club.clubID), !(oldValue ?? []).contains(club.clubID) {
-                                                                        withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))) {
+                                                                        withAnimation(.smooth) {
                                                                             proxy.scrollTo(1, anchor: .top)
                                                                             scales[club.clubID] = 1.5
                                                                             zindexs[club.clubID] = 100.0
                                                                         }
                                                                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                            withAnimation(.easeInOut){
+                                                                            withAnimation(.smooth){
                                                                                 scales[club.clubID] = 1.0
                                                                             }
-                                                                            withAnimation {
+                                                                            withAnimation(.smooth){
                                                                                 zindexs[club.clubID] = 0.0
                                                                             }
                                                                             
@@ -246,17 +246,16 @@ struct SearchClubView: View {
                                                                     
                                                                     if userWasAdded {
                                                                         
-                                                                        withAnimation(.easeInOut(duration: 0.25).delay(0.5 * Double(rowIndex))){
+                                                                        withAnimation(.smooth) {
                                                                             proxy.scrollTo(1, anchor: .top)
                                                                             scales[club.clubID] = 1.5
                                                                             zindexs[club.clubID] = 100.0
                                                                         }
-                                                                        
                                                                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                                            withAnimation(.easeInOut){
+                                                                            withAnimation(.smooth){
                                                                                 scales[club.clubID] = 1.0
                                                                             }
-                                                                            withAnimation {
+                                                                            withAnimation(.smooth){
                                                                                 zindexs[club.clubID] = 0.0
                                                                             }
                                                                             
@@ -284,9 +283,9 @@ struct SearchClubView: View {
                                                 }
                                     //    }
                                     }
-                                        .animation(.smooth)
+                                        .animation(.smooth, value: loadingClubs)
                                         .id(1)
-
+                                        .frame(width: screenWidth)
                                         
                                         if filteredItems.isEmpty {
                                             Text("No Clubs Found for \"\(searchText)\"")
@@ -308,7 +307,6 @@ struct SearchClubView: View {
                                                 .foregroundColor(.red)
                                         }
                                     }
-                                    .animation(.smooth)
                                     .onChange(of: selectedGenres) {
                                         
                                         let selectedGenresBuffer = selectedGenres

@@ -7,6 +7,7 @@ import FirebaseDatabase
 import Pow
 import SwiftUIX
 import Shimmer
+import SDWebImageSwiftUI
 
 struct ClubCard: View {
     @State var club: Club
@@ -15,7 +16,6 @@ struct ClubCard: View {
     @State var imageScaler: Double
     @State var viewModel: AuthenticationViewModel
     @AppStorage("shownInfo") var shownInfo = -1
-    @State var infoRelativeIndex: Int
     @Binding var userInfo: Personal?
     @State var youSureYouWantToLeave = false
     @Binding var selectedGenres: [String]
@@ -27,7 +27,7 @@ struct ClubCard: View {
                 .foregroundStyle(Color(UIColor.systemGray6))
             
             HStack {
-                AsyncImage(
+                WebImage(
                     url: URL(
                         string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
                     ),
@@ -212,7 +212,7 @@ struct ClubCard: View {
                 .padding(.bottom, 10)
             }
         }
-        .frame(minWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
+        .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
     }
     
