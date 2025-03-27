@@ -212,7 +212,7 @@ struct ClubCard: View {
                 .padding(.bottom, 10)
             }
         }
-        .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2.2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
+        .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
     }
     

@@ -57,7 +57,7 @@ struct SearchClubView: View {
                                 SearchBar("Search For Clubs", text: $searchText, isEditing: $isSearching)
                                     .frame(width: screenWidth / 3)
                                 
-                                Text("Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
+                                Text("Genres\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")")
                                     .bold()
                                     .padding(.horizontal)
                                     .padding(.vertical, 8)
@@ -202,7 +202,7 @@ struct SearchClubView: View {
                                         //    } else {
                                                 
                                                 ForEach(chunkedItems.indices, id: \.self) { rowIndex in
-                                                    HStack(spacing: 16) {
+                                                    HStack() {
                                                         ForEach(chunkedItems[rowIndex], id: \.name) { club in
                                                             let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                                             
@@ -214,7 +214,6 @@ struct SearchClubView: View {
                                                                     ClubCard(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, userInfo: $userInfo, selectedGenres: $selectedGenres)
                                                                 }
                                                             }
-                                                            .id(club.clubID)
                                                             .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
                                                                 if animationsPlus && selectedTab == 0 {
                                                                     guard let newFavorites = newValue else { return }
@@ -286,6 +285,16 @@ struct SearchClubView: View {
                                         .animation(.smooth, value: loadingClubs)
                                         .id(1)
                                         .frame(width: screenWidth)
+                                        .overlay {
+//                                            if let chosenClub = clubs.first(where: { scales[$0.clubID] != 1.0 }) {
+//                                                ClubCard(club: chosenClub, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, userInfo: $userInfo, selectedGenres: $selectedGenres)
+//                                                    .position(x: screenWidth/2, y: -positionOfClub(clubID: chosenClub.clubID))
+//                                            }
+                                            
+                                            Text("fix this if you want")
+                                                .bold()
+                                                .foregroundStyle(.primary)
+                                        }
                                         
                                         if filteredItems.isEmpty {
                                             Text("No Clubs Found for \"\(searchText)\"")
@@ -492,7 +501,7 @@ struct SearchClubView: View {
     func positionOfClub(clubID: String) -> CGFloat {
         guard let clubIndex = filteredItems.firstIndex(where: { $0.clubID == clubID }) else { return 0 }
         let clubHeight: CGFloat = screenHeight / 5
-        let spacing: CGFloat = 16
+        let spacing: CGFloat = 13
         return CGFloat(clubIndex / 2) * (clubHeight + spacing) - screenHeight/3
     }
     
