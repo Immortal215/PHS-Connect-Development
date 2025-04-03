@@ -33,6 +33,7 @@ struct CreateClubView: View {
     @State var selectedGenres: Set<String> = []
     @State var requestNeeded: Bool?
     @State var instagram: String?
+    @State var clubColor: Color?
     
     var viewCloser: (() -> Void)?
     
@@ -47,6 +48,17 @@ struct CreateClubView: View {
         
         VStack(alignment: .trailing) {
             HStack(alignment: .center) {
+                
+                    ColorPicker("", selection: Binding(
+                        get: { clubColor ?? Color.gray.opacity(0.3) },
+                        set: { clubColor = $0 }
+                    ))
+                    .padding()
+                    .labelsHidden()
+                    .fixedSize()
+                
+                Divider().frame(height: 20)
+                
                 Toggle("Join Request Required", isOn: Binding(
                     get: { requestNeeded ?? false },
                     set: { requestNeeded = $0 ? true : nil }
@@ -88,6 +100,7 @@ struct CreateClubView: View {
                     CreatedClub.leaders = leaders
                     CreatedClub.requestNeeded = requestNeeded
                     CreatedClub.instagram = instagram
+                    CreatedClub.clubColor = clubColor?.toHexString()
                     
                     if !members.isEmpty {
                         CreatedClub.members = members
@@ -150,6 +163,8 @@ struct CreateClubView: View {
                 .padding(.trailing)
             }
             }
+            .fixedSize(horizontal: false, vertical: true)
+            
             ScrollView {
                 LabeledContent {
                     TextField("Club Name (Required)", text: $clubTitle)
@@ -470,6 +485,8 @@ struct CreateClubView: View {
                 location = CreatedClub.location
                 genres = CreatedClub.genres ?? []
                 instagram = CreatedClub.instagram
+                clubColor = Color(hexadecimal: CreatedClub.clubColor ?? colorFromClub(club: CreatedClub).toHexString())
+                
                 if let photo = CreatedClub.clubPhoto {
                     clubPhoto = photo
                 }

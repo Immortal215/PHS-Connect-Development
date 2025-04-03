@@ -38,7 +38,7 @@ struct MeetingInfoView: View {
                                     Text(showMoreTitle ? "" : "..+")
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).padding(.bottom, 5).offset(x: 6))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -82,7 +82,7 @@ struct MeetingInfoView: View {
                         }
                     } label: {
                         Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
-                            .foregroundStyle(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
+                            .foregroundStyle(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
                             .bold()
                     }
                     
@@ -111,7 +111,7 @@ struct MeetingInfoView: View {
                                             .font(.callout)
                                             .foregroundColor(darkMode ? .gray : .darkGray)
                                             .offset(x: 7)    .background (
-                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:7))
+                                                colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:7))
                                     }
                                 }
                                 .onTapGesture {
@@ -150,7 +150,7 @@ struct MeetingInfoView: View {
                                             .font(.callout)
                                             .offset(x: -1)
                                             .background (
-                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:-1))
+                                                colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:-1))
                                     }
                                 }
                                 .onTapGesture {
@@ -231,7 +231,7 @@ struct MeetingInfoView: View {
         .padding()
         .frame(width: screenWidth / 2.5)
         .background (
-            colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
+            colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
                     
         )
         .cornerRadius(10)

@@ -76,20 +76,20 @@ struct MonthPickerView: View {
                                                                                                 .foregroundColor(.primary)
                                                                                                 .padding(8)
                                                                                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                                                                                .background(colorFromClubID(club: clubs.first(where: { $0.clubID == club.clubID })!).opacity(0.2))
+                                                                                                .background(colorFromClub(club: clubs.first(where: { $0.clubID == club.clubID })!).opacity(0.2))
                                                                                                 .cornerRadius(12)
                                                                                         }
                                                                                     }
                                                                                 }
                                                                                 .transition(
-                                                                                    .movingParts.vanish(colorFromClubID(club: clubs[Int.random(in: 0..<clubs.count)]))
+                                                                                    .movingParts.vanish(colorFromClub(club: clubs[Int.random(in: 0..<clubs.count)]))
                                                                                 )
                                                                             } else {
                                                                                 HStack(spacing: -4) {
                                                                                     ForEach(clubIDCounts.prefix(3), id: \.clubID) { club in
                                                                                         ZStack {
                                                                                             Circle()
-                                                                                                .fill(colorFromClubID(club: clubs.first(where: { $0.clubID == club.clubID })!))
+                                                                                                .fill(colorFromClub(club: clubs.first(where: { $0.clubID == club.clubID })!))
                                                                                                 .frame(width: 12, height: 12)
                                                                                             
                                                                                             if club.count > 1 {

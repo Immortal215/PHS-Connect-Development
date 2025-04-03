@@ -366,6 +366,13 @@ struct ClubInfoView: View {
                         .foregroundStyle(.primary)
 
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                        Circle()
+                        .font(.title)
+                        .bold()
+                        .padding(.top)
+                        .foregroundStyle(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Group {
                         if club.leaders.contains(viewModel.userEmail ?? "") {
@@ -432,7 +439,7 @@ struct ClubInfoView: View {
                 }
             }
         }
-    //    .background(colorFromClubID(club.clubID).opacity(0.2))
+    //    .background(colorFromClub(club.clubID).opacity(0.2))
         .onAppear {
             fetchClub(withId: club.clubID) { clubr in
                 club = clubr ?? club

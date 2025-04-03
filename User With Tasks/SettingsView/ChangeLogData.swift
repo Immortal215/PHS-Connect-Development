@@ -8,6 +8,7 @@ struct ChangelogData {
             Change(title: "Fixed many user bugs", notes: ["Fixed announcement viewing bug", "Fixed other minor issues"], color: .green, symbol: "document"),
             Change(title: "Feature report now works with any email carrier", notes: ["Previously only worked with Apple Mail"], color: .red, symbol: "mail"),
             Change(title: "Instagram for clubs added", notes: ["Clubs can now link their Instagram profiles"], color: .purple, symbol: "camera"),
+            Change(title: "Club Color chooser added", notes: ["Edit in club settings"], color: .orange, symbol : "paintpalette"),
             Change(title: "Major UI tweaks", notes: ["Cool custom animations for club search", "Lots more UI improvements"], color: .yellow, symbol: "pencil"),
         ]
     )

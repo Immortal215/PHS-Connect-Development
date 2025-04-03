@@ -28,7 +28,7 @@ func convertToUIFontTextStyle(_ textStyle: Font.TextStyle) -> UIFont.TextStyle {
     }
 }
 
-func colorFromClubID(club: Club?) -> Color {
+func colorFromClub(club: Club?) -> Color {
     if let club = club {
         if let clubColor = club.clubColor {
             return Color(hexadecimal: clubColor)
@@ -45,3 +45,16 @@ func colorFromClubID(club: Club?) -> Color {
         return(.primary)
     }
 }
+
+extension Color {
+    func toHexString() -> String {
+          guard let components = UIColor(self).cgColor.components else { return "#FFFFFF" }
+          
+          let r = Int(components[0] * 255.0)
+          let g = Int(components[1] * 255.0)
+          let b = Int(components[2] * 255.0)
+          
+          return String(format: "#%02X%02X%02X", r, g, b)
+      }
+  }
+

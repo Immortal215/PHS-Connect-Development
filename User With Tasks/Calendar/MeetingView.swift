@@ -26,18 +26,18 @@ struct MeetingView: View {
             ZStack(alignment: .topLeading) {
                 if meetingInfo {
                     Rectangle()
-                        .fill(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.7))
+                        .fill(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.7))
                         .cornerRadius(5)
                 } else {
                     Rectangle()
-                        .fill(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2))
+                        .fill(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2))
                         .cornerRadius(5)
                 }
 
                 HStack {
                     RoundedRectangle(cornerRadius: 15)
                         .frame(width: 4)
-                        .foregroundStyle(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.8))
+                        .foregroundStyle(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.8))
                         .padding(4)
                         .padding(.trailing, -8)
 
@@ -54,7 +54,7 @@ struct MeetingView: View {
                             }
                             .font(.footnote)
                             .lineLimit(1)
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
                             .bold()
                         }
                         
@@ -65,7 +65,7 @@ struct MeetingView: View {
                                 Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened))")
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
                         
@@ -76,7 +76,7 @@ struct MeetingView: View {
                                 Text(getClubNameByIDWithClubs(clubID: meeting.clubID, clubs: clubs))
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
                         
@@ -87,7 +87,7 @@ struct MeetingView: View {
                                 Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(meetingInfo ? .white : colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
+                            .foregroundStyle(meetingInfo ? .white : colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
 

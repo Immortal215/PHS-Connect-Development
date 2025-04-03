@@ -190,7 +190,7 @@ struct FlowingScheduleView: View {
                                                 Text(formattedTime)
                                                     .font(.headline)
                                                     .padding(8)
-                                                    .background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
+                                                    .background(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
                                                     .cornerRadius(8)
                                                     .foregroundColor(.white)
                                                     .offset(y: startOffset + duration + 20 + dragOffset.height)
@@ -204,12 +204,6 @@ struct FlowingScheduleView: View {
                         }
                     }
                     .padding(8)
-                    .highPriorityGesture(
-                        MagnificationGesture()
-                            .onChanged { value in
-                                scale = max(0.6, min(value.magnitude, 3.0))
-                            }
-                    )
                     .frame(minHeight: screenHeight)
                     .onAppearOnce {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // need this otherwise it will scroll before the calendar is made so it wont do anything
@@ -277,6 +271,12 @@ struct FlowingScheduleView: View {
                 }
             }
         }
+        .highPriorityGesture(
+            MagnificationGesture()
+                .onChanged { value in
+                    scale = max(0.6, min(value.magnitude, 3.0))
+                }
+        )
     }
     
     func hasOverlap(meeting: Club.MeetingTime, otherMeetings: [Club.MeetingTime]) -> Bool {
