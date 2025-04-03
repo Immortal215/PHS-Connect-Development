@@ -38,7 +38,7 @@ struct MeetingInfoView: View {
                                     Text(showMoreTitle ? "" : "..+")
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground).brightness(darkMode ? -0.3 : 0.0).padding(.bottom, 5).offset(x: 6))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -68,6 +68,7 @@ struct MeetingInfoView: View {
                                         .imageScale(.large)
                                         .foregroundColor(darkMode ? .white : .accentColor)
                                 }
+                                .padding(.horizontal)
                                 
                                 Spacer()
                             }
@@ -101,6 +102,7 @@ struct MeetingInfoView: View {
                                 .foregroundStyle(.primary)
 
                             Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
+                                .textSelection(.enabled)
                                 .foregroundColor(darkMode ? .gray : .darkGray)
                                 .lineLimit(showMoreLocation ? nil : 1)
                                 .overlay(alignment: .bottomTrailing) {
@@ -109,9 +111,7 @@ struct MeetingInfoView: View {
                                             .font(.callout)
                                             .foregroundColor(darkMode ? .gray : .darkGray)
                                             .offset(x: 7)    .background (
-                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground).offset(x:7)
-                                                    .brightness(darkMode ? -0.3 : 0.0)
-                                            )
+                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:7))
                                     }
                                 }
                                 .onTapGesture {
@@ -150,9 +150,7 @@ struct MeetingInfoView: View {
                                             .font(.callout)
                                             .offset(x: -1)
                                             .background (
-                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground).offset(x:-1)
-                                                    .brightness(darkMode ? -0.3 : 0.0)
-                                            )
+                                                colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:-1))
                                     }
                                 }
                                 .onTapGesture {
@@ -233,7 +231,7 @@ struct MeetingInfoView: View {
         .padding()
         .frame(width: screenWidth / 2.5)
         .background (
-            colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemBackground)
+            colorFromClubID(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
                     
         )
         .cornerRadius(10)

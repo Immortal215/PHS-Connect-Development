@@ -58,7 +58,6 @@ struct FlowingScheduleView: View {
                                     .id(hour)
                             }
                         }
-                        .background(Color.gray.opacity(0.1).cornerRadius(8))
                         .cornerRadius(8)
                         .overlay(alignment: .topLeading) {
                             Text("12 AM") // have to do this otherwise the top gets clipped
@@ -204,7 +203,7 @@ struct FlowingScheduleView: View {
                             }
                         }
                     }
-                    .padding(.top, 8)
+                    .padding(8)
                     .highPriorityGesture(
                         MagnificationGesture()
                             .onChanged { value in
@@ -218,7 +217,7 @@ struct FlowingScheduleView: View {
                         }
                     }
                 }
-                .padding(.top, -8)
+                .background(Color.systemGray6.cornerRadius(8))
                 .overlay(alignment: .top, content: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8)
