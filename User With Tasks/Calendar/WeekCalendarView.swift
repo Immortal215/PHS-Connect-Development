@@ -9,8 +9,9 @@ struct WeekCalendarView: View {
     @State var showMonthPicker = false
     @Binding var clubs: [Club]
     @AppStorage("darkMode") var darkMode = false
-    @State var appear = Array(repeating: false, count: 3)
-
+    @State var appear = Array(repeating: true, count: 4)
+    @AppStorage("Animations+") var animationsPlus = false
+    
     var body: some View {
         VStack {
             HStack {
@@ -55,6 +56,7 @@ struct WeekCalendarView: View {
                             .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
+                            .animation(.smooth)
                         
                         let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                             if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
@@ -80,18 +82,37 @@ struct WeekCalendarView: View {
                                     }
                                     .opacity(appear[index] ? 1 : 0)
                                     .offset(y: appear[index] ? 0 : -20)
-                                    .animation(.easeIn(duration: 0.3), value: appear[index])
+                                    .animation(.smooth(duration: 0.2), value: appear[index])
+                                    
                                     .onAppear {
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + Double(index + 1)) {
-                                            appear[index] = true
+                                        if animationsPlus {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int(Double(index) * 100))) {
+                                                    appear[index] = true
+                                                }
+                                                
+                                                if index == 2 {
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int((Double(index) + 1) * 100))) {
+                                                        appear[3] = true
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
-
-                                    
+                                
+                                
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
                                         .foregroundColor(.primary)
+                                        .imageScale(.small)
+                                        .opacity(appear[3] ? 1 : 0)
+                                        .offset(y: appear[3] ? 0 : -20)
+                                        .animation(.smooth(duration: 0.2), value: appear[3])
+                                    
+                                } else {
+                                    Image(systemName: "plus")
+                                        .foregroundColor(.clear)
                                         .imageScale(.small)
                                 }
                             }
@@ -119,6 +140,10 @@ struct WeekCalendarView: View {
                             .imageScale(.large)
                             .foregroundStyle(.green)
                     }
+                } else {
+                    Image(systemName: "plus")
+                        .imageScale(.large)
+                        .foregroundStyle(.clear)
                 }
             }
             .padding(.horizontal)
@@ -131,6 +156,11 @@ struct WeekCalendarView: View {
             }
             .onChange(of: selectedDate) {
                 currentWeek = selectedDate
+            }
+        }
+        .onAppear {
+            if animationsPlus {
+                appear = Array(repeating: false, count: 4)
             }
         }
         .padding(.top)
@@ -169,7 +199,7 @@ struct WeekCalendarView: View {
         formatter.dateFormat = "MMM d"
         return "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: weekInterval.start)))"
     }
-
+    
     
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
