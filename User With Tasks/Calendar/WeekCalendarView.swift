@@ -14,22 +14,28 @@ struct WeekCalendarView: View {
     
     var body: some View {
         VStack {
-            HStack {
-                Button(action: { navigateWeek(by: -1) }) {
+            HStack(alignment: .center) {
+                Button(action: {
+                    navigateWeek(by: -1)
+                }) {
                     Image(systemName: "chevron.left")
                 }
+                .padding()
                 Spacer()
                 Text(weekRange(for: currentWeek))
                     .font(.title)
                     .bold()
                 Spacer()
-                Button(action: { navigateWeek(by: 1) }) {
+                Button(action: {
+                    navigateWeek(by: 1)
+                }) {
                     Image(systemName: "chevron.right")
                 }
+                .padding()
             }
             .padding()
             
-            HStack(spacing: 15) {
+            HStack(alignment:.center, spacing: 15) {
                 Button {
                     showMonthPicker.toggle()
                 } label: {
@@ -56,7 +62,6 @@ struct WeekCalendarView: View {
                             .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
-                            .animation(.smooth)
                         
                         let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                             if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
@@ -83,22 +88,6 @@ struct WeekCalendarView: View {
                                     .opacity(appear[index] ? 1 : 0)
                                     .offset(y: appear[index] ? 0 : -20)
                                     .animation(.smooth(duration: 0.2), value: appear[index])
-                                    
-                                    .onAppear {
-                                        if animationsPlus {
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int(Double(index) * 100))) {
-                                                    appear[index] = true
-                                                }
-                                                
-                                                if index == 2 {
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int((Double(index) + 1) * 100))) {
-                                                        appear[3] = true
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                                 
                                 
@@ -140,10 +129,12 @@ struct WeekCalendarView: View {
                             .imageScale(.large)
                             .foregroundStyle(.green)
                     }
+                    .padding()
                 } else {
                     Image(systemName: "plus")
                         .imageScale(.large)
                         .foregroundStyle(.clear)
+                        .padding()
                 }
             }
             .padding(.horizontal)
@@ -158,9 +149,22 @@ struct WeekCalendarView: View {
                 currentWeek = selectedDate
             }
         }
+        .animation(.smooth)
         .onAppear {
             if animationsPlus {
                 appear = Array(repeating: false, count: 4)
+            }
+        }
+        .onChange(of: currentWeek) { _ in
+            if animationsPlus {
+                appear = Array(repeating: false, count: 4)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    for index in 0..<4 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int(Double(index) * 100))) {
+                            appear[index] = true
+                        }
+                    }
+                }
             }
         }
         .padding(.top)
@@ -189,8 +193,18 @@ struct WeekCalendarView: View {
     
     func navigateWeek(by value: Int) {
         guard let newWeek = Calendar.current.date(byAdding: .weekOfYear, value: value, to: currentWeek) else { return }
-        currentWeek = newWeek
         
+        if animationsPlus {
+            withAnimation {
+                appear = Array(repeating: false, count: 4)
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation {
+                currentWeek = newWeek
+            }
+        }
     }
     
     func weekRange(for date: Date) -> String {
