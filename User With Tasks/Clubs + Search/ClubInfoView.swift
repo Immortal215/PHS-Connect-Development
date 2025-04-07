@@ -28,7 +28,7 @@ struct ClubInfoView: View {
     @State var meetingFull = false
     @State var refresher = true
     @AppStorage("debugTools") var debugTools = false
-
+    
     var body: some View {
         
         var latestAnnouncementMessage: String {
@@ -49,7 +49,7 @@ struct ClubInfoView: View {
                 return "Add First Announcement +"
             }
         }
-
+        
         NavigationView {
             
             ScrollView {
@@ -95,7 +95,7 @@ struct ClubInfoView: View {
                                 }
                             )
                             .frame(maxWidth: screenWidth/6, maxHeight: screenWidth/6, alignment: .topLeading)
-                           
+                            
                             VStack(alignment: .leading) {
                                 Text(.init(club.abstract))
                                     .font(.body)
@@ -122,7 +122,7 @@ struct ClubInfoView: View {
                             }
                         }
                         
-                    
+                        
                     }
                     
                     if debugTools {
@@ -161,41 +161,41 @@ struct ClubInfoView: View {
                             Text("Next Meeting (\(dateFromString(closestMeeting.startTime).formatted(date: .abbreviated, time: .omitted)))")
                                 .font(.headline)
                             
-                                Button {
-                                    meetingFull.toggle()
-                                    refresher.toggle()
-                                } label: {
-                                    if refresher { // when refreshing, it does not look like anything changes, this is so monkey to do tho, have to figure a better way to refresh the view
-                                        
-                                        MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
-                                            .padding(.vertical)
-                                            .frame(width: UIScreen.main.bounds.width / 1.1)
-                                            .foregroundStyle(.black)
-                                            .offset(x: UIScreen.main.bounds.width / 1.1)
-                                    } else {
-                                        MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
-                                            .padding(.vertical)
-                                            .frame(width: UIScreen.main.bounds.width / 1.1)
-                                            .foregroundStyle(.black)
-                                            .offset(x: UIScreen.main.bounds.width / 1.1)
-                                    }
+                            Button {
+                                meetingFull.toggle()
+                                refresher.toggle()
+                            } label: {
+                                if refresher { // when refreshing, it does not look like anything changes, this is so monkey to do tho, have to figure a better way to refresh the view
+                                    
+                                    MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
+                                        .padding(.vertical)
+                                        .frame(width: UIScreen.main.bounds.width / 1.1)
+                                        .foregroundStyle(.black)
+                                        .offset(x: UIScreen.main.bounds.width / 1.1)
+                                } else {
+                                    MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
+                                        .padding(.vertical)
+                                        .frame(width: UIScreen.main.bounds.width / 1.1)
+                                        .foregroundStyle(.black)
+                                        .offset(x: UIScreen.main.bounds.width / 1.1)
                                 }
+                            }
                             
-                         
+                            
                         }
                     }
                     
-                        if club.leaders.contains(viewModel.userEmail ?? "") {
-                            Text("Members (\(club.members.count))")
-                                .font(.headline)
-                            
-                            var mem = club.members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
-
-                            CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
-                                .padding(.top, -8)
-                                .frame(maxHeight: screenHeight/6)
-                            
-                        }
+                    if club.leaders.contains(viewModel.userEmail ?? "") {
+                        Text("Members (\(club.members.count))")
+                            .font(.headline)
+                        
+                        var mem = club.members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
+                        
+                        CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
+                            .padding(.top, -8)
+                            .frame(maxHeight: screenHeight/6)
+                        
+                    }
                     
                     
                     if club.leaders.contains(viewModel.userEmail ?? "") {
@@ -263,17 +263,17 @@ struct ClubInfoView: View {
                         }
                         .sheet(isPresented: $showAddAnnouncement) {
                             AddAnnouncementSheet(clubName: club.name, email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
-                                    oneMinuteAfter = Date().addingTimeInterval(60)
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                        fetchClub(withId: club.clubID) { fetchedClub in
-                                            self.club = fetchedClub ?? self.club
-                                        }
+                                oneMinuteAfter = Date().addingTimeInterval(60)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                    fetchClub(withId: club.clubID) { fetchedClub in
+                                        self.club = fetchedClub ?? self.club
                                     }
+                                }
                             }, viewModel: viewModel)
                             .presentationSizing(.page)
                             .presentationDragIndicator(.visible)
                         }
-
+                        
                     }
                     
                     if let announcements = club.announcements, viewModel.isGuestUser == false {
@@ -285,7 +285,7 @@ struct ClubInfoView: View {
                     Text(club.location)
                         .font(.subheadline)
                         .padding(.top, -8)
-                
+                    
                     
                     HStack {
                         Text("Schoology Code")
@@ -298,7 +298,7 @@ struct ClubInfoView: View {
                     if let username = club.instagram {
                         InstagramLinkButton(username: username)
                     }
-
+                    
                     if let genres = club.genres, !genres.isEmpty {
                         VStack(alignment: .leading) {
                             Text("Genres")
@@ -364,10 +364,10 @@ struct ClubInfoView: View {
                         .bold()
                         .padding(.top)
                         .foregroundStyle(.primary)
-
+                    
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                        Circle()
+                    Circle()
                         .font(.title)
                         .bold()
                         .padding(.top)
@@ -421,7 +421,7 @@ struct ClubInfoView: View {
                                             .foregroundStyle(.red)
                                             .shadow(radius: 5)
                                             .transition(.movingParts.pop(.red))
-
+                                        
                                     } else {
                                         Image(systemName: "pin")
                                             .transition(
@@ -435,11 +435,11 @@ struct ClubInfoView: View {
                             
                         }
                     }
-
+                    
                 }
             }
         }
-    //    .background(colorFromClub(club.clubID).opacity(0.2))
+        //    .background(colorFromClub(club.clubID).opacity(0.2))
         .onAppear {
             fetchClub(withId: club.clubID) { clubr in
                 club = clubr ?? club
@@ -456,5 +456,5 @@ struct ClubInfoView: View {
             }
         }
     }
-
+    
 }

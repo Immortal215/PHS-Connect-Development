@@ -14,7 +14,7 @@ func addClub(club: Club) {
         let data = try JSONEncoder().encode(club)
         if let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
             clubRefrence.setValue(dictionary)
-//            dropper(title: "Added Club!", subtitle: "", icon: UIImage(systemName: "externaldrive.fill.badge.plus"))
+            //            dropper(title: "Added Club!", subtitle: "", icon: UIImage(systemName: "externaldrive.fill.badge.plus"))
         }
     } catch {
         print("Error encoding club data: \(error)")
@@ -129,7 +129,7 @@ func getClubIDByName(clubName: String, completion: @escaping (String?) -> Void) 
                let clubData = snap.value as? [String: Any],
                let name = clubData["name"] as? String,
                name == clubName {
-                 completion(snap.key)
+                completion(snap.key)
                 return
             }
         }
@@ -139,7 +139,7 @@ func getClubIDByName(clubName: String, completion: @escaping (String?) -> Void) 
 
 func getClubNameByID(clubID: String, completion: @escaping (String?) -> Void) {
     let reference = Database.database().reference().child("clubs").child(clubID)
-
+    
     reference.observeSingleEvent(of: .value) { snapshot in
         guard let clubData = snapshot.value as? [String: Any],
               let clubName = clubData["name"] as? String else {
@@ -159,7 +159,7 @@ func getClubNameByIDWithClubs(clubID: String, clubs: [Club]) -> String {
 func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([String]) -> Void) {
     var clubNames: [String] = []
     let group = DispatchGroup()
-
+    
     // Start from index 1
     for clubID in clubIDs {
         group.enter() // Enter the group for each async call
@@ -170,7 +170,7 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
             group.leave()
         }
     }
-
+    
     group.notify(queue: .main) {
         completion(clubNames)
     }
@@ -179,7 +179,7 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
 func addAnnouncement(announcement: Club.Announcements) {
     let reference = Database.database().reference()
     let announcementReference = reference.child("clubs").child(announcement.clubID).child("announcements")
-
+    
     do {
         let data = try JSONEncoder().encode(announcement)
         if let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
@@ -193,17 +193,17 @@ func addAnnouncement(announcement: Club.Announcements) {
 func addPersonSeen(announcement: Club.Announcements, memberEmail: String) {
     let databaseRef = Database.database().reference()
     let clubRef = databaseRef.child("clubs").child(announcement.clubID).child("announcements").child(announcement.date)
-
+    
     clubRef.child("peopleSeen").observeSingleEvent(of: .value) { snapshot in
         var peopleSeen = snapshot.value as? [String] ?? []
-
+        
         if peopleSeen.contains(memberEmail.lowercased()) {
             print("Error: Member already in the peopleSeen.")
             return
         }
-
+        
         peopleSeen.append(memberEmail.lowercased())
-
+        
         clubRef.child("peopleSeen").setValue(Array(Set(peopleSeen))) { error, _ in
             if let error = error {
                 print("Error adding member to peopleseen: \(error.localizedDescription)")
@@ -253,8 +253,8 @@ func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) 
                let startTime = meetingDict["startTime"] as? String,
                let endTime = meetingDict["endTime"] as? String {
                 return title == oldMeeting.title &&
-                       startTime == oldMeeting.startTime &&
-                       endTime == oldMeeting.endTime
+                startTime == oldMeeting.startTime &&
+                endTime == oldMeeting.endTime
             }
             return false
         }
@@ -299,17 +299,17 @@ func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) 
 func addMemberToClub(clubID: String, memberEmail: String) {
     let databaseRef = Database.database().reference()
     let clubRef = databaseRef.child("clubs").child(clubID)
-
+    
     clubRef.child("members").observeSingleEvent(of: .value) { snapshot in
         var members = snapshot.value as? [String] ?? []
-
+        
         if members.contains(memberEmail.lowercased()) {
             print("Error: Member already in the members.")
             return
         }
-
+        
         members.append(memberEmail.lowercased())
-
+        
         clubRef.child("members").setValue(Array(Set(members))) { error, _ in
             if let error = error {
                 print("Error adding member to members: \(error.localizedDescription)")
@@ -324,13 +324,13 @@ func addMemberToClub(clubID: String, memberEmail: String) {
 func removeMemberFromClub(clubID: String, emailToRemove: String) {
     let databaseRef = Database.database().reference()
     let clubRef = databaseRef.child("clubs").child(clubID)
-
+    
     clubRef.child("members").observeSingleEvent(of: .value) { snapshot in
         var members = snapshot.value as? [String] ?? []
-
+        
         if let index = members.firstIndex(of: emailToRemove.lowercased()) {
             members.remove(at: index)
-
+            
             clubRef.child("members").setValue(members) { error, _ in
                 if let error = error {
                     print("Error removing email: \(error.localizedDescription)")
@@ -348,17 +348,17 @@ func removeMemberFromClub(clubID: String, emailToRemove: String) {
 func addPendingMemberRequest(clubID: String, memberEmail: String) {
     let databaseRef = Database.database().reference()
     let clubRef = databaseRef.child("clubs").child(clubID)
-
+    
     clubRef.child("pendingMemberRequests").observeSingleEvent(of: .value) { snapshot in
         var pendingRequests = snapshot.value as? [String] ?? []
-
+        
         if pendingRequests.contains(memberEmail.lowercased()) {
             print("Error: Member already in the pending requests.")
             return
         } 
-
+        
         pendingRequests.append(memberEmail.lowercased())
-
+        
         clubRef.child("pendingMemberRequests").setValue(Array(Set(pendingRequests))) { error, _ in
             if let error = error {
                 print("Error adding member to pending requests: \(error.localizedDescription)")
@@ -373,13 +373,13 @@ func addPendingMemberRequest(clubID: String, memberEmail: String) {
 func removePendingMemberRequest(clubID: String, emailToRemove: String) {
     let databaseRef = Database.database().reference()
     let clubRef = databaseRef.child("clubs").child(clubID)
-
+    
     clubRef.child("pendingMemberRequests").observeSingleEvent(of: .value) { snapshot in
         var pendingRequests = snapshot.value as? [String] ?? []
-
+        
         if let index = pendingRequests.firstIndex(of: emailToRemove.lowercased()) {
             pendingRequests.remove(at: index)
-
+            
             clubRef.child("pendingMemberRequests").setValue(pendingRequests) { error, _ in
                 if let error = error {
                     print("Error removing email from pending requests: \(error.localizedDescription)")

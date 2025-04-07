@@ -24,7 +24,7 @@ struct Club: Codable, Equatable, Hashable {
     var instagram: String? // Instagram link
     var clubColor: String? // color
     var requestNeeded: Bool?
-
+    
     struct Announcements: Codable, Equatable, Hashable {
         var date: String
         var title: String
@@ -62,7 +62,7 @@ final class AuthenticationViewModel: ObservableObject {
     @AppStorage("isGuestUser") var isGuestUser = true
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
-
+    
     init() {
         if let user = Auth.auth().currentUser {
             self.userEmail = user.email
@@ -72,16 +72,16 @@ final class AuthenticationViewModel: ObservableObject {
             self.uid = user.uid
         }
     }
-
+    
     func createUserNodeIfNeeded() {
         guard let userID = Auth.auth().currentUser?.uid else {
             print("User is not authenticated")
             return
         }
-
+        
         let reference = Database.database().reference()
         let userReference = reference.child("users").child(userID)
-
+        
         userReference.observeSingleEvent(of: .value) { snapshot in
             if !snapshot.exists() {
                 let newUser = [
@@ -89,7 +89,7 @@ final class AuthenticationViewModel: ObservableObject {
                     "favoritedClubs": [" "],
                     "subjectPreferences": [" "]
                 ] as [String: Any]
-
+                
                 userReference.setValue(newUser) { error, _ in
                     if let error = error {
                         print("Error creating user node: \(error)")
@@ -102,7 +102,7 @@ final class AuthenticationViewModel: ObservableObject {
             }
         }
     }
-
+    
     func signInAsGuest() {
         self.userName = "Guest Account"
         self.userEmail = "Explore!"
@@ -111,23 +111,23 @@ final class AuthenticationViewModel: ObservableObject {
         self.userType = "Guest"
         self.uid = "None"
     }
-
+    
     func signInGoogle() async throws {
         guard let topVC = Utilities.shared.topViewController() else {
             throw URLError(.cannotFindHost)
         }
-
+        
         let gidSignInResult = try await GIDSignIn.sharedInstance.signIn(withPresenting: topVC)
-
+        
         guard let idToken = gidSignInResult.user.idToken?.tokenString else {
             throw URLError(.badServerResponse)
         }
-
+        
         let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: gidSignInResult.user.accessToken.tokenString)
-
+        
         let authResult = try await Auth.auth().signIn(with: credential)
         let user = authResult.user
-
+        
         self.userEmail = user.email
         self.userName = user.displayName
         self.userImage = user.photoURL?.absoluteString
@@ -135,7 +135,7 @@ final class AuthenticationViewModel: ObservableObject {
         self.uid = user.uid
         
         self.createUserNodeIfNeeded()
-
+        
         if let email = user.email {
             self.userType = email.split(separator: ".").contains("d214") ? (email.contains("stu.d214.org") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
         }

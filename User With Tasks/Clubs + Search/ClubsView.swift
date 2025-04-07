@@ -22,17 +22,17 @@ struct ClubView: View {
     @State var showClubInfoSheet = false
     @State var notificationBellClicked = false
     @AppStorage("selectedTab") var selectedTab = 3
-
+    
     var body: some View {
-//        var filteredClubsFavorite: [Club] {
-//            return clubs
-//                .sorted {
-//                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-//                }
-//                .filter { club in
-//                    userInfo?.favoritedClubs.contains(club.clubID) ?? false
-//                }
-//        }
+        //        var filteredClubsFavorite: [Club] {
+        //            return clubs
+        //                .sorted {
+        //                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        //                }
+        //                .filter { club in
+        //                    userInfo?.favoritedClubs.contains(club.clubID) ?? false
+        //                }
+        //        }
         
         var filteredClubsEnrolled: [Club] {
             return clubs
@@ -48,10 +48,10 @@ struct ClubView: View {
             if advSearchShown && !clubs.isEmpty {
                 VStack {
                     HStack {
-                       Text("Home")
+                        Text("Home")
                             .bold()
                             .font(.title)
-
+                        
                         Spacer()
                         
                         Button {
@@ -95,7 +95,7 @@ struct ClubView: View {
                             HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Enrolled")
                             
                             // favorited clubs
-//                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
+                            //                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
                         }
                     }
                 }

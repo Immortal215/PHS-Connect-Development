@@ -128,7 +128,7 @@ struct AddMeetingView: View {
                     Text("End Time \(isInvalidEndTime ? "(Must be after start)" : (isTooShort ? "(Must be at least 15 mins after)" : ""))")
                         .foregroundStyle(isInvalidEndTime || isTooShort ? .red : .primary)
                         .bold(isInvalidEndTime || isTooShort)
-
+                    
                 }
                 .padding()
                 
@@ -170,14 +170,14 @@ struct AddMeetingView: View {
                     
                 } label: {
                     VStack(alignment: .leading) {
-//                        Image(systemName: "questionmark.circle")
-//                            .foregroundColor(.blue)
-//                            .onTapGesture {
-//                                showHelp = true
-//                                
-//                            }
-//                        
-//                            .padding(.bottom)
+                        //                        Image(systemName: "questionmark.circle")
+                        //                            .foregroundColor(.blue)
+                        //                            .onTapGesture {
+                        //                                showHelp = true
+                        //                                
+                        //                            }
+                        //                        
+                        //                            .padding(.bottom)
                         
                         Text("Notes")
                             .padding(.bottom)
@@ -252,36 +252,36 @@ struct AddMeetingView: View {
                 }
                 .padding()
                 
-                    LabeledContent {
-                        CustomizableDropdown(selectedClubId: $clubId, leaderClubs: leaderClubs)
-                            .onChange(of: clubId) {
-                                visibleByWho = "Everyone"
-                            }
-                        
-                        Picker("", selection: $visibleByWho) {
-                            Text("Everyone").tag("Everyone")
-                            Text("Only Leaders").tag("Only Leaders")
-                            Text("Custom").tag("Custom")
+                LabeledContent {
+                    CustomizableDropdown(selectedClubId: $clubId, leaderClubs: leaderClubs)
+                        .onChange(of: clubId) {
+                            visibleByWho = "Everyone"
                         }
-                        .onChange(of: visibleByWho) {
-                            if let leaders = leaderClubs.first(where: {$0.clubID == clubId})?.leaders {
-                                switch visibleByWho {
-                                case "Everyone":
-                                    visibleBy = []
-                                case "Only Leaders":
-                                    visibleBy = leaders
-                                case "Custom":
-                                    visibleBy = visibleBy.filter({!leaders.contains($0)}) // needed so when editing a club with custom people, it doesnt reset visibleBy to empty [].
-                                default:
-                                    visibleBy = []
-                                    
-                                }
-                            }
-                        }
-                    } label: {
-                        Text(.init(visibleBy.joined(separator: (", "))))
+                    
+                    Picker("", selection: $visibleByWho) {
+                        Text("Everyone").tag("Everyone")
+                        Text("Only Leaders").tag("Only Leaders")
+                        Text("Custom").tag("Custom")
                     }
-                    .padding()
+                    .onChange(of: visibleByWho) {
+                        if let leaders = leaderClubs.first(where: {$0.clubID == clubId})?.leaders {
+                            switch visibleByWho {
+                            case "Everyone":
+                                visibleBy = []
+                            case "Only Leaders":
+                                visibleBy = leaders
+                            case "Custom":
+                                visibleBy = visibleBy.filter({!leaders.contains($0)}) // needed so when editing a club with custom people, it doesnt reset visibleBy to empty [].
+                            default:
+                                visibleBy = []
+                                
+                            }
+                        }
+                    }
+                } label: {
+                    Text(.init(visibleBy.joined(separator: (", "))))
+                }
+                .padding()
                 
                 
                 if visibleByWho == "Custom" {
@@ -396,7 +396,7 @@ struct AddMeetingView: View {
                     startTime = getFlooredCurrentTime(startTime)
                 }
                 
-              //  addInfoToMeetingChild()
+                //  addInfoToMeetingChild()
                 addInfoToHelper()
             }
             .onChange(of: startTime) {

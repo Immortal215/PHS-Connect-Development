@@ -18,7 +18,7 @@ struct HomePageScrollers: View {
     @Binding var userInfo: Personal?
     @State var scrollerOf : String
     @AppStorage("selectedTab") var selectedTab = 3
-
+    
     var body: some View {
         VStack(alignment: .leading) {
             ScrollView(.vertical, showsIndicators: false) {

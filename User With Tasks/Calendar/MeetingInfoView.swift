@@ -20,7 +20,7 @@ struct MeetingInfoView: View {
     @State var showInfo = false
     @Binding var userInfo: Personal?
     @AppStorage("darkMode") var darkMode = false
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ScrollView(showsIndicators: false) {
@@ -100,7 +100,7 @@ struct MeetingInfoView: View {
                             Text("Location")
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
-
+                            
                             Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
                                 .textSelection(.enabled)
                                 .foregroundColor(darkMode ? .gray : .darkGray)
@@ -232,10 +232,10 @@ struct MeetingInfoView: View {
         .frame(width: screenWidth / 2.5)
         .background (
             colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
-                    
+            
         )
         .cornerRadius(10)
     }
-
+    
 }
 

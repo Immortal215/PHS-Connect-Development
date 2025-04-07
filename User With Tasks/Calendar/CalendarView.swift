@@ -6,13 +6,13 @@ struct CalendarView: View {
     var viewModel: AuthenticationViewModel
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
-
+    
     @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @State var offset: CGSize = .zero
-
+    
     var body: some View {
         VStack {
             WeekCalendarView( // double check the below
@@ -21,7 +21,7 @@ struct CalendarView: View {
                     .flatMap { club in
                         club.meetingTimes?.filter { meeting in
                             meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || club.leaders.contains(viewModel.userEmail ?? "")
-
+                            
                         } ?? []
                     },
                 selectedDate: $selectedDate,
@@ -42,7 +42,7 @@ struct CalendarView: View {
             storedDate = stringFromDate(selectedDate)
         }
     }
-
+    
     func meetings(for date: Date) -> [Club.MeetingTime] {
         clubs
             .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
@@ -52,7 +52,7 @@ struct CalendarView: View {
                     Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
                 } ?? []
             }
-
+        
     }
 }
 

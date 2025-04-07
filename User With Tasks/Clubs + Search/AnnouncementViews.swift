@@ -88,14 +88,14 @@ struct AddAnnouncementSheet: View {
                     
                 } label: {
                     VStack(alignment: .leading) {
-//                        Image(systemName: "questionmark.circle")
-//                            .foregroundColor(.blue)
-//                            .onTapGesture {
-//                                areUSure = false
-//                                showHelp = true
-//                                
-//                            }
-//                            .padding(.bottom)
+                        //                        Image(systemName: "questionmark.circle")
+                        //                            .foregroundColor(.blue)
+                        //                            .onTapGesture {
+                        //                                areUSure = false
+                        //                                showHelp = true
+                        //                                
+                        //                            }
+                        //                            .padding(.bottom)
                         
                         Text("Announcement Description")
                             .padding(.bottom)
@@ -168,7 +168,7 @@ struct AddAnnouncementSheet: View {
                         
                     }
                     .fixedSize()
-                     // bring back if needed
+                    // bring back if needed
                     
                 }
                 .padding()
@@ -181,7 +181,7 @@ struct AddAnnouncementSheet: View {
                     announceFull = true
                 } label: {
                     SingleAnnouncementView(clubName: clubName, announcement: $announcement, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
-
+                    
                 }
                 .sheet(isPresented: $announceFull) {
                     SingleAnnouncementView(clubName: clubName, announcement: $announcement, fullView: true, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
@@ -213,11 +213,11 @@ struct AddAnnouncementSheet: View {
                     .foregroundStyle(.white)
                     .padding()
                     .background(Capsule().fill(Color.blue))
-        
+                    
                 }
                 .padding(.horizontal)
             }
-  
+            
         }
         .onAppear {
             setAnnouncementToValues()
@@ -416,7 +416,7 @@ struct AnnouncementsView: View {
                             }
                             .presentationDragIndicator(.visible)
                             .presentationSizing(.page)
-
+                            
                         }
                     }
                 }
@@ -437,7 +437,7 @@ struct AllAnnouncementsView: View {
     @State var isTheHomeScreenClubView = false
     
     var body: some View {
-
+        
         ForEach(announcements.sorted(by: { dateFromString($0.value.date) > dateFromString($1.value.date) }), id: \.key) { (key, announcement) in
             if let clubName = clubNames[announcement.clubID] {
                 Button {
@@ -501,7 +501,7 @@ struct AllAnnouncementsView: View {
             
             Spacer()
         }
-
+        
     }
 }
 
@@ -568,14 +568,14 @@ struct SingleAnnouncementView: View {
             }
         }
         .sheet(isPresented: $showInfo) {
-                if let cluber = clubs.first(where: { $0.clubID == announcement.clubID }) {
-                    ClubInfoView(club: cluber, viewModel: viewModel, userInfo: $userInfo)
-                        .presentationDragIndicator(.visible)
-                        .frame(width: UIScreen.main.bounds.width/1.05)
-                        .foregroundColor(nil)
-                } else {
-                    Text("Club not found")
-                }
+            if let cluber = clubs.first(where: { $0.clubID == announcement.clubID }) {
+                ClubInfoView(club: cluber, viewModel: viewModel, userInfo: $userInfo)
+                    .presentationDragIndicator(.visible)
+                    .frame(width: UIScreen.main.bounds.width/1.05)
+                    .foregroundColor(nil)
+            } else {
+                Text("Club not found")
+            }
         }
         .padding(fullView! ? 0 : 16)
         .background {

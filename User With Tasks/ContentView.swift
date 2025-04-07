@@ -29,7 +29,7 @@ struct ContentView: View {
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @ObservedObject var keyboardResponder = KeyboardResponder()
-
+    
     var body: some View {
         VStack {
             if networkMonitor.isConnected {
@@ -72,21 +72,21 @@ struct ContentView: View {
                                     .frame(width: screenWidth/3)
                                     
                                     HStack {
-                                          Rectangle()
-                                              .fill(Color.gray.opacity(0.3))
-                                              .frame(height: 1)
-                                          
-                                          Text("or")
-                                              .font(.subheadline)
-                                              .foregroundColor(.gray)
-                                              .padding(.horizontal, 10)
-                                          
-                                          Rectangle()
-                                              .fill(Color.gray.opacity(0.3))
-                                              .frame(height: 1)
-                                      }
-                                      .padding(.horizontal)
-                                      .frame(width: screenWidth/4)
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(height: 1)
+                                        
+                                        Text("or")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                            .padding(.horizontal, 10)
+                                        
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(height: 1)
+                                    }
+                                    .padding(.horizontal)
+                                    .frame(width: screenWidth/4)
                                     
                                     Button {
                                         viewModel.signInAsGuest()
@@ -148,21 +148,21 @@ struct ContentView: View {
                             
                             if keyboardResponder.currentHeight > 0 {
                                 VStack(alignment: .center, spacing: 16) { // KEEP INDEXS THE SAME FOR ALL THE BELOW
-                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
-                                        if !viewModel.isGuestUser {
-                                            TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
-                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
-                                        }
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
+                                    TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
+                                    if !viewModel.isGuestUser {
+                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
+                                    }
+                                    TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                                 }
                                 .bold()
                                 .padding()
                                 .background(Color.systemBackground.opacity(0.95))
                                 .cornerRadius(10)
                                 .shadow(radius: 5)
-                           //     .transition(.push(from: .bottom))
+                                //     .transition(.push(from: .bottom))
                                 .asymmetricTransition(insertion: .opacity, removal: .opacity)
-                              //  .animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
+                                //  .animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
                                 .fixedSize()
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                                 .offset(y: 75)
@@ -215,8 +215,8 @@ struct ContentView: View {
                                     .hidden(selectedTab == 3)
                                 }
                             }
-                        
-                                    
+                            
+                            
                             
                         }
                         .onAppear {

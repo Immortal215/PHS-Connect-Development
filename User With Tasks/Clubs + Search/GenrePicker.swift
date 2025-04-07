@@ -44,7 +44,7 @@ struct GenreTag: View {
     let isSelected: Bool
     let onTap: () -> Void
     @AppStorage("darkMode") var darkMode = false
-
+    
     var body: some View {
         Text(genre)
             .padding(.horizontal, 10)

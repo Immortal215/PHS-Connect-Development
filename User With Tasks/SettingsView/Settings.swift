@@ -215,24 +215,24 @@ struct SettingsView: View {
         .padding()
         .background(Color.systemGray6.cornerRadius(15).padding())
         .onAppear {
-//            if !viewModel.isGuestUser && debugTools {
-//                if let UserID = viewModel.uid {
-//                    fetchUser(for: UserID) { user in
-//                        userInfo = user
-//                        
-//                        if let favoriteClubs = userInfo?.favoritedClubs {
-//                            if !favoriteClubs.filter({ !$0.contains(" ") }).isEmpty {
-//                                getFavoritedClubNames(from: favoriteClubs) { clubNames in
-//                                    favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
-//                                }
-//                            } else {
-//                                favoriteText = "Favorited Clubs: None"
-//                                
-//                            }
-//                        }
-//                    }
-//                }
-//            }
+            //            if !viewModel.isGuestUser && debugTools {
+            //                if let UserID = viewModel.uid {
+            //                    fetchUser(for: UserID) { user in
+            //                        userInfo = user
+            //                        
+            //                        if let favoriteClubs = userInfo?.favoritedClubs {
+            //                            if !favoriteClubs.filter({ !$0.contains(" ") }).isEmpty {
+            //                                getFavoritedClubNames(from: favoriteClubs) { clubNames in
+            //                                    favoriteText = "Favorited Clubs: \(clubNames.joined(separator: ", "))"
+            //                                }
+            //                            } else {
+            //                                favoriteText = "Favorited Clubs: None"
+            //                                
+            //                            }
+            //                        }
+            //                    }
+            //                }
+            //            }
         }
     }
 }

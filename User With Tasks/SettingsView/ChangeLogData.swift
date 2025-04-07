@@ -25,7 +25,7 @@ struct ChangelogData {
                 Change(title: "Made club requesting optional as a setting", notes: nil),
                 Change(title: "Page switcher moves when keyboard is on screen", notes: nil),
                 Change(title: "Minor ui tweaks", notes: nil, color: .yellow)
-
+                
             ]
         ),
         ChangelogEntry(

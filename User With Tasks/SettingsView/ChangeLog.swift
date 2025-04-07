@@ -18,7 +18,7 @@ struct ChangelogEntry: Identifiable {
 class ChangelogViewModel: ObservableObject {
     @Published var currentVersion: ChangelogEntry
     @Published var history: [ChangelogEntry]
-
+    
     init() {
         self.currentVersion = ChangelogData.currentVersion
         self.history = ChangelogData.history
@@ -123,18 +123,18 @@ struct ChangelogSheetView: View {
                             .padding(.leading, 24)
                         } label: {
                             changeTitleView(title: change.title)
-
+                            
                         }
                     } else {
                         changeTitleView(title: change.title)
-
+                        
                     }
                 }
             }
             .padding(.top, 4)
             .foregroundStyle(isCurrentVersion ? .green : .blue)
             .tint(isCurrentVersion ? .green : .blue)
-
+            
         }
     }
     

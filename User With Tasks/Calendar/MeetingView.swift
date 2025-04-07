@@ -11,17 +11,17 @@ struct MeetingView: View {
     var screenWidth = UIScreen.main.bounds.width
     var hasOverlap: Bool? = false
     @AppStorage("darkMode") var darkMode = false
-
+    
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
         let endTime = dateFromString(meeting.endTime)
         let startMinutes = Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime)
         let endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
         let durationMinutes = max(endMinutes - startMinutes, 0)
-
+        
         let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
         let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
-
+        
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 if meetingInfo {
@@ -33,14 +33,14 @@ struct MeetingView: View {
                         .fill(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.2))
                         .cornerRadius(5)
                 }
-
+                
                 HStack {
                     RoundedRectangle(cornerRadius: 15)
                         .frame(width: 4)
                         .foregroundStyle(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.8))
                         .padding(4)
                         .padding(.trailing, -8)
-
+                    
                     VStack(alignment: .leading) {
                         
                         if isTextVisible(lineHeight: 15, startOffset: 0, duration: duration) {
@@ -90,7 +90,7 @@ struct MeetingView: View {
                             .foregroundStyle(meetingInfo ? .white : colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.6))
                             .font(.caption2)
                         }
-
+                        
                         Spacer()
                     }
                     .frame(maxWidth: hasOverlap! ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!)) - 16 : (screenWidth / 1.1) - 16, maxHeight: duration, alignment: .topLeading)
@@ -103,7 +103,7 @@ struct MeetingView: View {
             .position(x: geometry.size.width / -2, y: preview! ? 0 : startOffset + (duration / 2) + (12 * (startOffset / geometry.size.height))) // don't know why, just works, don't touch it
         }
     }
-
+    
     func isTextVisible(lineHeight: CGFloat, startOffset: CGFloat, duration: CGFloat) -> Bool {
         return lineHeight + startOffset <= duration
     }

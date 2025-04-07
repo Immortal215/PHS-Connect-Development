@@ -49,13 +49,13 @@ struct CreateClubView: View {
         VStack(alignment: .trailing) {
             HStack(alignment: .center) {
                 
-                    ColorPicker("", selection: Binding(
-                        get: { clubColor ?? Color.gray.opacity(0.3) },
-                        set: { clubColor = $0 }
-                    ))
-                    .padding()
-                    .labelsHidden()
-                    .fixedSize()
+                ColorPicker("", selection: Binding(
+                    get: { clubColor ?? Color.gray.opacity(0.3) },
+                    set: { clubColor = $0 }
+                ))
+                .padding()
+                .labelsHidden()
+                .fixedSize()
                 
                 Divider().frame(height: 20)
                 
@@ -68,100 +68,100 @@ struct CreateClubView: View {
                 
                 Spacer()
                 if abletoCreate {
-                Button {
-                    if clubId == "" {
-                        let lastClub = clubs.sorted {
-                            Int($0.clubID.replacingOccurrences(of: "clubID", with: ""))! <
-                                Int($1.clubID.replacingOccurrences(of: "clubID", with: ""))!
-                        }.last!
-                        let lastDigit = Int(lastClub.clubID.replacingOccurrences(of: "clubID", with: ""))!
-                        CreatedClub.clubID = "clubID\(lastDigit + 1)"
+                    Button {
+                        if clubId == "" {
+                            let lastClub = clubs.sorted {
+                                Int($0.clubID.replacingOccurrences(of: "clubID", with: ""))! <
+                                    Int($1.clubID.replacingOccurrences(of: "clubID", with: ""))!
+                            }.last!
+                            let lastDigit = Int(lastClub.clubID.replacingOccurrences(of: "clubID", with: ""))!
+                            CreatedClub.clubID = "clubID\(lastDigit + 1)"
+                            
+                            // CreatedClub.clubID = "clubID\(Int(clubs.sorted(by: { $0.clubID < $1.clubID }).last!.clubID.last!)! + 1)"
+                        } else {
+                            CreatedClub.clubID = clubId
+                        }
                         
-                        // CreatedClub.clubID = "clubID\(Int(clubs.sorted(by: { $0.clubID < $1.clubID }).last!.clubID.last!)! + 1)"
-                    } else {
-                        CreatedClub.clubID = clubId
-                    }
-                    
-                    if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
-                        var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
+                        if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
+                            var cutSchool = schoology.replacingOccurrences(of: "-", with: "")
+                            
+                            CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
+                            String(cutSchool.dropFirst(4).prefix(4)) + "-" +
+                            String(cutSchool.dropFirst(8).prefix(5)) +
+                            " (\(clubType))"
+                        } else {
+                            CreatedClub.schoologyCode = "None"
+                        }
                         
-                        CreatedClub.schoologyCode = String(cutSchool.prefix(4)) + "-" +
-                        String(cutSchool.dropFirst(4).prefix(4)) + "-" +
-                        String(cutSchool.dropFirst(8).prefix(5)) +
-                        " (\(clubType))"
-                    } else {
-                        CreatedClub.schoologyCode = "None"
+                        CreatedClub.name = clubTitle
+                        CreatedClub.description = clubDesc
+                        CreatedClub.abstract = clubAbstract
+                        CreatedClub.location = location
+                        CreatedClub.leaders = leaders
+                        CreatedClub.requestNeeded = requestNeeded
+                        CreatedClub.instagram = instagram
+                        CreatedClub.clubColor = clubColor?.toHexString()
+                        
+                        if !members.isEmpty {
+                            CreatedClub.members = members
+                        } else {
+                            members.append(leaders[0])
+                            CreatedClub.members = members
+                        }
+                        
+                        if !genres.isEmpty {
+                            CreatedClub.genres = genres
+                        } else {
+                            CreatedClub.genres = ["Non-Competitive"]
+                        }
+                        
+                        // optional additions, needed to keep optional
+                        if clubPhoto != "" {
+                            CreatedClub.clubPhoto = clubPhoto
+                        }
+                        
+                        if normalMeet != "" {
+                            CreatedClub.normalMeetingTime = normalMeet
+                        }
+                        
+                        addClub(club: CreatedClub)
+                        viewCloser?()
+                    } label: {
+                        Label {
+                            Text(clubId == "" ? "Create Club" : "Edit Club")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        } icon: {
+                            Image(systemName: clubId == "" ? "plus" : "pencil")
+                                .foregroundColor(.white)
+                        }
+                        .padding()
+                        .background(clubId == "" ? Color.green : Color.blue)
+                        .cornerRadius(10)
+                        .shadow(radius: 5)
                     }
-                    
-                    CreatedClub.name = clubTitle
-                    CreatedClub.description = clubDesc
-                    CreatedClub.abstract = clubAbstract
-                    CreatedClub.location = location
-                    CreatedClub.leaders = leaders
-                    CreatedClub.requestNeeded = requestNeeded
-                    CreatedClub.instagram = instagram
-                    CreatedClub.clubColor = clubColor?.toHexString()
-                    
-                    if !members.isEmpty {
-                        CreatedClub.members = members
-                    } else {
-                        members.append(leaders[0])
-                        CreatedClub.members = members
+                    .padding(.top)
+                    .padding(.trailing)
+                } else {
+                    Button {
+                        
+                    } label: {
+                        Label {
+                            Text("Info Not Complete!")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.white)
+                        }
+                        .padding()
+                        .background(.yellow)
+                        .cornerRadius(10)
+                        .shadow(radius: 5)
                     }
-                    
-                    if !genres.isEmpty {
-                        CreatedClub.genres = genres
-                    } else {
-                        CreatedClub.genres = ["Non-Competitive"]
-                    }
-                    
-                    // optional additions, needed to keep optional
-                    if clubPhoto != "" {
-                        CreatedClub.clubPhoto = clubPhoto
-                    }
-                    
-                    if normalMeet != "" {
-                        CreatedClub.normalMeetingTime = normalMeet
-                    }
-                    
-                    addClub(club: CreatedClub)
-                    viewCloser?()
-                } label: {
-                    Label {
-                        Text(clubId == "" ? "Create Club" : "Edit Club")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    } icon: {
-                        Image(systemName: clubId == "" ? "plus" : "pencil")
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(clubId == "" ? Color.green : Color.blue)
-                    .cornerRadius(10)
-                    .shadow(radius: 5)
+                    .padding(.top)
+                    .padding(.trailing)
                 }
-                .padding(.top)
-                .padding(.trailing)
-            } else {
-                Button {
-                    
-                } label: {
-                    Label {
-                        Text("Info Not Complete!")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(.yellow)
-                    .cornerRadius(10)
-                    .shadow(radius: 5)
-                }
-                .padding(.top)
-                .padding(.trailing)
-            }
             }
             .fixedSize(horizontal: false, vertical: true)
             
@@ -272,7 +272,7 @@ struct CreateClubView: View {
                 // schoology code
                 LabeledContent {
                     TextField("Schoology Code (Required)", text: $schoology)
-                      //  .padding()
+                    //  .padding()
                         .onAppear {
                             if schoology != "" {
                                 clubType = schoology.contains("Course") ? "Course" : "Group"
@@ -299,7 +299,7 @@ struct CreateClubView: View {
                 
                 LabeledContent {
                     TextField("Club Location (Required)", text: $location)
-                       // .padding()
+                    // .padding()
                 } label: {
                     Text("Club Location \(location.isEmpty ? "(Required)" : "")")
                         .foregroundStyle(location.isEmpty ? .red : .primary)
@@ -355,27 +355,27 @@ struct CreateClubView: View {
                         .padding()
                         
                         ScrollView {
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
-                                    ForEach(members, id: \.self) { i in
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 15)
-                                                .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
-                                            
-                                            Text("\(i)")
-                                                .padding()
-                                                .font(.footnote)
-                                        }
-                                        .scaledToFit()
-                                        .onTapGesture {
-                                            if selectedMembers.contains(i) {
-                                                selectedMembers.remove(i)
-                                            } else {
-                                                selectedMembers.insert(i)
-                                            }
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
+                                ForEach(members, id: \.self) { i in
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 15)
+                                            .stroke(selectedMembers.contains(i) ? .red : .gray, lineWidth: 3)
+                                        
+                                        Text("\(i)")
+                                            .padding()
+                                            .font(.footnote)
+                                    }
+                                    .scaledToFit()
+                                    .onTapGesture {
+                                        if selectedMembers.contains(i) {
+                                            selectedMembers.remove(i)
+                                        } else {
+                                            selectedMembers.insert(i)
                                         }
                                     }
                                 }
-                                .padding()
+                            }
+                            .padding()
                         }
                         .padding()
                     }
@@ -527,7 +527,7 @@ struct CreateClubView: View {
                 
             } else if addLeaderText.contains("/") {
                 addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: "/"))
-
+                
             } else if addLeaderText.contains(";") {
                 addLeaderHelpperFunc(splitLeaders: addLeaderText.split(separator: ";"))
                 

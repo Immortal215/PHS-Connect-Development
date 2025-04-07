@@ -17,7 +17,7 @@ struct FlowingScheduleView: View {
     @State var dragOffset: CGSize = .zero
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @Binding var userInfo: Personal?
-
+    
     struct MeetingColumn: Equatable {
         let meeting: Club.MeetingTime
         var column: Int
@@ -31,7 +31,7 @@ struct FlowingScheduleView: View {
                     GeometryReader { geometry in
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) { minY in
-                            
+                                
                                 if minY > screenHeight * 0.22 {
                                     proxy.scrollTo(0, anchor: .bottom) // needed so it doesnt crash for some reason when scrolling to top
                                 }
@@ -170,7 +170,7 @@ struct FlowingScheduleView: View {
                                             let startMinutes = Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime)
                                             let endMinutes = Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime)
                                             let durationMinutes = max(endMinutes - startMinutes, 0)
-
+                                            
                                             let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
                                             let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
                                             
