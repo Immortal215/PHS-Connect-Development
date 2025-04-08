@@ -200,9 +200,9 @@ struct SearchClubView: View {
                                             //                                                .animation(nil)
                                             //     ProgressView("Loading Clubs...")
                                             //    } else {
-                                            
+                                       
                                             ForEach(chunkedItems.indices, id: \.self) { rowIndex in
-                                                HStack() {
+                                                HStack {
                                                     ForEach(chunkedItems[rowIndex], id: \.name) { club in
                                                         let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
                                                         
