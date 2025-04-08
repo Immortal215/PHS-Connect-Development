@@ -50,7 +50,7 @@
 ### 7. **Firebase Integration**
 
 - Data pulling powered by Firebase Realtime Database ensures full access to club information and editing of said information. 
-- Firebase Rules safeguards against unauthorized database changes! 👾👾👾
+- Firebase Rules safeguards against unauthorized database changes! 👾
 ---
 
 ## Technical Details
