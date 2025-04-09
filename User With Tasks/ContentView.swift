@@ -138,6 +138,7 @@ struct ContentView: View {
                                         .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
                                     
                                     SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                                        .padding()
                                         .opacity(selectedTab == 3 ? 1 : 0) // keep INDEX the same
                                 }
                                 .transition(.opacity)
