@@ -43,6 +43,7 @@ struct Club: Codable, Equatable, Hashable {
         var title: String
         var description: String?
         var location: String?
+        var fullDay: Bool? // need to add code for
         var visibleByArray: [String]? // array of emails that can see this meeting time, if you choose only leaders, it will add all leaders emails. If you choose only certain people then it will be them + leaders.
     }
 }

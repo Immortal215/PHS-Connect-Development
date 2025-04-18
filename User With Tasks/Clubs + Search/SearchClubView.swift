@@ -200,7 +200,7 @@ struct SearchClubView: View {
                                             //                                                .animation(nil)
                                             //     ProgressView("Loading Clubs...")
                                             //    } else {
-                                       
+                                            
                                             ForEach(chunkedItems.indices, id: \.self) { rowIndex in
                                                 HStack {
                                                     ForEach(chunkedItems[rowIndex], id: \.name) { club in
@@ -285,17 +285,6 @@ struct SearchClubView: View {
                                         .animation(.smooth, value: loadingClubs)
                                         .id(1)
                                         .frame(width: screenWidth)
-                                        .overlay {
-                                            //                                            if let chosenClub = clubs.first(where: { scales[$0.clubID] != 1.0 }) {
-                                            //                                                ClubCard(club: chosenClub, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, userInfo: $userInfo, selectedGenres: $selectedGenres)
-                                            //                                                    .position(x: screenWidth/2, y: -positionOfClub(clubID: chosenClub.clubID))
-                                            //                                            }
-                                            
-                                            Text("fix this if you want")
-                                                .bold()
-                                                .foregroundStyle(.primary)
-                                        }
-                                        
                                         if filteredItems.isEmpty {
                                             Text("No Clubs Found for \"\(searchText)\"")
                                                 .foregroundColor(.secondary)
@@ -304,6 +293,19 @@ struct SearchClubView: View {
                                         //                                        Text("Search for Other Clubs! 🙃")
                                         //                                            .frame(height: screenHeight / 3, alignment: .top)
                                         //                                            .foregroundColor(.secondary)
+                                    }
+                                    .overlay {
+                                        if let chosenClub = clubs.first(where: { scales[$0.clubID] == 1.5 }) {
+                                            ClubCard(club: chosenClub, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, userInfo: $userInfo, selectedGenres: $selectedGenres)
+                                                .scaleEffect(CGFloat(scales[chosenClub.clubID] ?? 1.0))
+                                                .animation(.smooth)
+                                                .opacity(0)
+                                            // .position(x: screenWidth/2, y: -positionOfClub(clubID: chosenClub.clubID))
+                                        }
+                                        
+                                        //                                        Text("fix this if you want")
+                                        //                                            .bold()
+                                        //                                            .foregroundStyle(.primary)
                                     }
                                     .sheet(isPresented: $showClubInfoSheet) {
                                         if shownInfo >= 0 {

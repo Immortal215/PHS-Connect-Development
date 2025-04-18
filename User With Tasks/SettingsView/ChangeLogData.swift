@@ -2,8 +2,8 @@ import SwiftUI
 
 struct ChangelogData {
     static let currentVersion = ChangelogEntry(
-        version: "0.2.4 Alpha",
-        date: "04-09-2025",
+        version: "1.0.0 Official Release",
+        date: "04-21-2025",
         changes: [
             Change(title: "Fixed many user bugs", notes: ["Fixed announcement viewing bug", "Fixed other minor issues"], color: .green, symbol: "document"),
             Change(title: "Feature report now works with any email carrier", notes: ["Previously only worked with Apple Mail"], color: .red, symbol: "mail"),
@@ -15,7 +15,7 @@ struct ChangelogData {
     
     static let history: [ChangelogEntry] = [
         ChangelogEntry(
-            version: "0.2.0 Alpha",
+            version: "0.2.0 Beta",
             date: "03-10-2025",
             changes: [
                 Change(title: "Fixed many user bugs", notes: ["Resolved feature report button logging out", "Resolved start-up user crashes", "Fixed other minor issues"]),
