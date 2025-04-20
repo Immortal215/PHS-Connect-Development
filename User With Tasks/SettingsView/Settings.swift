@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State var darkModeBuffer = false
     @State var animationsPlusBuffer = false
     @State var debounceCancellable: AnyCancellable?
+    @AppStorage("openToDo") var openToDo = false
     
     var body: some View {
         VStack {
@@ -108,7 +109,23 @@ struct SettingsView: View {
                         .shimmering(active: animationsPlus, gradient: Gradient(colors: [.black.opacity(0.3), .black, .black.opacity(0.3)]))
                         .foregroundStyle(animationsPlus ? .blue : .orange)
                     
+                    
                     Spacer()
+                    
+                    Button {
+                        openToDo = true
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(.blue, lineWidth: 3)
+                            HStack {
+                                Text("🤫")
+                            }
+                            .padding()
+                        }
+                        .fixedSize()
+                        .foregroundColor(.blue)
+                    }
                     
                     Button {
                         mostRecentVersionSeen = changeLogViewModel.currentVersion.version
