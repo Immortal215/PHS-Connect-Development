@@ -411,7 +411,7 @@ struct Settinger: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(.blue, lineWidth: 3)
                             HStack {
-                                Text("Back")
+                                Text("Back to PHS Connect")
                             }
                             .padding()
                         }
