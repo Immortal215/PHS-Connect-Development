@@ -32,7 +32,6 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            if networkMonitor.isConnected {
                 VStack {
                     if showSignInView {
                         VStack(alignment: .center) {
@@ -174,7 +173,6 @@ struct ContentView: View {
                                     
                                     ZStack {
                                         HStack {
-                                            
                                             TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
                                                 .padding(.horizontal)
                                             
@@ -188,6 +186,19 @@ struct ContentView: View {
                                             
                                             TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                                                 .padding(.horizontal)
+                                            
+                                            if !networkMonitor.isConnected {
+                                                withAnimation(.smooth) { // make this look better later
+                                                    VStack {
+                                                        Image(systemName: "wifi.slash")
+                                                            .imageScale(.large)
+                                                        Text("No Wifi")
+                                                            .font(.caption)
+                                                    }
+                                                    .foregroundStyle(.red)
+                                                    .padding(.horizontal)
+                                                }
+                                            }
                                             
                                         }
                                         .fixedSize()
@@ -289,13 +300,7 @@ struct ContentView: View {
                         print("NO")
                     }
                 }
-                
-            } else {
-                Image(systemName: "wifi.slash")
-                    .imageScale(.large)
-                    .foregroundStyle(.red)
-                    .transition(.movingParts.anvil)
-            }
+            
         }
         .scrollDismissesKeyboard(.immediately)
         .onChange(of: selectedTab) {

@@ -100,7 +100,7 @@ struct SettingsView: View {
                         .onChange(of: animationsPlusBuffer) { newValue in // to make the animation smoother when toggling
                             animationsPlus = animationsPlusBuffer
                         }
-                    Text("\(animationsPlus ? "Animations+" : "Basic Animations")")
+                    Text("\(animationsPlus ? "Animations+ (BROKEN)" : "Basic Animations")")
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                 animationsPlusBuffer.toggle()
