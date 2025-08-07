@@ -71,7 +71,7 @@
   - Ensures pulled updates for club information such as announcements, meeting times, schoology codes, etc. 
 ---
 
-## Getting Started
+## Repurpose for your own school!
 
 ### Prerequisites
 
