@@ -139,7 +139,7 @@ struct ClubCard: View {
                             club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" :
                                 club.members.contains(viewModel.userEmail ?? "") ? "Member" :
                                 (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) && club.requestNeeded != nil ? "Applied" :
-                                (club.requestNeeded != nil ? "Apply" : "Join")
+                                (club.requestNeeded != nil ? "Apply" : "Connect")
                         ){
                             if let email = viewModel.userEmail {
                                 if let requestNeeded = club.requestNeeded { // if you need to request to join
