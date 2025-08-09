@@ -21,6 +21,7 @@ struct Club: Codable, Equatable, Hashable {
     var pendingMemberRequests: Set<String>? // UserID: emails
     var clubID: String
     var location: String
+    var locationInSchoolCoordinates : [Double]? // 0 is x and 1 is y
     var instagram: String? // Instagram link
     var clubColor: String? // color
     var requestNeeded: Bool?

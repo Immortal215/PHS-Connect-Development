@@ -119,7 +119,10 @@ struct SettingsView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(.blue, lineWidth: 3)
                             HStack {
-                                Text("🤫")
+                                Image(systemName: "square.and.pencil")
+                                    .imageScale(.large)
+                                    .rotationEffect(.degrees(10))
+                                    .foregroundStyle(.teal)
                             }
                             .padding()
                         }

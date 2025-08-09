@@ -6,6 +6,8 @@ import SwiftUI
 import FirebaseDatabase
 import Pow
 import SwiftUIX
+import PopupView
+import MapKit
 
 struct ClubInfoView: View {
     @State var club : Club
@@ -28,9 +30,18 @@ struct ClubInfoView: View {
     @State var meetingFull = false
     @State var refresher = true
     @AppStorage("debugTools") var debugTools = false
-    
+    @State var showMap = false
+    @State var cameraPosition: MapCameraPosition = .region(
+            MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 42.07925, longitude: -87.94971),
+                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+        ))
+    @State var mapEditorMode = false
+    @State var pinPosition = CGPoint(x: 200.0, y: 200.0)
+
+
     var body: some View {
-        
+        let clubLeader = club.leaders.contains(viewModel.userEmail ?? "")
         var latestAnnouncementMessage: String {
             if let announcements = club.announcements {
                 let sortedAnnouncements = announcements.sorted {
@@ -185,7 +196,7 @@ struct ClubInfoView: View {
                         }
                     }
                     
-                    if club.leaders.contains(viewModel.userEmail ?? "") {
+                    if clubLeader {
                         Text("Members (\(club.members.count))")
                             .font(.headline)
                         
@@ -198,7 +209,7 @@ struct ClubInfoView: View {
                     }
                     
                     
-                    if club.leaders.contains(viewModel.userEmail ?? "") {
+                    if clubLeader {
                         if let cluber = club.pendingMemberRequests, club.requestNeeded != nil {
                             if !cluber.isEmpty {
                                 Text("Pending Requests")
@@ -277,16 +288,21 @@ struct ClubInfoView: View {
                     }
                     
                     if let announcements = club.announcements, viewModel.isGuestUser == false {
-                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")), userInfo: $userInfo)
+                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || clubLeader), userInfo: $userInfo)
                     }
                     
                     Text("Location")
                         .font(.headline)
                     Text(club.location)
                         .font(.subheadline)
+                        .onTapGesture {
+                            if clubLeader || club.locationInSchoolCoordinates != nil {
+                                showMap = true
+                            }
+                        }
+                        .foregroundColor(club.locationInSchoolCoordinates != nil || clubLeader ? .blue : .primary)
                         .padding(.top, -8)
-                    
-                    
+
                     HStack {
                         Text("Schoology Code")
                             .font(.headline)
@@ -335,9 +351,122 @@ struct ClubInfoView: View {
                     
                 }
                 .padding()
-                
+           
                 Color.systemBackground
                     .frame(height: screenHeight/10)
+            }
+            .popup(isPresented: $showMap) {
+                ZStack {
+                    Map(position: $cameraPosition, interactionModes: []) {
+                        if let coords = club.locationInSchoolCoordinates {
+                          
+                        } else if !mapEditorMode {
+                            
+                            Annotation(club.name, coordinate: CLLocationCoordinate2D(latitude: 42.07925, longitude: -87.94971)) {
+                                VStack {
+                                    Text("Tap Screen to Choose Location!")
+                                        .font(.caption)
+                                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                    Image(systemName: "mappin")
+                                        .foregroundColor(.red)
+                                    Text("Drag Pin!")
+                                        .font(.caption2)
+                                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    .mapStyle(.imagery)
+                    .onTapGesture {
+                        if clubLeader {
+                            mapEditorMode = true
+                        }
+                    }
+                    
+                    if mapEditorMode {
+                        ZStack(alignment: .bottomTrailing) {
+                            Color.gray.opacity(0.2)
+                            
+                            VStack {
+                                Text(club.name)
+                                    .font(.caption)
+                                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                Image(systemName: "mappin")
+                                    .foregroundColor(.red)
+                                Text(club.location)
+                                    .font(.caption2)
+                                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+
+                            }
+                                .position(pinPosition)
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            pinPosition = value.location
+                                        }
+                                        .onEnded { value in
+                                            pinPosition = value.location
+                                        }
+                                )
+                            Button("Edit") {
+                                club.locationInSchoolCoordinates = [pinPosition.x, pinPosition.y]
+                                addLocationCoords(clubID: club.clubID, locationCoords: club.locationInSchoolCoordinates!)
+                                mapEditorMode = false
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.blue)
+                            .foregroundStyle(.white)
+                            .padding()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .onAppear {
+                            if let coords = club.locationInSchoolCoordinates, coords.count >= 2 {
+                                pinPosition = CGPoint(x: coords[0], y: coords[1])
+                            }
+                        }
+                    } else if let coords = club.locationInSchoolCoordinates {
+                        VStack {
+                            Text(club.name)
+                                .font(.caption)
+                                .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                            Image(systemName: "mappin")
+                                .foregroundColor(.red)
+                            Text(club.location)
+                                .font(.caption2)
+                                .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+
+                        }
+                        .position(x: coords[0], y: coords[1])
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    pinPosition = value.location
+                                    club.locationInSchoolCoordinates = [pinPosition.x, pinPosition.y]
+                                }
+                                .onEnded { value in
+                                    pinPosition = value.location
+                                    mapEditorMode = true
+                                }
+                        )
+                    }
+                }
+                .frame(width: 400, height: 400, alignment: .center)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                
+                      
+                    
+                
+            } customize: {
+                $0
+                    .type(.default)
+                    .position(.center)
+                    .appearFrom(.leftSlide)
+                    .animation(.snappy)
+                    .closeOnTap(false)
+                    .closeOnTapOutside(true)
             }
             .popup(isPresented: $meetingFull) {
                 if let closestMeeting = club.meetingTimes!.sorted(by: {dateFromString($0.startTime) < dateFromString($1.startTime)}).filter({ meeting in
@@ -375,7 +504,7 @@ struct ClubInfoView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Group {
-                        if club.leaders.contains(viewModel.userEmail ?? "") {
+                        if clubLeader {
                             Button {
                                 fetchClub(withId: club.clubID) { fetchedClub in
                                     self.club = fetchedClub ?? self.club

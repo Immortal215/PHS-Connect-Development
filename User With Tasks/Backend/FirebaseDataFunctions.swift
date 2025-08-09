@@ -393,3 +393,20 @@ func removePendingMemberRequest(clubID: String, emailToRemove: String) {
         }
     }
 }
+
+func addLocationCoords(clubID: String, locationCoords: [Double]) {
+    let databaseRef = Database.database().reference()
+    let clubRef = databaseRef.child("clubs").child(clubID)
+    
+    clubRef.child("locationInSchoolCoordinates").observeSingleEvent(of: .value) { snapshot in
+        
+        clubRef.child("locationInSchoolCoordinates").setValue(locationCoords) { error, _ in
+            if let error = error {
+                print("Error adding coords : \(error.localizedDescription)")
+            } else {
+                print("Added coords successfully.")
+                dropper(title: "Location Edited Successfully!", subtitle: "", icon: nil)
+            }
+        }
+    }
+}
