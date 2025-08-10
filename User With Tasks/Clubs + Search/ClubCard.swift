@@ -23,7 +23,7 @@ struct ClubCard: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 15)
+            RoundedRectangle(cornerRadius: 25)
                 .foregroundStyle(Color(UIColor.systemGray6))
             
             HStack {
@@ -36,11 +36,11 @@ struct ClubCard: View {
                             image
                                 .resizable()
                                 .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                                .clipShape(RoundedRectangle(cornerRadius: 25))
                             
                             if club.clubPhoto == nil {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 15)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .foregroundStyle(.blue)
                                     Text(club.name)
                                         .padding()
@@ -142,37 +142,35 @@ struct ClubCard: View {
                                 (club.requestNeeded != nil ? "Apply" : "Connect")
                         ){
                             if let email = viewModel.userEmail {
-                                if let requestNeeded = club.requestNeeded { // if you need to request to join
-                                    if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
-                                        if var cluber = club.pendingMemberRequests { // if the club has a pendingmemberrequests
-                                            cluber.insert(email)
-                                            club.pendingMemberRequests = cluber
-                                            addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
-                                        } else { // if the club does not have a pending member requets
-                                            club.pendingMemberRequests = [email]
+                                let isMember = club.members.contains(email)
+                                let isLeader = club.leaders.contains(email)
+                                let isPending = club.pendingMemberRequests?.contains(email) ?? false
+                                let canLeave = club.members.count != 1 && isMember && !isLeader
+                                
+                                if let requestNeeded = club.requestNeeded, requestNeeded {
+                                    if !isMember && !isLeader {
+                                        if isPending {
+                                            club.pendingMemberRequests?.remove(email)
+                                            removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
+                                        } else {
+                                            club.pendingMemberRequests = (club.pendingMemberRequests ?? []).union([email])
                                             addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
                                         }
-                                    } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) { // remove from pending requests
-                                        club.pendingMemberRequests?.remove(email)
-                                        removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
-                                    } else { // leave club if you are member
-                                        if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
-                                            youSureYouWantToLeave.toggle()
-                                        }
+                                    } else if canLeave {
+                                        youSureYouWantToLeave.toggle()
                                     }
                                 } else {
-                                    if !club.members.contains(email) && !club.leaders.contains(email) {
+                                    if !isMember && !isLeader {
                                         club.members.append(email)
                                         addMemberToClub(clubID: club.clubID, memberEmail: email)
-                                    } else {
-                                        if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
-                                            youSureYouWantToLeave.toggle()
-                                        }
+                                    } else if canLeave {
+                                        youSureYouWantToLeave.toggle()
                                     }
                                 }
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .cornerRadius(15)
                         .padding(.top)
                         .tint(club.leaders.contains(viewModel.userEmail ?? "") ? .purple :
                                 club.members.contains(viewModel.userEmail ?? "") ? .green :

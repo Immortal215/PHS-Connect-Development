@@ -39,12 +39,12 @@ struct SettingsView: View {
                     AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
                         image
                             .resizable()
-                            .clipShape(RoundedRectangle(cornerRadius: 15))
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
                             .frame(width: 100, height: 100)
-                            .overlay(RoundedRectangle(cornerRadius: 15).stroke(lineWidth: 5))
+                            .overlay(RoundedRectangle(cornerRadius: 25).stroke(lineWidth: 5))
                     } placeholder: {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 15).stroke(.gray)
+                            RoundedRectangle(cornerRadius: 25).stroke(.gray)
                             ProgressView("Loading...")
                         }
                         .frame(width: 100, height: 100)

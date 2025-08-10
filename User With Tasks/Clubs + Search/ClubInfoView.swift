@@ -77,11 +77,11 @@ struct ClubInfoView: View {
                                         image
                                             .resizable()
                                             .scaledToFit()
-                                            .clipShape(RoundedRectangle(cornerRadius: 15))
+                                            .clipShape(RoundedRectangle(cornerRadius: 25))
                                         
                                         if club.clubPhoto == nil {
                                             ZStack {
-                                                RoundedRectangle(cornerRadius: 15)
+                                                RoundedRectangle(cornerRadius: 25)
                                                     .foregroundStyle(.blue)
                                                 Text(club.name)
                                                     .padding()
@@ -91,7 +91,7 @@ struct ClubInfoView: View {
                                             .fixedSize()
                                         }
                                         
-                                        //                            RoundedRectangle(cornerRadius: 15)
+                                        //                            RoundedRectangle(cornerRadius: 25)
                                         //   .stroke(.black, lineWidth: 3)
                                         // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                                     }
@@ -351,7 +351,11 @@ struct ClubInfoView: View {
                     
                 }
                 .padding()
-           
+                .background(
+                          GlassBackground(
+                              color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
+                          )
+                      )
                 Color.systemBackground
                     .frame(height: screenHeight/10)
             }
@@ -391,14 +395,12 @@ struct ClubInfoView: View {
                             Color.gray.opacity(0.2)
                             
                             VStack {
-                                Text(club.name)
-                                    .font(.caption)
-                                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
-                                Image(systemName: "mappin")
-                                    .foregroundColor(.red)
                                 Text(club.location)
                                     .font(.caption2)
                                     .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                Image(systemName: "mappin")
+                                    .foregroundColor(.red)
+                  
 
                             }
                                 .position(pinPosition)
@@ -429,14 +431,12 @@ struct ClubInfoView: View {
                         }
                     } else if let coords = club.locationInSchoolCoordinates {
                         VStack {
-                            Text(club.name)
-                                .font(.caption)
-                                .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
-                            Image(systemName: "mappin")
-                                .foregroundColor(.red)
                             Text(club.location)
                                 .font(.caption2)
                                 .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                            Image(systemName: "mappin")
+                                .foregroundColor(.red)
+                         
 
                         }
                         .position(x: coords[0], y: coords[1])
@@ -454,7 +454,7 @@ struct ClubInfoView: View {
                     }
                 }
                 .frame(width: 400, height: 400, alignment: .center)
-                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .clipShape(RoundedRectangle(cornerRadius: 25))
                 
                       
                     
@@ -567,6 +567,7 @@ struct ClubInfoView: View {
                     
                 }
             }
+
         }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
         .onAppear {
@@ -586,4 +587,22 @@ struct ClubInfoView: View {
         }
     }
     
+}
+
+struct GlassBackground: View {
+    var color: Color
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 25, style: .continuous)
+            .fill(color.opacity(0.15))
+            .background(
+                Color.clear
+                    .background(.ultraThinMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+            )
+            .shadow(color: color.opacity(0.3), radius: 10, x: 0, y: 4)
+    }
 }

@@ -35,7 +35,7 @@ struct MeetingView: View {
                 }
                 
                 HStack {
-                    RoundedRectangle(cornerRadius: 15)
+                    RoundedRectangle(cornerRadius: 25)
                         .frame(width: 4)
                         .foregroundStyle(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(0.8))
                         .padding(4)

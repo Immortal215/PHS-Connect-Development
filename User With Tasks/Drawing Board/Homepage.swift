@@ -160,10 +160,10 @@ struct Homepage: View {
                     // planner
                     VStack {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 15)
+                            RoundedRectangle(cornerRadius: 25)
                                 .foregroundColor(.black)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .stroke(.white, lineWidth: 3)
                                     
                                 )
@@ -244,10 +244,10 @@ struct Homepage: View {
                                     
                                     ZStack {
                                         
-                                        RoundedRectangle(cornerRadius: 15)
+                                        RoundedRectangle(cornerRadius: 25)
                                             .foregroundStyle(.black)  
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: 15)
+                                                RoundedRectangle(cornerRadius: 25)
                                                     .stroke(.white, lineWidth: 3)
                                                     .frame(width: screenWidth/2.1)
                                             )
@@ -404,10 +404,10 @@ struct Homepage: View {
                     // timer/draw/thoughts
                     VStack {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 15)
+                            RoundedRectangle(cornerRadius: 25)
                                 .foregroundColor(.black)
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 15)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .stroke(.white, lineWidth: 3)
                                     //    .frame(width: screenWidth/4.3)
                                     

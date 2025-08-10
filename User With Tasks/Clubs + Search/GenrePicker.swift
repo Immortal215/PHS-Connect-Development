@@ -49,9 +49,12 @@ struct GenreTag: View {
         Text(genre)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(isSelected ? Color.accentColor.opacity(0.7) : darkMode ? .systemGray4 : .systemGray6)
-            .foregroundColor(isSelected ? .white : .primary)
-            .clipShape(Capsule())
+            .foregroundColor(isSelected ? Color.accentColor.opacity(0.7) : .primary)
+            .background {
+                Capsule()
+                    .stroke(lineWidth: 3)
+                    .foregroundStyle(isSelected ? Color.accentColor.opacity(0.7) : darkMode ? .systemGray4 : .systemGray6)
+            }
             .onTapGesture {
                 onTap()
             }

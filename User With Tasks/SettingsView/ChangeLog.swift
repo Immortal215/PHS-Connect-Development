@@ -39,7 +39,7 @@ struct ChangelogSheetView: View {
                         changelogSection(for: currentVersion, isCurrentVersion: true)
                         
                         if !history.isEmpty {
-                            RoundedRectangle(cornerRadius: 15)
+                            RoundedRectangle(cornerRadius: 25)
                                 .frame(height: 5)
                                 .padding(.vertical, 8)
                                 .foregroundStyle(.cyan)

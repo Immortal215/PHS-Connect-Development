@@ -291,10 +291,10 @@ struct AddMeetingView: View {
                                 ForEach(members, id: \.self) { i in
                                     ZStack {
                                         if visibleBy.contains(i) {
-                                            RoundedRectangle(cornerRadius: 15)
+                                            RoundedRectangle(cornerRadius: 25)
                                                 .stroke(.green, lineWidth: 3)
                                         } else {
-                                            RoundedRectangle(cornerRadius: 15)
+                                            RoundedRectangle(cornerRadius: 25)
                                                 .stroke(.gray, lineWidth: 3)
                                         }
                                         

@@ -32,7 +32,7 @@ struct FilterPopupView: View {
                 }
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: 15)
+                    RoundedRectangle(cornerRadius: 25)
                         .fill(isAscending ? Color.blue : Color.pink)
                         .shadow(radius: 5)
                 )

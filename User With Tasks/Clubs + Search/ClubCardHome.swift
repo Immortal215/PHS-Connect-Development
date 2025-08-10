@@ -20,7 +20,7 @@ struct ClubCardHome: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 15)
+            RoundedRectangle(cornerRadius: 25)
                 .foregroundStyle(Color(UIColor.systemGray6))
             
             
@@ -35,11 +35,11 @@ struct ClubCardHome: View {
                             image
                                 .resizable()
                                 .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                                .clipShape(RoundedRectangle(cornerRadius: 25))
                             
                             if club.clubPhoto == nil {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 15)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .foregroundStyle(.blue)
                                     Text(club.name)
                                         .padding()
@@ -49,7 +49,7 @@ struct ClubCardHome: View {
                                 .fixedSize()
                             }
                             
-                            //                            RoundedRectangle(cornerRadius: 15)
+                            //                            RoundedRectangle(cornerRadius: 25)
                             //   .stroke(.black, lineWidth: 3)
                             // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                         }
@@ -57,7 +57,7 @@ struct ClubCardHome: View {
                     },
                     placeholder: {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 15)
+                            RoundedRectangle(cornerRadius: 25)
                                 .foregroundStyle(.gray)
                                 .shimmering()
                         }
