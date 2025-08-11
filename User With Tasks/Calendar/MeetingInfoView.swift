@@ -22,6 +22,8 @@ struct MeetingInfoView: View {
     @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
+        var club = clubs.first(where: {$0.clubID == meeting.clubID})!
+        
         VStack(alignment: .leading, spacing: 10) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
@@ -38,7 +40,7 @@ struct MeetingInfoView: View {
                                     Text(showMoreTitle ? "" : "..+")
                                         .font(.title2)
                                         .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).padding(.bottom, 5).offset(x: 6))
+                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).padding(.bottom, 5).offset(x: 6))
                                 }
                             }
                             .onTapGesture {
@@ -82,7 +84,7 @@ struct MeetingInfoView: View {
                         }
                     } label: {
                         Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
-                            .foregroundStyle(colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!))
+                            .foregroundStyle(colorFromClub(club: club))
                             .bold()
                     }
                     
@@ -111,7 +113,7 @@ struct MeetingInfoView: View {
                                             .font(.callout)
                                             .foregroundColor(darkMode ? .gray : .darkGray)
                                             .offset(x: 7)    .background (
-                                                colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:7))
+                                                colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:7))
                                     }
                                 }
                                 .onTapGesture {
@@ -150,7 +152,7 @@ struct MeetingInfoView: View {
                                             .font(.callout)
                                             .offset(x: -1)
                                             .background (
-                                                colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:-1))
+                                                colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:-1))
                                     }
                                 }
                                 .onTapGesture {
@@ -211,6 +213,12 @@ struct MeetingInfoView: View {
                             .presentationDragIndicator(.visible)
                             .frame(width: UIScreen.main.bounds.width/1.05)
                             .foregroundColor(nil)
+                            .presentationBackground {
+                                GlassBackground(
+                                    color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
+                                )
+                                .cornerRadius(25)
+                            }
                     } else {
                         Text("Club not found")
                     }
@@ -227,11 +235,18 @@ struct MeetingInfoView: View {
             }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true, selectedDate: selectedDate!, userInfo: $userInfo)
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
+            .presentationBackground {
+                GlassBackground(
+                    color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
+                )
+                .cornerRadius(25)
+            }
+            .cornerRadius(25)
         }
         .padding()
         .frame(width: screenWidth / 2.5)
         .background (
-            colorFromClub(club: clubs.first(where: {$0.clubID == meeting.clubID})!).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
+            colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
             
         )
         .cornerRadius(10)

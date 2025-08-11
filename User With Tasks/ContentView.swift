@@ -29,6 +29,7 @@ struct ContentView: View {
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @ObservedObject var keyboardResponder = KeyboardResponder()
+    @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
         VStack {
@@ -142,6 +143,10 @@ struct ContentView: View {
                                 }
                                 .transition(.opacity)
                                 .ignoresSafeArea(edges: .all)
+                                .background {
+                               //     RandomShapesBackground()
+
+                                }
                             } else {
                                 ProgressView()
                             }

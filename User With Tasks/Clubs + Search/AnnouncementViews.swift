@@ -186,6 +186,7 @@ struct AddAnnouncementSheet: View {
                 .sheet(isPresented: $announceFull) {
                     SingleAnnouncementView(clubName: clubName, announcement: $announcement, fullView: true, viewModel: viewModel, isClubMember: false, userInfo: .constant(nil))
                         .presentationDragIndicator(.visible)
+                        .cornerRadius(25)
                     
                     Spacer()
                 }
@@ -369,7 +370,8 @@ struct AnnouncementsView: View {
                                     announcements[selected.id] = mutableAnnouncement
                                 }
                                 .presentationDragIndicator(.visible)
-                                
+                                .cornerRadius(25)
+
                             }
                         } else {
                             Text("")
@@ -416,7 +418,8 @@ struct AnnouncementsView: View {
                             }
                             .presentationDragIndicator(.visible)
                             .presentationSizing(.page)
-                            
+                            .cornerRadius(25)
+
                         }
                     }
                 }
@@ -488,7 +491,8 @@ struct AllAnnouncementsView: View {
                         announcements[selected.id] = mutableAnnouncement
                     }
                     .presentationDragIndicator(.visible)
-                    
+                    .cornerRadius(25)
+
                 }
             } else {
                 Text("")
@@ -573,6 +577,13 @@ struct SingleAnnouncementView: View {
                     .presentationDragIndicator(.visible)
                     .frame(width: UIScreen.main.bounds.width/1.05)
                     .foregroundColor(nil)
+                    .presentationBackground {
+                        GlassBackground(
+                            color: Color(hexadecimal: cluber.clubColor ?? colorFromClub(club: cluber).toHexString())
+                        )
+                        .cornerRadius(25)
+                    }
+
             } else {
                 Text("Club not found")
             }

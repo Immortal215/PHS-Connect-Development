@@ -50,6 +50,7 @@ struct WeekCalendarView: View {
                 .sheet(isPresented: $showMonthPicker) {
                     MonthPickerView(selectedDate: $selectedDate, currentYear: Calendar.current.component(.year, from: selectedDate), clubs: $clubs, viewModel: viewModel)
                         .frame(width: UIScreen.main.bounds.width/1.05)
+                        .cornerRadius(25)
                 }
                 
                 ForEach(getDaysInWeek(for: currentWeek), id: \.self) { date in
@@ -144,6 +145,7 @@ struct WeekCalendarView: View {
                 }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") }, selectedDate: selectedDate, userInfo: .constant(nil))
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
+                .cornerRadius(25)
             }
             .onChange(of: selectedDate) {
                 currentWeek = selectedDate

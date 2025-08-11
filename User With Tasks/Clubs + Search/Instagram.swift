@@ -61,6 +61,8 @@ struct InstagramLinkButton: View {
             InstagramSafariView(url: instagramUrl)
                 .edgesIgnoringSafeArea(.all)
                 .presentationSizing(.page)
+                .cornerRadius(25)
+
         }
     }
 }

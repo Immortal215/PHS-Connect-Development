@@ -347,7 +347,7 @@ struct AddMeetingView: View {
                     .offset(y: -CGFloat(endMinutes - startMinutes) / 2)
                 }
                 
-                Color.systemBackground
+                Color.clear
                     .frame(height: 400)
                 
             }

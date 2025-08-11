@@ -153,7 +153,8 @@ struct SettingsView: View {
                             history: changeLogViewModel.history
                         )
                         .fontDesign(.monospaced)
-                        
+                        .cornerRadius(25)
+
                     }
                     .fixedSize()
                     

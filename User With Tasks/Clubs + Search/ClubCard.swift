@@ -23,9 +23,9 @@ struct ClubCard: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 25)
-                .foregroundStyle(Color(UIColor.systemGray6))
-            
+//            RoundedRectangle(cornerRadius: 25)
+//                .foregroundStyle(Color(UIColor.systemGray6))
+//            
             HStack {
                 WebImage(
                     url: URL(
@@ -194,6 +194,15 @@ struct ClubCard: View {
                 }
                 .padding()
             }
+            .background(
+                      GlassBackground(
+                          color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
+                      )
+                      .clipShape(RoundedRectangle(cornerRadius: 25))
+                  )
+            
+
+            
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
                 Color.black.opacity(0.2)
                     .cornerRadius(15)
@@ -212,6 +221,8 @@ struct ClubCard: View {
         }
         .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
+
+
     }
     
     func refreshUserInfo() {

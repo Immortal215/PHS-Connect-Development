@@ -94,6 +94,8 @@ struct SearchClubView: View {
                                         CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
                                             .presentationDragIndicator(.visible)
                                             .presentationSizing(.page)
+                                            .cornerRadius(25)
+
                                     }
                                     .padding(.leading)
                                 }
@@ -309,9 +311,16 @@ struct SearchClubView: View {
                                     }
                                     .sheet(isPresented: $showClubInfoSheet) {
                                         if shownInfo >= 0 {
-                                            ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
-                                                .presentationDragIndicator(.visible)
-                                                .frame(width: UIScreen.main.bounds.width / 1.05)
+                                        
+                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                                    .presentationDragIndicator(.visible)
+                                                    .frame(width: UIScreen.main.bounds.width)
+                                                    .presentationBackground {
+                                                        GlassBackground(
+                                                            color: Color(hexadecimal: clubs[shownInfo].clubColor ?? colorFromClub(club: clubs[shownInfo]).toHexString())
+                                                        )
+                                                        .cornerRadius(25)
+                                                    }
                                         } else {
                                             Text("Error! Try Again!")
                                                 .presentationDragIndicator(.visible)
@@ -390,6 +399,9 @@ struct SearchClubView: View {
                     filteredItems = calculateFiltered()
                 }
                 .padding()
+                
+                
+  
             } else {
                 ProgressView()
             }
@@ -424,7 +436,7 @@ struct SearchClubView: View {
             }
         }
         .animation(.smooth, value: currentSearchingBy)
-        
+      
     }
     
     func calculateFiltered() -> [Club] {

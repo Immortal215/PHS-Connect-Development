@@ -20,8 +20,8 @@ struct ClubCardHome: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 25)
-                .foregroundStyle(Color(UIColor.systemGray6))
+//            RoundedRectangle(cornerRadius: 25)
+//                .foregroundStyle(Color(UIColor.systemGray6))
             
             
             HStack {
@@ -124,7 +124,14 @@ struct ClubCardHome: View {
                 Spacer()
                 
             }
+            .background(
+                      GlassBackground(
+                          color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
+                      )
+                      .clipShape(RoundedRectangle(cornerRadius: 25))
+                  )
         }
+
         .animation(.easeInOut)
         // .onAppear {
         //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
