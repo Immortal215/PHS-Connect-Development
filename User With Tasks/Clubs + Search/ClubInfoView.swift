@@ -471,6 +471,7 @@ struct ClubInfoView: View {
                     Color.clear
                         .frame(height: screenHeight/10)
                 }
+                .shadow(radius: 8)
                 .padding(.horizontal)
                 .popup(isPresented: $showMap) {
                     ZStack {

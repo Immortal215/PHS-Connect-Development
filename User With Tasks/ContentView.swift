@@ -144,8 +144,7 @@ struct ContentView: View {
                                 .transition(.opacity)
                                 .ignoresSafeArea(edges: .all)
                                 .background {
-                               //     RandomShapesBackground()
-
+                                    RandomShapesBackground()
                                 }
                             } else {
                                 ProgressView()
@@ -394,4 +393,20 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
 func removeClubsListener() {
     let databaseRef = Database.database().reference().child("clubs")
     databaseRef.removeAllObservers()
+}
+
+struct RandomShapesBackground: View {
+    let screenWidth = UIScreen.main.bounds.width
+    let screenHeight = UIScreen.main.bounds.height
+    
+    var body: some View {
+        ZStack {
+            ForEach(0..<5) { _ in
+                RoundedRectangle(cornerRadius: 25)
+                    .stroke(lineWidth: 3)
+                    .position(x: CGFloat.random(in: 0..<screenWidth), y: CGFloat.random(in: 0..<screenHeight))
+                    .scaleEffect(CGFloat.random(in: 0.01..<1))
+            }
+        }
+    }
 }

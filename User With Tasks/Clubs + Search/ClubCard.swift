@@ -8,6 +8,7 @@ import Pow
 import SwiftUIX
 import Shimmer
 import SDWebImageSwiftUI
+import Flow
 
 struct ClubCard: View {
     @State var club: Club
@@ -25,9 +26,9 @@ struct ClubCard: View {
         var clubColor : Color { Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())! }
         
         ZStack(alignment: .bottom) {
-//            RoundedRectangle(cornerRadius: 25)
-//                .foregroundStyle(Color(UIColor.systemGray6))
-//            
+            //            RoundedRectangle(cornerRadius: 25)
+            //                .foregroundStyle(Color(UIColor.systemGray6))
+            //
             HStack {
                 WebImage(
                     url: URL(
@@ -68,31 +69,34 @@ struct ClubCard: View {
                         .font(.callout)
                         .bold()
                         .padding(.bottom, 8)
-                        .foregroundColor(.primary)
                     
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
-                        .foregroundColor(.secondary)
                     
                     Spacer()
                     
                     if let genres = club.genres, !genres.isEmpty {
-                        genres
-                            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
-                            .map { genre in
+                        HFlow(itemSpacing: 0) {
+                            ForEach(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }, id: \.self) { genre in
                                 Text(genre)
-                                    .foregroundColor(selectedGenres.contains(genre) ? .blue : .gray)
-                                    .bold()
+                                    .conditionalEffect(
+                                        .repeat(
+                                            .glow(color: .white, radius: 10),
+                                            every: 1.5
+                                        ),
+                                        condition: selectedGenres.contains(genre)
+                                    )
+                                
+                                Text(genre != genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }.last! ? ", " : "")
                             }
-                            .reduce(Text("")) { partialResult, genreText in
-                                partialResult == Text("") ? genreText : partialResult + Text(", ") + genreText
-                            }
-                            .lineLimit(2)
-                            .font(.caption)
+                        }
+                        .bold()
+                        .lineLimit(2)
+                        .font(.caption)
                     }
                 }
-                .foregroundStyle(.primary)
+                .foregroundStyle(clubColor)
                 .frame(maxWidth: screenWidth / 2.8)
                 .padding()
                 
@@ -196,14 +200,11 @@ struct ClubCard: View {
                 }
                 .padding()
             }
-            .background(
-                      GlassBackground(
-                          color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
-                      )
-                      .clipShape(RoundedRectangle(cornerRadius: 25))
-                  )
-            
+            .shadow(radius:8)
 
+ 
+            
+            
             
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
                 Color.black.opacity(0.2)
@@ -212,7 +213,7 @@ struct ClubCard: View {
                 VStack {
                     
                     Spacer()
-                    Text("^[\(notificationCount) New Notifications](inflect:true)") // thingy to nake sure the text plurals stay consistent 
+                    Text("^[\(notificationCount) New Notifications](inflect:true)") // thingy to nake sure the text plurals stay consistent
                         .font(.subheadline)
                         .foregroundColor(.white)
                         .padding(7)
@@ -221,9 +222,14 @@ struct ClubCard: View {
                 .padding(.bottom, 10)
             }
         }
+        .background(
+            GlassBackground(
+                color: clubColor
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 25))
+        )
         .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
-
 
     }
     

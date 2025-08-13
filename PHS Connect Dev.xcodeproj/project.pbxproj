@@ -13,6 +13,7 @@
 		7136E9522D19E6A200C1A286 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 7136E9512D19E6A200C1A286 /* PopupView */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
 		71E53B922D93494500128C6E /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 71E53B912D93494500128C6E /* SDWebImageSwiftUI */; };
+		71F2C6C72E4BE29F0026072E /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = 71F2C6C62E4BE29F0026072E /* Flow */; };
 		71F3F0502D89CBE200CA1AF4 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 71F3F04F2D89CBE200CA1AF4 /* Shimmer */; };
 		B861A85C2CB81714006AF254 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85B2CB81714006AF254 /* FirebaseAnalytics */; };
 		B861A85E2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = B861A85D2CB81714006AF254 /* FirebaseAnalyticsOnDeviceConversion */; };
@@ -71,6 +72,7 @@
 				B861A8842CB81714006AF254 /* FirebaseRemoteConfig in Frameworks */,
 				B861A86E2CB81714006AF254 /* FirebaseDatabase in Frameworks */,
 				B861A8702CB81714006AF254 /* FirebaseDynamicLinks in Frameworks */,
+				71F2C6C72E4BE29F0026072E /* Flow in Frameworks */,
 				B861A8622CB81714006AF254 /* FirebaseAppCheck in Frameworks */,
 				B861A8662CB81714006AF254 /* FirebaseAuth in Frameworks */,
 				B861A85C2CB81714006AF254 /* FirebaseAnalytics in Frameworks */,
@@ -170,6 +172,7 @@
 				713417842D812CFB0006A149 /* ChangelogKit */,
 				71F3F04F2D89CBE200CA1AF4 /* Shimmer */,
 				71E53B912D93494500128C6E /* SDWebImageSwiftUI */,
+				71F2C6C62E4BE29F0026072E /* Flow */,
 			);
 			productName = "User with Tasks";
 			productReference = B861A8472CB811A0006AF254 /* PHS Connect Dev.app */;
@@ -210,6 +213,7 @@
 				713417832D812CFB0006A149 /* XCRemoteSwiftPackageReference "ChangelogKit" */,
 				71F3F04E2D89CBE200CA1AF4 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
 				71E53B902D93494500128C6E /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
+				71F2C6C52E4BE29F0026072E /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B861A8482CB811A0006AF254 /* Products */;
@@ -384,7 +388,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "Sharul3.User-with-Tasks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -416,7 +420,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "Sharul3.User-with-Tasks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -497,6 +501,14 @@
 				minimumVersion = 3.1.3;
 			};
 		};
+		71F2C6C52E4BE29F0026072E /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tevelee/SwiftUI-Flow.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.1;
+			};
+		};
 		71F3F04E2D89CBE200CA1AF4 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/markiv/SwiftUI-Shimmer";
@@ -561,6 +573,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 71E53B902D93494500128C6E /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
 			productName = SDWebImageSwiftUI;
+		};
+		71F2C6C62E4BE29F0026072E /* Flow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 71F2C6C52E4BE29F0026072E /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */;
+			productName = Flow;
 		};
 		71F3F04F2D89CBE200CA1AF4 /* Shimmer */ = {
 			isa = XCSwiftPackageProductDependency;

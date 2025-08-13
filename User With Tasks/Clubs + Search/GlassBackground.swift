@@ -7,12 +7,12 @@ struct GlassBackground: View {
         RoundedRectangle(cornerRadius: 25, style: .continuous)
             .fill(color.opacity(0.25))
             .background(
-                Color.primary.opacity(0.2)
+                Color.primary.opacity(0.25)
                     .background(.ultraThinMaterial)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.25), lineWidth: 1)
+                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 3)
             )
             .shadow(color: color.opacity(0.3), radius: 10, x: 0, y: 4)
     }

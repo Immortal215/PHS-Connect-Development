@@ -19,6 +19,7 @@ struct ClubCardHome: View {
     @Binding var userInfo: Personal?
     
     var body: some View {
+        let clubColor = Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())!
         ZStack(alignment: .bottom) {
 //            RoundedRectangle(cornerRadius: 25)
 //                .foregroundStyle(Color(UIColor.systemGray6))
@@ -107,12 +108,14 @@ struct ClubCardHome: View {
                         ScrollView(.horizontal) {
                             LazyHStack {
                                 AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: true, clubs: [club], isHomePage: true, userInfo: $userInfo, isTheHomeScreenClubView: true)
+                                    .foregroundStyle(clubColor)
                             }
                         }
                     } else {
                         Text("No Announcements Currently")
                             .padding()
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(clubColor)
+                        Spacer()
                     }
                 }
                 .padding()
@@ -126,7 +129,7 @@ struct ClubCardHome: View {
             }
             .background(
                       GlassBackground(
-                          color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
+                          color: clubColor
                       )
                       .clipShape(RoundedRectangle(cornerRadius: 25))
                   )
