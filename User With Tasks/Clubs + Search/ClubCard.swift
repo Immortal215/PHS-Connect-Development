@@ -22,6 +22,8 @@ struct ClubCard: View {
     @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
+        var clubColor : Color { Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())! }
+        
         ZStack(alignment: .bottom) {
 //            RoundedRectangle(cornerRadius: 25)
 //                .foregroundStyle(Color(UIColor.systemGray6))
