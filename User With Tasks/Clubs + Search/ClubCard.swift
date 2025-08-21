@@ -201,10 +201,6 @@ struct ClubCard: View {
                 .padding()
             }
             .shadow(radius:8)
-
- 
-            
-            
             
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
                 Color.black.opacity(0.2)
