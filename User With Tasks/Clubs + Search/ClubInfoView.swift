@@ -33,14 +33,14 @@ struct ClubInfoView: View {
     @AppStorage("debugTools") var debugTools = false
     @State var showMap = false
     @State var cameraPosition: MapCameraPosition = .region(
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 42.07925, longitude: -87.94971),
-                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 42.07925, longitude: -87.94971),
+            span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
         ))
     @State var mapEditorMode = false
     @State var pinPosition = CGPoint(x: 200.0, y: 200.0)
     @AppStorage("darkMode") var darkMode = false
-
+    
     var body: some View {
         let clubLeader = club.leaders.contains(viewModel.userEmail ?? "")
         var clubColor: Color {
@@ -65,11 +65,11 @@ struct ClubInfoView: View {
             }
         }
         
-
-
-            NavigationView {
-                ZStack {
-            
+        
+        
+        NavigationView {
+            ZStack {
+                
                 ScrollView {
                     
                     VStack(alignment: .leading, spacing: 16) {
@@ -79,7 +79,7 @@ struct ClubInfoView: View {
                                 .bold()
                                 .padding(.top)
                                 .foregroundStyle(.primary)
-
+                            
                             Spacer()
                             
                             if clubLeader {
@@ -146,7 +146,7 @@ struct ClubInfoView: View {
                             }
                         }
                         .padding(.horizontal)
-
+                        
                         VStack(alignment: .center) {
                             HStack(alignment: .top, spacing: 16) {
                                 AsyncImage(
@@ -208,19 +208,20 @@ struct ClubInfoView: View {
                                             Image(systemName: abstractExpanded ? "chevron.up" : "chevron.down")
                                             Text(abstractExpanded ? "Show Less" : "Show More")
                                         }
-                                            .font(.footnote)
-                                            .foregroundStyle(clubColor)
-                                            .padding(.top, 4)
-                                            .onTapGesture {
-                                                abstractExpanded.toggle()
-                                            }
-                                            .conditionalEffect(
-                                                .repeat(
-                                                    .glow(color: .white, radius: 10),
-                                                    every: 1.5
-                                                ),
-                                                condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
-                                            )
+                                        .animation(.easeInOut)
+                                        .font(.footnote)
+                                        .foregroundStyle(clubColor)
+                                        .padding(.top, 4)
+                                        .onTapGesture {
+                                            abstractExpanded.toggle()
+                                        }
+                                        .conditionalEffect(
+                                            .repeat(
+                                                .glow(color: .white, radius: 10),
+                                                every: 1.5
+                                            ),
+                                            condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
+                                        )
                                     }
                                 }
                             }
@@ -383,7 +384,7 @@ struct ClubInfoView: View {
                                 .presentationSizing(.page)
                                 .presentationDragIndicator(.visible)
                                 .cornerRadius(25)
-
+                                
                             }
                             
                         }
@@ -401,7 +402,7 @@ struct ClubInfoView: View {
                                     showMap = true
                                 }
                             }
-                   //         .foregroundStyle(club.locationInSchoolCoordinates != nil || clubLeader ? clubColor : clubColor.opacity(0.8))
+                        //         .foregroundStyle(club.locationInSchoolCoordinates != nil || clubLeader ? clubColor : clubColor.opacity(0.8))
                             .conditionalEffect(
                                 .repeat(
                                     .glow(color: .white, radius: 10),
@@ -409,7 +410,7 @@ struct ClubInfoView: View {
                                 ),
                                 condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
                             )
-
+                        
                             .padding(.top, -8)
                         
                         HStack {
@@ -451,7 +452,7 @@ struct ClubInfoView: View {
                                                         ),
                                                         condition: true
                                                     )
-
+                                                
                                             }
                                             
                                             if genre != genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }.last {
@@ -467,7 +468,7 @@ struct ClubInfoView: View {
                         
                     }
                     .padding()
-
+                    
                     Color.clear
                         .frame(height: screenHeight/10)
                 }
@@ -493,7 +494,7 @@ struct ClubInfoView: View {
                                         
                                     }
                                     .foregroundStyle(.white)
-
+                                    
                                 }
                                 
                             }
@@ -552,7 +553,7 @@ struct ClubInfoView: View {
                                     .font(.caption2)
                                     .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
                                     .foregroundStyle(.white)
-
+                                
                                 Image(systemName: "mappin")
                                     .foregroundColor(.red)
                                 
@@ -602,17 +603,17 @@ struct ClubInfoView: View {
                 }
                 .foregroundStyle(clubColor)
                 .animation(.easeInOut, value: abstractExpanded) // smooth transition with whenever u expand abstract to show more
-
+                
             }
-
+            
             //    .background(colorFromClub(club.clubID).opacity(0.2))
         }
-            .onAppear {
-                fetchClub(withId: club.clubID) { clubr in
-                    club = clubr ?? club
-                }
+        .onAppear {
+            fetchClub(withId: club.clubID) { clubr in
+                club = clubr ?? club
             }
-
+        }
+        
     }
     
     func refreshUserInfo() {
