@@ -8,7 +8,6 @@ import Pow
 import SwiftUIX
 import Shimmer
 import SDWebImageSwiftUI
-import Flow
 
 struct ClubCard: View {
     @State var club: Club
@@ -23,12 +22,9 @@ struct ClubCard: View {
     @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
-        var clubColor : Color { Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())! }
-        
         ZStack(alignment: .bottom) {
-            //            RoundedRectangle(cornerRadius: 25)
-            //                .foregroundStyle(Color(UIColor.systemGray6))
-            //
+         
+            
             HStack {
                 WebImage(
                     url: URL(
@@ -69,34 +65,31 @@ struct ClubCard: View {
                         .font(.callout)
                         .bold()
                         .padding(.bottom, 8)
+                        .foregroundColor(.primary)
                     
                     Text(club.description)
                         .font(.caption)
                         .multilineTextAlignment(.leading)
+                        .foregroundColor(.secondary)
                     
                     Spacer()
                     
                     if let genres = club.genres, !genres.isEmpty {
-                        HFlow(itemSpacing: 0) {
-                            ForEach(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }, id: \.self) { genre in
+                        genres
+                            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+                            .map { genre in
                                 Text(genre)
-                                    .conditionalEffect(
-                                        .repeat(
-                                            .glow(color: .white, radius: 10),
-                                            every: 1.5
-                                        ),
-                                        condition: selectedGenres.contains(genre)
-                                    )
-                                
-                                Text(genre != genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }.last! ? ", " : "")
+                                    .foregroundColor(selectedGenres.contains(genre) ? .blue : .gray)
+                                    .bold()
                             }
-                        }
-                        .bold()
-                        .lineLimit(2)
-                        .font(.caption)
+                            .reduce(Text("")) { partialResult, genreText in
+                                partialResult == Text("") ? genreText : partialResult + Text(", ") + genreText
+                            }
+                            .lineLimit(2)
+                            .font(.caption)
                     }
                 }
-                .foregroundStyle(clubColor)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: screenWidth / 2.8)
                 .padding()
                 
@@ -148,35 +141,39 @@ struct ClubCard: View {
                                 (club.requestNeeded != nil ? "Apply" : "Connect")
                         ){
                             if let email = viewModel.userEmail {
-                                let isMember = club.members.contains(email)
-                                let isLeader = club.leaders.contains(email)
-                                let isPending = club.pendingMemberRequests?.contains(email) ?? false
-                                let canLeave = club.members.count != 1 && isMember && !isLeader
-                                
-                                if let requestNeeded = club.requestNeeded, requestNeeded {
-                                    if !isMember && !isLeader {
-                                        if isPending {
-                                            club.pendingMemberRequests?.remove(email)
-                                            removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
-                                        } else {
-                                            club.pendingMemberRequests = (club.pendingMemberRequests ?? []).union([email])
+                                if let requestNeeded = club.requestNeeded { // if you need to request to join
+                                    if !club.members.contains(email) && !club.leaders.contains(email) && !(club.pendingMemberRequests?.contains(email) ?? false) { // if the club and pending members dont have this user
+                                        if var cluber = club.pendingMemberRequests { // if the club has a pendingmemberrequests
+                                            cluber.insert(email)
+                                            club.pendingMemberRequests = cluber
+                                            addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
+                                        } else { // if the club does not have a pending member requets
+                                            club.pendingMemberRequests = [email]
                                             addPendingMemberRequest(clubID: club.clubID, memberEmail: email)
                                         }
-                                    } else if canLeave {
-                                        youSureYouWantToLeave.toggle()
+                                    } else if !club.members.contains(email) && !club.leaders.contains(email) && (club.pendingMemberRequests?.contains(email) ?? false) { // remove from pending requests
+                                        club.pendingMemberRequests?.remove(email)
+                                        removePendingMemberRequest(clubID: club.clubID, emailToRemove: email)
+                                    } else { // leave club if you are member
+                                        if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
+                                            youSureYouWantToLeave.toggle()
+                                        }
                                     }
                                 } else {
-                                    if !isMember && !isLeader {
+                                    if !club.members.contains(email) && !club.leaders.contains(email) {
                                         club.members.append(email)
                                         addMemberToClub(clubID: club.clubID, memberEmail: email)
-                                    } else if canLeave {
-                                        youSureYouWantToLeave.toggle()
+                                    } else {
+                                        if club.members.count != 1 && club.members.contains(email) && !club.leaders.contains(email) {
+                                            youSureYouWantToLeave.toggle()
+                                        }
                                     }
                                 }
                             }
                         }
+                        .cornerRadius(25)
+                        .foregroundStyle(.white)
                         .buttonStyle(.borderedProminent)
-                        .cornerRadius(15)
                         .padding(.top)
                         .tint(club.leaders.contains(viewModel.userEmail ?? "") ? .purple :
                                 club.members.contains(viewModel.userEmail ?? "") ? .green :
@@ -200,11 +197,9 @@ struct ClubCard: View {
                 }
                 .padding()
             }
-            .shadow(radius:8)
-            
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
                 Color.black.opacity(0.2)
-                    .cornerRadius(15)
+                    .cornerRadius(25)
                 
                 VStack {
                     
@@ -219,14 +214,11 @@ struct ClubCard: View {
             }
         }
         .background(
-            GlassBackground(
-                color: clubColor
-            )
+            GlassBackground()
             .clipShape(RoundedRectangle(cornerRadius: 25))
         )
         .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
-
     }
     
     func refreshUserInfo() {

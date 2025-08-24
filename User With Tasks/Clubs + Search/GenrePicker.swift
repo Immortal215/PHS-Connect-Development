@@ -10,7 +10,26 @@ struct MultiGenrePickerView: View {
     ]
     
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 20) {
+            
+            if !selectedGenres.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Selected")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .fixedSize()
+                    
+                    HStack(spacing: 10) {
+                        ForEach(selectedGenres, id: \.self) { genre in
+                            GenreTag(genre: genre, isSelected: true) {
+                                toggleGenreSelection(genre)
+                            }
+                        }
+                    }
+                }
+                .animation(.smooth)
+            }
+            
             ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(section)
@@ -19,8 +38,10 @@ struct MultiGenrePickerView: View {
                     
                     HStack(spacing: 10) {
                         ForEach(genres[section]!, id: \.self) { genre in
-                            GenreTag(genre: genre, isSelected: selectedGenres.contains(genre)) {
-                                toggleGenreSelection(genre)
+                            if !selectedGenres.contains(genre) {
+                                GenreTag(genre: genre, isSelected: false) {
+                                    toggleGenreSelection(genre)
+                                }
                             }
                         }
                     }
@@ -51,15 +72,23 @@ struct GenreTag: View {
             .padding(.vertical, 5)
             .foregroundColor(isSelected ? Color.accentColor.opacity(0.7) : .primary)
             .background {
-                Capsule()
-                    .stroke(lineWidth: 3)
-                    .foregroundStyle(isSelected ? Color.accentColor.opacity(0.7) : darkMode ? .systemGray4 : .systemGray6)
+                if isSelected {
+                    Capsule()
+                        .strokeBorder(Color.blue.opacity(0.2), lineWidth: 2)
+                        .foregroundStyle(Color.accentColor.opacity(0.7))
+                        .background {
+                            GlassBackground()
+                        }
+                } else {
+                    Capsule()
+                        .foregroundStyle(darkMode ? Color.systemGray4 : Color.systemGray6)
+                }
             }
             .onTapGesture {
                 onTap()
             }
             .fixedSize(horizontal: true, vertical: false)
             .font(.subheadline)
-            .animation(.smooth)
+            .animation(.smooth, value: isSelected)
     }
 }

@@ -48,9 +48,7 @@ struct HomePageScrollers: View {
                                             .presentationDragIndicator(.visible)
                                             .frame(width: UIScreen.main.bounds.width/1.05)
                                             .presentationBackground {
-                                                GlassBackground(
-                                                    color: Color(hexadecimal: clubs[shownInfo].clubColor ?? colorFromClub(club: clubs[shownInfo]).toHexString())
-                                                )
+                                                GlassBackground()
                                                 .cornerRadius(25)
                                             }
 

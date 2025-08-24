@@ -111,15 +111,6 @@ struct SearchClubView: View {
                             if currentSearchingBy == "Genre" {
                                 HorizontalScrollView {
                                     MultiGenrePickerView(selectedGenres: $selectedGenres)
-                                        .onTapGesture(count: 3) {
-                                            selectedGenres = []
-                                            currentSearchingBy = "Name"
-                                            DispatchQueue.global(qos: .userInitiated).async {
-                                                sleep(1)
-                                                filteredItems = calculateFiltered()
-                                                loadingClubs = false
-                                            }
-                                        }
                                     
                                 }
                                 .frame(height: screenHeight / 11)
@@ -158,6 +149,7 @@ struct SearchClubView: View {
                                                                 userInfo: $userInfo,
                                                                 selectedGenres: $selectedGenres
                                                             )
+                                                            .foregroundStyle(.primary)
                                                         }
                                                     }
                                                     .onChange(of: userInfo?.favoritedClubs) { oldValue, newValue in
@@ -241,12 +233,10 @@ struct SearchClubView: View {
                                         
                                                 ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
                                                     .presentationDragIndicator(.visible)
-                                                    .frame(width: UIScreen.main.bounds.width)
+                                                    .frame(width: UIScreen.main.bounds.width / 1.05)
                                                     .presentationBackground {
-                                                        GlassBackground(
-                                                            color: Color(hexadecimal: clubs[shownInfo].clubColor ?? colorFromClub(club: clubs[shownInfo]).toHexString())
-                                                        )
-                                                        .cornerRadius(25)
+                                                        GlassBackground()
+                                                            .cornerRadius(25)
                                                     }
                                         } else {
                                             Text("Error! Try Again!")
@@ -382,7 +372,10 @@ struct SearchClubView: View {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
                 }
                 .sorted {
-                    ($0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")) && !($1.members.contains(viewModel.userEmail ?? "") || $1.leaders.contains(viewModel.userEmail ?? ""))
+                    ($0.members.contains(viewModel.userEmail ?? "") && !($1.members.contains(viewModel.userEmail ?? "")))
+                }
+                .sorted {
+                    ($0.leaders.contains(viewModel.userEmail ?? "") && !($1.leaders.contains(viewModel.userEmail ?? "")))
                 }
                 .sorted {
                     userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
@@ -430,7 +423,10 @@ struct SearchClubView: View {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
                 }
                 .sorted {
-                    ($0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "")) && !($1.members.contains(viewModel.userEmail ?? "") || $1.leaders.contains(viewModel.userEmail ?? ""))
+                    ($0.members.contains(viewModel.userEmail ?? "") && !($1.members.contains(viewModel.userEmail ?? "")))
+                }
+                .sorted {
+                    ($0.leaders.contains(viewModel.userEmail ?? "") && !($1.leaders.contains(viewModel.userEmail ?? "")))
                 }
                 .sorted {
                     userInfo?.favoritedClubs.contains($0.clubID) ?? false &&

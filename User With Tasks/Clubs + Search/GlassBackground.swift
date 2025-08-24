@@ -1,11 +1,10 @@
 import SwiftUI
 
 struct GlassBackground: View {
-    var color: Color
     
     var body: some View {
         RoundedRectangle(cornerRadius: 25, style: .continuous)
-            .fill(color.opacity(0.15))
+            .fill(Color.primary.colorInvert().opacity(0.10))
             .background(
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .fill(.ultraThinMaterial)
