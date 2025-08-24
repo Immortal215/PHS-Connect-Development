@@ -159,9 +159,12 @@ struct ClubInfoView: View {
                         Text("Normal Meeting Time")
                             .font(.headline)
                         
-                        Text("\(meetingTime)")
-                            .font(.subheadline)
-                            .padding(.top, -8)
+                        HStack {
+                            Image(systemName: "arrow.turn.down.right")
+
+                            Text("\(meetingTime)")
+                                .font(.subheadline)
+                        }
                     }
                     
                     if let meetingTimes = club.meetingTimes, !meetingTimes.isEmpty {
@@ -297,19 +300,22 @@ struct ClubInfoView: View {
                     
                     Text("Location")
                         .font(.headline)
-                    Text(club.location)
-                        .font(.subheadline)
-                        .onTapGesture {
-                            if clubLeader || club.locationInSchoolCoordinates != nil {
-                                showMap = true
-                            }
-                        }
-                        .padding(6)
-                        .background(club.locationInSchoolCoordinates != nil || clubLeader ? Color.blue.opacity(0.2) : .clear)
-                        .cornerRadius(8)
-                        .foregroundColor(club.locationInSchoolCoordinates != nil || clubLeader ? .blue : .primary)
-                        .padding(.top, -8)
+                    HStack {
+                        Image(systemName: "arrow.turn.down.right")
 
+                        Text(club.location)
+                            .font(.subheadline)
+                            .onTapGesture {
+                                if clubLeader || club.locationInSchoolCoordinates != nil {
+                                    showMap = true
+                                }
+                            }
+                            .padding(6)
+                            .background(club.locationInSchoolCoordinates != nil || clubLeader ? Color.blue.opacity(0.2) : .clear)
+                            .cornerRadius(8)
+                            .foregroundColor(club.locationInSchoolCoordinates != nil || clubLeader ? .blue : .primary)
+                    }
+                    
                     HStack {
                         Text("Schoology Code")
                             .font(.headline)
