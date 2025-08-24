@@ -310,7 +310,7 @@ struct ClubInfoView: View {
                                     showMap = true
                                 }
                             }
-                            .padding(6)
+                            .padding(club.locationInSchoolCoordinates != nil || clubLeader ? 6 : 0)
                             .background(club.locationInSchoolCoordinates != nil || clubLeader ? Color.blue.opacity(0.2) : .clear)
                             .cornerRadius(8)
                             .foregroundColor(club.locationInSchoolCoordinates != nil || clubLeader ? .blue : .primary)
