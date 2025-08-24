@@ -305,7 +305,7 @@ struct ClubInfoView: View {
                             }
                         }
                         .padding(6)
-                        .background(Color.blue.opacity(0.2))
+                        .background(club.locationInSchoolCoordinates != nil || clubLeader ? Color.blue.opacity(0.2) : .clear)
                         .cornerRadius(8)
                         .foregroundColor(club.locationInSchoolCoordinates != nil || clubLeader ? .blue : .primary)
                         .padding(.top, -8)
