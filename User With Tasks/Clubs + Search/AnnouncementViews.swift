@@ -578,9 +578,7 @@ struct SingleAnnouncementView: View {
                     .frame(width: UIScreen.main.bounds.width/1.05)
                     .foregroundColor(nil)
                     .presentationBackground {
-                        GlassBackground(
-                            color: Color(hexadecimal: cluber.clubColor ?? colorFromClub(club: cluber).toHexString())
-                        )
+                        GlassBackground()
                         .cornerRadius(25)
                     }
 

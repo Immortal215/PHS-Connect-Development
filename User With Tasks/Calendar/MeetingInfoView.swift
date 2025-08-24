@@ -214,9 +214,7 @@ struct MeetingInfoView: View {
                             .frame(width: UIScreen.main.bounds.width/1.05)
                             .foregroundColor(nil)
                             .presentationBackground {
-                                GlassBackground(
-                                    color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
-                                )
+                                GlassBackground()
                                 .cornerRadius(25)
                             }
                     } else {
@@ -236,9 +234,7 @@ struct MeetingInfoView: View {
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
             .presentationBackground {
-                GlassBackground(
-                    color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())
-                )
+                GlassBackground()
                 .cornerRadius(25)
             }
             .cornerRadius(25)

@@ -108,13 +108,11 @@ struct ClubCardHome: View {
                         ScrollView(.horizontal) {
                             LazyHStack {
                                 AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: true, clubs: [club], isHomePage: true, userInfo: $userInfo, isTheHomeScreenClubView: true)
-                                    .foregroundStyle(clubColor)
                             }
                         }
                     } else {
                         Text("No Announcements Currently")
                             .padding()
-                            .foregroundStyle(clubColor)
                         Spacer()
                     }
                 }
@@ -128,9 +126,7 @@ struct ClubCardHome: View {
                 
             }
             .background(
-                      GlassBackground(
-                          color: clubColor
-                      )
+                      GlassBackground()
                       .clipShape(RoundedRectangle(cornerRadius: 25))
                   )
         }
