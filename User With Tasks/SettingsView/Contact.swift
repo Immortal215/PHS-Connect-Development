@@ -22,7 +22,7 @@ struct FeatureReportButton: View {
             HStack {
                 Image(systemName: "envelope.fill")
                     .font(.system(size: 20))
-                Text("Submit Feature Report")
+                Text("Feedback Form")
                     .fontWeight(.semibold)
             }
             .foregroundColor(.white)
