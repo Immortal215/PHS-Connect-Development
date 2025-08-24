@@ -31,8 +31,10 @@ func convertToUIFontTextStyle(_ textStyle: Font.TextStyle) -> UIFont.TextStyle {
 func colorFromClub(club: Club?) -> Color {
     if let club = club {
         if let clubColor = club.clubColor {
+            print("Color found : \(clubColor)!")
             return Color(hexadecimal: clubColor)
         } else {
+            print("Color not found, generating one...")
             let number = Int(club.clubID.dropFirst(6)) ?? 0
             
             let red = CGFloat((number * 50) % 255) / 255.0

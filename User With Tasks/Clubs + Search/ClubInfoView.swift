@@ -93,13 +93,13 @@ struct ClubInfoView: View {
                                 } label: {
                                     Image(systemName: "gear")
                                         .imageScale(.large)
-                                        .conditionalEffect(
-                                            .repeat(
-                                                .glow(color: .white, radius: 10),
-                                                every: 1.5
-                                            ),
-                                            condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
-                                        )
+//                                        .conditionalEffect(
+//                                            .repeat(
+//                                                .glow(color: .white, radius: 10),
+//                                                every: 1.5
+//                                            ),
+//                                            condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
+//                                        )
                                 }
                                 .padding(.top)
                                 .sheet(isPresented: $showEditScreen) {
@@ -215,13 +215,13 @@ struct ClubInfoView: View {
                                         .onTapGesture {
                                             abstractExpanded.toggle()
                                         }
-                                        .conditionalEffect(
-                                            .repeat(
-                                                .glow(color: .white, radius: 10),
-                                                every: 1.5
-                                            ),
-                                            condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
-                                        )
+//                                        .conditionalEffect(
+//                                            .repeat(
+//                                                .glow(color: .white, radius: 10),
+//                                                every: 1.5
+//                                            ),
+//                                            condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
+//                                        )
                                     }
                                 }
                             }
@@ -364,13 +364,13 @@ struct ClubInfoView: View {
                             } label: {
                                 Text(latestAnnouncementMessage)
                                     .foregroundStyle(clubColor)
-                                    .conditionalEffect(
-                                        .repeat(
-                                            .glow(color: .white, radius: 10),
-                                            every: 1.5
-                                        ),
-                                        condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
-                                    )
+//                                    .conditionalEffect(
+//                                        .repeat(
+//                                            .glow(color: .white, radius: 10),
+//                                            every: 1.5
+//                                        ),
+//                                        condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
+//                                    )
                             }
                             .sheet(isPresented: $showAddAnnouncement) {
                                 AddAnnouncementSheet(clubName: club.name, email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
@@ -403,13 +403,13 @@ struct ClubInfoView: View {
                                 }
                             }
                         //         .foregroundStyle(club.locationInSchoolCoordinates != nil || clubLeader ? clubColor : clubColor.opacity(0.8))
-                            .conditionalEffect(
-                                .repeat(
-                                    .glow(color: .white, radius: 10),
-                                    every: 1.5
-                                ),
-                                condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
-                            )
+//                            .conditionalEffect(
+//                                .repeat(
+//                                    .glow(color: .white, radius: 10),
+//                                    every: 1.5
+//                                ),
+//                                condition: club.locationInSchoolCoordinates != nil || clubLeader || mapEditorMode
+//                            )
                         
                             .padding(.top, -8)
                         
@@ -445,13 +445,13 @@ struct ClubInfoView: View {
                                                     .padding(6)
                                                     .background(clubColor.opacity(0.2))
                                                     .cornerRadius(8)
-                                                    .conditionalEffect(
-                                                        .repeat(
-                                                            .glow(color: .white, radius: 10),
-                                                            every: 1.5
-                                                        ),
-                                                        condition: true
-                                                    )
+//                                                    .conditionalEffect(
+//                                                        .repeat(
+//                                                            .glow(color: .white, radius: 10),
+//                                                            every: 1.5
+//                                                        ),
+//                                                        condition: true
+//                                                    )
                                                 
                                             }
                                             
@@ -608,12 +608,7 @@ struct ClubInfoView: View {
             
             //    .background(colorFromClub(club.clubID).opacity(0.2))
         }
-        .onAppear {
-            fetchClub(withId: club.clubID) { clubr in
-                club = clubr ?? club
-            }
-        }
-        
+    
     }
     
     func refreshUserInfo() {

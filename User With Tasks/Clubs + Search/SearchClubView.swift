@@ -241,7 +241,7 @@ struct SearchClubView: View {
                                         
                                                 ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
                                                     .presentationDragIndicator(.visible)
-                                                    .frame(width: UIScreen.main.bounds.width)
+                                                    .frame(width: UIScreen.main.bounds.width / 1.05)
                                                     .presentationBackground {
                                                         GlassBackground(
                                                             color: Color(hexadecimal: clubs[shownInfo].clubColor ?? colorFromClub(club: clubs[shownInfo]).toHexString())
