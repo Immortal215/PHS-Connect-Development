@@ -23,7 +23,7 @@ struct MeetingInfoView: View {
     
     var body: some View {
         var club = clubs.first(where: {$0.clubID == meeting.clubID})!
-        
+        var clubColor : Color {Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())}
         VStack(alignment: .leading, spacing: 10) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
@@ -214,7 +214,7 @@ struct MeetingInfoView: View {
                             .frame(width: UIScreen.main.bounds.width/1.05)
                             .foregroundColor(nil)
                             .presentationBackground {
-                                GlassBackground()
+                                GlassBackground(color: clubColor)
                                 .cornerRadius(25)
                             }
                     } else {
@@ -234,7 +234,7 @@ struct MeetingInfoView: View {
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
             .presentationBackground {
-                GlassBackground()
+                GlassBackground(color: clubColor)
                 .cornerRadius(25)
             }
             .cornerRadius(25)

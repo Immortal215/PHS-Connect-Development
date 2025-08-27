@@ -214,8 +214,9 @@ struct ClubCard: View {
             }
         }
         .background(
-            GlassBackground()
+            GlassBackground(color : Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
             .clipShape(RoundedRectangle(cornerRadius: 25))
+
         )
         .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)

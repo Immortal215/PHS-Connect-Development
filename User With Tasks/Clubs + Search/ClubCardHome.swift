@@ -126,7 +126,7 @@ struct ClubCardHome: View {
                 
             }
             .background(
-                      GlassBackground()
+                      GlassBackground(color: clubColor)
                       .clipShape(RoundedRectangle(cornerRadius: 25))
                   )
         }

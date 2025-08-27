@@ -230,12 +230,12 @@ struct SearchClubView: View {
                                     }
                                     .sheet(isPresented: $showClubInfoSheet) {
                                         if shownInfo >= 0 {
-                                        
-                                                ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                            let club = clubs[shownInfo]
+                                                ClubInfoView(club: club, viewModel: viewModel, userInfo: $userInfo)
                                                     .presentationDragIndicator(.visible)
                                                     .frame(width: UIScreen.main.bounds.width / 1.05)
                                                     .presentationBackground {
-                                                        GlassBackground()
+                                                        GlassBackground(color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
                                                             .cornerRadius(25)
                                                     }
                                         } else {

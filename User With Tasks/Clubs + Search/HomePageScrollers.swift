@@ -25,11 +25,12 @@ struct HomePageScrollers: View {
                 if !filteredClubs.isEmpty {
                     
                     LazyVStack(alignment: .center, spacing: 0) {
-                        ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, club) in
+                        ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, cluber) in
                             
-                            let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == club.clubID }) ?? -1
+                            let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == cluber.clubID }) ?? -1
+                            let club = clubs[infoRelativeIndex]
                             
-                            ClubCardHome(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
+                            ClubCardHome(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
                                 .onTapGesture {
                                     shownInfo = infoRelativeIndex
                                     showClubInfoSheet = true
@@ -48,7 +49,7 @@ struct HomePageScrollers: View {
                                             .presentationDragIndicator(.visible)
                                             .frame(width: UIScreen.main.bounds.width/1.05)
                                             .presentationBackground {
-                                                GlassBackground()
+                                                GlassBackground(color: Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
                                                 .cornerRadius(25)
                                             }
 
