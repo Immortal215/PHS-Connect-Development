@@ -28,9 +28,8 @@ struct HomePageScrollers: View {
                         ForEach(Array(filteredClubs.enumerated()), id: \.element.name) { (index, cluber) in
                             
                             let infoRelativeIndex = clubs.firstIndex(where: { $0.clubID == cluber.clubID }) ?? -1
-                            let club = clubs[infoRelativeIndex]
                             
-                            ClubCardHome(club: club, screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
+                            ClubCardHome(club: clubs[infoRelativeIndex], screenWidth: screenWidth, screenHeight: screenHeight, imageScaler: 6, viewModel: viewModel, shownInfo: shownInfo, infoRelativeIndex: infoRelativeIndex, userInfo: $userInfo)
                                 .onTapGesture {
                                     shownInfo = infoRelativeIndex
                                     showClubInfoSheet = true
@@ -40,12 +39,13 @@ struct HomePageScrollers: View {
                             // .frame(width: screenWidth/2.2, height: screenHeight/5)
                                 .padding()
                                 .sheet(isPresented: $showClubInfoSheet) {
-                                    fetchClub(withId: club.clubID) { fetchedClub in
-                                        clubs[infoRelativeIndex] = fetchedClub ?? club
+                                    fetchClub(withId: cluber.clubID) { fetchedClub in
+                                        clubs[infoRelativeIndex] = fetchedClub ?? cluber
                                     }
                                 } content: {
                                     if shownInfo >= 0 {
-                                        ClubInfoView(club: clubs[shownInfo], viewModel: viewModel, userInfo: $userInfo)
+                                        let club = clubs[shownInfo]
+                                        ClubInfoView(club: club, viewModel: viewModel, userInfo: $userInfo)
                                             .presentationDragIndicator(.visible)
                                             .frame(width: UIScreen.main.bounds.width/1.05)
                                             .presentationBackground {

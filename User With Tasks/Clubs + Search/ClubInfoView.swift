@@ -362,6 +362,9 @@ struct ClubInfoView: View {
                 Color.clear
                     .frame(height: screenHeight/10)
             }
+            .refreshable {
+                
+            }
             .popup(isPresented: $showMap) {
                 ZStack {
                     Map(position: $cameraPosition, interactionModes: []) {

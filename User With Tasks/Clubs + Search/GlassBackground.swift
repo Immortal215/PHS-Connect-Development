@@ -2,11 +2,11 @@ import SwiftUI
 
 struct GlassBackground: View {
     var color : Color?
-
+    @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
         RoundedRectangle(cornerRadius: 25, style: .continuous)
-            .fill(Color.primary.colorInvert().opacity(0.10))
+            .fill(Color.primary.colorInvert().opacity(darkMode ? 0.2 : 0.6))
             .background{
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .fill(.ultraThinMaterial)

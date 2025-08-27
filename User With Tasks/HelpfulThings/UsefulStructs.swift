@@ -67,13 +67,10 @@ struct CodeSnippetView: View {
             Text(code)
                 .font(textSmall! ? .footnote :.subheadline)
                 .padding()
-                .background(Color(UIColor.systemGray6))
-                .foregroundColor(.primary)
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                )
+                .background {
+                    GlassBackground()
+                        .cornerRadius(5)
+                }
                 .onTapGesture {
                     UIPasteboard.general.string = replaceSchoologyExtras(code)
                     dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
@@ -105,7 +102,7 @@ struct CodeSnippetView: View {
                 .padding(8)
                 .background(.blue)
                 .foregroundColor(.white)
-                .cornerRadius(8)
+                .cornerRadius(clicked ? 100 : 8)
                 
             }
         }
