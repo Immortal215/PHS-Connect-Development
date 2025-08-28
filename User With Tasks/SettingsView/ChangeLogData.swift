@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ChangelogData {
     static let currentVersion = ChangelogEntry(
-        version: "1.0.1 Official Release",
+        version: "1.1.0 Official Release",
         date: "08-11-2025",
         changes: [
             Change(title: "Update of Color!", notes: ["Color has been added everywhere", "The ui has been greatly reformed"], color: .green, symbol: "paintpallate"),

@@ -1,6 +1,7 @@
 import SwiftUI
 import Pow
 import SwiftUIX
+import Shimmer
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3
@@ -75,17 +76,18 @@ struct CodeSnippetView: View {
                     UIPasteboard.general.string = replaceSchoologyExtras(code)
                     dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
                     clicked = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                         clicked = false
                     }
                 }
+                .shimmering(active: clicked, duration: 2.4)
             
             Button(action: {
                 UIPasteboard.general.string = replaceSchoologyExtras(code)
                 
                 dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
                 clicked = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     clicked = false
                 }
             }) {
@@ -99,7 +101,7 @@ struct CodeSnippetView: View {
                     }
                 }
                 .font(.caption)
-                .padding(8)
+                .padding(clicked ? .horizontal : .all, 12)
                 .background(.blue)
                 .foregroundColor(.white)
                 .cornerRadius(clicked ? 100 : 8)
@@ -107,6 +109,8 @@ struct CodeSnippetView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.smooth)
+
     }
 }
 
