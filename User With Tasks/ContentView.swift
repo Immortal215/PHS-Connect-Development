@@ -8,7 +8,7 @@ import Drops
 import SwiftUIX
 import CUIExpandableButton
 import FirebaseFirestore
-asdf
+
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
