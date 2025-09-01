@@ -6,7 +6,7 @@ struct GlassBackground: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: 25, style: .continuous)
-            .fill(Color.primary.colorInvert().opacity(darkMode ? 0.1 : 0.6))
+            .fill(Color.systemGray6)
             .background{
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .fill(.ultraThinMaterial)
