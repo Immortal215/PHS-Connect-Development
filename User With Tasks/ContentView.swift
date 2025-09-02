@@ -238,7 +238,12 @@ struct ContentView: View {
                     .onAppear {
                         if let UserID = viewModel.uid, !viewModel.isGuestUser {
                             fetchUser(for: UserID) { user in
-                                userInfo = user
+                                if let user = user {
+                                    userInfo = user
+                                } else {
+                                    print("Failed to fetch user")
+                                    showSignInView = true
+                                }
                             }
                         }
                         advSearchShown = true
@@ -257,8 +262,14 @@ struct ContentView: View {
                         if !viewModel.isGuestUser {
                             if let UserID = viewModel.uid {
                                 fetchUser(for: UserID) { user in
-                                    userInfo = user
+                                    if let user = user {
+                                        userInfo = user
+                                    } else {
+                                        print("Failed to fetch user")
+                                        showSignInView = true
+                                    }
                                 }
+
                             }
                         }
                         

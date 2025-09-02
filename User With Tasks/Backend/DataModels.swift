@@ -49,10 +49,24 @@ struct Club: Codable, Equatable, Hashable {
     }
 }
 
+struct Chat: Codable, Equatable, Hashable {
+    var clubID: String
+    var messages: [Message]
+    
+    struct Message : Codable, Equatable, Hashable {
+        var message : String
+        var sender : String // userID
+        var date : String // use dateFromString and stringFromDate functions for this
+    }
+}
+
 struct Personal: Codable {
     var userID: String
     var favoritedClubs: [String] // clubIDs
-    var subjectPreferences: [String]
+    //var subjectPreferences: [String]?
+    var userEmail: String
+    var userImage: String
+    var userName: String
     var fcmToken: String?
 }
 
@@ -86,24 +100,38 @@ final class AuthenticationViewModel: ObservableObject {
         
         userReference.observeSingleEvent(of: .value) { snapshot in
             if !snapshot.exists() {
-                let newUser = [
-                    "userID": userID,
-                    "favoritedClubs": [" "],
-                    "subjectPreferences": [" "]
-                ] as [String: Any]
+                guard let currentUser = Auth.auth().currentUser else { return }
                 
-                userReference.setValue(newUser) { error, _ in
-                    if let error = error {
-                        print("Error creating user node: \(error)")
-                    } else {
-                        print("User node created successfully")
+                let newUser = Personal(
+                    userID: currentUser.uid,
+                    favoritedClubs: [""],
+                    userEmail: currentUser.email!,
+                    userImage: currentUser.photoURL?.absoluteString ?? "",
+                    userName: currentUser.displayName ?? "",
+                    fcmToken: nil
+                )
+                
+                // Encode the struct into a dictionary
+                do {
+                    let data = try JSONEncoder().encode(newUser)
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        userReference.setValue(json) { error, _ in
+                            if let error = error {
+                                print("Error creating user node: \(error)")
+                            } else {
+                                print("User node created successfully")
+                            }
+                        }
                     }
+                } catch {
+                    print("Error encoding user: \(error)")
                 }
             } else {
                 print("User node already exists")
             }
         }
     }
+    
     
     func signInAsGuest() {
         self.userName = "Guest Account"
