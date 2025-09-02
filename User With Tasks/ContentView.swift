@@ -134,6 +134,9 @@ struct ContentView: View {
                                 ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .opacity(selectedTab == 1 ? 1 : 0)// keep INDEX the same
                                 
+                                ChatView(clubs: $clubs, userInfo: $userInfo)
+                                    .opacity(selectedTab == 6 ? 1 : 0) // keep INDEX the same
+                                
                                 CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
                                 
@@ -155,6 +158,7 @@ struct ContentView: View {
                                 TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
                                 if !viewModel.isGuestUser {
                                     TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                                    TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
                                     TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
                                 }
                                 TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
@@ -182,6 +186,9 @@ struct ContentView: View {
                                         
                                         if !viewModel.isGuestUser {
                                             TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                                                .padding(.horizontal)
+                                            
+                                            TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
                                                 .padding(.horizontal)
                                             
                                             TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same

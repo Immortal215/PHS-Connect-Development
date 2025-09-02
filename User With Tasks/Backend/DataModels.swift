@@ -50,13 +50,27 @@ struct Club: Codable, Equatable, Hashable {
 }
 
 struct Chat: Codable, Equatable, Hashable {
+    var chatID : String
     var clubID: String
-    var messages: [Message]
+    var directMessageTo: String? // leader userID
+    var messages: [ChatMessage]
+    var typingUsers: [String]? // updated live userID's 
+    var pinned: [String]? // messageID's
+    var lastMessage: ChatMessage?
     
-    struct Message : Codable, Equatable, Hashable {
+    struct ChatMessage : Codable, Equatable, Hashable {
+        var messageID: String
         var message : String
         var sender : String // userID
         var date : String // use dateFromString and stringFromDate functions for this
+        var reactions: [String: [String]]? // emoji : [userIDs]
+        
+        var replyTo : String? // messageID of replying to message
+        var edited : Bool? // if edited or not
+        
+        var attachmentURL: String?
+        var attachmentType: String? // "image", "file", "video"
+        var systemGenerated: Bool? // true if it’s a system-generated message like "John joined the club!"
     }
 }
 

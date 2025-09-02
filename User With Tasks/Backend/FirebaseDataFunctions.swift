@@ -410,3 +410,97 @@ func addLocationCoords(clubID: String, locationCoords: [Double]) {
         }
     }
 }
+
+func fetchChatsMetaData(clubIds: [String], completion: @escaping ([Chat]?) -> Void) {
+    let ref = Database.database().reference().child("chats")
+    var chatsMeta: [Chat] = []
+    let group = DispatchGroup()
+    
+    for clubID in clubIds {
+        group.enter()
+        ref.queryOrdered(byChild: "clubID").queryEqual(toValue: clubID).observeSingleEvent(of: .value) { snapshot in
+            if let snapDict = snapshot.value as? [String: Any],
+               let firstKey = snapDict.keys.first,
+               let chatData = snapDict[firstKey] as? [String: Any] {
+                do {
+                    let data = try JSONSerialization.data(withJSONObject: chatData)
+                    var chat = try JSONDecoder().decode(Chat.self, from: data)
+                    
+                    chat.messages = []
+                    
+                    chatsMeta.append(chat)
+                } catch {
+                    print("Error decoding chat metadata: \(error)")
+                }
+            }
+            group.leave()
+        }
+    }
+    
+    group.notify(queue: .main) {
+        completion(chatsMeta.isEmpty ? nil : chatsMeta)
+    }
+}
+
+func createClubGroupChat(clubId: String, messageTo : String?, completion: @escaping (Chat) -> Void) {
+    let ref = Database.database().reference().child("chats")
+    let chatID = ref.childByAutoId().key ?? UUID().uuidString
+    
+    let newChat = Chat(
+        chatID: chatID,
+        clubID: clubId,
+        directMessageTo: messageTo,
+        messages: [],
+    )
+    
+    guard let chatDict = try? DictionaryEncoder().encode(newChat) else {
+        print("Failed to encode chat")
+        return
+    }
+    
+    let group = DispatchGroup()
+    group.enter()
+    
+    ref.child(chatID).setValue(chatDict) { error, _ in
+        if let error = error {
+            print("Failed to create chat: \(error)")
+        } else {
+            print("Chat created successfully")
+        }
+        group.leave()
+    }
+    
+    group.notify(queue: .main) {
+        completion(newChat)
+    }
+}
+
+struct DictionaryEncoder {
+    func encode<T: Encodable>(_ value: T) throws -> [String: Any] {
+        let data = try JSONEncoder().encode(value)
+        return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+    }
+}
+
+func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) -> Void)? = nil) {
+    let messagesRef = Database.database().reference().child("chats").child(chatID).child("messages")
+    
+    guard let messageDict = try? DictionaryEncoder().encode(message) else {
+        print("Failed to encode message")
+        completion?(false)
+        return
+    }
+    
+    messagesRef.child(message.messageID).setValue(messageDict) { error, _ in
+        if let error = error {
+            print("Failed to send message: \(error)")
+            completion?(false)
+            return
+        }
+        
+        let chatRef = Database.database().reference().child("chats").child(chatID)
+        chatRef.child("lastMessage").setValue(messageDict)
+        
+        completion?(true)
+    }
+}
