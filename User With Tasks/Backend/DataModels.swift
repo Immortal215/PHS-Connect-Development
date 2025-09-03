@@ -62,7 +62,7 @@ struct Chat: Codable, Equatable, Hashable {
         var messageID: String
         var message : String
         var sender : String // userID
-        var date : String // use dateFromString and stringFromDate functions for this
+        var date : Double // use Date().timeIntervalSince1970
         var reactions: [String: [String]]? // emoji : [userIDs]
         
         var replyTo : String? // messageID of replying to message

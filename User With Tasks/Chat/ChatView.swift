@@ -30,27 +30,43 @@ struct ChatView: View {
         NavigationStack {
             HStack {
                 ScrollView {
-                    ForEach(clubsLeaderIn, id: \.clubID) { club in
-                        createChatSection(for: club)
-                    }
-                    
-                    ForEach(chats, id: \.chatID) { chat in
-                        chatRow(for: chat)
+                    if !chats.isEmpty || !clubsLeaderIn.isEmpty {
+                        ForEach(clubsLeaderIn, id: \.clubID) { club in
+                            createChatSection(for: club)
+                        }
+                        
+                        ForEach(chats, id: \.chatID) { chat in
+                            chatRow(for: chat)
+                        }
+                    } else {
+                        ProgressView("Loading Chats")
                     }
                 }
-                .frame(width: screenWidth / 3)
+                .frame(maxWidth: screenWidth / 3)
+                .padding()
                 .navigationTitle("Chats")
-                .onAppear {
-                    loadChats()
+                .background {
+                    GlassBackground()
+                        .cornerRadius(25)
                 }
                 
                 if let chat = selectedChat {
                     messageSection
+                        .frame(idealWidth: screenWidth * 2 / 3)
                 } else {
                     Text("No chat selected")
+                        .font(.largeTitle)
                 }
             }
             .padding()
+            .onChange(of: selectedChat) { chat in
+                if let chatListener = chat, !chatListener.messages.isEmpty {
+                    setupMessagesListener(for: chatListener.chatID)
+                }
+            }
+        }
+        .onAppear {
+            loadChats()
         }
     }
     
@@ -62,8 +78,7 @@ struct ChatView: View {
         
         if !hasChat {
             ZStack {
-                RoundedRectangle(cornerRadius: 25)
-                    .stroke(lineWidth: 3)
+                GlassBackground()
                 
                 VStack {
                     Text("Create a chat for " + club.name + "!")
@@ -138,17 +153,18 @@ struct ChatView: View {
                 }
             }
             
+            Spacer()
+            
             HStack {
                 TextField("Send a message!", text: $newMessageText)
                 
                 Button {
-                    if let selected = selectedChat {
+                    if let selected = selectedChat, newMessageText != "" {
                         let chatID = selected.chatID
-                        sendMessage(chatID: chatID, message: Chat.ChatMessage(messageID: String((selectedChat?.messages.count ?? 0) + 1), message: newMessageText, sender: userInfo?.userID ?? "", date: stringFromDate(Date())))
-                        dropper(title: "Message Sent!", subtitle: "", icon: nil)
+                        sendMessage(chatID: chatID, message: Chat.ChatMessage(messageID: String(), message: newMessageText, sender: userInfo?.userID ?? "", date: Date().timeIntervalSince1970))
                         newMessageText = ""
                         showChat = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                             showChat = true
                         }
                     }
@@ -161,6 +177,13 @@ struct ChatView: View {
                             .foregroundStyle(.white)
                     }
                 }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: screenWidth * 2 / 3)
+            .padding(.horizontal)
+            .background {
+                GlassBackground()
+                    .cornerRadius(25)
             }
         }
         .background(Color.systemGray6)

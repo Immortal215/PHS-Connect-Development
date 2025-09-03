@@ -505,13 +505,13 @@ struct ClubInfoView: View {
                         .foregroundStyle(.primary)
                     
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Circle()
-                        .font(.title)
-                        .bold()
-                        .padding(.top)
-                        .foregroundStyle(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
-                }
+//                ToolbarItem(placement: .topBarLeading) {
+//                    Circle()
+//                        .font(.title)
+//                        .bold()
+//                        .padding(.top)
+//                        .foregroundStyle(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
+//                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Group {
                         if clubLeader {
@@ -577,6 +577,7 @@ struct ClubInfoView: View {
                     
                 }
             }
+            .toolbarBackground(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()).opacity(0.1), for: .automatic)
         }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
         .onAppear {

@@ -485,13 +485,23 @@ struct DictionaryEncoder {
 func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) -> Void)? = nil) {
     let messagesRef = Database.database().reference().child("chats").child(chatID).child("messages")
     
-    guard let messageDict = try? DictionaryEncoder().encode(message) else {
+    var messageToSend = message
+    
+    let messageRef: DatabaseReference
+    if !messageToSend.messageID.isEmpty && messageToSend.messageID != String() {
+        messageRef = messagesRef.child(messageToSend.messageID) // edit existing
+    } else {
+        messageRef = messagesRef.childByAutoId() // cvreate new
+        messageToSend.messageID = messageRef.key ?? "ERROR"
+    }
+    
+    guard let messageDict = try? DictionaryEncoder().encode(messageToSend) else {
         print("Failed to encode message")
         completion?(false)
         return
     }
     
-    messagesRef.child(message.messageID).setValue(messageDict) { error, _ in
+    messageRef.setValue(messageDict) { error, _ in
         if let error = error {
             print("Failed to send message: \(error)")
             completion?(false)

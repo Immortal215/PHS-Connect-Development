@@ -70,7 +70,7 @@ struct CodeSnippetView: View {
                 .padding()
                 .background {
                     GlassBackground()
-                        .cornerRadius(5)
+                        .cornerRadius(25)
                 }
                 .onTapGesture {
                     UIPasteboard.general.string = replaceSchoologyExtras(code)
