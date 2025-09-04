@@ -419,7 +419,7 @@ func fetchChatsMetaData(clubIds: [String], completion: @escaping ([Chat]?) -> Vo
     for clubID in clubIds {
         group.enter()
         
-        ref.queryOrderedByKey()
+        ref.queryOrdered (byChild: "clubID")
             .queryEqual(toValue: clubID)
             .observeSingleEvent(of: .value) { snapshot in
                 
