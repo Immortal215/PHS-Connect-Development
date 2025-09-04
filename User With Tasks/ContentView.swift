@@ -108,37 +108,21 @@ struct ContentView: View {
                 } else {
                     ZStack {
                         if advSearchShown {
-                            //                                ZStack {
-                            //                                    switch selectedTab { // unfortunately cannot use a tabview as there is no way to hide the tabbar without using .page which is also not wanted
-                            //                                    case 0:
-                            //                                        SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                            //                                    case 1:
-                            //                                        if !viewModel.isGuestUser {
-                            //                                            ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                            //                                        }
-                            //                                    case 2:
-                            //                                        if !viewModel.isGuestUser {
-                            //                                            CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                            //                                        }
-                            //                                    case 3:
-                            //                                        SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                            //                                    default:
-                            //                                        EmptyView()
-                            //                                    }
-                            //                                }
-                            //
+                        
                             ZStack {
                                 SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same
                                 
-                                ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .opacity(selectedTab == 1 ? 1 : 0)// keep INDEX the same
-                                
-                                ChatView(clubs: $clubs, userInfo: $userInfo)
-                                    .opacity(selectedTab == 6 ? 1 : 0) // keep INDEX the same
-                                
-                                CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
+                                if userInfo != nil {
+                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        .opacity(selectedTab == 1 ? 1 : 0)// keep INDEX the same
+                                    
+                                    ChatView(clubs: $clubs, userInfo: $userInfo)
+                                        .opacity(selectedTab == 6 ? 1 : 0) // keep INDEX the same
+                                    
+                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                        .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
+                                }
                                 
                                 SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                     .padding()
@@ -149,6 +133,24 @@ struct ContentView: View {
                             .background {
                                 RandomShapesBackground()
                             }
+                            .onAppear {
+                                if let UserID = viewModel.uid, !viewModel.isGuestUser {
+                                    fetchUser(for: UserID) { fetchedUser in
+                                        if let user = fetchedUser {
+                                            DispatchQueue.main.async {
+                                                userInfo = user
+                                            }
+                                        } else {
+                                            print("Failed to fetch user")
+                                            DispatchQueue.main.async {
+                                                showSignInView = true
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                            
                         } else {
                             ProgressView()
                         }
@@ -238,21 +240,8 @@ struct ContentView: View {
                                 .hidden(selectedTab == 3)
                             }
                         }
-                        
-                        
-                        
                     }
                     .onAppear {
-                        if let UserID = viewModel.uid, !viewModel.isGuestUser {
-                            fetchUser(for: UserID) { user in
-                                if let user = user {
-                                    userInfo = user
-                                } else {
-                                    print("Failed to fetch user")
-                                    showSignInView = true
-                                }
-                            }
-                        }
                         advSearchShown = true
                         calendarScrollPoint = 12
                         if !viewModel.isGuestUser && selectedTab == 0 {
@@ -309,13 +298,6 @@ struct ContentView: View {
             .onChange(of: showSignInView) {
                 dropper(title: showSignInView ? "Logged Out" : "Logged In", subtitle: "", icon: UIImage(systemName: "person"))
             }
-            
-            //Test Without this
-            //                .onDisappear {
-            //                    removeClubsListener()
-            //                    clubs = []
-            //                    userInfo = nil
-            //                }
             .onAppear {
                 setupClubsListener()
                 if viewModel.userEmail != nil {

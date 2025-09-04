@@ -18,19 +18,18 @@ struct ChatView: View {
     @State var newMessageText: String = ""
     @State var chats: [Chat] = []
     @State var selectedChat: Chat?
-    
-    var clubsLeaderIn: [Club] {
-        guard let email = userInfo?.userEmail else { return [] }
-        return clubs.filter { club in
-            club.leaders.contains(email)
-        }
-    }
-    
+    @State var isLoading = false
+    @State var listeningChats : [Chat] = []
     var body: some View {
+        var clubsLeaderIn: [Club] {
+            let email = userInfo?.userEmail ?? ""
+            return clubs.filter { $0.leaders.contains(email) }
+        }
+
         NavigationStack {
             HStack {
                 ScrollView {
-                    if !chats.isEmpty || !clubsLeaderIn.isEmpty {
+                    if !isLoading {
                         ForEach(clubsLeaderIn, id: \.clubID) { club in
                             createChatSection(for: club)
                         }
@@ -49,27 +48,30 @@ struct ChatView: View {
                     GlassBackground()
                         .cornerRadius(25)
                 }
+                .onAppear {
+                    loadChats()
+                }
                 
                 if let chat = selectedChat {
                     messageSection
-                        .frame(idealWidth: screenWidth * 2 / 3)
+                        .frame(minWidth: screenWidth * 2 / 3)
                 } else {
                     Text("No chat selected")
                         .font(.largeTitle)
+                        .frame(minWidth: screenWidth * 2 / 3)
+
                 }
             }
             .padding()
             .onChange(of: selectedChat) { chat in
-                if let chatListener = chat, !chatListener.messages.isEmpty {
+                if let chatListener = chat, !listeningChats.contains(chatListener) {
+                    listeningChats.append(chatListener)
                     setupMessagesListener(for: chatListener.chatID)
                 }
             }
         }
-        .onAppear {
-            loadChats()
-        }
     }
-    
+
     @ViewBuilder
     func createChatSection(for club: Club) -> some View {
         let hasChat = chats.contains { chat in
@@ -87,41 +89,40 @@ struct ChatView: View {
                 }
             }
             .onTapGesture {
+                chats.append(Chat(chatID: "Loading...", clubID: club.clubID))
                 createClubGroupChat(clubId: club.clubID, messageTo: nil) { chat in
-                    chats.append(chat)
-                    selectedChat = chat
+                    if let chatIndex = chats.firstIndex(where: { $0.clubID == club.clubID }) {
+                        chats[chatIndex] = chat
+                        selectedChat = chat
+                    }
                 }
             }
             .padding()
         }
     }
-    
+
     @ViewBuilder
     func chatRow(for chat: Chat) -> some View {
-        let matchingClub = clubs.first { $0.clubID == chat.clubID }
-        
-        if let club = matchingClub {
+        if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
             var textingTo = ""
             
             HStack {
                 VStack {
-                        if chat.directMessageTo != nil {
-                            Text(textingTo)
-                                .bold()
-                        } else {
-                            Text(club.name)
-                                .bold()
-                        }
-
+                    if let _ = chat.directMessageTo {
+                        Text(textingTo)
+                    } else if chat.chatID != "Loading..." {
+                        Text(club.name)
+                    } else {
+                        ProgressView("Loading...")
+                    }
                 }
+                .bold()
                 
                 Spacer()
                 
-                if let selected = selectedChat {
-                    if selected.chatID == chat.chatID {
-                        Image(systemName: "checkmark")
-                            .foregroundColor(.secondary)
-                    }
+                if let selected = selectedChat, selected.chatID == chat.chatID {
+                    Image(systemName: "checkmark")
+                        .foregroundColor(.secondary)
                 }
             }
             .padding()
@@ -138,17 +139,17 @@ struct ChatView: View {
                 }
             }
             .onTapGesture {
-                selectedChat = chat
+                if chat.chatID != "Loading..." {
+                    selectedChat = chat
+                }
             }
         }
     }
-    
+
     var messageSection: some View {
-        var showChat = true
         return ScrollView {
-            
-            if let selected = selectedChat, showChat {
-                ForEach(selected.messages, id: \.messageID) { message in
+            if let selected = selectedChat {
+                ForEach(selected.messages ?? [], id: \.self) { message in
                     Text(message.message)
                 }
             }
@@ -161,24 +162,28 @@ struct ChatView: View {
                 Button {
                     if let selected = selectedChat, newMessageText != "" {
                         let chatID = selected.chatID
-                        sendMessage(chatID: chatID, message: Chat.ChatMessage(messageID: String(), message: newMessageText, sender: userInfo?.userID ?? "", date: Date().timeIntervalSince1970))
+                        sendMessage(
+                            chatID: chatID,
+                            message: Chat.ChatMessage(
+                                messageID: String(),
+                                message: newMessageText,
+                                sender: userInfo?.userID ?? "",
+                                date: Date().timeIntervalSince1970
+                            )
+                        )
                         newMessageText = ""
-                        showChat = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            showChat = true
-                        }
+
                     }
                 } label: {
                     ZStack {
                         Circle()
                             .foregroundStyle(.blue)
-                        
                         Image(systemName: "arrow.up")
                             .foregroundStyle(.white)
                     }
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
+            .fixedSize()
             .frame(maxWidth: screenWidth * 2 / 3)
             .padding(.horizontal)
             .background {
@@ -188,32 +193,68 @@ struct ChatView: View {
         }
         .background(Color.systemGray6)
     }
-    
+
     func loadChats() {
-        guard let email = userInfo?.userEmail else { return }
-        
+        let email = userInfo?.userEmail ?? ""
+
+        isLoading = true
         var clubIDs: [String] = []
         for club in clubs {
             if club.leaders.contains(email) || club.members.contains(email) {
                 clubIDs.append(club.clubID)
             }
         }
-        
+
         fetchChatsMetaData(clubIds: clubIDs) { fetchedChats in
             if let fetched = fetchedChats {
                 chats = fetched
+            } else {
+                print("No Chats found")
             }
+            isLoading = false
         }
     }
-    
+
     func setupMessagesListener(for chatID: String) {
         let databaseRef = Database.database().reference().child("chats").child(chatID).child("messages")
+        
+        databaseRef.observeSingleEvent(of: .value) { snapshot in
+            var initialMessages: [Chat.ChatMessage] = []
+            
+            if let messagesDict = snapshot.value as? [String: [String: Any]] {
+                for (_, messageData) in messagesDict {
+                    if let message = try? decodeMessageDict(messageData) {
+                        initialMessages.append(message)
+                    }
+                }
+            }
+            
+            initialMessages.sort { $0.date < $1.date }
+            
+            DispatchQueue.main.async {
+                if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
+                    chats[chatIndex].messages = initialMessages
+                    
+                    if selectedChat?.chatID == chatID {
+                        selectedChat = chats[chatIndex]
+                    }
+                }
+            }
+        }
         
         databaseRef.observe(.childAdded) { snapshot in
             if let message = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let index = chats.firstIndex(where: { $0.chatID == chatID }) {
-                        chats[index].messages.append(message)
+                        if chats[index].messages == nil { chats[index].messages = [] }
+                        
+                        if !(chats[index].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
+                            chats[index].messages?.append(message)
+                        }
+                        
+                        if selectedChat?.chatID == chatID {
+                            selectedChat = chats[index]
+                        }
                     }
                 }
             }
@@ -223,8 +264,16 @@ struct ChatView: View {
             if let updatedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
-                       let messageIndex = chats[chatIndex].messages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
-                        chats[chatIndex].messages[messageIndex] = updatedMessage
+                       var chatMessages = chats[chatIndex].messages {
+                        
+                        if let messageIndex = chatMessages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
+                            chatMessages[messageIndex] = updatedMessage
+                            chats[chatIndex].messages = chatMessages
+                            
+                            if selectedChat?.chatID == chatID {
+                                selectedChat = chats[chatIndex]
+                            }
+                        }
                     }
                 }
             }
@@ -234,21 +283,30 @@ struct ChatView: View {
             if let removedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
-                        chats[chatIndex].messages.removeAll(where: { $0.messageID == removedMessage.messageID })
+                        chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                        
+                        if selectedChat?.chatID == chatID {
+                            selectedChat = chats[chatIndex]
+                        }
                     }
                 }
             }
         }
     }
+    func decodeMessageDict(_ dict: [String: Any]) throws -> Chat.ChatMessage? { // initial messages fetch decode
+        let jsonData = try JSONSerialization.data(withJSONObject: dict)
+        return try JSONDecoder().decode(Chat.ChatMessage.self, from: jsonData)
+    }
 
     func decodeMessage(from snapshot: DataSnapshot) -> Chat.ChatMessage? {
-        guard let dict = snapshot.value as? [String: Any] else { return nil }
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: dict)
-            return try JSONDecoder().decode(Chat.ChatMessage.self, from: jsonData)
-        } catch {
-            print("Failed to decode message: \(error)")
-            return nil
+        if let dict = snapshot.value as? [String: Any] {
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: dict)
+                return try JSONDecoder().decode(Chat.ChatMessage.self, from: jsonData)
+            } catch {
+                print("Failed to decode message: \(error)")
+            }
         }
+        return nil
     }
 }

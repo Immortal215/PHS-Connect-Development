@@ -53,7 +53,7 @@ struct Chat: Codable, Equatable, Hashable {
     var chatID : String
     var clubID: String
     var directMessageTo: String? // leader userID
-    var messages: [ChatMessage]
+    var messages: [ChatMessage]?
     var typingUsers: [String]? // updated live userID's 
     var pinned: [String]? // messageID's
     var lastMessage: ChatMessage?
@@ -74,7 +74,7 @@ struct Chat: Codable, Equatable, Hashable {
     }
 }
 
-struct Personal: Codable {
+struct Personal: Codable, Equatable, Hashable {
     var userID: String
     var favoritedClubs: [String] // clubIDs
     //var subjectPreferences: [String]?

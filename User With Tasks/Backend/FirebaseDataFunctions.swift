@@ -32,7 +32,7 @@ func fetchClubs(completion: @escaping ([Club]) -> Void) {
                let value = snap.value as? [String: Any],
                let jsonData = try? JSONSerialization.data(withJSONObject: value),
                let club = try? JSONDecoder().decode(Club.self, from: jsonData) {
-                clubs.append(club)            
+                clubs.append(club)
             }
         }
         
@@ -355,7 +355,7 @@ func addPendingMemberRequest(clubID: String, memberEmail: String) {
         if pendingRequests.contains(memberEmail.lowercased()) {
             print("Error: Member already in the pending requests.")
             return
-        } 
+        }
         
         pendingRequests.append(memberEmail.lowercased())
         
@@ -418,23 +418,32 @@ func fetchChatsMetaData(clubIds: [String], completion: @escaping ([Chat]?) -> Vo
     
     for clubID in clubIds {
         group.enter()
-        ref.queryOrdered(byChild: "clubID").queryEqual(toValue: clubID).observeSingleEvent(of: .value) { snapshot in
-            if let snapDict = snapshot.value as? [String: Any],
-               let firstKey = snapDict.keys.first,
-               let chatData = snapDict[firstKey] as? [String: Any] {
-                do {
-                    let data = try JSONSerialization.data(withJSONObject: chatData)
-                    var chat = try JSONDecoder().decode(Chat.self, from: data)
-                    
-                    chat.messages = []
-                    
-                    chatsMeta.append(chat)
-                } catch {
-                    print("Error decoding chat metadata: \(error)")
+        
+        ref.queryOrdered(byChild: "clubID")
+            .queryEqual(toValue: clubID)
+            .observeSingleEvent(of: .value) { snapshot in
+                
+                if let snapDict = snapshot.value as? [String: Any] {
+                    for (_, chatData) in snapDict {
+                        if var chatDict = chatData as? [String: Any] {
+                            chatDict.removeValue(forKey: "messages") // remove to get rid of type mismatch
+                            
+                            do {
+                                let data = try JSONSerialization.data(withJSONObject: chatDict)
+                                var chat = try JSONDecoder().decode(Chat.self, from: data)
+                                
+                                chat.messages = []
+                                
+                                chatsMeta.append(chat)
+                            } catch {
+                                print("Error decoding chat metadata: \(error)")
+                            }
+                        }
+                    }
                 }
+                
+                group.leave()
             }
-            group.leave()
-        }
     }
     
     group.notify(queue: .main) {
@@ -442,7 +451,7 @@ func fetchChatsMetaData(clubIds: [String], completion: @escaping ([Chat]?) -> Vo
     }
 }
 
-func createClubGroupChat(clubId: String, messageTo : String?, completion: @escaping (Chat) -> Void) {
+func createClubGroupChat(clubId: String, messageTo: String?, completion: @escaping (Chat) -> Void) {
     let ref = Database.database().reference().child("chats")
     let chatID = ref.childByAutoId().key ?? UUID().uuidString
     
@@ -450,13 +459,15 @@ func createClubGroupChat(clubId: String, messageTo : String?, completion: @escap
         chatID: chatID,
         clubID: clubId,
         directMessageTo: messageTo,
-        messages: [],
+        messages: []
     )
     
-    guard let chatDict = try? DictionaryEncoder().encode(newChat) else {
+    guard var chatDict = try? DictionaryEncoder().encode(newChat) else {
         print("Failed to encode chat")
         return
     }
+    
+    chatDict.removeValue(forKey: "messages") // remove messages
     
     let group = DispatchGroup()
     group.enter()
