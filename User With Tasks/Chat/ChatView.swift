@@ -43,7 +43,6 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: screenWidth / 3)
                 .padding()
-                .navigationTitle("Chats")
                 .background {
                     GlassBackground()
                         .cornerRadius(25)
@@ -62,7 +61,7 @@ struct ChatView: View {
 
                 }
             }
-            .padding()
+            .contentShape(RoundedRectangle(cornerRadius:25))
             .onChange(of: selectedChat) { chat in
                 if let chatListener = chat, !listeningChats.contains(chatListener) {
                     listeningChats.append(chatListener)
@@ -125,6 +124,8 @@ struct ChatView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            
+            .contentShape(RoundedRectangle(cornerRadius: 25))
             .padding()
             .cornerRadius(25)
             .onAppear {
@@ -147,17 +148,21 @@ struct ChatView: View {
     }
 
     var messageSection: some View {
-        return ScrollView {
-            if let selected = selectedChat {
-                ForEach(selected.messages ?? [], id: \.self) { message in
-                    Text(message.message)
+       return VStack {
+            
+           ScrollView() {
+                if let selected = selectedChat {
+                    ForEach(selected.messages ?? [], id: \.self) { message in
+                        Text(message.message)
+                    }
+                    .alignmentGuide(.bottom)
                 }
             }
             
-            Spacer()
-            
             HStack {
-                TextField("Send a message!", text: $newMessageText)
+                TextEditor(text: $newMessageText)
+                    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
+                    .fixedSize(horizontal: false, vertical: true)                    
                 
                 Button {
                     if let selected = selectedChat, newMessageText != "" {
@@ -181,16 +186,18 @@ struct ChatView: View {
                         Image(systemName: "arrow.up")
                             .foregroundStyle(.white)
                     }
+                    .frame(width: 25, height: 25, alignment: .bottomTrailing)
                 }
+                .keyboardShortcut(.return)
+                
             }
-            .fixedSize()
-            .frame(maxWidth: screenWidth * 2 / 3)
             .padding(.horizontal)
             .background {
                 GlassBackground()
                     .cornerRadius(25)
             }
         }
+        .frame(minWidth: screenWidth * 2 / 3)
         .background(Color.systemGray6)
     }
 

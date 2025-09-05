@@ -29,7 +29,6 @@ struct TabBarButton: View {
                 .brightness(0.1)
             }
         }
-        .animation(.bouncy(duration: 1, extraBounce: 0.3))
     }
 }
 

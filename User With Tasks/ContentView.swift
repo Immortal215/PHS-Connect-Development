@@ -155,7 +155,7 @@ struct ContentView: View {
                             ProgressView()
                         }
                         
-                        if keyboardResponder.currentHeight > 0 {
+                        if keyboardResponder.currentHeight > 0 && selectedTab != 6 {
                             VStack(alignment: .center, spacing: 16) { // KEEP INDEXS THE SAME FOR ALL THE BELOW
                                 TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
                                 if !viewModel.isGuestUser {
@@ -165,6 +165,7 @@ struct ContentView: View {
                                 }
                                 TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                             }
+                            .animation(.easeInOut(duration: 0.2))
                             .bold()
                             .padding()
                             .background(Color.systemBackground.opacity(0.95))
@@ -213,13 +214,18 @@ struct ContentView: View {
                                             }
                                         }
                                         
+                                        if selectedTab == 6 { // Chat tab
+                                            Spacer()
+                                        }
                                     }
+                                    .frame(width: screenWidth)
                                     .fixedSize()
                                     .bold()
                                 }
                                 
                                 
                             }
+                            .animation(.easeInOut(duration: 0.2))
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                             //.transition(.push(from: .top))
                             .asymmetricTransition(insertion: .opacity, removal: .opacity)
@@ -236,8 +242,8 @@ struct ContentView: View {
                                 }
                                 .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
                                 .allowsHitTesting(false)
-                                .offset(y: 10)
-                                .hidden(selectedTab == 3)
+                                .offset(y: selectedTab == 6 ? 0 : 10)
+                                .hidden(selectedTab == 3 || selectedTab == 6)
                             }
                         }
                     }
