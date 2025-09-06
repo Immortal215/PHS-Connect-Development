@@ -82,6 +82,7 @@ struct Personal: Codable, Equatable, Hashable {
     var userImage: String
     var userName: String
     var fcmToken: String?
+    var lastReadMessages: [String : String]? // chatID : messageID
 }
 
 @MainActor
