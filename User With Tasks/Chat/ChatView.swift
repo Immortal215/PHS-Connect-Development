@@ -148,21 +148,53 @@ struct ChatView: View {
     }
 
     var messageSection: some View {
-       return VStack {
+        return VStack {
             
-           ScrollView() {
+            ScrollView() {
                 if let selected = selectedChat {
                     ForEach(selected.messages ?? [], id: \.self) { message in
-                        Text(message.message)
+                        if message.sender == userInfo?.userID ?? "" {
+                            HStack {
+                                Spacer()
+                                
+                                Text(.init(message.message))
+                                    .multilineTextAlignment(.trailing)
+                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                    .background (
+                                        RoundedRectangle(cornerRadius: 30)
+                                            .foregroundColor(.accentColor)
+                                    )
+                                    .frame(maxWidth: 320, alignment: .trailing)
+                                    .padding(EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 15))
+                            }
+                        } else {
+                            HStack {
+                                Text(.init(message.message))
+                                    .multilineTextAlignment(.leading)
+                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                    .background (
+                                        RoundedRectangle(cornerRadius: 30)
+                                            .foregroundColor(.accentColor)
+                                    )
+                                    .frame(maxWidth: 320, alignment: .leading)
+                                    .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 0))
+                                
+                                Spacer()
+                            }
+                        }
                     }
                     .alignmentGuide(.bottom)
                 }
             }
             
             HStack {
-                TextEditor(text: $newMessageText)
-                    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
-                    .fixedSize(horizontal: false, vertical: true)                    
+                //TextEditor(text: $newMessageText)
+                //    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
+                //    .fixedSize(horizontal: false, vertical: true)
+                
+                TextField("Message...", text: $newMessageText)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(4)
                 
                 Button {
                     if let selected = selectedChat, newMessageText != "" {
@@ -177,7 +209,7 @@ struct ChatView: View {
                             )
                         )
                         newMessageText = ""
-
+                        
                     }
                 } label: {
                     ZStack {
@@ -189,16 +221,15 @@ struct ChatView: View {
                     .frame(width: 25, height: 25, alignment: .bottomTrailing)
                 }
                 .keyboardShortcut(.return)
-                
             }
             .padding(.horizontal)
             .background {
                 GlassBackground()
                     .cornerRadius(25)
             }
+            .frame(minWidth: screenWidth * 2 / 3)
+            .background(Color.systemGray6)
         }
-        .frame(minWidth: screenWidth * 2 / 3)
-        .background(Color.systemGray6)
     }
 
     func loadChats() {
