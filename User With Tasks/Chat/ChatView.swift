@@ -149,44 +149,51 @@ struct ChatView: View {
 
     var messageSection: some View {
         return VStack {
-            
-            ScrollView() {
-                if let selected = selectedChat {
-                    ForEach(selected.messages ?? [], id: \.self) { message in
-                        if message.sender == userInfo?.userID ?? "" {
-                            HStack {
-                                Spacer()
-                                
-                                Text(.init(message.message))
-                                    .multilineTextAlignment(.trailing)
-                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                    .background (
-                                        RoundedRectangle(cornerRadius: 30)
-                                            .foregroundColor(.accentColor)
-                                    )
-                                    .frame(maxWidth: 320, alignment: .trailing)
-                                    .padding(EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 15))
-                            }
-                        } else {
-                            HStack {
-                                Text(.init(message.message))
-                                    .multilineTextAlignment(.leading)
-                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                    .background (
-                                        RoundedRectangle(cornerRadius: 30)
-                                            .foregroundColor(.accentColor)
-                                    )
-                                    .frame(maxWidth: 320, alignment: .leading)
-                                    .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 0))
-                                
-                                Spacer()
+            ScrollViewReader { proxy in
+                ScrollView {
+                    if let selected = selectedChat {
+                        ForEach(selected.messages ?? [], id: \.self) { message in
+                            if message.sender == userInfo?.userID ?? "" {
+                                HStack {
+                                    Spacer()
+                                    
+                                    Text(.init(message.message))
+                                        .multilineTextAlignment(.trailing)
+                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                        .background (
+                                            RoundedRectangle(cornerRadius: 30)
+                                                .foregroundColor(.accentColor)
+                                        )
+                                        .frame(maxWidth: 320, alignment: .trailing)
+                                        .padding(EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 15))
+                                }
+                                .id(message.messageID) // needed for scrolling to
+                            } else {
+                                HStack {
+                                    Text(.init(message.message))
+                                        .multilineTextAlignment(.leading)
+                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                        .background (
+                                            RoundedRectangle(cornerRadius: 30)
+                                                .foregroundColor(.accentColor)
+                                        )
+                                        .frame(maxWidth: 320, alignment: .leading)
+                                        .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 0))
+                                    
+                                    Spacer()
+                                }
+                                .id(message.messageID) // needed for scrolling to
                             }
                         }
+                        .alignmentGuide(.bottom)
                     }
-                    .alignmentGuide(.bottom)
+                }
+                .onChange(of: selectedChat?.messages) {
+                    if let selected = selectedChat {
+                        proxy.scrollTo(selected.messages?.last?.messageID ?? "0", anchor: .bottom) // makes it so whenever there is a new message, it will scroll to the bottom by its messageID
+                    }
                 }
             }
-            
             HStack {
                 //TextEditor(text: $newMessageText)
                 //    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
@@ -195,6 +202,9 @@ struct ChatView: View {
                 TextField("Message...", text: $newMessageText)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(4)
+//                TextEditor(text: $newMessageText)
+//                    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
+//                    //.fixedSize(horizontal: false, vertical: true)                    
                 
                 Button {
                     if let selected = selectedChat, newMessageText != "" {
