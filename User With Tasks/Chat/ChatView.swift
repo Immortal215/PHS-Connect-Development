@@ -20,6 +20,7 @@ struct ChatView: View {
     @State var selectedChat: Chat?
     @State var isLoading = false
     @State var listeningChats : [Chat] = []
+    @State var userNames: [String: String] = [:]
     var body: some View {
         var clubsLeaderIn: [Club] {
             let email = userInfo?.userEmail ?? ""
@@ -152,33 +153,72 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     if let selected = selectedChat {
-                        ForEach(selected.messages ?? [], id: \.self) { message in
+                        ForEach(Array((selected.messages ?? []).enumerated()), id: \.element) { index, message in
+                            let previousMessage = index > 0 ? selected.messages?[index - 1] : nil
+                            let nextMessage = index < (selected.messages?.count ?? 0) - 1 ? selected.messages?[index + 1] : nil
+                            
                             if message.sender == userInfo?.userID ?? "" {
                                 HStack {
                                     Spacer()
                                     
-                                    Text(.init(message.message))
-                                        .multilineTextAlignment(.trailing)
-                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                        .background (
-                                            RoundedRectangle(cornerRadius: 30)
-                                                .foregroundColor(.accentColor)
-                                        )
-                                        .frame(maxWidth: 320, alignment: .trailing)
-                                        .padding(EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 15))
+                                    VStack(alignment: .trailing, spacing: 5) {
+                                        HStack {
+                                            Spacer()
+                                            
+                                            Text(.init(message.message))
+                                                .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                                .background (
+                                                    RoundedRectangle(cornerRadius: 30)
+                                                        .foregroundColor(.accentColor)
+                                                )
+                                                .frame(maxWidth: 320, alignment: .trailing)
+                                        }
+                                        
+                                        if nextMessage == nil || !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: nextMessage.map{Date(timeIntervalSince1970: $0.date)}!, toGranularity: .minute) {
+                                            Text(Date(timeIntervalSince1970: message.date), style: .time)
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                    .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
                                 }
                                 .id(message.messageID) // needed for scrolling to
                             } else {
                                 HStack {
-                                    Text(.init(message.message))
-                                        .multilineTextAlignment(.leading)
-                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                        .background (
-                                            RoundedRectangle(cornerRadius: 30)
-                                                .foregroundColor(.accentColor)
-                                        )
-                                        .frame(maxWidth: 320, alignment: .leading)
-                                        .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 0))
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        if previousMessage?.sender != message.sender {
+                                            Text(userNames[message.sender] ?? "")
+                                                .font(.headline)
+                                                .onAppear {
+                                                    if userNames[message.sender] == nil {
+                                                        fetchUser(for: message.sender) { user in
+                                                            if let user = user {
+                                                                userNames[message.sender] = user.userName
+                                                            } else {
+                                                                userNames[message.sender] = ""
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                        }
+                                        
+                                        HStack {
+                                            Text(.init(message.message))
+                                                .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                                .background (
+                                                    RoundedRectangle(cornerRadius: 30)
+                                                        .foregroundColor(.accentColor)
+                                                )
+                                                .frame(maxWidth: 320, alignment: .leading)
+                                            
+                                            Spacer()
+                                        }
+                                        
+                                        if nextMessage == nil || !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: nextMessage.map{Date(timeIntervalSince1970: $0.date)}!, toGranularity: .minute) {
+                                            Text(Date(timeIntervalSince1970: message.date), style: .time)
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                    .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
                                     
                                     Spacer()
                                 }
@@ -231,6 +271,7 @@ struct ChatView: View {
                     .frame(width: 25, height: 25, alignment: .bottomTrailing)
                 }
                 .keyboardShortcut(.return)
+                .padding()
             }
             .padding(.horizontal)
             .background {
