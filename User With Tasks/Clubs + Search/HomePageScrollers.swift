@@ -39,9 +39,6 @@ struct HomePageScrollers: View {
                             // .frame(width: screenWidth/2.2, height: screenHeight/5)
                                 .padding()
                                 .sheet(isPresented: $showClubInfoSheet) {
-                                    fetchClub(withId: cluber.clubID) { fetchedClub in
-                                        clubs[infoRelativeIndex] = fetchedClub ?? cluber
-                                    }
                                 } content: {
                                     if shownInfo >= 0 {
                                         let club = clubs[shownInfo]

@@ -25,6 +25,7 @@ struct Club: Codable, Equatable, Hashable {
     var instagram: String? // Instagram link
     var clubColor: String? // color
     var requestNeeded: Bool?
+    var chatIDs: [String]? // chatID's for caching stuff
     
     struct Announcements: Codable, Equatable, Hashable {
         var date: String

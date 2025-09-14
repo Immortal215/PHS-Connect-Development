@@ -21,40 +21,6 @@ func addClub(club: Club) {
     }
 }
 
-func fetchClubs(completion: @escaping ([Club]) -> Void) {
-    let refrence = Database.database().reference().child("clubs")
-    
-    refrence.observeSingleEvent(of: .value) { snapshot in
-        var clubs: [Club] = []
-        
-        for child in snapshot.children {
-            if let snap = child as? DataSnapshot,
-               let value = snap.value as? [String: Any],
-               let jsonData = try? JSONSerialization.data(withJSONObject: value),
-               let club = try? JSONDecoder().decode(Club.self, from: jsonData) {
-                clubs.append(club)
-            }
-        }
-        
-        completion(clubs)
-    }
-}
-
-func fetchClub(withId clubId: String, completion: @escaping (Club?) -> Void) {
-    let reference = Database.database().reference().child("clubs").child(clubId)
-    
-    reference.observeSingleEvent(of: .value) { snapshot in
-        guard let value = snapshot.value as? [String: Any],
-              let jsonData = try? JSONSerialization.data(withJSONObject: value),
-              let club = try? JSONDecoder().decode(Club.self, from: jsonData) else {
-            completion(nil)
-            return
-        }
-        
-        completion(club)
-    }
-}
-
 func fetchUser(for userID: String, completion: @escaping (Personal?) -> Void) {
     let reference = Database.database().reference().child("users").child(userID)
     
@@ -411,80 +377,82 @@ func addLocationCoords(clubID: String, locationCoords: [Double]) {
     }
 }
 
-func fetchChatsMetaData(clubIds: [String], completion: @escaping ([Chat]?) -> Void) {
+func fetchChatsMetaData(chatIds: [String], completion: @escaping ([Chat]?) -> Void) {
     let ref = Database.database().reference().child("chats")
-    var chatsMeta: [Chat] = []
+    var fetchedChats: [Chat] = []
     let group = DispatchGroup()
-    
-    for clubID in clubIds {
+
+    for chatID in chatIds {
         group.enter()
-        
-        ref.queryOrdered(byChild: "clubID")
-            .queryEqual(toValue: clubID)
-            .observeSingleEvent(of: .value) { snapshot in
-                
-                if let snapDict = snapshot.value as? [String: Any] {
-                    for (_, chatData) in snapDict {
-                        if var chatDict = chatData as? [String: Any] {
-                            chatDict.removeValue(forKey: "messages") // remove to get rid of type mismatch
-                            
-                            do {
-                                let data = try JSONSerialization.data(withJSONObject: chatDict)
-                                var chat = try JSONDecoder().decode(Chat.self, from: data)
-                                
-                                chat.messages = []
-                                
-                                chatsMeta.append(chat)
-                            } catch {
-                                print("Error decoding chat metadata: \(error)")
+        ref.child(chatID).observeSingleEvent(of: .value) { snapshot in
+            if let dict = snapshot.value as? [String: Any] {
+                do {
+                    var chatDict = dict
+                    // convert messages dictionary -> array
+                    if let messagesDict = chatDict["messages"] as? [String: Any] {
+                        var messagesArray: [[String: Any]] = []
+                        for (_, value) in messagesDict {
+                            if let messageData = value as? [String: Any] {
+                                messagesArray.append(messageData)
                             }
                         }
+                        messagesArray.sort {
+                            let date1 = $0["date"] as? Double ?? 0
+                            let date2 = $1["date"] as? Double ?? 0
+                            return date1 < date2
+                        }
+                        chatDict["messages"] = messagesArray
                     }
+
+                    let jsonData = try JSONSerialization.data(withJSONObject: chatDict)
+                    let chat = try JSONDecoder().decode(Chat.self, from: jsonData)
+                    fetchedChats.append(chat)
+                } catch {
+                    print("Error decoding chat \(chatID): \(error)")
                 }
-                
-                group.leave()
             }
+            group.leave()
+        }
     }
-    
+
     group.notify(queue: .main) {
-        completion(chatsMeta.isEmpty ? nil : chatsMeta)
+        completion(fetchedChats.isEmpty ? nil : fetchedChats)
     }
 }
 
+
 func createClubGroupChat(clubId: String, messageTo: String?, completion: @escaping (Chat) -> Void) {
     let ref = Database.database().reference().child("chats")
+    let clubsRef = Database.database().reference().child("clubs").child(clubId)
     let chatID = ref.childByAutoId().key ?? UUID().uuidString
-    
-    let newChat = Chat(
-        chatID: chatID,
-        clubID: clubId,
-        directMessageTo: messageTo,
-        messages: []
-    )
-    
+
+    let newChat = Chat(chatID: chatID, clubID: clubId, directMessageTo: messageTo, messages: [])
+
     guard var chatDict = try? DictionaryEncoder().encode(newChat) else {
         print("Failed to encode chat")
         return
     }
-    
-    chatDict.removeValue(forKey: "messages") // remove messages
-    
-    let group = DispatchGroup()
-    group.enter()
-    
+
+    chatDict.removeValue(forKey: "messages")
+
     ref.child(chatID).setValue(chatDict) { error, _ in
         if let error = error {
             print("Failed to create chat: \(error)")
         } else {
             print("Chat created successfully")
+
+            clubsRef.child("chatIDs").observeSingleEvent(of: .value) { snapshot in
+                var chatIDs = snapshot.value as? [String] ?? []
+                if !chatIDs.contains(chatID) {
+                    chatIDs.append(chatID)
+                    clubsRef.child("chatIDs").setValue(chatIDs)
+                }
+            }
         }
-        group.leave()
-    }
-    
-    group.notify(queue: .main) {
         completion(newChat)
     }
 }
+
 
 struct DictionaryEncoder {
     func encode<T: Encodable>(_ value: T) throws -> [String: Any] {

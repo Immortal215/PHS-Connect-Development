@@ -1,25 +1,26 @@
 import SwiftUI
 
-class MessageCache {
+class ChatCache {
     private let cacheURL: URL
 
     init(chatID: String) {
         // each chat gets its own file
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        self.cacheURL = dir.appendingPathComponent("\(chatID)_messages.json")
+        self.cacheURL = dir.appendingPathComponent("\(chatID)_chat.json")
     }
 
-    func load() -> [Chat.ChatMessage] {
-        guard let data = try? Data(contentsOf: cacheURL) else { return [] }
-        return (try? JSONDecoder().decode([Chat.ChatMessage].self, from: data)) ?? []
+    func load() -> Chat? {
+        guard let data = try? Data(contentsOf: cacheURL) else { return nil }
+        return try? JSONDecoder().decode(Chat.self, from: data)
     }
 
-    func save(_ messages: [Chat.ChatMessage]) {
-        if let data = try? JSONEncoder().encode(messages) {
+    func save(_ chat: Chat) {
+        if let data = try? JSONEncoder().encode(chat) {
             try? data.write(to: cacheURL)
         }
     }
 }
+
 
 class ClubCache {
     public let cacheURL: URL

@@ -257,10 +257,6 @@ struct ContentView: View {
                         }
                     }
                     .refreshable {
-                        //                            fetchClubs { fetchedClubs in
-                        //                                clubs = fetchedClubs
-                        //                            } // pulls a lot of data
-                        
                         if !viewModel.isGuestUser {
                             if let UserID = viewModel.uid {
                                 fetchUser(for: UserID) { user in
@@ -284,21 +280,6 @@ struct ContentView: View {
                         }
                         dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
                     }
-                    
-                    //                        .onAppear {
-                    //                            fetchClubs { fetchedClubs in
-                    //                                clubs = fetchedClubs
-                    //                            }
-                    //
-                    //                            if let UserID = viewModel.uid, !viewModel.isGuestUser {
-                    //                                fetchUser(for: UserID) { user in
-                    //                                    userInfo = user
-                    //                                }
-                    //                            }
-                    //
-                    //                            advSearchShown = true
-                    //                        }
-                    
                 }
             }
             .onChange(of: showSignInView) {

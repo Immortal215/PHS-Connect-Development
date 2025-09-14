@@ -8,6 +8,7 @@ import Pow
 import SwiftUIX
 import PopupView
 import MapKit
+import SDWebImageSwiftUI
 
 struct ClubInfoView: View {
     @State var club : Club
@@ -68,7 +69,7 @@ struct ClubInfoView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .center) {
                         HStack(alignment: .top) {
-                            AsyncImage(
+                            WebImage(
                                 url: URL(
                                     string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
                                 ),
@@ -282,11 +283,6 @@ struct ClubInfoView: View {
                         .sheet(isPresented: $showAddAnnouncement) {
                             AddAnnouncementSheet(clubName: club.name, email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
                                 oneMinuteAfter = Date().addingTimeInterval(60)
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                    fetchClub(withId: club.clubID) { fetchedClub in
-                                        self.club = fetchedClub ?? self.club
-                                    }
-                                }
                             }, viewModel: viewModel)
                             .presentationSizing(.page)
                             .presentationDragIndicator(.visible)
@@ -516,9 +512,6 @@ struct ClubInfoView: View {
                     Group {
                         if clubLeader {
                             Button {
-                                fetchClub(withId: club.clubID) { fetchedClub in
-                                    self.club = fetchedClub ?? self.club
-                                }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                                     showEditScreen.toggle()
                                 }
@@ -530,10 +523,6 @@ struct ClubInfoView: View {
                             .sheet(isPresented: $showEditScreen) {
                                 CreateClubView(viewCloser: {
                                     showEditScreen = false
-                                    fetchClub(withId: club.clubID) { fetchedClub in
-                                        club = fetchedClub ?? club
-                                    }
-                                    
                                     dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
                                 }, CreatedClub: club)
                                 .presentationDragIndicator(.visible)
@@ -580,11 +569,6 @@ struct ClubInfoView: View {
             .toolbarBackground(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()).opacity(0.1), for: .automatic)
         }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
-        .onAppear {
-            fetchClub(withId: club.clubID) { clubr in
-                club = clubr ?? club
-            }
-        }
     }
     
     func refreshUserInfo() {

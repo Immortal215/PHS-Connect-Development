@@ -19,11 +19,12 @@ struct ChatView: View {
     @State var newMessageText: String = ""
     @State var chats: [Chat] = []
     @State var selectedChat: Chat?
-    @State var isLoading = false
+    @State var isLoading = true
     @State var listeningChats : [Chat] = []
     @State var users: [String : Personal] = [:] // UserID : UserStruct
     @AppStorage("sideBarChatExpanded") var sidebarExpanded = true
-    
+    @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
+
     var body: some View {
         var clubsLeaderIn: [Club] {
             let email = userInfo?.userEmail ?? ""
@@ -31,158 +32,160 @@ struct ChatView: View {
         }
         
         NavigationStack {
-                 HStack(spacing: 16) {
-                     VStack(alignment: .trailing) {
-                         Button {
-                             withAnimation(.smooth(duration: 1, extraBounce: 0.3)) {
-                                 sidebarExpanded.toggle()
-                             }
-                         } label: {
-                             Image(systemName: sidebarExpanded ? "chevron.left" : "chevron.right")
-                                 .padding()
-                                 .background(Circle().fill(Color.systemGray6))
-                         }
-                         .padding(.top, 8)
-                         
-                         ScrollView {
-                             if !isLoading {
-                                 ForEach(clubsLeaderIn, id: \.clubID) { club in
-                                     createChatSection(for: club)
-                                 }
-                                 Divider()
-                                 
-                                 ForEach(chats, id: \.chatID) { chat in
-                                     chatRow(for: chat)
-                                 }
-                             } else {
-                                 ProgressView("Loading Chats")
-                             }
-                         }
-                         .padding(.top, 8)
-                     }
-                     .frame(width: sidebarExpanded ? 300 : 70)
-                     .padding(.horizontal, 16)
-                     .background {
-                         GlassBackground()
-                             .cornerRadius(25)
-                     }
-                     .onAppear {
-                         loadChats()
-                     }
-                     
-                     if selectedChat != nil {
-                         messageSection
-                             .frame(idealWidth: screenWidth * 2 / 3 - 16, idealHeight : screenHeight * 0.8)
-                     } else {
-                         VStack {
-                             Spacer()
-                             Text("No chat selected")
-                                 .font(.largeTitle)
-                                 .foregroundStyle(.secondary)
-                                 .background {
-                                     GlassBackground()
-                                         .cornerRadius(25)
-                                 }
-                             Spacer()
-                         }
-                         .frame(maxWidth: screenWidth, maxHeight: screenHeight)
+            HStack(spacing: 16) {
+                VStack(alignment: .trailing) {
+                    Button {
+                        withAnimation(.smooth(duration: 1, extraBounce: 0.3)) {
+                            sidebarExpanded.toggle()
+                        }
+                    } label: {
+                        Image(systemName: sidebarExpanded ? "chevron.left" : "chevron.right")
+                            .padding()
+                            .background(Circle().fill(Color.systemGray6))
+                    }
+                    .padding(.top, 8)
+                    
+                    ScrollView {
+                        if !isLoading {
+                            ForEach(clubsLeaderIn, id: \.clubID) { club in
+                                createChatSection(for: club)
+                            }
+                            Divider()
                             
-                     }
-                 }
-                 .contentShape(RoundedRectangle(cornerRadius:25))
-                 .onChange(of: selectedChat) { chat in
-                     if let chatListener = chat, !listeningChats.contains(chatListener) {
-                         listeningChats.append(chatListener)
-                         setupMessagesListener(for: chatListener.chatID)
-                     }
-                 }
-             }
-         }
-         
-         @ViewBuilder
-         func createChatSection(for club: Club) -> some View {
-             let hasChat = chats.contains { chat in
-                 chat.clubID == club.clubID && chat.directMessageTo == nil
-             }
-             
-             if !hasChat {
-                 HStack {
-                     ZStack {
-                         Circle()
-                             .fill(Color.systemGray6)
-                             .frame(width: 60, height: 60)
-                         
-                         Image(systemName: "plus")
-                             .foregroundColor(.accentColor)
-                             .font(.system(size: 30, weight: .bold))
-                     }
-                     .padding(.vertical, 6)
-                     .onTapGesture {
-                         chats.append(Chat(chatID: "Loading...", clubID: club.clubID))
-                         createClubGroupChat(clubId: club.clubID, messageTo: nil) { chat in
-                             if let chatIndex = chats.firstIndex(where: { $0.clubID == club.clubID }) {
-                                 chats[chatIndex] = chat
-                                 selectedChat = chat
-                             }
-                         }
-                     }
-                     
-                     if sidebarExpanded {
-                         Text("Create \(club.name) Chat")
-                             .font(.subheadline)
-                             .multilineTextAlignment(.leading)
-                     }
-                 }
-                 .padding(.leading, 8)
-                 .frame(width: sidebarExpanded ? 300 : 70, alignment: .leading)
-             }
-         }
-         
-         @ViewBuilder
-         func chatRow(for chat: Chat) -> some View {
-             if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
-                 let isSelected = selectedChat?.chatID == chat.chatID
-                 
-                 HStack {
-                     ZStack {
-                         Circle()
-                             .fill(isSelected ? Color.accentColor : Color.systemGray6)
-                             .frame(width: 60, height: 60)
-                         
-                         if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
-                             AsyncImage(url: url) { image in
-                                 image.resizable()
-                                      .scaledToFill()
-                             } placeholder: {
-                                 Image(systemName: "bubble.left.and.bubble.right.fill")
-                                     .foregroundColor(.secondary)
-                             }
-                             .frame(width: 45, height: 45)
-                             .clipShape(Circle())
-                         } else {
-                             Image(systemName: "bubble.left.and.bubble.right.fill")
-                                 .foregroundColor(.secondary)
-                                 .frame(width: 45, height: 45)
-                         }
-                     }
-                     .padding(.vertical, 6)
-                     .onTapGesture {
-                         if chat.chatID != "Loading..." {
-                             selectedChat = chat
-                         }
-                     }
-                     
-                     if sidebarExpanded {
-                         Text(club.name)
-                             .font(.subheadline)
-                             .multilineTextAlignment(.leading)
-                     }
+                            ForEach(chats, id: \.chatID) { chat in
+                                chatRow(for: chat)
+                            }
+                        } else {
+                            ProgressView("Loading Chats")
+                        }
+                    }
+                    .padding(.top, 8)
                 }
-                 .padding(.leading, 8)
-                 .frame(width: sidebarExpanded ? 300 : 70, alignment: .leading)
-             }
-         }
-
+                .frame(width: sidebarExpanded ? 300 : 70)
+                .padding(.horizontal, 16)
+                .background {
+                    GlassBackground()
+                        .cornerRadius(25)
+                }
+                .onAppear {
+                    loadChats()
+                }
+                
+                if selectedChat != nil {
+                    messageSection
+                        .frame(idealWidth: screenWidth * 2 / 3 - 16, idealHeight : screenHeight * 0.8)
+                } else {
+                    VStack {
+                        Spacer()
+                        Text("No chat selected")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                            .background {
+                                GlassBackground()
+                                    .cornerRadius(25)
+                            }
+                        Spacer()
+                    }
+                    .frame(maxWidth: screenWidth, maxHeight: screenHeight)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius:25))
+            .onChange(of: selectedChat) { chat in
+                if let chatListener = chat, !listeningChats.contains(chatListener) {
+                    listeningChats.append(chatListener)
+                    setupMessagesListener(for: chatListener.chatID)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    func createChatSection(for club: Club) -> some View {
+        let hasChat = chats.contains { chat in
+            chat.clubID == club.clubID && chat.directMessageTo == nil
+        }
+        
+        if !hasChat {
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(Color.systemGray6)
+                        .frame(width: 60, height: 60)
+                    
+                    Image(systemName: "plus")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 30, weight: .bold))
+                }
+                .padding(.vertical, 6)
+                .onTapGesture {
+                    let newChat = Chat(chatID: "Loading...", clubID: club.clubID)
+                    chats.append(newChat)
+                    createClubGroupChat(clubId: club.clubID, messageTo: nil) { chat in
+                        if let chatIndex = chats.firstIndex(where: { $0.chatID == newChat.chatID }) {
+                            chats[chatIndex] = chat
+                            selectedChat = chat
+                            
+                            cachedChatIDs.append(chat.chatID + ",")
+                        }
+                    }
+                }
+                
+                if sidebarExpanded {
+                    Text("Create \(club.name) Chat")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding(.leading, 8)
+            .frame(width: sidebarExpanded ? 300 : 70, alignment: .leading)
+        }
+    }
+    
+    @ViewBuilder
+    func chatRow(for chat: Chat) -> some View {
+        if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
+            let isSelected = selectedChat?.chatID == chat.chatID
+            
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? Color.accentColor : Color.systemGray6)
+                        .frame(width: 60, height: 60)
+                    
+                    if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
+                        AsyncImage(url: url) { image in
+                            image.resizable()
+                                 .scaledToFill()
+                        } placeholder: {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(width: 45, height: 45)
+                        .clipShape(Circle())
+                    } else {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .foregroundColor(.secondary)
+                            .frame(width: 45, height: 45)
+                    }
+                }
+                .padding(.vertical, 6)
+                .onTapGesture {
+                    if chat.chatID != "Loading..." {
+                        selectedChat = chat
+                    }
+                }
+                
+                if sidebarExpanded {
+                    Text(club.name)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.leading)
+                }
+           }
+            .padding(.leading, 8)
+            .frame(width: sidebarExpanded ? 300 : 70, alignment: .leading)
+        }
+    }
+    
     var messageSection: some View {
         return VStack {
             ScrollViewReader { proxy in
@@ -315,16 +318,9 @@ struct ChatView: View {
                 }
             }
             HStack {
-                //TextEditor(text: $newMessageText)
-                //    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
-                //    .fixedSize(horizontal: false, vertical: true)
-                
                 TextField("Message...", text: $newMessageText)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(4)
-                //                TextEditor(text: $newMessageText)
-                //                    .frame(maxWidth: screenWidth * 2 / 3, maxHeight: screenHeight/5)
-                //                    //.fixedSize(horizontal: false, vertical: true)
                 
                 Button {
                     if let selected = selectedChat, newMessageText != "" {
@@ -339,7 +335,6 @@ struct ChatView: View {
                             )
                         )
                         newMessageText = ""
-                        
                     }
                 } label: {
                     ZStack {
@@ -364,50 +359,82 @@ struct ChatView: View {
     }
     
     func loadChats() {
-        let email = userInfo?.userEmail ?? ""
-        
+        guard let email = userInfo?.userEmail else { return }
         isLoading = true
-        var clubIDs: [String] = []
-        for club in clubs {
-            if club.leaders.contains(email) || club.members.contains(email) {
-                clubIDs.append(club.clubID)
+
+        // filter clubs where user is leader or member and has chatIDs
+        let relevantClubs = clubs.filter { club in
+            (club.leaders.contains(email) || club.members.contains(email)) && !(club.chatIDs?.isEmpty ?? true) // ensures the chatIds exist in the club
+        }
+
+        // load cached chats
+        var loadedChats: [Chat] = []
+        for club in relevantClubs {
+            for chatID in club.chatIDs! {
+                if cachedChatIDs.contains(chatID) {
+                    let cache = ChatCache(chatID: chatID)
+                    if let cachedChat = cache.load() {
+                        loadedChats.append(cachedChat)
+                    }
+                }
             }
         }
-        
-        fetchChatsMetaData(clubIds: clubIDs) { fetchedChats in
+        chats = loadedChats
+
+        // chatIds to fetch
+        var chatIDsToFetch: [String] = []
+        for club in relevantClubs {
+            let uncached = club.chatIDs!.filter { !cachedChatIDs.contains($0) }
+            chatIDsToFetch.append(contentsOf: uncached)
+        }
+
+        // fehch metadata for uncached chatIDs
+        fetchChatsMetaData(chatIds: chatIDsToFetch) { fetchedChats in
             if let fetched = fetchedChats {
-                chats = fetched
-            } else {
-                print("No Chats found")
+                for chat in fetched {
+                    // update local list of chats
+                    if let index = chats.firstIndex(where: { $0.chatID == chat.chatID }) {
+                        chats[index] = chat
+                    } else {
+                        chats.append(chat)
+                    }
+
+                    // save to ChatCache
+                    let cache = ChatCache(chatID: chat.chatID)
+                    cache.save(chat)
+
+                    // update AppStorage cache
+                    if !cachedChatIDs.contains(chat.chatID) {
+                        cachedChatIDs.append(chat.chatID + ",")
+                    }
+                }
             }
             isLoading = false
         }
     }
+
     
     func setupMessagesListener(for chatID: String) {
         let databaseRef = Database.database().reference()
             .child("chats")
             .child(chatID)
-            .child("messages")
         
-        let cache = MessageCache(chatID: chatID)
+        let cache = ChatCache(chatID: chatID)
         
-        // load cached messages
-        var cachedMessages = cache.load()
-        cachedMessages.sort { $0.date < $1.date }
+        var cachedChat = cache.load()
         
         if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
-            chats[chatIndex].messages = cachedMessages
+            if let cached = cachedChat {
+                chats[chatIndex] = cached
+            }
             if selectedChat?.chatID == chatID {
                 selectedChat = chats[chatIndex]
             }
         }
         
-        // find latest cached timestamp
-        let lastTimestamp = cachedMessages.map { $0.date }.max() ?? 0
+        let lastTimestamp = cachedChat?.messages?.map { $0.date }.max() ?? 0
         
-        // only pull messages newer than what we know
-        databaseRef
+        databaseRef.child("messages")
             .queryOrdered(byChild: "date")
             .queryStarting(atValue: lastTimestamp + 0.001)
             .observe(.childAdded) { snapshot in
@@ -418,7 +445,8 @@ struct ChatView: View {
                             
                             if !(chats[chatIndex].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
                                 chats[chatIndex].messages?.append(message)
-                                cache.save(chats[chatIndex].messages ?? [])
+                                
+                                cache.save(chats[chatIndex])
                             }
                             
                             if selectedChat?.chatID == chatID {
@@ -429,8 +457,7 @@ struct ChatView: View {
                 }
             }
         
-        // any changes, save that now in the cache
-        databaseRef.observe(.childChanged) { snapshot in
+        databaseRef.child("messages").observe(.childChanged) { snapshot in
             if let updatedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
@@ -439,7 +466,8 @@ struct ChatView: View {
                         if let messageIndex = chatMessages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
                             chatMessages[messageIndex] = updatedMessage
                             chats[chatIndex].messages = chatMessages
-                            cache.save(chatMessages)
+                            
+                            cache.save(chats[chatIndex])
                             
                             if selectedChat?.chatID == chatID {
                                 selectedChat = chats[chatIndex]
@@ -450,13 +478,13 @@ struct ChatView: View {
             }
         }
         
-        // handle deletes and save in the cache
-        databaseRef.observe(.childRemoved) { snapshot in
+        databaseRef.child("messages").observe(.childRemoved) { snapshot in
             if let removedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
                         chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
-                        cache.save(chats[chatIndex].messages ?? [])
+                        
+                        cache.save(chats[chatIndex])
                         
                         if selectedChat?.chatID == chatID {
                             selectedChat = chats[chatIndex]
@@ -465,7 +493,30 @@ struct ChatView: View {
                 }
             }
         }
+        
+        databaseRef.observe(.childChanged) { snapshot in
+            guard snapshot.key != "messages" else { return }
+            
+            if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
+                var chat = chats[chatIndex] // make a mutable copy
+                if let dict = snapshot.value as? [String: Any] {
+                    if let typingUsers = dict["typingUsers"] as? [String] {
+                        chat.typingUsers = typingUsers
+                    }
+                    if let pinned = dict["pinned"] as? [String] {
+                        chat.pinned = pinned
+                    }
+                    chats[chatIndex] = chat
+                    cache.save(chat)
+                    
+                    if selectedChat?.chatID == chatID {
+                        selectedChat = chat
+                    }
+                }
+            }
+        }
     }
+
     func decodeMessageDict(_ dict: [String: Any]) throws -> Chat.ChatMessage? { // initial messages fetch decode
         let jsonData = try JSONSerialization.data(withJSONObject: dict)
         return try JSONDecoder().decode(Chat.ChatMessage.self, from: jsonData)

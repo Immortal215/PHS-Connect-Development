@@ -471,10 +471,6 @@ struct CreateClubView: View {
             }
             .textFieldStyle(.roundedBorder)
             .onAppear {
-                fetchClubs { fetchedClubs in
-                    self.clubs = fetchedClubs
-                }
-                
                 leaders = CreatedClub.leaders.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
                 members = CreatedClub.members.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
                 clubId = CreatedClub.clubID
