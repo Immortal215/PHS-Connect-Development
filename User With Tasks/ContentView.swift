@@ -346,6 +346,10 @@ struct ContentView: View {
             if let club = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
                     clubs.append(club)
+                    
+                    // save to cache
+                    let cache = ClubCache(clubID: club.clubID)
+                    cache.save(club: club)
                 }
             }
         }
@@ -355,6 +359,10 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     if let index = clubs.firstIndex(where: { $0.clubID == updatedClub.clubID }) {
                         clubs[index] = updatedClub
+                        
+                        // update cache
+                        let cache = ClubCache(clubID: updatedClub.clubID)
+                        cache.save(club: updatedClub)
                     }
                 }
             }
@@ -364,10 +372,15 @@ struct ContentView: View {
             if let removedClub = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
                     clubs.removeAll(where: { $0.clubID == removedClub.clubID })
+                    
+                    // delete cache file
+                    let cache = ClubCache(clubID: removedClub.clubID)
+                    try? FileManager.default.removeItem(at: cache.cacheURL)
                 }
             }
         }
     }
+
     
     func decodeClub(from snapshot: DataSnapshot) -> Club? {
         guard let clubData = try? JSONSerialization.data(withJSONObject: snapshot.value ?? [:]),
@@ -396,11 +409,6 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
         accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)
-}
-
-func removeClubsListener() {
-    let databaseRef = Database.database().reference().child("clubs")
-    databaseRef.removeAllObservers()
 }
 
 struct RandomShapesBackground: View {

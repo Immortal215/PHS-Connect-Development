@@ -384,50 +384,51 @@ struct ChatView: View {
     }
     
     func setupMessagesListener(for chatID: String) {
-        let databaseRef = Database.database().reference().child("chats").child(chatID).child("messages")
+        let databaseRef = Database.database().reference()
+            .child("chats")
+            .child(chatID)
+            .child("messages")
         
-        databaseRef.observeSingleEvent(of: .value) { snapshot in
-            var initialMessages: [Chat.ChatMessage] = []
-            
-            if let messagesDict = snapshot.value as? [String: [String: Any]] {
-                for (_, messageData) in messagesDict {
-                    if let message = try? decodeMessageDict(messageData) {
-                        initialMessages.append(message)
-                    }
-                }
-            }
-            
-            initialMessages.sort { $0.date < $1.date }
-            
-            DispatchQueue.main.async {
-                if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
-                    chats[chatIndex].messages = initialMessages
-                    
-                    if selectedChat?.chatID == chatID {
-                        selectedChat = chats[chatIndex]
-                    }
-                }
+        let cache = MessageCache(chatID: chatID)
+        
+        // load cached messages
+        var cachedMessages = cache.load()
+        cachedMessages.sort { $0.date < $1.date }
+        
+        if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
+            chats[chatIndex].messages = cachedMessages
+            if selectedChat?.chatID == chatID {
+                selectedChat = chats[chatIndex]
             }
         }
         
-        databaseRef.observe(.childAdded) { snapshot in
-            if let message = decodeMessage(from: snapshot) {
-                DispatchQueue.main.async {
-                    if let index = chats.firstIndex(where: { $0.chatID == chatID }) {
-                        if chats[index].messages == nil { chats[index].messages = [] }
-                        
-                        if !(chats[index].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
-                            chats[index].messages?.append(message)
-                        }
-                        
-                        if selectedChat?.chatID == chatID {
-                            selectedChat = chats[index]
+        // find latest cached timestamp
+        let lastTimestamp = cachedMessages.map { $0.date }.max() ?? 0
+        
+        // only pull messages newer than what we know
+        databaseRef
+            .queryOrdered(byChild: "date")
+            .queryStarting(atValue: lastTimestamp + 0.001)
+            .observe(.childAdded) { snapshot in
+                if let message = decodeMessage(from: snapshot) {
+                    DispatchQueue.main.async {
+                        if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
+                            if chats[chatIndex].messages == nil { chats[chatIndex].messages = [] }
+                            
+                            if !(chats[chatIndex].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
+                                chats[chatIndex].messages?.append(message)
+                                cache.save(chats[chatIndex].messages ?? [])
+                            }
+                            
+                            if selectedChat?.chatID == chatID {
+                                selectedChat = chats[chatIndex]
+                            }
                         }
                     }
                 }
             }
-        }
         
+        // any changes, save that now in the cache
         databaseRef.observe(.childChanged) { snapshot in
             if let updatedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
@@ -437,6 +438,7 @@ struct ChatView: View {
                         if let messageIndex = chatMessages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
                             chatMessages[messageIndex] = updatedMessage
                             chats[chatIndex].messages = chatMessages
+                            cache.save(chatMessages)
                             
                             if selectedChat?.chatID == chatID {
                                 selectedChat = chats[chatIndex]
@@ -447,11 +449,13 @@ struct ChatView: View {
             }
         }
         
+        // handle deletes and save in the cache
         databaseRef.observe(.childRemoved) { snapshot in
             if let removedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
                         chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                        cache.save(chats[chatIndex].messages ?? [])
                         
                         if selectedChat?.chatID == chatID {
                             selectedChat = chats[chatIndex]
