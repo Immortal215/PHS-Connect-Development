@@ -210,7 +210,7 @@ struct ChatView: View {
                                                                            topTrailingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25)
                                                     .foregroundColor(.accentColor)
                                                 )
-                                                .frame(maxWidth: 320, alignment: .trailing)
+                                                .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
                                         }
                                         
                                         if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
@@ -282,7 +282,7 @@ struct ChatView: View {
                                                             bottomTrailingRadius: 25, topTrailingRadius: 25)
                                                         .foregroundColor(Color.systemGray6)
                                                     )
-                                                    .frame(maxWidth: 320, alignment: .leading)
+                                                    .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
                                                 
                                                 Spacer()
                                             }
