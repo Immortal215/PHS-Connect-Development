@@ -6,6 +6,7 @@ import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
+import SDWebImageSwiftUI
 
 struct ChatView: View {
     @Binding var clubs: [Club]
@@ -243,7 +244,7 @@ struct ChatView: View {
                                     HStack {
                                         if nextMessage?.sender ?? "" != message.sender {
                                             VStack {
-                                                AsyncImage(
+                                                WebImage( // saves the image in a cache so it doesnt re-pull every time
                                                     url: URL(
                                                         string: users[message.sender]?.userImage ?? ""
                                                     ),
