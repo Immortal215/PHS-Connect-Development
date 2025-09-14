@@ -203,6 +203,7 @@ struct ChatView: View {
                                             Spacer()
                                             
                                             Text(.init(message.message))
+                                                .foregroundStyle(.white)
                                                 .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                                 .background (
                                                     UnevenRoundedRectangle(topLeadingRadius: 25, bottomLeadingRadius: 25,
