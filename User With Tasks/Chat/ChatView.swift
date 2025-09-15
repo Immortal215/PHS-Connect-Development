@@ -5,7 +5,7 @@ import FirebaseDatabaseInternal
 import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
-import SwiftUI
+import SwiftUIX
 import SDWebImageSwiftUI
 
 struct ChatView: View {
@@ -24,6 +24,8 @@ struct ChatView: View {
     @State var users: [String : Personal] = [:] // UserID : UserStruct
     @AppStorage("sideBarChatExpanded") var sidebarExpanded = true
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
+    @FocusState var focusedOnSendBar: Bool
+    @State var selectedClub: Club?
 
     var body: some View {
         var clubsLeaderIn: [Club] {
@@ -33,7 +35,7 @@ struct ChatView: View {
         
         NavigationStack {
             HStack(spacing: 16) {
-                VStack(alignment: .trailing) {
+                VStack(alignment: .leading) {
                     Button {
                         withAnimation(.smooth(duration: 1, extraBounce: 0.3)) {
                             sidebarExpanded.toggle()
@@ -50,7 +52,6 @@ struct ChatView: View {
                             ForEach(clubsLeaderIn, id: \.clubID) { club in
                                 createChatSection(for: club)
                             }
-                            Divider()
                             
                             ForEach(chats, id: \.chatID) { chat in
                                 chatRow(for: chat)
@@ -61,7 +62,7 @@ struct ChatView: View {
                     }
                     .padding(.top, 8)
                 }
-                .frame(width: sidebarExpanded ? 300 : 70)
+                .frame(width: sidebarExpanded ? 300 : 80)
                 .padding(.horizontal, 16)
                 .background {
                     GlassBackground()
@@ -80,6 +81,7 @@ struct ChatView: View {
                         Text("No chat selected")
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
+                            .padding()
                             .background {
                                 GlassBackground()
                                     .cornerRadius(25)
@@ -96,6 +98,7 @@ struct ChatView: View {
                     setupMessagesListener(for: chatListener.chatID)
                 }
             }
+            .padding(.horizontal, 30)
         }
     }
     
@@ -117,6 +120,8 @@ struct ChatView: View {
                         .font(.system(size: 30, weight: .bold))
                 }
                 .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                
                 .onTapGesture {
                     let newChat = Chat(chatID: "Loading...", clubID: club.clubID)
                     chats.append(newChat)
@@ -131,6 +136,7 @@ struct ChatView: View {
                             ))
                             chats[chatIndex] = chat
                             selectedChat = chat
+                            selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
                             
                             cachedChatIDs.append(chat.chatID + ",")
                             
@@ -144,8 +150,7 @@ struct ChatView: View {
                         .multilineTextAlignment(.leading)
                 }
             }
-            .padding(.leading, 8)
-            .frame(width: sidebarExpanded ? 300 : 70, alignment: .leading)
+            .frame(width: sidebarExpanded ? 300 : 80, alignment: .leading)
         }
     }
     
@@ -154,7 +159,7 @@ struct ChatView: View {
         if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
             let isSelected = selectedChat?.chatID == chat.chatID
             
-            HStack {
+            HStack(spacing: 16) {
                 ZStack {
                     Circle()
                         .fill(isSelected ? Color.accentColor : Color.systemGray6)
@@ -168,18 +173,21 @@ struct ChatView: View {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
                                 .foregroundColor(.secondary)
                         }
-                        .frame(width: 45, height: 45)
+                        .frame(width: 48, height: 48)
                         .clipShape(Circle())
                     } else {
                         Image(systemName: "bubble.left.and.bubble.right.fill")
                             .foregroundColor(.secondary)
-                            .frame(width: 45, height: 45)
+                            .frame(width: 48, height: 48)
                     }
                 }
                 .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                
                 .onTapGesture {
                     if chat.chatID != "Loading..." {
                         selectedChat = chat
+                        selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
                     }
                 }
                 
@@ -188,9 +196,8 @@ struct ChatView: View {
                         .font(.subheadline)
                         .multilineTextAlignment(.leading)
                 }
-           }
-            .padding(.leading, 8)
-            .frame(width: sidebarExpanded ? 300 : 70, alignment: .leading)
+            }
+            .frame(width: sidebarExpanded ? 300 : 80, alignment: .leading)
         }
     }
     
@@ -218,10 +225,12 @@ struct ChatView: View {
                                                     .foregroundStyle(.white)
                                                     .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                                     .background (
+                                                        GlassBackground(color:colorFromClub(club: selectedClub))
+                                                            .clipShape(
                                                         UnevenRoundedRectangle(topLeadingRadius: 25, bottomLeadingRadius: 25,
                                                                                bottomTrailingRadius:  nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
                                                                                topTrailingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25)
-                                                        .foregroundColor(.accentColor)
+                                                        )
                                                     )
                                                     .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
                                             }
@@ -239,7 +248,7 @@ struct ChatView: View {
                                     VStack(alignment: .leading) {
                                         if previousMessage?.sender != message.sender {
                                             Text(users[message.sender]?.userName.capitalized ?? "Loading...")
-                                                .padding(.leading, 20) // same as message padding
+                                                .padding(EdgeInsets(top: 5, leading: 20, bottom: 0, trailing: 0)) // same as message padding
                                                 .font(.headline)
                                                 .onAppear {
                                                     if users[message.sender] == nil {
@@ -337,12 +346,18 @@ struct ChatView: View {
                     }
                 }
             }
-            HStack {
-                TextField("Message...", text: $newMessageText)
-                    .textFieldStyle(.roundedBorder)
+            HStack(alignment: .bottom) {
+                TextEditor(text: $newMessageText)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 30, maxHeight: screenHeight/2)
                     .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 10)
+                    .focused($focusedOnSendBar)
                 
                 Button {
+                    focusedOnSendBar = false
+                    
                     if let selected = selectedChat, newMessageText != "" {
                         let chatID = selected.chatID
                         sendMessage(
@@ -365,8 +380,7 @@ struct ChatView: View {
                     }
                     .frame(width: 25, height: 25, alignment: .bottomTrailing)
                 }
-                .keyboardShortcut(.return)
-                .padding()
+                .padding(.vertical, 16)
             }
             .padding(.horizontal)
             .background {
@@ -374,7 +388,6 @@ struct ChatView: View {
                     .cornerRadius(25)
             }
             .frame(minWidth: screenWidth * 2 / 3)
-            .background(Color.systemGray6)
         }
     }
     
@@ -531,6 +544,7 @@ struct ChatView: View {
                     
                     if selectedChat?.chatID == chatID {
                         selectedChat = chat
+                        selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
                     }
                 }
             }
