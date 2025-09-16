@@ -26,8 +26,9 @@ struct ChatView: View {
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
     @FocusState var focusedOnSendBar: Bool
     @State var selectedClub: Club?
-
+    
     var body: some View {
+        
         var clubsLeaderIn: [Club] {
             let email = userInfo?.userEmail ?? ""
             return clubs.filter { $0.leaders.contains(email) }
@@ -224,12 +225,15 @@ struct ChatView: View {
                                                 Text(.init(message.message))
                                                     .foregroundStyle(.white)
                                                     .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                                    .background (
-                                                        GlassBackground(color:colorFromClub(club: selectedClub))
-                                                            .clipShape(
-                                                        UnevenRoundedRectangle(topLeadingRadius: 25, bottomLeadingRadius: 25,
-                                                                               bottomTrailingRadius:  nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
-                                                                               topTrailingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25)
+                                                    .background(
+                                                        GlassBackground(
+                                                            color: colorFromClub(club: selectedClub),
+                                                            shape: AnyShape(UnevenRoundedRectangle(
+                                                                topLeadingRadius: 25,
+                                                                bottomLeadingRadius: 25,
+                                                                bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
+                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage) ? 8 : 25
+                                                            ))
                                                         )
                                                     )
                                                     .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)

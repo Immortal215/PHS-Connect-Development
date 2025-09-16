@@ -1,21 +1,36 @@
 import SwiftUI
 
+import SwiftUI
+
 struct GlassBackground: View {
-    var color : Color?
+    var color: Color?
+    var shape: AnyShape = AnyShape(RoundedRectangle(cornerRadius: 25, style: .continuous)) // must pass in a shape with AnyShape() around it!!!
     @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 25, style: .continuous)
+        shape
             .fill(Color.systemGray6.opacity(darkMode ? 0.1 : 0.6))
-            .background{
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .fill(.ultraThinMaterial)
+            .background {
+                shape.fill(.ultraThinMaterial)
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .strokeBorder((color ?? Color.white).opacity(0.2), lineWidth: 1)
+                shape
+                    .stroke((color ?? .white).opacity(0.2), lineWidth: 1)
             )
-            .shadow(color: color ?? Color.clear, radius: 1)
-          //  .blur(radius: 2)
+            .shadow(color: color ?? .clear, radius: 1)
+    }
+}
+
+struct AnyShape: Shape {
+    private let _path: (CGRect) -> Path
+
+    init<S: Shape>(_ shape: S) {
+        _path = { rect in
+            shape.path(in: rect)
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        _path(rect)
     }
 }
