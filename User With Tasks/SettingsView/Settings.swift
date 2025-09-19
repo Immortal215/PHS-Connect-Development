@@ -31,6 +31,8 @@ struct SettingsView: View {
     @State var animationsPlusBuffer = false
     @State var debounceCancellable: AnyCancellable?
     @AppStorage("openToDo") var openToDo = false
+    @State var autoBuffer = false
+    @AppStorage("autoColorScheme") var autoColorScheme = false
     
     var body: some View {
         VStack {
@@ -84,17 +86,31 @@ struct SettingsView: View {
             Button {
             } label: {
                 HStack(spacing: 16) {
-                    CustomToggleSwitch(boolean: $darkModeBuffer, colors: [.purple, .yellow], images: ["moon.fill", "sun.max.fill"])
-                        .onChange(of: darkModeBuffer) { newValue in // need all this stuff to make sure that when dark mode is changing (with a lil lag) it does not impede the switching animation which would look like lag
-                            debounceCancellable?.cancel()
-                            
-                            debounceCancellable = Just(newValue)
-                                .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
-                                .sink { finalValue in
-                                    darkMode = finalValue
-                                    
-                                }
-                        }
+                    VStack {
+                        CustomToggleSwitch(boolean: $autoBuffer, colors: [.gray, .green], images: ["lightbulb.slash", "sun.dust"])
+                            .onChange(of: autoBuffer) { newValue in
+                                debounceCancellable?.cancel()
+                                
+                                debounceCancellable = Just(newValue)
+                                    .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
+                                    .sink { finalValue in
+                                        autoColorScheme = !finalValue
+                                    }
+                            }
+                        
+                        CustomToggleSwitch(boolean: $darkModeBuffer, enabled: !autoColorScheme, colors: [autoColorScheme ? .gray : .purple, autoColorScheme ? .gray : .yellow], images: ["moon.fill", "sun.max.fill"])
+                            .onChange(of: darkModeBuffer) { newValue in // need all this stuff to make sure that when dark mode is changing (with a lil lag) it does not impede the switching animation which would look like lag
+                                debounceCancellable?.cancel()
+                                
+                                debounceCancellable = Just(newValue)
+                                    .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
+                                    .sink { finalValue in
+                                        if !autoColorScheme {
+                                            darkMode = finalValue
+                                        }
+                                    }
+                            }
+                    }
                     
                     CustomToggleSwitch(boolean: $animationsPlusBuffer, colors: [.blue, .orange], images: ["star.fill", "star.slash.fill"])
                         .onChange(of: animationsPlusBuffer) { newValue in // to make the animation smoother when toggling

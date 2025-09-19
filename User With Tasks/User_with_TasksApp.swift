@@ -22,13 +22,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct User_with_TasksApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @AppStorage("darkMode") var darkMode = false
+    @Environment(\.colorScheme) var colorScheme
+    @AppStorage("autoColorScheme") var autoColorScheme = false
     @AppStorage("openToDo") var openToDo = false
     
     var body: some Scene {
         WindowGroup {
             if !openToDo {
                 ContentView()
-                    .preferredColorScheme(darkMode ? .dark : .light)
+                    .preferredColorScheme(autoColorScheme ? colorScheme : (darkMode ? .dark : .light))
                     .accentColor(.blue)
                     .transition(.opacity)
             } else {

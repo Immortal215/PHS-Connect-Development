@@ -172,6 +172,7 @@ struct CustomizableDropdown: View {
 
 struct CustomToggleSwitch: View {
     @Binding var boolean: Bool
+    var enabled: Bool = true
     var colors : [Color]
     var images : [String]
     
@@ -198,8 +199,10 @@ struct CustomToggleSwitch: View {
         }
         .frame(width: 60, height: 30)
         .onTapGesture {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                boolean.toggle()
+            if enabled {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    boolean.toggle()
+                }
             }
         }
     }
