@@ -381,9 +381,8 @@ struct ContentView: View {
                 }
             }
             
-            if userInfo != nil || viewModel.isGuestUser == true {
-                setupClubsListener()
-            }
+            setupClubsListener()
+            
             
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
