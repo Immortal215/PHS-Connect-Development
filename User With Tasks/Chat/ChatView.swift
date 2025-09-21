@@ -494,7 +494,7 @@ struct ChatView: View {
                 }
             }
         
-        databaseRef.child("messages").observe(.childChanged) { snapshot in
+        databaseRef.child("messages").queryOrdered(byChild: "date").queryStarting(atValue: lastTimestamp + 0.001).observe(.childChanged) { snapshot in
             if let updatedMessage = decodeMessage(from: snapshot) {
                 DispatchQueue.main.async {
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
