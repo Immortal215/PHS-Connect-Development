@@ -9,6 +9,7 @@ import SwiftUIX
 import PopupView
 import MapKit
 import SDWebImageSwiftUI
+import SkeletonUI
 
 struct ClubInfoView: View {
     @State var club : Club
@@ -100,9 +101,8 @@ struct ClubInfoView: View {
                                 },
                                 placeholder: {
                                     ZStack {
-                                        Rectangle()
-                                            .stroke(.gray)
-                                        ProgressView("Loading \(club.name) Image")
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .skeleton(with: true)
                                     }
                                 }
                             )

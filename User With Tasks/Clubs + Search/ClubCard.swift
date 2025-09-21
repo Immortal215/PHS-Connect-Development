@@ -8,6 +8,7 @@ import Pow
 import SwiftUIX
 import Shimmer
 import SDWebImageSwiftUI
+import SkeletonUI
 
 struct ClubCard: View {
     @State var club: Club
@@ -52,9 +53,8 @@ struct ClubCard: View {
                     },
                     placeholder: {
                         ZStack {
-                            Rectangle()
-                                .stroke(Color.gray)
-                            ProgressView("Loading \(club.name) Image")
+                            RoundedRectangle(cornerRadius: 25)
+                                .skeleton(with: true)
                         }
                     }
                 )

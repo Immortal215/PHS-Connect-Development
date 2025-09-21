@@ -109,52 +109,52 @@ struct ContentView: View {
                 } else {
                     ZStack {
                         if advSearchShown {
-//                            TabView(selection: $selectedTab) {
-//                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-//                                    .tabItem {
-//                                        Image(systemName: "magnifyingglass")
-//                                        Text("Clubs")
-//                                    }
-//                                    .tag(0)
-//                                
-//                                if userInfo != nil {
-//                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-//                                        .tabItem {
-//                                            Image(systemName: "rectangle.3.group.bubble")
-//                                            Text("Home")
-//                                        }
-//                                        .tag(1)
-//                                    
-//                                    ChatView(clubs: $clubs, userInfo: $userInfo)
-//                                        .tabItem {
-//                                            Image(systemName: "bubble.left.and.bubble.right")
-//                                            Text("Chat")
-//                                        }
-//                                        .tag(6)
-//                                    
-//                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-//                                        .tabItem {
-//                                            Image(systemName: "calendar.badge.clock")
-//                                            Text("Calendar")
-//                                        }
-//                                        .tag(2)
-//                                }
-//                                
-//                                SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-//                                    .padding()
-//                                    .tabItem {
-//                                        Image(systemName: "gearshape")
-//                                        Text("Settings")
-//                                    }
-//                                    .tag(3)
-//                            }
-//                            .tabViewStyle(.page)
-//                            .transition(.opacity)
-//                            .ignoresSafeArea(edges: .all)
-//                            .background {
-//                                RandomShapesBackground()
-//                            }
-//
+                            //                            TabView(selection: $selectedTab) {
+                            //                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                            //                                    .tabItem {
+                            //                                        Image(systemName: "magnifyingglass")
+                            //                                        Text("Clubs")
+                            //                                    }
+                            //                                    .tag(0)
+                            //
+                            //                                if userInfo != nil {
+                            //                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                            //                                        .tabItem {
+                            //                                            Image(systemName: "rectangle.3.group.bubble")
+                            //                                            Text("Home")
+                            //                                        }
+                            //                                        .tag(1)
+                            //
+                            //                                    ChatView(clubs: $clubs, userInfo: $userInfo)
+                            //                                        .tabItem {
+                            //                                            Image(systemName: "bubble.left.and.bubble.right")
+                            //                                            Text("Chat")
+                            //                                        }
+                            //                                        .tag(6)
+                            //
+                            //                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                            //                                        .tabItem {
+                            //                                            Image(systemName: "calendar.badge.clock")
+                            //                                            Text("Calendar")
+                            //                                        }
+                            //                                        .tag(2)
+                            //                                }
+                            //
+                            //                                SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
+                            //                                    .padding()
+                            //                                    .tabItem {
+                            //                                        Image(systemName: "gearshape")
+                            //                                        Text("Settings")
+                            //                                    }
+                            //                                    .tag(3)
+                            //                            }
+                            //                            .tabViewStyle(.page)
+                            //                            .transition(.opacity)
+                            //                            .ignoresSafeArea(edges: .all)
+                            //                            .background {
+                            //                                RandomShapesBackground()
+                            //                            }
+                            //
                             ZStack {
                                 SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same
@@ -299,18 +299,18 @@ struct ContentView: View {
                             selectedTab = 3 // settings
                         }
                         
-//                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
-//                            
-//                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary
-//                            Database.database().reference().child("clubs").observeSingleEvent(of: .value) { snapshot in
-//                                for case let child as DataSnapshot in snapshot.children {
-//                                    if var clubDict = child.value as? [String: Any],
-//                                       clubDict["lastUpdated"] == nil {
-//                                        Database.database().reference().child("clubs").child(child.key).child("lastUpdated").setValue(0)
-//                                    }
-//                                }
-//                            }
-//                        }
+                        //                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
+                        //
+                        //                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary
+                        //                            Database.database().reference().child("clubs").observeSingleEvent(of: .value) { snapshot in
+                        //                                for case let child as DataSnapshot in snapshot.children {
+                        //                                    if var clubDict = child.value as? [String: Any],
+                        //                                       clubDict["lastUpdated"] == nil {
+                        //                                        Database.database().reference().child("clubs").child(child.key).child("lastUpdated").setValue(0)
+                        //                                    }
+                        //                                }
+                        //                            }
+                        //                        }
                         
                     }
                     .refreshable {
@@ -324,7 +324,7 @@ struct ContentView: View {
                                         showSignInView = true
                                     }
                                 }
-
+                                
                             }
                         }
                         
@@ -351,12 +351,12 @@ struct ContentView: View {
             }
             
         }
-    //    .scrollDismissesKeyboard(.immediately)
+        //    .scrollDismissesKeyboard(.immediately)
         .scrollDismissesKeyboard(.interactively)
         .onChange(of: selectedTab) {
             _ = networkMonitor.isConnected
         }
-        .onAppear {
+        .onAppearOnce {
             if viewModel.isGuestUser {
                 do {
                     try AuthenticationManager.shared.signOut()
@@ -374,14 +374,16 @@ struct ContentView: View {
             searchText = ""
             
             for clubId in cachedClubIDs.split(separator: ",") {
-                let cache = ClubCache(clubID: String(clubId)) 
-                    if let loadedClub = cache.load() {
-                        clubs.append(loadedClub)
-                    }
+                let cache = ClubCache(clubID: String(clubId))
+                if let loadedClub = cache.load() {
+                    clubs.append(loadedClub)
+                }
             }
             
-            setupClubsListener()
-
+            if userInfo != nil || viewModel.isGuestUser == true {
+                setupClubsListener()
+            }
+            
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
@@ -437,14 +439,14 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     clubs.removeAll(where: { $0.clubID == removedClub.clubID })
                     cachedClubIDs = cachedClubIDs.replacingOccurrences(of: removedClub.clubID + ",", with: "")
-
+                    
                     let cache = ClubCache(clubID: removedClub.clubID)
                     try? FileManager.default.removeItem(at: cache.cacheURL)
                 }
             }
         }
     }
-
+    
     func decodeClub(from snapshot: DataSnapshot) -> Club? {
         guard let clubData = try? JSONSerialization.data(withJSONObject: snapshot.value ?? [:]),
               let club = try? JSONDecoder().decode(Club.self, from: clubData) else {
@@ -489,7 +491,7 @@ struct RandomShapesBackground: View {
                     .position(positions.count > i ? positions[i] : CGPoint.zero)
                     .blur(radius: 8)
             }
-
+            
             ForEach(12..<24, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.primary.opacity(0.15), lineWidth: 5)
