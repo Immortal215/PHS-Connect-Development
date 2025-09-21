@@ -32,7 +32,7 @@ struct SettingsView: View {
     @State var debounceCancellable: AnyCancellable?
     @AppStorage("openToDo") var openToDo = false
     @State var autoBuffer = false
-    @AppStorage("autoColorScheme") var autoColorScheme = false
+    @AppStorage("autoColorScheme") var autoColorScheme = true
     
     var body: some View {
         VStack {

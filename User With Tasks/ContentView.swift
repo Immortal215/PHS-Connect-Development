@@ -8,6 +8,7 @@ import Drops
 import SwiftUIX
 import CUIExpandableButton
 import FirebaseFirestore
+import SDWebImageSwiftUI
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
@@ -41,7 +42,7 @@ struct ContentView: View {
                             .font(.title)
                             .fontWeight(.bold)
                         
-                        AsyncImage(url: URL(string: "https://www.d214.org/cms/lib/IL50000680/Centricity/Template/GlobalAssets/images///Prospect/PHS%20logo_229px.png")) { Image in
+                        WebImage(url: URL(string: "https://www.d214.org/cms/lib/IL50000680/Centricity/Template/GlobalAssets/images///Prospect/PHS%20logo_229px.png")) { Image in
                             Image
                         } placeholder: {
                             ProgressView()
