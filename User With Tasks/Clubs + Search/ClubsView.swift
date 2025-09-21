@@ -22,28 +22,9 @@ struct ClubView: View {
     @State var showClubInfoSheet = false
     @State var notificationBellClicked = false
     @AppStorage("selectedTab") var selectedTab = 3
+    @State var notificationCount = 0
     
     var body: some View {
-        //        var filteredClubsFavorite: [Club] {
-        //            return clubs
-        //                .sorted {
-        //                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        //                }
-        //                .filter { club in
-        //                    userInfo?.favoritedClubs.contains(club.clubID) ?? false
-        //                }
-        //        }
-        
-        var filteredClubsEnrolled: [Club] {
-            return clubs
-                .sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                }
-                .filter { club in
-                    (club.leaders.contains(viewModel.userEmail!) || club.members.contains(viewModel.userEmail!))
-                }
-        }
-        
         ZStack {
             if advSearchShown && !clubs.isEmpty {
                 VStack {
@@ -57,17 +38,6 @@ struct ClubView: View {
                         Button {
                             notificationBellClicked.toggle()
                         } label: {
-                            let notificationCount = clubs.reduce(0) { total, club in
-                                guard let announcements = club.announcements else { return total }
-                                let unreadCount = announcements.values.filter { announcement in
-                                    let hasNotSeen = !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false)
-                                    let isRecent = dateFromString(announcement.date) > Date().addingTimeInterval(-604800) // 7 days ago
-                                    let isMemberOrLeader = club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")
-                                    return hasNotSeen && isRecent && isMemberOrLeader
-                                }.count
-                                return total + unreadCount
-                            }
-                            
                             ZStack {
                                 Image(systemName: notificationBellClicked ? "bell.fill" : "bell")
                                     .imageScale(.large)
@@ -81,21 +51,23 @@ struct ClubView: View {
                                         .offset(x: 10, y: -10)
                                 }
                             }
-                            
-                            
                         }
                     }
                     .padding(.horizontal)
                     .padding(.top)
                     .padding(.bottom, -8)
+                    
                     ScrollView {
-                        
                         if clubs.count > 1 {
-                            // Clubs in
-                            HomePageScrollers(filteredClubs: filteredClubsEnrolled, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Enrolled")
-                            
-                            // favorited clubs
-                            //                            HomePageScrollers(filteredClubs: filteredClubsFavorite, clubs: clubs, viewModel: viewModel, screenHeight: screenHeight, screenWidth: screenHeight, userInfo: $userInfo, scrollerOf: "Favorite")
+                            HomePageScrollers(
+                                filteredClubs: enrolledClubs(from: clubs),
+                                clubs: clubs,
+                                viewModel: viewModel,
+                                screenHeight: screenHeight,
+                                screenWidth: screenHeight,
+                                userInfo: $userInfo,
+                                scrollerOf: "Enrolled"
+                            )
                         }
                     }
                 }
@@ -103,19 +75,14 @@ struct ClubView: View {
             } else {
                 ProgressView()
             }
-            
+        }
+        .animation(.smooth)
+        .onAppearOnce {
+            notificationCount = unreadCount(from: clubs)
+
         }
         .popup(isPresented: $notificationBellClicked) {
-            let unreadAnnouncements: [String: Club.Announcements] = clubs.reduce(into: [String: Club.Announcements]()) { result, club in
-                guard let announcements = club.announcements else { return }
-                let filteredAnnouncements = announcements.filter { (_, announcement) in
-                    let hasNotSeen = !(announcement.peopleSeen?.contains(viewModel.userEmail ?? "") ?? false)
-                    let isRecent = dateFromString(announcement.date) > Date().addingTimeInterval(-604800)
-                    let isMemberOrLeader = club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")
-                    return hasNotSeen && isRecent && isMemberOrLeader
-                }
-                result.merge(filteredAnnouncements) { _, new in new }
-            }
+            let unreadAnnouncements = unreadAnnouncements(from: clubs)
             
             VStack {
                 if unreadAnnouncements.isEmpty {
@@ -124,8 +91,15 @@ struct ClubView: View {
                         .foregroundColor(.gray)
                         .padding()
                 } else {
-                    AnnouncementsView(announcements: unreadAnnouncements, viewModel: viewModel, isClubMember: true, clubs: clubs, isHomePage: true, userInfo: $userInfo)
-                        .padding()
+                    AnnouncementsView(
+                        announcements: unreadAnnouncements,
+                        viewModel: viewModel,
+                        isClubMember: true,
+                        clubs: clubs,
+                        isHomePage: true,
+                        userInfo: $userInfo
+                    )
+                    .padding()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: screenHeight/1.8)
@@ -143,6 +117,41 @@ struct ClubView: View {
                 .dragToDismiss(true)
                 .closeOnTap(false)
                 .animation(.easeInOut)
+        }
+    }
+    
+    func enrolledClubs(from clubs: [Club]) -> [Club] {
+        guard let email = viewModel.userEmail else { return [] }
+        return clubs
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            .filter { $0.leaders.contains(email) || $0.members.contains(email) }
+    }
+    
+    func unreadCount(from clubs: [Club]) -> Int {
+        guard let email = viewModel.userEmail else { return 0 }
+        return clubs.reduce(0) { total, club in
+            guard let announcements = club.announcements else { return total }
+            let unread = announcements.values.filter { ann in
+                let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
+                let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
+                let isMemberOrLeader = club.members.contains(email) || club.leaders.contains(email)
+                return hasNotSeen && isRecent && isMemberOrLeader
+            }.count
+            return total + unread
+        }
+    }
+    
+    func unreadAnnouncements(from clubs: [Club]) -> [String: Club.Announcements] {
+        guard let email = viewModel.userEmail else { return [:] }
+        return clubs.reduce(into: [String: Club.Announcements]()) { result, club in
+            guard let announcements = club.announcements else { return }
+            let filtered = announcements.filter { (_, ann) in
+                let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
+                let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
+                let isMemberOrLeader = club.members.contains(email) || club.leaders.contains(email)
+                return hasNotSeen && isRecent && isMemberOrLeader
+            }
+            result.merge(filtered) { _, new in new }
         }
     }
 }

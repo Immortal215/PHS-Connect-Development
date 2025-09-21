@@ -1,5 +1,5 @@
 {
-  "originHash" : "a2e7ce3fb1755f41b769dbb4a525a9a083b5b43d794ac9d74ee7864b33215eae",
+  "originHash" : "f847434940bd5a4c37283565e6afb9684cbf077bd44f26a392160e1a3577e4e5",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -218,12 +218,48 @@
       }
     },
     {
+      "identity" : "skeletonui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CSolanaM/SkeletonUI.git",
+      "state" : {
+        "revision" : "f025e9ba5d051374d7344efa8859df5b9399a181",
+        "version" : "2.0.2"
+      }
+    },
+    {
+      "identity" : "swift-custom-dump",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-custom-dump",
+      "state" : {
+        "revision" : "82645ec760917961cfa08c9c0c7104a57a0fa4b1",
+        "version" : "1.3.3"
+      }
+    },
+    {
       "identity" : "swift-protobuf",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
         "revision" : "ebc7251dd5b37f627c93698e4374084d98409633",
         "version" : "1.28.2"
+      }
+    },
+    {
+      "identity" : "swift-snapshot-testing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
+      "state" : {
+        "revision" : "a8b7c5e0ed33d8ab8887d1654d9b59f2cbad529b",
+        "version" : "1.18.7"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax",
+      "state" : {
+        "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
+        "version" : "602.0.0"
       }
     },
     {
@@ -260,6 +296,15 @@
       "state" : {
         "revision" : "e984fd2e08140ad5a95d084be38fe02b774bc15d",
         "version" : "0.2.3"
+      }
+    },
+    {
+      "identity" : "xctest-dynamic-overlay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+      "state" : {
+        "revision" : "b2ed9eabefe56202ee4939dd9fc46b6241c88317",
+        "version" : "1.6.1"
       }
     }
   ],

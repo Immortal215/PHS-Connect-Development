@@ -7,6 +7,8 @@ import FirebaseDatabase
 import Pow
 import SwiftUIX
 import Shimmer
+import SDWebImageSwiftUI
+import SkeletonUI
 
 struct ClubCardHome: View {
     @State var club: Club
@@ -17,17 +19,14 @@ struct ClubCardHome: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var infoRelativeIndex: Int
     @Binding var userInfo: Personal?
+    @State var notificationCount = 0
     
     var body: some View {
         let clubColor = Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())!
+        
         ZStack(alignment: .bottom) {
-//            RoundedRectangle(cornerRadius: 25)
-//                .foregroundStyle(Color(UIColor.systemGray6))
-            
-            
             HStack {
-                // Club Image Section
-                AsyncImage(
+                WebImage(
                     url: URL(
                         string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
                     ),
@@ -49,10 +48,6 @@ struct ClubCardHome: View {
                                 .frame(maxWidth: screenWidth / CGFloat(imageScaler + 0.3))
                                 .fixedSize()
                             }
-                            
-                            //                            RoundedRectangle(cornerRadius: 25)
-                            //   .stroke(.black, lineWidth: 3)
-                            // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
                         }
                         .frame(width: screenWidth/4, height: screenWidth/4)
                     },
@@ -60,7 +55,7 @@ struct ClubCardHome: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 25)
                                 .foregroundStyle(.gray)
-                                .shimmering()
+                                .skeleton(with: true)
                         }
                         .frame(width: screenWidth/4, height: screenWidth/4)
                     }
@@ -79,8 +74,7 @@ struct ClubCardHome: View {
                                 .foregroundStyle(.yellow)
                         }
                         
-                        if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) { // ensures that the announcment has not been seen and is less than a week old
-                            
+                        if notificationCount > 0 {
                             Button {
                                 
                             } label: {
@@ -89,8 +83,6 @@ struct ClubCardHome: View {
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(Color(hexadecimal: "D9D9D9"))
-                            
-                            
                         }
                         
                         Spacer()
@@ -100,14 +92,18 @@ struct ClubCardHome: View {
                             .bold()
                     }
                     
-                    //                    Text("Recent Updates")
-                    //                        .font(.title3)
-                    //                        .bold()
-                    //
                     if let announcements = club.announcements {
                         ScrollView(.horizontal) {
                             LazyHStack {
-                                AllAnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: true, clubs: [club], isHomePage: true, userInfo: $userInfo, isTheHomeScreenClubView: true)
+                                AllAnnouncementsView(
+                                    announcements: announcements,
+                                    viewModel: viewModel,
+                                    isClubMember: true,
+                                    clubs: [club],
+                                    isHomePage: true,
+                                    userInfo: $userInfo,
+                                    isTheHomeScreenClubView: true
+                                )
                             }
                         }
                     } else {
@@ -120,34 +116,28 @@ struct ClubCardHome: View {
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 
-                
-                
                 Spacer()
-                
             }
             .background(
-                      GlassBackground(color: clubColor)
-                      .clipShape(RoundedRectangle(cornerRadius: 25))
-                  )
+                GlassBackground(color: clubColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 25))
+            )
         }
-
+        .onAppearOnce {
+            notificationCount = unseenNotificationCount(for: club)
+        }
         .animation(.easeInOut)
-        // .onAppear {
-        //            if (!(userInfo?.favoritedClubs.contains(club.clubID) ?? false)) && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
-        //                addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
-        //                refreshUserInfo()
-        //            }
-        //  }
     }
     
-    func refreshUserInfo() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-            if let userID = viewModel.uid {
-                fetchUser(for: userID) { user in
-                    userInfo = user
-                }
-            }
-        }
+    
+    // Counts unseen announcements for this club in the last 7 days for the current user
+    func unseenNotificationCount(for club: Club) -> Int {
+        guard let email = viewModel.userEmail else { return 0 }
+        return club.announcements?.values.filter { ann in
+            let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
+            let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
+            let isMemberOrLeader = club.members.contains(email) || club.leaders.contains(email)
+            return hasNotSeen && isRecent && isMemberOrLeader
+        }.count ?? 0
     }
 }
-

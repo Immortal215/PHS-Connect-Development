@@ -7,14 +7,16 @@ import GoogleSignInSwift
 import SwiftUI
 
 func addClub(club: Club) {
-    let refrence = Database.database().reference()
-    let clubRefrence = refrence.child("clubs").child(club.clubID)
+    let reference = Database.database().reference()
+    let clubReference = reference.child("clubs").child(club.clubID)
+    
+    var clubToSave = club
+    clubToSave.lastUpdated = Date().timeIntervalSince1970
     
     do {
-        let data = try JSONEncoder().encode(club)
+        let data = try JSONEncoder().encode(clubToSave)
         if let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            clubRefrence.setValue(dictionary)
-            //            dropper(title: "Added Club!", subtitle: "", icon: UIImage(systemName: "externaldrive.fill.badge.plus"))
+            clubReference.setValue(dictionary)
         }
     } catch {
         print("Error encoding club data: \(error)")
@@ -40,7 +42,6 @@ func fetchUser(for userID: String, completion: @escaping (Personal?) -> Void) {
         }
     }
 }
-
 
 func addClubToFavorites(for userID: String, clubID: String) {
     let reference = Database.database().reference()
@@ -126,9 +127,8 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
     var clubNames: [String] = []
     let group = DispatchGroup()
     
-    // Start from index 1
     for clubID in clubIDs {
-        group.enter() // Enter the group for each async call
+        group.enter()
         getClubNameByID(clubID: clubID) { clubName in
             if let name = clubName {
                 clubNames.append(name)
@@ -142,6 +142,7 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
     }
 }
 
+
 func addAnnouncement(announcement: Club.Announcements) {
     let reference = Database.database().reference()
     let announcementReference = reference.child("clubs").child(announcement.clubID).child("announcements")
@@ -150,9 +151,11 @@ func addAnnouncement(announcement: Club.Announcements) {
         let data = try JSONEncoder().encode(announcement)
         if let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
             announcementReference.child(announcement.date).setValue(dictionary)
+            // also update lastUpdated
+            reference.child("clubs").child(announcement.clubID).child("lastUpdated").setValue(Date().timeIntervalSince1970)
         }
     } catch {
-        print("Error encoding club data: \(error)")
+        print("Error encoding announcement data: \(error)")
     }
 }
 
@@ -179,6 +182,7 @@ func addPersonSeen(announcement: Club.Announcements, memberEmail: String) {
         }
     }
 }
+
 func addMeeting(meeting: Club.MeetingTime) {
     let reference = Database.database().reference()
     let clubReference = reference.child("clubs").child(meeting.clubID)
@@ -195,6 +199,7 @@ func addMeeting(meeting: Club.MeetingTime) {
             if let meetingDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 currentMeetings.append(meetingDict)
                 clubReference.child("meetingTimes").setValue(currentMeetings)
+                clubReference.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                 dropper(title: "Added Meeting Time!", subtitle: "", icon: nil)
             }
         } catch {
@@ -230,37 +235,11 @@ func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) 
                 print("Error removing old meeting: \(error)")
             } else {
                 addMeeting(meeting: newMeeting)
+                oldClubReference.child("lastUpdated").setValue(Date().timeIntervalSince1970)
             }
         }
     }
 }
-
-// the below functions are needed to allow normal members to remove themselves from clubs
-
-//func addMemberToClub(clubID: String, memberEmail: String) {
-//    let databaseRef = Database.database().reference()
-//    let clubRef = databaseRef.child("clubs").child(clubID)
-//
-//    clubRef.child("members").observeSingleEvent(of: .value) { snapshot in
-//        var members = snapshot.value as? [String] ?? []
-//
-//        if members.contains(memberEmail.lowercased()) {
-//            print("Error: Member already in the club.")
-//            return
-//        }
-//
-//        members.append(memberEmail.lowercased())
-//        clubRef.child("members").setValue(members) { error, _ in
-//            if let error = error {
-//                print("Error adding member: \(error.localizedDescription)")
-//            } else {
-//                print("Member added successfully.")
-//                dropper(title: "Club Left!", subtitle: "", icon: nil)
-//
-//            }
-//        }
-//    }
-//}
 
 func addMemberToClub(clubID: String, memberEmail: String) {
     let databaseRef = Database.database().reference()
@@ -280,7 +259,8 @@ func addMemberToClub(clubID: String, memberEmail: String) {
             if let error = error {
                 print("Error adding member to members: \(error.localizedDescription)")
             } else {
-                print("Member added to pending requests successfully.")
+                print("Member added successfully.")
+                clubRef.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                 dropper(title: "Joined Club!", subtitle: "", icon: nil)
             }
         }
@@ -301,6 +281,7 @@ func removeMemberFromClub(clubID: String, emailToRemove: String) {
                 if let error = error {
                     print("Error removing email: \(error.localizedDescription)")
                 } else {
+                    clubRef.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                     print("Email removed successfully.")
                     dropper(title: "Club Left!", subtitle: "", icon: nil)
                 }
@@ -330,6 +311,7 @@ func addPendingMemberRequest(clubID: String, memberEmail: String) {
                 print("Error adding member to pending requests: \(error.localizedDescription)")
             } else {
                 print("Member added to pending requests successfully.")
+                clubRef.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                 dropper(title: "Requested Membership!", subtitle: "", icon: nil)
             }
         }
@@ -350,6 +332,7 @@ func removePendingMemberRequest(clubID: String, emailToRemove: String) {
                 if let error = error {
                     print("Error removing email from pending requests: \(error.localizedDescription)")
                 } else {
+                    clubRef.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                     print("Email removed from pending requests successfully.")
                     dropper(title: "Join Request Cancelled!", subtitle: "", icon: nil)
                 }
@@ -370,12 +353,14 @@ func addLocationCoords(clubID: String, locationCoords: [Double]) {
             if let error = error {
                 print("Error adding coords : \(error.localizedDescription)")
             } else {
+                clubRef.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                 print("Added coords successfully.")
                 dropper(title: "Location Edited Successfully!", subtitle: "", icon: nil)
             }
         }
     }
 }
+
 
 func fetchChatsMetaData(chatIds: [String], completion: @escaping ([Chat]?) -> Void) {
     let ref = Database.database().reference().child("chats")
@@ -388,7 +373,6 @@ func fetchChatsMetaData(chatIds: [String], completion: @escaping ([Chat]?) -> Vo
             if let dict = snapshot.value as? [String: Any] {
                 do {
                     var chatDict = dict
-                    // convert messages dictionary -> array
                     if let messagesDict = chatDict["messages"] as? [String: Any] {
                         var messagesArray: [[String: Any]] = []
                         for (_, value) in messagesDict {
@@ -419,7 +403,6 @@ func fetchChatsMetaData(chatIds: [String], completion: @escaping ([Chat]?) -> Vo
         completion(fetchedChats.isEmpty ? nil : fetchedChats)
     }
 }
-
 
 func createClubGroupChat(clubId: String, messageTo: String?, completion: @escaping (Chat) -> Void) {
     let ref = Database.database().reference().child("chats")
@@ -468,9 +451,9 @@ func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) 
     
     let messageRef: DatabaseReference
     if !messageToSend.messageID.isEmpty && messageToSend.messageID != String() {
-        messageRef = messagesRef.child(messageToSend.messageID) // edit existing
+        messageRef = messagesRef.child(messageToSend.messageID)
     } else {
-        messageRef = messagesRef.childByAutoId() // cvreate new
+        messageRef = messagesRef.childByAutoId()
         messageToSend.messageID = messageRef.key ?? "ERROR"
     }
     

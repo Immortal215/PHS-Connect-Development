@@ -39,6 +39,7 @@ class ClubCache {
     func save(club: Club) {
         if let data = try? JSONEncoder().encode(club) {
             try? data.write(to: cacheURL)
+            
         }
     }
 }
