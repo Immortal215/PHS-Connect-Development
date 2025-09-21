@@ -235,7 +235,6 @@ func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime) 
                 print("Error removing old meeting: \(error)")
             } else {
                 addMeeting(meeting: newMeeting)
-                oldClubReference.child("lastUpdated").setValue(Date().timeIntervalSince1970)
             }
         }
     }

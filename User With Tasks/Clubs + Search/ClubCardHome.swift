@@ -8,7 +8,6 @@ import Pow
 import SwiftUIX
 import Shimmer
 import SDWebImageSwiftUI
-import SkeletonUI
 
 struct ClubCardHome: View {
     @State var club: Club
@@ -55,7 +54,7 @@ struct ClubCardHome: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 25)
                                 .foregroundStyle(.gray)
-                                .skeleton(with: true)
+                                .shimmering(active: true, duration: 2.4)
                         }
                         .frame(width: screenWidth/4, height: screenWidth/4)
                     }

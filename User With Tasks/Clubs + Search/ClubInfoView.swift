@@ -100,9 +100,8 @@ struct ClubInfoView: View {
                                 },
                                 placeholder: {
                                     ZStack {
-                                        Rectangle()
-                                            .stroke(.gray)
-                                        ProgressView("Loading \(club.name) Image")
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .shimmering(active: true, duration: 2.4)
                                     }
                                 }
                             )

@@ -52,9 +52,8 @@ struct ClubCard: View {
                     },
                     placeholder: {
                         ZStack {
-                            Rectangle()
-                                .stroke(Color.gray)
-                            ProgressView("Loading \(club.name) Image")
+                            RoundedRectangle(cornerRadius: 25)
+                                .shimmering(active: true, duration: 2.4)
                         }
                     }
                 )
