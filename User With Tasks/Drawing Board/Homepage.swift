@@ -998,11 +998,30 @@ struct Line {
 }
 
 func dateFormatClean(str : Date) -> String {
-    let dater = DateFormatter() 
     
-    dater.dateFormat = "E, MMM / d / yyyy, h:mm a"
+    let now = Date()
     
-    dater.locale = Locale(identifier: "en_US_POSIX")
+    let calendar = Calendar.current
     
-    return dater.string(from: str)
+    let components = calendar.dateComponents([.day, .hour, .minute], from: now, to: str)
+    
+    let formatter = DateComponentsFormatter()
+
+    if components.day ?? 0 == 1 {
+        
+        formatter.allowedUnits = [.day, .hour]
+        
+    } else if components.day ?? 0 < 1 {
+        
+        formatter.allowedUnits = [.hour, .minute]
+        
+    } else {
+        
+        formatter.allowedUnits = [.day]
+        
+    }
+    
+    formatter.unitsStyle = .full
+    
+    return formatter.string(from: components) ?? ""
 }
