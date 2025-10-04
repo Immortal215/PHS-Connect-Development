@@ -377,7 +377,7 @@ struct Homepage: View {
                                         .foregroundStyle(foregroundStyler(dueDate: dueDates[index], assignment: names[index]))
                                         .onChange(of: dueDates[index]) {
                                             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-                                                if dueDates.count < index {
+                                                if dueDates.indices.contains(index) {
                                                     foregroundStyle = foregroundStyler(dueDate: dueDates[index], assignment: names[index])
                                                 }
                                             }

@@ -169,7 +169,7 @@ struct ChatView: View {
                     if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
                         AsyncImage(url: url) { image in
                             image.resizable()
-                                 .scaledToFill()
+                                .scaledToFill()
                         } placeholder: {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
                                 .foregroundColor(.secondary)
@@ -207,6 +207,8 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     if let selected = selectedChat {
+                        let clubColor = colorFromClub(club: selectedClub)
+                        
                         ForEach(Array((selected.messages ?? []).enumerated()), id: \.element) { index, message in
                             let previousMessage : Chat.ChatMessage? = index > 0 ? selected.messages?[index - 1] : nil
                             let nextMessage : Chat.ChatMessage? = index < (selected.messages?.count ?? 0) - 1 ? selected.messages?[index + 1] : nil
@@ -226,15 +228,14 @@ struct ChatView: View {
                                                     .foregroundStyle(.primary)
                                                     .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                                     .background(
-                                                        GlassBackground(
-                                                            color: colorFromClub(club: selectedClub),
-                                                            shape: AnyShape(UnevenRoundedRectangle(
-                                                                topLeadingRadius: 25,
-                                                                bottomLeadingRadius: 25,
-                                                                bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
-                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage) ? 8 : 25
-                                                            ))
+                                                        UnevenRoundedRectangle(
+                                                            topLeadingRadius: 25,
+                                                            bottomLeadingRadius: 25,
+                                                            bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
+                                                            topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage) ? 8 : 25
                                                         )
+                                                        .foregroundColor(.blue)
+
                                                     )
                                                     .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
                                             }
@@ -302,11 +303,13 @@ struct ChatView: View {
                                                     Text(.init(message.message))
                                                         .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                                         .background (
-                                                            UnevenRoundedRectangle(
-                                                                topLeadingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25,
-                                                                bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
-                                                                bottomTrailingRadius: 25, topTrailingRadius: 25)
-                                                            .foregroundColor(Color.systemGray6)
+                                                            GlassBackground(
+                                                                color: clubColor,
+                                                                shape: AnyShape(UnevenRoundedRectangle(
+                                                                    topLeadingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25,
+                                                                    bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
+                                                                    bottomTrailingRadius: 25, topTrailingRadius: 25))
+                                                            )
                                                         )
                                                         .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
                                                     
@@ -335,7 +338,7 @@ struct ChatView: View {
                                     Text(.init(message.message))
                                         .foregroundStyle(Color.gray)
                                         .font(.headline)
-
+                                    
                                     Spacer()
                                 }
                                 .frame(maxWidth: screenWidth, maxHeight: screenHeight)
@@ -398,12 +401,12 @@ struct ChatView: View {
     func loadChats() {
         guard let email = userInfo?.userEmail else { return }
         isLoading = true
-
+        
         // filter clubs where user is leader or member and has chatIDs
         let relevantClubs = clubs.filter { club in
             (club.leaders.contains(email) || club.members.contains(email)) && !(club.chatIDs?.isEmpty ?? true) // ensures the chatIds exist in the club
         }
-
+        
         // load cached chats
         var loadedChats: [Chat] = []
         for club in relevantClubs {
@@ -417,14 +420,14 @@ struct ChatView: View {
             }
         }
         chats = loadedChats
-
+        
         // chatIds to fetch
         var chatIDsToFetch: [String] = []
         for club in relevantClubs {
             let uncached = club.chatIDs!.filter { !cachedChatIDs.contains($0) }
             chatIDsToFetch.append(contentsOf: uncached)
         }
-
+        
         // fehch metadata for uncached chatIDs
         fetchChatsMetaData(chatIds: chatIDsToFetch) { fetchedChats in
             if let fetched = fetchedChats {
@@ -435,11 +438,11 @@ struct ChatView: View {
                     } else {
                         chats.append(chat)
                     }
-
+                    
                     // save to ChatCache
                     let cache = ChatCache(chatID: chat.chatID)
                     cache.save(chat)
-
+                    
                     // update AppStorage cache
                     if !cachedChatIDs.contains(chat.chatID) {
                         cachedChatIDs.append(chat.chatID + ",")
@@ -449,7 +452,7 @@ struct ChatView: View {
             isLoading = false
         }
     }
-
+    
     
     func setupMessagesListener(for chatID: String) {
         let databaseRef = Database.database().reference()
@@ -554,7 +557,7 @@ struct ChatView: View {
             }
         }
     }
-
+    
     func decodeMessageDict(_ dict: [String: Any]) throws -> Chat.ChatMessage? { // initial messages fetch decode
         let jsonData = try JSONSerialization.data(withJSONObject: dict)
         return try JSONDecoder().decode(Chat.ChatMessage.self, from: jsonData)

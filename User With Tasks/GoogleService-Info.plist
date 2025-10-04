@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>862892596647-cbiep9ov056gv8glunjl9alsiua8og3p.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.862892596647-cbiep9ov056gv8glunjl9alsiua8og3p</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCqCY6PzaLpdm5j0Gg6DyT2RkAyhKy1xjE</string>
+	<key>GCM_SENDER_ID</key>
+	<string>862892596647</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>Sharul.User-with-Tasks</string>
+	<key>PROJECT_ID</key>
+	<string>user-with-personal-tasks</string>
+	<key>STORAGE_BUCKET</key>
+	<string>user-with-personal-tasks.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:862892596647:ios:6dc74e08addf3361fa6a82</string>
+	<key>DATABASE_URL</key>
+	<string>https://user-with-personal-tasks-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>
