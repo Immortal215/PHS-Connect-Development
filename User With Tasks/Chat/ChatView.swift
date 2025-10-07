@@ -225,7 +225,7 @@ struct ChatView: View {
                                                 Spacer()
                                                 
                                                 Text(.init(message.message))
-                                                    .foregroundStyle(.primary)
+                                                    .foregroundStyle(.white)
                                                     .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                                     .background(
                                                         UnevenRoundedRectangle(
@@ -292,6 +292,7 @@ struct ChatView: View {
                                                             GlassBackground()
                                                                 .frame(width: 35, height: 35)
                                                                 .padding(.leading, 4) // get it out of the weird clip range
+                                                                
                                                         }
                                                     )
                                                 }

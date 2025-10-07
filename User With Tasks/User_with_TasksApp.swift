@@ -24,6 +24,7 @@ struct User_with_TasksApp: App {
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("autoColorScheme") var autoColorScheme = false
     @AppStorage("openToDo") var openToDo = false
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some Scene {
         WindowGroup {
@@ -37,6 +38,11 @@ struct User_with_TasksApp: App {
                     .preferredColorScheme(.dark)
                     .accentColor(.cyan)
                     .transition(.opacity)
+            }
+        }
+        .onChange(of: colorScheme) {
+            if autoColorScheme {
+                darkMode = (colorScheme == .dark)
             }
         }
         
