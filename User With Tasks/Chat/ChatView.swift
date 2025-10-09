@@ -348,6 +348,11 @@ struct ChatView: View {
                         .alignmentGuide(.bottom)
                     }
                 }
+                .onAppear {
+                    if let selected = selectedChat {
+                        proxy.scrollTo(selected.messages?.last?.messageID ?? "0", anchor: .bottom) // makes it so whenever there is a new message, it will scroll to the bottom by its messageID
+                    }
+                }
                 .onChange(of: selectedChat?.messages) {
                     if let selected = selectedChat {
                         proxy.scrollTo(selected.messages?.last?.messageID ?? "0", anchor: .bottom) // makes it so whenever there is a new message, it will scroll to the bottom by its messageID
