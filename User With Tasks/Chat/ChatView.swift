@@ -389,6 +389,8 @@ struct ChatView: View {
                     .frame(width: 25, height: 25, alignment: .bottomTrailing)
                 }
                 .padding(.vertical, 16)
+                .keyboardShortcut(.return)
+                
             }
             .padding(.horizontal)
             .background {

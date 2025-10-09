@@ -22,7 +22,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct User_with_TasksApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @AppStorage("darkMode") var darkMode = false
-    @AppStorage("autoColorScheme") var autoColorScheme = false
+    @AppStorage("autoColorScheme") var autoColorScheme = true
     @AppStorage("openToDo") var openToDo = false
     @Environment(\.colorScheme) var colorScheme
     

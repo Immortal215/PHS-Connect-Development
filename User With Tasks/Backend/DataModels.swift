@@ -28,7 +28,7 @@ struct Club: Codable, Equatable, Hashable {
     var chatIDs: [String]? // chatID's for caching stuff
     var lastUpdated: Double? // timestamp from 1970 and ALWAYS UPDATE THIS WHENEVER UPDATING A FUNCTION
     
-    struct Announcements: Codable, Equatable, Hashable {
+    struct Announcements: Codable, Equatable, Hashable { // move this out / use the schoology integration cause this uses too much data
         var date: String
         var title: String
         var body: String
@@ -39,7 +39,7 @@ struct Club: Codable, Equatable, Hashable {
         var linkText: String?
     }
     
-    struct MeetingTime: Codable, Equatable, Hashable {
+    struct MeetingTime: Codable, Equatable, Hashable { // move this out / use the schoology integration cause this uses too much data
         var clubID: String
         var startTime: String
         var endTime: String

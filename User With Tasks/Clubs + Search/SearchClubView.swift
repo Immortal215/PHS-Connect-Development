@@ -312,8 +312,8 @@ struct SearchClubView: View {
                     .animation(.smooth, value: filteredItems)
                 }
                 .onAppear {
-                    
                     filteredItems = calculateFiltered()
+                    
                 }
                 .padding()
                 

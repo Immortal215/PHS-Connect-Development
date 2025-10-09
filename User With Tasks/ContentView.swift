@@ -375,12 +375,12 @@ struct ContentView: View {
             searchText = ""
             
             for clubId in cachedClubIDs.split(separator: ",") {
-                let cache = ClubCache(clubID: String(clubId))
+                let cache = ClubCache(clubID: String(clubId).replacingOccurrences(of: " ", with: ""))
                 if let loadedClub = cache.load() {
                     clubs.append(loadedClub)
                 }
             }
-            
+            print(cachedClubIDs)
             setupClubsListener()
             
             
@@ -388,7 +388,7 @@ struct ContentView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
-    func setupClubsListener() {
+    func setupClubsListener() { // definitly work on making this a lot lot lot less often for especially changing clubs
         let databaseRef = Database.database().reference().child("clubs")
         
         let latestCachedTimestamp = clubs.compactMap { $0.lastUpdated }.max() ?? -0.001
@@ -406,8 +406,8 @@ struct ContentView: View {
                     
                     let cache = ClubCache(clubID: club.clubID)
                     cache.save(club: club)
-                    
-                    if !cachedClubIDs.contains(club.clubID) {
+                    print(club.clubID + "added")
+                    if !cachedClubIDs.contains(club.clubID + ",") {
                         cachedClubIDs.append(club.clubID + ",")
                     }
                     
@@ -427,7 +427,8 @@ struct ContentView: View {
                     let cache = ClubCache(clubID: club.clubID)
                     cache.save(club: club)
                     
-                    if !cachedClubIDs.contains(club.clubID) {
+                    print(club.clubID + "changed")
+                    if !cachedClubIDs.contains(club.clubID + ",") {
                         cachedClubIDs.append(club.clubID + ",")
                     }
                 }
@@ -439,7 +440,8 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     clubs.removeAll(where: { $0.clubID == removedClub.clubID })
                     cachedClubIDs = cachedClubIDs.replacingOccurrences(of: removedClub.clubID + ",", with: "")
-                    
+                    print(removedClub.clubID + "removed")
+
                     let cache = ClubCache(clubID: removedClub.clubID)
                     try? FileManager.default.removeItem(at: cache.cacheURL)
                 }
