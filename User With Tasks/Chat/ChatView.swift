@@ -7,6 +7,7 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUIX
 import SDWebImageSwiftUI
+import Combine
 
 struct ChatView: View {
     @Binding var clubs: [Club]
@@ -26,6 +27,9 @@ struct ChatView: View {
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
     @FocusState var focusedOnSendBar: Bool
     @State var selectedClub: Club?
+    @AppStorage("bubbles") var bubbles = false
+    @State var bubbleBuffer = false
+    @State var debounceCancellable: AnyCancellable?
     
     var body: some View {
         
@@ -37,14 +41,31 @@ struct ChatView: View {
         NavigationStack {
             HStack(spacing: 16) {
                 VStack(alignment: .leading) {
-                    Button {
-                        withAnimation(.smooth(duration: 1, extraBounce: 0.3)) {
-                            sidebarExpanded.toggle()
+                    HStack {
+                        Button {
+                            withAnimation(.smooth(duration: 1, extraBounce: 0.3)) {
+                                sidebarExpanded.toggle()
+                            }
+                        } label: {
+                            Image(systemName: sidebarExpanded ? "chevron.left" : "chevron.right")
+                                .padding()
+                                .background(Circle().fill(Color.systemGray6))
                         }
-                    } label: {
-                        Image(systemName: sidebarExpanded ? "chevron.left" : "chevron.right")
-                            .padding()
-                            .background(Circle().fill(Color.systemGray6))
+                        
+                        Spacer()
+                        
+                        if sidebarExpanded {
+                            CustomToggleSwitch(boolean: $bubbleBuffer, colors: [.gray, .accentColor], images: ["text.alignleft", "bubble.left.and.bubble.right"])
+                                .onChange(of: bubbleBuffer) { newValue in
+                                    debounceCancellable?.cancel()
+                                    
+                                    debounceCancellable = Just(newValue)
+                                        .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
+                                        .sink { finalValue in
+                                            bubbles = !finalValue
+                                        }
+                                }
+                        }
                     }
                     .padding(.top, 8)
                     
@@ -214,124 +235,199 @@ struct ChatView: View {
                             let nextMessage : Chat.ChatMessage? = index < (selected.messages?.count ?? 0) - 1 ? selected.messages?[index + 1] : nil
                             let calendarTimeIsNotSameByHourNextMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: nextMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
                             let calendarTimeIsNotSameByHourPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
+                            let calendarTimeIsNotSameByDayPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .day)
                             
                             if message.systemGenerated == nil || message.systemGenerated == false {
-                                if message.sender == userInfo?.userID ?? "" {
-                                    HStack {
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing, spacing: 5) {
-                                            HStack {
-                                                Spacer()
-                                                
-                                                Text(.init(message.message))
-                                                    .foregroundStyle(.white)
-                                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                                    .background(
-                                                        UnevenRoundedRectangle(
-                                                            topLeadingRadius: 25,
-                                                            bottomLeadingRadius: 25,
-                                                            bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
-                                                            topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage) ? 8 : 25
+                                if bubbles {
+                                    if message.sender == userInfo?.userID ?? "" {
+                                        HStack {
+                                            Spacer()
+                                            
+                                            VStack(alignment: .trailing, spacing: 5) {
+                                                HStack {
+                                                    Spacer()
+                                                    
+                                                    Text(.init(message.message))
+                                                        .foregroundStyle(.white)
+                                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                                        .background(
+                                                            UnevenRoundedRectangle(
+                                                                topLeadingRadius: 25,
+                                                                bottomLeadingRadius: 25,
+                                                                bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
+                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage) ? 8 : 25
+                                                            )
+                                                            .foregroundColor(.blue)
+                                                            
                                                         )
-                                                        .foregroundColor(.blue)
-
-                                                    )
-                                                    .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
+                                                        .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
+                                                }
+                                                
+                                                if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
+                                                    Text(Date(timeIntervalSince1970: message.date), style: .time)
+                                                        .font(.caption2)
+                                                        .foregroundStyle(.gray)
+                                                }
+                                            }
+                                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
+                                        }
+                                        .id(message.messageID) // needed for scrolling to
+                                    } else { // another persons message
+                                        VStack(alignment: .leading) {
+                                            if previousMessage?.sender != message.sender {
+                                                Text(users[message.sender]?.userName.capitalized ?? "Loading...")
+                                                    .padding(EdgeInsets(top: 5, leading: 20, bottom: 0, trailing: 0)) // same as message padding
+                                                    .font(.headline)
+                                                    .onAppear {
+                                                        if users[message.sender] == nil {
+                                                            fetchUser(for: message.sender) { user in
+                                                                if let user = user {
+                                                                    users[message.sender] = user
+                                                                } else {
+                                                                    users[message.sender] = nil
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                            }
+                                            
+                                            HStack {
+                                                if nextMessage?.sender ?? "" != message.sender {
+                                                    VStack {
+                                                        WebImage( // saves the image in a cache so it doesnt re-pull every time
+                                                            url: URL(
+                                                                string: users[message.sender]?.userImage ?? ""
+                                                            ),
+                                                            content: { image in
+                                                                
+                                                                image
+                                                                    .resizable()
+                                                                    .frame(width: 36, height: 36)
+                                                                    .clipShape(Circle())
+                                                                    .scaledToFit()
+                                                                    .overlay {
+                                                                        Circle()
+                                                                            .stroke(.gray, lineWidth: 3)
+                                                                    }
+                                                                    .padding(.leading, 4) // get it out of the weird clip range
+                                                            },
+                                                            placeholder: {
+                                                                GlassBackground()
+                                                                    .frame(width: 36, height: 36)
+                                                                    .padding(.leading, 4) // get it out of the weird clip range
+                                                                
+                                                            }
+                                                        )
+                                                    }
+                                                    
+                                                }
+                                                
+                                                VStack(alignment: .leading, spacing: 5) {
+                                                    HStack {
+                                                        Text(.init(message.message))
+                                                            .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                                            .background (
+                                                                GlassBackground(
+                                                                    color: clubColor,
+                                                                    shape: AnyShape(UnevenRoundedRectangle(
+                                                                        topLeadingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25,
+                                                                        bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
+                                                                        bottomTrailingRadius: 25, topTrailingRadius: 25))
+                                                                )
+                                                            )
+                                                            .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
+                                                        
+                                                        Spacer()
+                                                    }
+                                                    
+                                                    
+                                                }
+                                                .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
+                                                
+                                                Spacer()
                                             }
                                             
                                             if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
                                                 Text(Date(timeIntervalSince1970: message.date), style: .time)
                                                     .font(.caption2)
                                                     .foregroundStyle(.gray)
+                                                    .padding(.leading, nextMessage?.sender ?? "" == message.sender ? 20 : 60) // same as message padding, + 40 for the userImage and padding
                                             }
                                         }
-                                        .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
+                                        .id(message.messageID) // needed for scrolling to
                                     }
-                                    .id(message.messageID) // needed for scrolling to
-                                } else { // another persons message
-                                    VStack(alignment: .leading) {
-                                        if previousMessage?.sender != message.sender {
-                                            Text(users[message.sender]?.userName.capitalized ?? "Loading...")
-                                                .padding(EdgeInsets(top: 5, leading: 20, bottom: 0, trailing: 0)) // same as message padding
+                                } else {
+                                    if calendarTimeIsNotSameByDayPreviousMessage {
+                                        HStack {
+                                            Text(Date(timeIntervalSince1970: message.date), style: .date)
                                                 .font(.headline)
-                                                .onAppear {
-                                                    if users[message.sender] == nil {
-                                                        fetchUser(for: message.sender) { user in
-                                                            if let user = user {
-                                                                users[message.sender] = user
-                                                            } else {
-                                                                users[message.sender] = nil
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                                .padding(EdgeInsets(top: 12, leading: 6, bottom: 0, trailing: 0))
+                                            
+                                            Spacer()
                                         }
+                                    }
+                                    
+                                    if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender {
+                                        Divider()
                                         
                                         HStack {
-                                            if nextMessage?.sender ?? "" != message.sender {
-                                                VStack {
-                                                    WebImage( // saves the image in a cache so it doesnt re-pull every time
-                                                        url: URL(
-                                                            string: users[message.sender]?.userImage ?? ""
-                                                        ),
-                                                        content: { image in
-                                                            
-                                                            image
-                                                                .resizable()
-                                                                .frame(width: 35, height: 35)
-                                                                .clipShape(Circle())
-                                                                .scaledToFit()
-                                                                .overlay {
-                                                                    Circle()
-                                                                        .stroke(.gray, lineWidth: 3)
-                                                                }
-                                                                .padding(.leading, 4) // get it out of the weird clip range
-                                                        },
-                                                        placeholder: {
-                                                            GlassBackground()
-                                                                .frame(width: 35, height: 35)
-                                                                .padding(.leading, 4) // get it out of the weird clip range
-                                                                
-                                                        }
-                                                    )
-                                                }
-                                                
-                                            }
-                                            
-                                            VStack(alignment: .leading, spacing: 5) {
-                                                HStack {
-                                                    Text(.init(message.message))
-                                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                                        .background (
-                                                            GlassBackground(
-                                                                color: clubColor,
-                                                                shape: AnyShape(UnevenRoundedRectangle(
-                                                                    topLeadingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25,
-                                                                    bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
-                                                                    bottomTrailingRadius: 25, topTrailingRadius: 25))
-                                                            )
-                                                        )
-                                                        .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
+                                            WebImage( // saves the image in a cache so it doesnt re-pull every time
+                                                url: URL(
+                                                    string: (message.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[message.sender]?.userImage) ?? ""
+                                                ),
+                                                content: { image in
+                                                    image
+                                                        .resizable()
+                                                        .frame(width: 36, height: 36)
+                                                        .clipShape(Circle())
+                                                        .padding(EdgeInsets(top: 30, leading: 6, bottom: 0, trailing: 0))
+                                                },
+                                                placeholder: {
+                                                    GlassBackground()
+                                                        .frame(width: 36, height: 36)
+                                                        .padding(EdgeInsets(top: 30, leading: 6, bottom: 0, trailing: 0))
                                                     
-                                                    Spacer()
                                                 }
-                                                
-                                                
-                                            }
-                                            .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
+                                            )
+                                            
+                                            Text((message.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[message.sender]?.userName.capitalized) ?? "Loading...")
+                                                .bold()
+                                                .font(.system(size: 18))
+                                                .padding(EdgeInsets(top: 10, leading: 10, bottom: 6, trailing: 0))
+                                            
+                                            Text(Date(timeIntervalSince1970: message.date), style: .time)
+                                                .foregroundStyle(.gray)
+                                                .font(.system(size: 12))
+                                            
+                                            Spacer()
+                                        }
+                                        .frame(height: 16)
+                                    }
+                                    
+                                    ZStack {
+                                        HStack {
+                                            Text(.init(message.message))
+                                                .multilineTextAlignment(.leading)
+                                                .padding(EdgeInsets(top: 0, leading: 60, bottom: 2, trailing: 0))
                                             
                                             Spacer()
                                         }
                                         
-                                        if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
-                                            Text(Date(timeIntervalSince1970: message.date), style: .time)
-                                                .font(.caption2)
-                                                .foregroundStyle(.gray)
-                                                .padding(.leading, nextMessage?.sender ?? "" == message.sender ? 20 : 59) // same as message padding, + 39 for the userImage and padding
+                                        if calendarTimeIsNotSameByHourPreviousMessage && !(calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender) {
+                                            HStack {
+                                                VStack {
+                                                    Text(Date(timeIntervalSince1970: message.date), style: .time)
+                                                        .foregroundStyle(.gray)
+                                                        .font(.system(size: 12))
+                                                        .padding(.top, 4)
+                                                    
+                                                    Spacer()
+                                                }
+                                                
+                                                Spacer()
+                                            }
                                         }
                                     }
-                                    .id(message.messageID) // needed for scrolling to
                                 }
                             } else { // message is system made
                                 HStack {
