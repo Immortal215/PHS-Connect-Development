@@ -122,6 +122,9 @@ struct ChatView: View {
             }
             .padding(.horizontal, 30)
         }
+        .onAppear {
+            bubbleBuffer = !bubbles
+        }
     }
     
     @ViewBuilder
