@@ -243,7 +243,6 @@ struct SettingsView: View {
                 isNewChangeLogShown = true
             }
             darkModeBuffer = darkMode
-            autoBuffer = !autoColorScheme
             animationsPlusBuffer = animationsPlus
         }
         .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary)
