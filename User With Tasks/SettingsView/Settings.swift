@@ -7,6 +7,7 @@ import Pow
 import ChangelogKit
 import Combine
 import Shimmer
+import SDWebImageSwiftUI
 
 struct SettingsView: View {
     var viewModel: AuthenticationViewModel
@@ -39,7 +40,7 @@ struct SettingsView: View {
         VStack {
             HStack(alignment: .top) {
                 if !viewModel.isGuestUser {
-                    AsyncImage(url: URL(string: viewModel.userImage ?? "")) { image in
+                    WebImage(url: URL(string: viewModel.userImage ?? "")) { image in
                         image
                             .resizable()
                             .clipShape(RoundedRectangle(cornerRadius: 25))

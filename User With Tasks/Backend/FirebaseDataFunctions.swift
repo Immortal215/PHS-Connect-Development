@@ -447,6 +447,7 @@ func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) 
     let messagesRef = Database.database().reference().child("chats").child(chatID).child("messages")
     
     var messageToSend = message
+    messageToSend.lastUpdated = Date().timeIntervalSince1970
     
     let messageRef: DatabaseReference
     if !messageToSend.messageID.isEmpty && messageToSend.messageID != String() {
@@ -470,8 +471,24 @@ func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) 
         }
         
         let chatRef = Database.database().reference().child("chats").child(chatID)
-        chatRef.child("lastMessage").setValue(messageDict)
-        
+
+        chatRef.observeSingleEvent(of: .value) { snapshot in
+            var shouldUpdateLastMessage = true
+
+            if let chatDict = snapshot.value as? [String: Any],
+               let lastMessageDict = chatDict["lastMessage"] as? [String: Any],
+               let lastTimestamp = lastMessageDict["date"] as? Double {
+                // Only update if the new message is newer
+                shouldUpdateLastMessage = messageToSend.date > lastTimestamp
+            }
+
+            if shouldUpdateLastMessage {
+                chatRef.child("lastMessage").setValue(messageDict)
+            }
+
+            completion?(true)
+        }
+
         completion?(true)
     }
 }

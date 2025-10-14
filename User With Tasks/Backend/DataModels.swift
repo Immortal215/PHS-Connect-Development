@@ -65,7 +65,9 @@ struct Chat: Codable, Equatable, Hashable {
         var message : String
         var sender : String // userID
         var date : Double // use Date().timeIntervalSince1970
+        
         var reactions: [String: [String]]? // emoji : [userIDs]
+        var lastUpdated : Double? // Date().timeIntervalSince1970 for when updated
         
         var replyTo : String? // messageID of replying to message
         var edited : Bool? // if edited or not
@@ -73,6 +75,8 @@ struct Chat: Codable, Equatable, Hashable {
         var attachmentURL: String?
         var attachmentType: String? // "image", "file", "video"
         var systemGenerated: Bool? // true if it’s a system-generated message like "John joined the club!"
+        
+        var mentions: [String]? // userIDs mentioned in the text block (by like @ symbols, need to add this functionality)
     }
 }
 

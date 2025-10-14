@@ -12,6 +12,7 @@
 		713417852D812CFB0006A149 /* ChangelogKit in Frameworks */ = {isa = PBXBuildFile; productRef = 713417842D812CFB0006A149 /* ChangelogKit */; };
 		7136E9522D19E6A200C1A286 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 7136E9512D19E6A200C1A286 /* PopupView */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
+		7165EA672E9D8A8300EBD5B0 /* ElegantEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */; };
 		71E53B922D93494500128C6E /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 71E53B912D93494500128C6E /* SDWebImageSwiftUI */; };
 		71F2C6C72E4BE29F0026072E /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = 71F2C6C62E4BE29F0026072E /* Flow */; };
 		71F3F0502D89CBE200CA1AF4 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 71F3F04F2D89CBE200CA1AF4 /* Shimmer */; };
@@ -61,6 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7165EA672E9D8A8300EBD5B0 /* ElegantEmojiPicker in Frameworks */,
 				B861A88A2CB81714006AF254 /* FirebaseVertexAI-Preview in Frameworks */,
 				716022FD2CDB0DEB00E2887B /* Pow in Frameworks */,
 				B861A8742CB81714006AF254 /* FirebaseFirestoreCombine-Community in Frameworks */,
@@ -173,6 +175,7 @@
 				71F3F04F2D89CBE200CA1AF4 /* Shimmer */,
 				71E53B912D93494500128C6E /* SDWebImageSwiftUI */,
 				71F2C6C62E4BE29F0026072E /* Flow */,
+				7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */,
 			);
 			productName = "User with Tasks";
 			productReference = B861A8472CB811A0006AF254 /* PHS Connect Dev.app */;
@@ -217,6 +220,7 @@
 				71F3F04E2D89CBE200CA1AF4 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
 				71E53B902D93494500128C6E /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 				71F2C6C52E4BE29F0026072E /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */,
+				7165EA652E9D8A8300EBD5B0 /* XCRemoteSwiftPackageReference "Elegant-Emoji-Picker" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B861A8482CB811A0006AF254 /* Products */;
@@ -393,7 +397,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Sharul.User-with-Tasks";
+				PRODUCT_BUNDLE_IDENTIFIER = "Sharul3.User-with-Tasks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -426,7 +430,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Sharul.User-with-Tasks";
+				PRODUCT_BUNDLE_IDENTIFIER = "Sharul3.User-with-Tasks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -496,6 +500,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.0.4;
+			};
+		};
+		7165EA652E9D8A8300EBD5B0 /* XCRemoteSwiftPackageReference "Elegant-Emoji-Picker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Finalet/Elegant-Emoji-Picker.git";
+			requirement = {
+				branch = main;
+				kind = branch;
 			};
 		};
 		71E53B902D93494500128C6E /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
@@ -573,6 +585,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */;
 			productName = Pow;
+		};
+		7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7165EA652E9D8A8300EBD5B0 /* XCRemoteSwiftPackageReference "Elegant-Emoji-Picker" */;
+			productName = ElegantEmojiPicker;
 		};
 		71E53B912D93494500128C6E /* SDWebImageSwiftUI */ = {
 			isa = XCSwiftPackageProductDependency;

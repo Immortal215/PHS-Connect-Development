@@ -30,6 +30,7 @@ struct ChatView: View {
     @AppStorage("bubbles") var bubbles = false
     @State var bubbleBuffer = false
     @State var debounceCancellable: AnyCancellable?
+    @State var editingMessageID: String? = nil // tracks which messageID is being edited
     
     var body: some View {
         
@@ -191,7 +192,7 @@ struct ChatView: View {
                         .frame(width: 60, height: 60)
                     
                     if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
-                        AsyncImage(url: url) { image in
+                        WebImage(url: url) { image in
                             image.resizable()
                                 .scaledToFill()
                         } placeholder: {
@@ -258,7 +259,7 @@ struct ChatView: View {
                                                                 topLeadingRadius: 25,
                                                                 bottomLeadingRadius: 25,
                                                                 bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
-                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage) ? 8 : 25
+                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
                                                             )
                                                             .foregroundColor(.blue)
                                                             
@@ -273,6 +274,26 @@ struct ChatView: View {
                                                 }
                                             }
                                             .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
+                                            .contextMenu {
+                                                Button {
+                                                    newMessageText = message.message
+                                                    
+                                                    editingMessageID = message.messageID
+
+                                                    focusedOnSendBar = true
+                                                } label: {
+                                                    Label("Edit", systemImage: "pencil")
+                                                }
+                                                
+                                                
+                                                Button {
+                                                    UIPasteboard.general.string = message.message
+                                                    dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                } label: {
+                                                    Label("Copy", systemImage: "doc.on.doc")
+                                                }
+                                            }
+     
                                         }
                                         .id(message.messageID) // needed for scrolling to
                                     } else { // another persons message
@@ -333,7 +354,7 @@ struct ChatView: View {
                                                                 GlassBackground(
                                                                     color: clubColor,
                                                                     shape: AnyShape(UnevenRoundedRectangle(
-                                                                        topLeadingRadius: previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage ? 8 : 25,
+                                                                        topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
                                                                         bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
                                                                         bottomTrailingRadius: 25, topTrailingRadius: 25))
                                                                 )
@@ -346,6 +367,14 @@ struct ChatView: View {
                                                     
                                                 }
                                                 .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
+                                                .contextMenu {
+                                                    Button {
+                                                        UIPasteboard.general.string = message.message
+                                                        dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                    } label: {
+                                                        Label("Copy", systemImage: "doc.on.doc")
+                                                    }
+                                                }
                                                 
                                                 Spacer()
                                             }
@@ -397,6 +426,17 @@ struct ChatView: View {
                                                 .bold()
                                                 .font(.system(size: 18))
                                                 .padding(EdgeInsets(top: 10, leading: 10, bottom: 6, trailing: 0))
+                                                .onAppear {
+                                                    if users[message.sender] == nil {
+                                                        fetchUser(for: message.sender) { user in
+                                                            if let user = user {
+                                                                users[message.sender] = user
+                                                            } else {
+                                                                users[message.sender] = nil
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             
                                             Text(Date(timeIntervalSince1970: message.date), style: .time)
                                                 .foregroundStyle(.gray)
@@ -431,6 +471,28 @@ struct ChatView: View {
                                             }
                                         }
                                     }
+                                    .id(message.messageID) // needed for scrolling to
+                                    .contextMenu {
+                                        if message.sender == userInfo?.userID ?? "" {
+                                            Button {
+                                                newMessageText = message.message
+                                                
+                                                editingMessageID = message.messageID
+                                                
+                                                focusedOnSendBar = true
+                                            } label: {
+                                                Label("Edit", systemImage: "pencil")
+                                            }
+                                            
+                                        }
+                                        
+                                        Button {
+                                            UIPasteboard.general.string = message.message
+                                            dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                        } label: {
+                                            Label("Copy", systemImage: "doc.on.doc")
+                                        }
+                                    }
                                 }
                             } else { // message is system made
                                 HStack {
@@ -458,6 +520,35 @@ struct ChatView: View {
                     }
                 }
             }
+            
+            VStack(spacing: 4) {
+                if let editingID = editingMessageID,
+                   let selected = selectedChat,
+                   let message = selected.messages?.first(where: { $0.messageID == editingID }) {
+                    HStack {
+                        Text("Editing messageID: \(message.messageID)")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Color.gray.opacity(0.8))
+                            .cornerRadius(10)
+                        
+                        Spacer()
+                        
+                        Button {
+                            // cancel editing
+                            editingMessageID = nil
+                            newMessageText = ""
+                            focusedOnSendBar = false
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            
             HStack(alignment: .bottom) {
                 TextEditor(text: $newMessageText)
                     .scrollContentBackground(.hidden)
@@ -470,17 +561,29 @@ struct ChatView: View {
                 Button {
                     focusedOnSendBar = false
                     
-                    if let selected = selectedChat, newMessageText != "" {
-                        let chatID = selected.chatID
-                        sendMessage(
-                            chatID: chatID,
-                            message: Chat.ChatMessage(
+                    if let selected = selectedChat, !(newMessageText.isEmpty) {
+                        
+                        if let editingID = editingMessageID {
+                            // edit existing message
+                            if var chatIndex = chats.firstIndex(where: { $0.chatID == selected.chatID }) {
+                                if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == editingID }) {
+                                    chats[chatIndex].messages?[messageIndex].message = newMessageText
+                                    
+                                    sendMessage(chatID: selected.chatID, message: chats[chatIndex].messages![messageIndex])
+                                }
+                            }
+                            editingMessageID = nil // reset editing state
+                        } else {
+                            // create new message
+                            let newMessage = Chat.ChatMessage(
                                 messageID: String(),
                                 message: newMessageText,
                                 sender: userInfo?.userID ?? "",
                                 date: Date().timeIntervalSince1970
                             )
-                        )
+                            sendMessage(chatID: selected.chatID, message: newMessage)
+                        }
+                        
                         newMessageText = ""
                     }
                 } label: {
@@ -560,15 +663,13 @@ struct ChatView: View {
         }
     }
     
-    
     func setupMessagesListener(for chatID: String) {
         let databaseRef = Database.database().reference()
             .child("chats")
             .child(chatID)
         
         let cache = ChatCache(chatID: chatID)
-        
-        var cachedChat = cache.load()
+        let cachedChat = cache.load()
         
         if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
             if let cached = cachedChat {
@@ -579,58 +680,22 @@ struct ChatView: View {
             }
         }
         
-        let lastTimestamp = cachedChat?.messages?.map { $0.date }.max() ?? 0
+        let lastTimestamp = cachedChat?.messages?.compactMap { $0.lastUpdated ?? $0.date }.max() ?? -0.001
         
         databaseRef.child("messages")
-            .queryOrdered(byChild: "date")
+            .queryOrdered(byChild: "lastUpdated")
             .queryStarting(atValue: lastTimestamp + 0.001)
             .observe(.childAdded) { snapshot in
-                if let message = decodeMessage(from: snapshot) {
-                    DispatchQueue.main.async {
-                        if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
-                            if chats[chatIndex].messages == nil { chats[chatIndex].messages = [] }
-                            
-                            if !(chats[chatIndex].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
-                                chats[chatIndex].messages?.append(message)
-                                
-                                cache.save(chats[chatIndex])
-                            }
-                            
-                            if selectedChat?.chatID == chatID {
-                                selectedChat = chats[chatIndex]
-                            }
-                        }
-                    }
-                }
-            }
-        
-        databaseRef.child("messages").queryOrdered(byChild: "date").queryStarting(atValue: lastTimestamp + 0.001).observe(.childChanged) { snapshot in
-            if let updatedMessage = decodeMessage(from: snapshot) {
+                guard let message = decodeMessage(from: snapshot) else { return }
+                
                 DispatchQueue.main.async {
-                    if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
-                       var chatMessages = chats[chatIndex].messages {
-                        
-                        if let messageIndex = chatMessages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
-                            chatMessages[messageIndex] = updatedMessage
-                            chats[chatIndex].messages = chatMessages
-                            
-                            cache.save(chats[chatIndex])
-                            
-                            if selectedChat?.chatID == chatID {
-                                selectedChat = chats[chatIndex]
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        databaseRef.child("messages").observe(.childRemoved) { snapshot in
-            if let removedMessage = decodeMessage(from: snapshot) {
-                DispatchQueue.main.async {
-                    if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
-                        chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
-                        
+                    guard let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
+                    
+                    if chats[chatIndex].messages == nil { chats[chatIndex].messages = [] }
+                    
+                    if !(chats[chatIndex].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
+                        chats[chatIndex].messages?.append(message)
+                        chats[chatIndex].messages?.sort(by: { $0.date < $1.date })
                         cache.save(chats[chatIndex])
                         
                         if selectedChat?.chatID == chatID {
@@ -639,30 +704,73 @@ struct ChatView: View {
                     }
                 }
             }
-        }
         
-        databaseRef.observe(.childChanged) { snapshot in
-            guard snapshot.key != "messages" else { return }
-            
-            if let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) {
-                var chat = chats[chatIndex] // make a mutable copy
-                if let dict = snapshot.value as? [String: Any] {
-                    if let typingUsers = dict["typingUsers"] as? [String] {
-                        chat.typingUsers = typingUsers
-                    }
-                    if let pinned = dict["pinned"] as? [String] {
-                        chat.pinned = pinned
-                    }
-                    chats[chatIndex] = chat
-                    cache.save(chat)
+        databaseRef.child("messages")
+            .queryOrdered(byChild: "lastUpdated")
+            .queryStarting(atValue: lastTimestamp + 0.001)
+            .observe(.childChanged) { snapshot in
+                guard let updatedMessage = decodeMessage(from: snapshot) else { return }
+                
+                DispatchQueue.main.async {
+                    guard let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
+                          var chatMessages = chats[chatIndex].messages else { return }
                     
-                    if selectedChat?.chatID == chatID {
-                        selectedChat = chat
-                        selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
+                    if let messageIndex = chatMessages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
+                        chatMessages[messageIndex] = updatedMessage
+                        chats[chatIndex].messages = chatMessages
+                        chats[chatIndex].messages?.sort(by: { $0.date < $1.date })
+                        cache.save(chats[chatIndex])
+                        
+                        if selectedChat?.chatID == chatID {
+                            selectedChat = chats[chatIndex]
+                        }
                     }
                 }
             }
+        
+        databaseRef.child("messages").observe(.childRemoved) { snapshot in
+            guard let removedMessage = decodeMessage(from: snapshot) else { return }
+            
+            DispatchQueue.main.async {
+                guard let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
+                
+                chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                cache.save(chats[chatIndex])
+                
+                if selectedChat?.chatID == chatID {
+                    selectedChat = chats[chatIndex]
+                }
+            }
         }
+        
+        // listen only for typingUsers updates
+        databaseRef.child("typingUsers").observe(.value) { snapshot in
+            if let newTyping = snapshot.value as? [String],
+               let index = chats.firstIndex(where: { $0.chatID == chatID }) {
+
+                chats[index].typingUsers = newTyping
+                cache.save(chats[index])
+
+                if selectedChat?.chatID == chatID {
+                    selectedChat = chats[index]
+                }
+            }
+        }
+
+        // listen only for pinned updates
+        databaseRef.child("pinned").observe(.value) { snapshot in
+            if let newPinned = snapshot.value as? [String],
+               let index = chats.firstIndex(where: { $0.chatID == chatID }) {
+
+                chats[index].pinned = newPinned
+                cache.save(chats[index])
+
+                if selectedChat?.chatID == chatID {
+                    selectedChat = chats[index]
+                }
+            }
+        }
+
     }
     
     func decodeMessageDict(_ dict: [String: Any]) throws -> Chat.ChatMessage? { // initial messages fetch decode
