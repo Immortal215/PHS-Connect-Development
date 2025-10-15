@@ -21,9 +21,8 @@ struct ChatView: View {
     @State var chats: [Chat] = []
     @State var selectedChat: Chat?
     @State var isLoading = true
-    @State var listeningChats : [Chat] = []
+    @State var listeningChats : [String] = []
     @State var users: [String : Personal] = [:] // UserID : UserStruct
-    @AppStorage("sideBarChatExpanded") var sidebarExpanded = true
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
     @FocusState var focusedOnSendBar: Bool
     @State var selectedClub: Club?
@@ -32,211 +31,292 @@ struct ChatView: View {
     @State var debounceCancellable: AnyCancellable?
     @State var editingMessageID: String? = nil // tracks which messageID is being edited
     
+    @State var selectedThread : [String: String?] = [:] // chatID : selectedThread[selected?.chatID ?? ""]
+    @State var newThreadName: String = ""
+    @FocusState var focusedOnNewThread: Bool
+    
+    var clubsLeaderIn: [Club] {
+           let email = userInfo?.userEmail ?? ""
+           return clubs.filter { $0.leaders.contains(email) }
+       }
+    
     var body: some View {
         
-        var clubsLeaderIn: [Club] {
-            let email = userInfo?.userEmail ?? ""
-            return clubs.filter { $0.leaders.contains(email) }
-        }
-        
-        NavigationStack {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Button {
-                            withAnimation(.smooth(duration: 1, extraBounce: 0.3)) {
-                                sidebarExpanded.toggle()
+        GeometryReader { geometry in
+            let safeArea = geometry.safeAreaInsets
+            let availableWidth = screenWidth - safeArea.leading - safeArea.trailing
+            let availableHeight = screenHeight - safeArea.top - safeArea.bottom
+            
+            NavigationStack {
+                HStack(spacing: 0) {
+                    // LEFT COLUMN: Servers (Chats) - Fixed 80pt width
+                    VStack(spacing: 8) {
+                        // Toggle button for bubble mode
+                        CustomToggleSwitch(boolean: $bubbleBuffer, colors: [.gray, .accentColor], images: ["text.alignleft", "bubble.left.and.bubble.right"])
+                            .frame(width: 60)
+                            .padding(.top, safeArea.top + 8)
+                            .onChange(of: bubbleBuffer) { newValue in
+                                debounceCancellable?.cancel()
+                                
+                                debounceCancellable = Just(newValue)
+                                    .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
+                                    .sink { finalValue in
+                                        bubbles = !finalValue
+                                    }
                             }
-                        } label: {
-                            Image(systemName: sidebarExpanded ? "chevron.left" : "chevron.right")
-                                .padding()
-                                .background(Circle().fill(Color.systemGray6))
-                        }
                         
-                        Spacer()
-                        
-                        if sidebarExpanded {
-                            CustomToggleSwitch(boolean: $bubbleBuffer, colors: [.gray, .accentColor], images: ["text.alignleft", "bubble.left.and.bubble.right"])
-                                .onChange(of: bubbleBuffer) { newValue in
-                                    debounceCancellable?.cancel()
+                        ScrollView {
+                            VStack(spacing: 8) {
+                                if !isLoading {
+                                    ForEach(clubsLeaderIn, id: \.clubID) { club in
+                                        createChatSection(for: club)
+                                    }
                                     
-                                    debounceCancellable = Just(newValue)
-                                        .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
-                                        .sink { finalValue in
-                                            bubbles = !finalValue
-                                        }
+                                    ForEach(chats, id: \.chatID) { chat in
+                                        chatRow(for: chat)
+                                    }
+                                } else {
+                                    ProgressView()
+                                        .padding(.top, 20)
                                 }
+                            }
+                            .padding(.vertical, 8)
                         }
                     }
-                    .padding(.top, 8)
+                    .frame(width: 80)
+                    .background {
+                        GlassBackground()
+                    }
+                    .onAppear {
+                        loadChats()
+                    }
+                    .padding(.horizontal)
                     
-                    ScrollView {
-                        if !isLoading {
-                            ForEach(clubsLeaderIn, id: \.clubID) { club in
-                                createChatSection(for: club)
+                    // LEFTISH: Threads - Fixed 240pt width
+                    if let selected = selectedChat {
+                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                        let isLeaderInSelectedClub : Bool = clubsLeaderIn.contains(where: { $0.clubID == selected.clubID })
+                        
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Club name header (like Discord server name)
+                            if let club = clubs.first(where: { $0.clubID == selected.clubID }) {
+                                Text(club.name)
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, safeArea.top + 16)
+                                    .padding(.bottom, 8)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             
-                            ForEach(chats, id: \.chatID) { chat in
-                                chatRow(for: chat)
+                            Divider()
+                            
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("THREADS")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 16)
+                                        .padding(.bottom, 8)
+                                    
+                                    let threads = Array(Set(selected.messages?.map { $0.threadName ?? "general" } ?? ["general"]))
+                                        .sorted { $0.lowercased() < $1.lowercased() }
+                                    
+                                    if isLeaderInSelectedClub {
+                                        if newThreadName == "" {
+                                            Button(action: {
+                                                newThreadName = " "
+                                                focusedOnNewThread = true
+                                            }) {
+                                                HStack(spacing: 8) {
+                                                    RoundedRectangle(cornerRadius: 2)
+                                                        .fill(Color.clear)
+                                                        .frame(width: 3, height: 16)
+                                                    
+                                                    Image(systemName: "plus")
+                                                        .foregroundColor(.secondary)
+                                                        .font(.system(size: 14, weight: .medium))
+                                                    
+                                                    Text("New Thread")
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.secondary)
+                                                    
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(Color.clear)
+                                                )
+                                                .contentShape(Rectangle())
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        } else {
+                                            // editing mode
+                                            HStack(spacing: 8) {
+                                                RoundedRectangle(cornerRadius: 2)
+                                                    .fill(Color.accentColor)
+                                                    .frame(width: 3, height: 16)
+                                                
+                                                Image(systemName: "number")
+                                                    .foregroundColor(.accentColor)
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                
+                                                TextField("Thread name", text: $newThreadName, onCommit: {
+                                                    let trimmed = newThreadName.trimmingCharacters(in: .whitespaces)
+                                                    guard !trimmed.isEmpty else {
+                                                        newThreadName = ""
+                                                        focusedOnSendBar = false
+                                                        return
+                                                    }
+                                                    sendMessage(chatID: selected.chatID, message: Chat.ChatMessage(
+                                                        messageID: String(),
+                                                        message: "New Thread \(trimmed) Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                                                        sender: userInfo?.userID ?? "",
+                                                        date: Date().timeIntervalSince1970,
+                                                        threadName: trimmed,
+                                                        systemGenerated: true
+                                                    ))
+                                                    selectedThread[selected.chatID] = trimmed
+                                                    newThreadName = ""
+                                                    focusedOnNewThread = false
+                                                })
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                                .textFieldStyle(PlainTextFieldStyle())
+                                                .focused($focusedOnNewThread)
+                                                
+                                                Button(action: {
+                                                    newThreadName = ""
+                                                    focusedOnSendBar = false
+                                                }) {
+                                                    Image(systemName: "xmark")
+                                                        .font(.system(size: 10, weight: .semibold))
+                                                        .foregroundColor(.secondary)
+                                                        .frame(width: 16, height: 16)
+                                                        .background(
+                                                            Circle()
+                                                                .fill(Color.secondary.opacity(0.2))
+                                                        )
+                                                }
+                                                .buttonStyle(PlainButtonStyle())
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(Color.accentColor.opacity(0.1))
+                                            )
+                                        }
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    ForEach(threads, id: \.self) { thread in
+                                        Button(action: { selectedThread[selected.chatID] = thread }) {
+                                            HStack(spacing: 8) {
+                                                RoundedRectangle(cornerRadius: 2)
+                                                    .fill(currentThread == thread ? Color.accentColor : Color.clear)
+                                                    .frame(width: 3, height: 16)
+                                                
+                                                Image(systemName: "number")
+                                                    .foregroundColor(currentThread == thread ? .primary : .secondary)
+                                                    .font(.system(size: 14, weight: currentThread == thread ? .semibold : .regular))
+                                                
+                                                Text(thread)
+                                                    .font(.system(size: 14, weight: currentThread == thread ? .semibold : .regular))
+                                                    .foregroundColor(currentThread == thread ? .primary : .secondary)
+                                                
+                                                Spacer()
+                                                
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(currentThread == thread ? Color.accentColor.opacity(0.1) : Color.clear)
+                                            )
+                                            .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .contextMenu {
+                                            if thread != "general" && isLeaderInSelectedClub {
+                                                Button(role: .destructive) {
+                                                    removeThread(chatID: selected.chatID, threadName: thread)
+                                                    selectedThread[selected.chatID] = "general"
+                                                } label: {
+                                                    Label("Remove Thread", systemImage: "trash")
+                                                }
+                                            }
+                                            
+                                            Button {
+                                                UIPasteboard.general.string = thread
+                                                dropper(title: "Copied Thread Name!", subtitle: thread, icon: UIImage(systemName: "checkmark"))
+                                            } label: {
+                                                Label("Copy Thread Name", systemImage: "doc.on.doc")
+                                            }
+                                        }
+                                    }
+                                    
+                                    
+                                }
+                                .padding(.bottom, 8)
                             }
-                        } else {
-                            ProgressView("Loading Chats")
+                        }
+                        .frame(width: 240)
+                        .background {
+                            GlassBackground()
                         }
                     }
-                    .padding(.top, 8)
-                }
-                .frame(width: sidebarExpanded ? 300 : 80)
-                .padding(.horizontal, 16)
-                .background {
-                    GlassBackground()
-                        .cornerRadius(25)
-                }
-                .onAppear {
-                    loadChats()
-                }
-                
-                if selectedChat != nil {
-                    messageSection
-                        .frame(idealWidth: screenWidth * 2 / 3 - 16, idealHeight : screenHeight * 0.8)
-                } else {
-                    VStack {
-                        Spacer()
-                        Text("No chat selected")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                            .padding()
-                            .background {
-                                GlassBackground()
-                                    .cornerRadius(25)
-                            }
-                        Spacer()
+                    // RIGHT COLUMN: Messages - Takes remaining space
+                    if selectedChat != nil {
+                        messageSection
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        VStack {
+                            Spacer()
+                            Text("No chat selected")
+                                .font(.largeTitle)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .frame(maxWidth: screenWidth, maxHeight: screenHeight)
+                }
+                .onChange(of: selectedChat) { selChat in
+                    if let chat = selChat {
+                        let chatListener = chat.chatID
+                        if !listeningChats.contains(chatListener) {
+                            listeningChats.append(chatListener)
+                            setupMessagesListener(for: chatListener)
+                            selectedThread[chatListener] = "general"
+                        }
+                    }
                 }
             }
-            .contentShape(RoundedRectangle(cornerRadius:25))
-            .onChange(of: selectedChat) { chat in
-                if let chatListener = chat, !listeningChats.contains(chatListener) {
-                    listeningChats.append(chatListener)
-                    setupMessagesListener(for: chatListener.chatID)
-                }
-            }
-            .padding(.horizontal, 30)
         }
         .onAppear {
             bubbleBuffer = !bubbles
         }
     }
     
-    @ViewBuilder
-    func createChatSection(for club: Club) -> some View {
-        let hasChat = chats.contains { chat in
-            chat.clubID == club.clubID && chat.directMessageTo == nil
-        }
-        
-        if !hasChat {
-            HStack {
-                ZStack {
-                    Circle()
-                        .fill(Color.systemGray6)
-                        .frame(width: 60, height: 60)
-                    
-                    Image(systemName: "plus")
-                        .foregroundColor(.accentColor)
-                        .font(.system(size: 30, weight: .bold))
-                }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                
-                .onTapGesture {
-                    let newChat = Chat(chatID: "Loading...", clubID: club.clubID)
-                    chats.append(newChat)
-                    createClubGroupChat(clubId: club.clubID, messageTo: nil) { chat in
-                        if let chatIndex = chats.firstIndex(where: { $0.chatID == newChat.chatID }) {
-                            sendMessage(chatID: chat.chatID, message: Chat.ChatMessage(
-                                messageID: String(),
-                                message: "New Group Chat Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
-                                sender: userInfo?.userID ?? "",
-                                date: Date().timeIntervalSince1970,
-                                systemGenerated: true
-                            ))
-                            chats[chatIndex] = chat
-                            selectedChat = chat
-                            selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
-                            
-                            cachedChatIDs.append(chat.chatID + ",")
-                            
-                        }
-                    }
-                }
-                
-                if sidebarExpanded {
-                    Text("Create \(club.name) Chat")
-                        .font(.subheadline)
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .frame(width: sidebarExpanded ? 300 : 80, alignment: .leading)
-        }
-    }
-    
-    @ViewBuilder
-    func chatRow(for chat: Chat) -> some View {
-        if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
-            let isSelected = selectedChat?.chatID == chat.chatID
-            
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.accentColor : Color.systemGray6)
-                        .frame(width: 60, height: 60)
-                    
-                    if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
-                        WebImage(url: url) { image in
-                            image.resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            Image(systemName: "bubble.left.and.bubble.right.fill")
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(width: 48, height: 48)
-                        .clipShape(Circle())
-                    } else {
-                        Image(systemName: "bubble.left.and.bubble.right.fill")
-                            .foregroundColor(.secondary)
-                            .frame(width: 48, height: 48)
-                    }
-                }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                
-                .onTapGesture {
-                    if chat.chatID != "Loading..." {
-                        selectedChat = chat
-                        selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
-                    }
-                }
-                
-                if sidebarExpanded {
-                    Text(club.name)
-                        .font(.subheadline)
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .frame(width: sidebarExpanded ? 300 : 80, alignment: .leading)
-        }
-    }
-    
     var messageSection: some View {
-        return VStack {
+        return VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
                     if let selected = selectedChat {
+                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                        
+                        let messagesToShow = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
                         let clubColor = colorFromClub(club: selectedClub)
                         
-                        ForEach(Array((selected.messages ?? []).enumerated()), id: \.element) { index, message in
-                            let previousMessage : Chat.ChatMessage? = index > 0 ? selected.messages?[index - 1] : nil
-                            let nextMessage : Chat.ChatMessage? = index < (selected.messages?.count ?? 0) - 1 ? selected.messages?[index + 1] : nil
+                        ForEach(Array(messagesToShow.enumerated()), id: \.element) { index, message in
+                            let previousMessage : Chat.ChatMessage? = index > 0 ? messagesToShow[index - 1] : nil
+                            let nextMessage : Chat.ChatMessage? = index < messagesToShow.count - 1 ? messagesToShow[index + 1] : nil
                             let calendarTimeIsNotSameByHourNextMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: nextMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
                             let calendarTimeIsNotSameByHourPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
                             let calendarTimeIsNotSameByDayPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .day)
@@ -279,7 +359,7 @@ struct ChatView: View {
                                                     newMessageText = message.message
                                                     
                                                     editingMessageID = message.messageID
-
+                                                    
                                                     focusedOnSendBar = true
                                                 } label: {
                                                     Label("Edit", systemImage: "pencil")
@@ -293,7 +373,7 @@ struct ChatView: View {
                                                     Label("Copy", systemImage: "doc.on.doc")
                                                 }
                                             }
-     
+                                            
                                         }
                                         .id(message.messageID) // needed for scrolling to
                                     } else { // another persons message
@@ -503,20 +583,23 @@ struct ChatView: View {
                                     
                                     Spacer()
                                 }
-                                .frame(maxWidth: screenWidth, maxHeight: screenHeight)
                             }
                         }
-                        .alignmentGuide(.bottom)
                     }
                 }
+                .padding(.horizontal, 16)
                 .onAppear {
                     if let selected = selectedChat {
-                        proxy.scrollTo(selected.messages?.last?.messageID ?? "0", anchor: .bottom) // makes it so whenever there is a new message, it will scroll to the bottom by its messageID
+                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                        
+                        proxy.scrollTo(selected.messages?.filter({$0.threadName == currentThread || ($0.threadName == nil && currentThread == "general") }).last?.messageID ?? "0", anchor: .bottom) // if the thread is nil and the selected thread is general then scroll to the bottom
                     }
                 }
                 .onChange(of: selectedChat?.messages) {
                     if let selected = selectedChat {
-                        proxy.scrollTo(selected.messages?.last?.messageID ?? "0", anchor: .bottom) // makes it so whenever there is a new message, it will scroll to the bottom by its messageID
+                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                        
+                        proxy.scrollTo(selected.messages?.filter({$0.threadName == currentThread || ($0.threadName == nil && currentThread == "general") }).last?.messageID ?? "0", anchor: .bottom)
                     }
                 }
             }
@@ -536,7 +619,6 @@ struct ChatView: View {
                         Spacer()
                         
                         Button {
-                            // cancel editing
                             editingMessageID = nil
                             newMessageText = ""
                             focusedOnSendBar = false
@@ -545,26 +627,27 @@ struct ChatView: View {
                                 .foregroundColor(.white)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 16)
                 }
             }
             
-            HStack(alignment: .bottom) {
+            HStack(alignment: .bottom, spacing: 12) {
                 TextEditor(text: $newMessageText)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 30, maxHeight: screenHeight/2)
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 10)
+                    .padding(.horizontal)
                     .focused($focusedOnSendBar)
                 
                 Button {
                     focusedOnSendBar = false
                     
                     if let selected = selectedChat, !(newMessageText.isEmpty) {
+                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                         
                         if let editingID = editingMessageID {
-                            // edit existing message
                             if var chatIndex = chats.firstIndex(where: { $0.chatID == selected.chatID }) {
                                 if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == editingID }) {
                                     chats[chatIndex].messages?[messageIndex].message = newMessageText
@@ -572,14 +655,14 @@ struct ChatView: View {
                                     sendMessage(chatID: selected.chatID, message: chats[chatIndex].messages![messageIndex])
                                 }
                             }
-                            editingMessageID = nil // reset editing state
+                            editingMessageID = nil
                         } else {
-                            // create new message
                             let newMessage = Chat.ChatMessage(
                                 messageID: String(),
                                 message: newMessageText,
                                 sender: userInfo?.userID ?? "",
-                                date: Date().timeIntervalSince1970
+                                date: Date().timeIntervalSince1970,
+                                threadName: (currentThread == "general" || currentThread == nil) ? nil : currentThread
                             )
                             sendMessage(chatID: selected.chatID, message: newMessage)
                         }
@@ -587,24 +670,101 @@ struct ChatView: View {
                         newMessageText = ""
                     }
                 } label: {
-                    ZStack {
-                        Circle()
-                            .foregroundStyle(.blue)
-                        Image(systemName: "arrow.up")
-                            .foregroundStyle(.white)
-                    }
-                    .frame(width: 25, height: 25, alignment: .bottomTrailing)
+                    Circle()
+                        .fill(newMessageText.isEmpty ? Color.secondary.opacity(0.3) : Color.blue)
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Image(systemName: "arrow.up")
+                                .foregroundStyle(.white)
+                                .font(.system(size: 16, weight: .bold))
+                        )
+                        .padding(.vertical, 12)
                 }
-                .padding(.vertical, 16)
+                .disabled(newMessageText.isEmpty)
                 .keyboardShortcut(.return)
-                
             }
-            .padding(.horizontal)
             .background {
                 GlassBackground()
-                    .cornerRadius(25)
             }
-            .frame(minWidth: screenWidth * 2 / 3)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.black.opacity(0.05))
+        }
+    }
+    
+    @ViewBuilder
+    func createChatSection(for club: Club) -> some View {
+        let hasChat = chats.contains { chat in
+            chat.clubID == club.clubID && chat.directMessageTo == nil
+        }
+        
+        if !hasChat {
+            ZStack {
+                Circle()
+                    .fill(Color.systemGray6)
+                    .frame(width: 56, height: 56)
+                
+                Image(systemName: "plus")
+                    .foregroundColor(.accentColor)
+                    .font(.system(size: 24, weight: .bold))
+            }
+            .onTapGesture {
+                let newChat = Chat(chatID: "Loading...", clubID: club.clubID)
+                chats.append(newChat)
+                createClubGroupChat(clubId: club.clubID, messageTo: nil) { chat in
+                    if let chatIndex = chats.firstIndex(where: { $0.chatID == newChat.chatID }) {
+                        sendMessage(chatID: chat.chatID, message: Chat.ChatMessage(
+                            messageID: String(),
+                            message: "New Group Chat Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                            sender: userInfo?.userID ?? "",
+                            date: Date().timeIntervalSince1970,
+                            systemGenerated: true
+                        ))
+                        chats[chatIndex] = chat
+                        selectedChat = chat
+                        selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
+                        
+                        cachedChatIDs.append(chat.chatID + ",")
+                        
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    func chatRow(for chat: Chat) -> some View {
+        if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
+            let isSelected = selectedChat?.chatID == chat.chatID
+            
+            ZStack {
+                Circle()
+                    .fill(isSelected ? Color.accentColor : Color.systemGray6)
+                    .frame(width: 56, height: 56)
+                
+                if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
+                    WebImage(url: url) { image in
+                        image.resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 24))
+                    }
+                    .frame(width: 48, height: 48)
+                    .clipShape(Circle())
+                } else {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 24))
+                }
+            }
+            .onTapGesture {
+                if chat.chatID != "Loading..." {
+                    selectedChat = chat
+                    selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
+                }
+            }
         }
     }
     
@@ -747,30 +907,30 @@ struct ChatView: View {
         databaseRef.child("typingUsers").observe(.value) { snapshot in
             if let newTyping = snapshot.value as? [String],
                let index = chats.firstIndex(where: { $0.chatID == chatID }) {
-
+                
                 chats[index].typingUsers = newTyping
                 cache.save(chats[index])
-
+                
                 if selectedChat?.chatID == chatID {
                     selectedChat = chats[index]
                 }
             }
         }
-
+        
         // listen only for pinned updates
         databaseRef.child("pinned").observe(.value) { snapshot in
             if let newPinned = snapshot.value as? [String],
                let index = chats.firstIndex(where: { $0.chatID == chatID }) {
-
+                
                 chats[index].pinned = newPinned
                 cache.save(chats[index])
-
+                
                 if selectedChat?.chatID == chatID {
                     selectedChat = chats[index]
                 }
             }
         }
-
+        
     }
     
     func decodeMessageDict(_ dict: [String: Any]) throws -> Chat.ChatMessage? { // initial messages fetch decode

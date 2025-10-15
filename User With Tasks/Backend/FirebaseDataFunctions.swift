@@ -479,7 +479,7 @@ func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) 
                let lastMessageDict = chatDict["lastMessage"] as? [String: Any],
                let lastTimestamp = lastMessageDict["date"] as? Double {
                 // Only update if the new message is newer
-                shouldUpdateLastMessage = messageToSend.date > lastTimestamp
+                shouldUpdateLastMessage = messageToSend.date >= lastTimestamp // >= for if editing a message 
             }
 
             if shouldUpdateLastMessage {
@@ -490,5 +490,29 @@ func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) 
         }
 
         completion?(true)
+    }
+}
+
+func removeThread(chatID: String, threadName: String) {
+    let messagesRef = Database.database().reference().child("chats").child(chatID).child("messages")
+    
+    messagesRef.observeSingleEvent(of: .value) { snapshot in
+        guard let messagesDict = snapshot.value as? [String: [String: Any]] else {
+            print("No messages found for chat \(chatID)")
+            return
+        }
+        
+        for (messageID, messageData) in messagesDict {
+            if let messageThread = messageData["threadName"] as? String,
+               messageThread == threadName {
+                messagesRef.child(messageID).removeValue { error, _ in
+                    if let error = error {
+                        print("Error removing message \(messageID): \(error)")
+                    } else {
+                        print("Removed message \(messageID) from thread \(threadName)")
+                    }
+                }
+            }
+        }
     }
 }

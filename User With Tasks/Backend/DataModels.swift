@@ -66,6 +66,7 @@ struct Chat: Codable, Equatable, Hashable {
         var sender : String // userID
         var date : Double // use Date().timeIntervalSince1970
         
+        var threadName: String? // name of thread, by defualt will go to general thread, else go to the name of the new thread
         var reactions: [String: [String]]? // emoji : [userIDs]
         var lastUpdated : Double? // Date().timeIntervalSince1970 for when updated
         
