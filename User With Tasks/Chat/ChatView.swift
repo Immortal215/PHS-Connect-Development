@@ -9,6 +9,7 @@ import SwiftUIX
 import SDWebImageSwiftUI
 import Combine
 import CommonSwiftUI
+import Pow
 
 struct ChatView: View {
     @Binding var clubs: [Club]
@@ -35,6 +36,7 @@ struct ChatView: View {
     @State var selectedThread : [String: String?] = [:] // chatID : selectedThread[selected?.chatID ?? ""]
     @State var newThreadName: String = ""
     @FocusState var focusedOnNewThread: Bool
+    @State var threadNameAttempts = 0 // purely for the .shake animation from pow
     
     var clubsLeaderIn: [Club] {
         let email = userInfo?.userEmail ?? ""
@@ -131,9 +133,8 @@ struct ChatView: View {
                                         if newThreadName == "" {
                                             Button(action: {
                                                 newThreadName = " "
-                                                DispatchQueue.main.async {
-                                                    focusedOnNewThread = true
-                                                }
+                                                focusedOnNewThread = true
+                                                
                                             }) {
                                                 HStack(spacing: 8) {
                                                     RoundedRectangle(cornerRadius: 2)
@@ -158,7 +159,9 @@ struct ChatView: View {
                                                 )
                                                 .contentShape(Rectangle())
                                             }
+                                            .keyboardShortcut("t", modifiers: .command)
                                             .buttonStyle(PlainButtonStyle())
+
                                         } else {
                                             // editing mode
                                             HStack(spacing: 8) {
@@ -190,11 +193,14 @@ struct ChatView: View {
                                                         ))
                                                         
                                                         DispatchQueue.main.async {
-                                                            
                                                             newThreadName = ""
                                                             selectedThread[selected.chatID] = trimmed
                                                             focusedOnNewThread = false
+                                                            threadNameAttempts = 0
                                                         }
+                                                    } else {
+                                                        threadNameAttempts += 1
+                                                        focusedOnNewThread = true
                                                     }
                                                 })
                                                 .font(.system(size: 14, weight: .semibold))
@@ -223,12 +229,35 @@ struct ChatView: View {
                                                 RoundedRectangle(cornerRadius: 8)
                                                     .fill(Color.orange.opacity(0.1))
                                             )
+                                            .changeEffect(.shake(rate: .fast), value: threadNameAttempts)
+
                                         }
                                     }
                                     
                                     Divider()
                                     
                                     ForEach(threads, id: \.self) { thread in
+                                        
+                                        if currentThread == thread {
+                                            Button("") {
+                                                let index = threads.firstIndex(of: thread)!
+                                                selectedThread[selected.chatID] = threads[index != 0 ? index - 1 : threads.count - 1]
+                                                
+                                            }
+                                            .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+                                            .opacity(0)
+                                            .frame(width: 0, height: 0)
+                                            
+                                            Button("") {
+                                                let index = threads.firstIndex(of: thread)!
+                                                selectedThread[selected.chatID] = threads[index != threads.count - 1 ? index + 1 : 0]
+                                                
+                                            }
+                                            .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+                                            .opacity(0)
+                                            .frame(width: 0, height: 0)
+                                        }
+                                        
                                         Button(action: {
                                             DispatchQueue.main.async {
                                                 selectedThread[selected.chatID] = thread
@@ -558,9 +587,14 @@ struct ChatView: View {
                                             Text(.init(message.message))
                                                 .multilineTextAlignment(.leading)
                                                 .padding(EdgeInsets(top: 0, leading: 60, bottom: 2, trailing: 0))
+                                                
+                                                .background {
+                                                    Color.clear
+                                                }
                                             
                                             Spacer()
                                         }
+                                        
                                         
                                         if calendarTimeIsNotSameByHourPreviousMessage && !calendarTimeIsNotSameByDayPreviousMessage && previousMessage?.sender ?? "" == message.sender && !(previousMessage?.systemGenerated ?? false) {
                                             HStack {
