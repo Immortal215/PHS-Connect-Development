@@ -173,17 +173,19 @@ struct ChatView: View {
                                                         focusedOnSendBar = false
                                                         return
                                                     }
-                                                    sendMessage(chatID: selected.chatID, message: Chat.ChatMessage(
-                                                        messageID: String(),
-                                                        message: "New Thread \(trimmed) Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
-                                                        sender: userInfo?.userID ?? "",
-                                                        date: Date().timeIntervalSince1970,
-                                                        threadName: trimmed,
-                                                        systemGenerated: true
-                                                    ))
-                                                    selectedThread[selected.chatID] = trimmed
-                                                    newThreadName = ""
-                                                    focusedOnNewThread = false
+                                                    if !threads.contains(where: { $0 == trimmed }) {
+                                                        sendMessage(chatID: selected.chatID, message: Chat.ChatMessage(
+                                                            messageID: String(),
+                                                            message: "New Thread \(trimmed) Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                                                            sender: userInfo?.userID ?? "",
+                                                            date: Date().timeIntervalSince1970,
+                                                            threadName: trimmed,
+                                                            systemGenerated: true
+                                                        ))
+                                                        selectedThread[selected.chatID] = trimmed
+                                                        newThreadName = ""
+                                                        focusedOnNewThread = false
+                                                    }
                                                 })
                                                 .font(.system(size: 14, weight: .semibold))
                                                 .foregroundColor(.primary)
