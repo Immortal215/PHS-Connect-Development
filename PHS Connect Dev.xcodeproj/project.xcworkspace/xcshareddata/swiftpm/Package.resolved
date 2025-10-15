@@ -1,5 +1,5 @@
 {
-  "originHash" : "f8e4ed72f8e177706e8376db1d39e1e54754101c581751b58b0301e3035cb882",
+  "originHash" : "b6c915fc6ead1197be9672c37530e4a849d4890ef19e5746bd246dc5a1eb24a8",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "54e19fd72ded00d8591d4f1d8dc9a495871fca5e",
         "version" : "1.3.3"
+      }
+    },
+    {
+      "identity" : "common_swiftui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Enryun/Common_SwiftUI.git",
+      "state" : {
+        "revision" : "9141b2f68c62637845797abc9e4bbfb932bc2b94",
+        "version" : "1.1.2"
       }
     },
     {

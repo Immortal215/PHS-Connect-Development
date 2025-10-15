@@ -8,6 +8,7 @@ import GoogleSignInSwift
 import SwiftUIX
 import SDWebImageSwiftUI
 import Combine
+import CommonSwiftUI
 
 struct ChatView: View {
     @Binding var clubs: [Club]
@@ -36,9 +37,9 @@ struct ChatView: View {
     @FocusState var focusedOnNewThread: Bool
     
     var clubsLeaderIn: [Club] {
-           let email = userInfo?.userEmail ?? ""
-           return clubs.filter { $0.leaders.contains(email) }
-       }
+        let email = userInfo?.userEmail ?? ""
+        return clubs.filter { $0.leaders.contains(email) }
+    }
     
     var body: some View {
         
@@ -90,7 +91,8 @@ struct ChatView: View {
                     .onAppear {
                         loadChats()
                     }
-                    .padding(.horizontal)
+                    .padding(.leading)
+                    .padding(.trailing, 8)
                     
                     // LEFTISH: Threads - Fixed 240pt width
                     if let selected = selectedChat {
@@ -123,13 +125,15 @@ struct ChatView: View {
                                         .padding(.bottom, 8)
                                     
                                     let threads = Array(Set(selected.messages?.map { $0.threadName ?? "general" } ?? ["general"]))
-                                        .sorted { $0.lowercased() < $1.lowercased() }
+                                        .sorted { $0 < $1 }
                                     
                                     if isLeaderInSelectedClub {
                                         if newThreadName == "" {
                                             Button(action: {
                                                 newThreadName = " "
-                                                focusedOnNewThread = true
+                                                DispatchQueue.main.async {
+                                                    focusedOnNewThread = true
+                                                }
                                             }) {
                                                 HStack(spacing: 8) {
                                                     RoundedRectangle(cornerRadius: 2)
@@ -159,11 +163,11 @@ struct ChatView: View {
                                             // editing mode
                                             HStack(spacing: 8) {
                                                 RoundedRectangle(cornerRadius: 2)
-                                                    .fill(Color.accentColor)
+                                                    .fill(Color.orange)
                                                     .frame(width: 3, height: 16)
                                                 
                                                 Image(systemName: "number")
-                                                    .foregroundColor(.accentColor)
+                                                    .foregroundColor(.orange)
                                                     .font(.system(size: 14, weight: .semibold))
                                                 
                                                 TextField("Thread name", text: $newThreadName, onCommit: {
@@ -173,7 +177,9 @@ struct ChatView: View {
                                                         focusedOnSendBar = false
                                                         return
                                                     }
-                                                    if !threads.contains(where: { $0 == trimmed }) {
+                                                    
+                                                    if !threads.contains(trimmed) {
+                                                        
                                                         sendMessage(chatID: selected.chatID, message: Chat.ChatMessage(
                                                             messageID: String(),
                                                             message: "New Thread \(trimmed) Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
@@ -182,9 +188,13 @@ struct ChatView: View {
                                                             threadName: trimmed,
                                                             systemGenerated: true
                                                         ))
-                                                        selectedThread[selected.chatID] = trimmed
-                                                        newThreadName = ""
-                                                        focusedOnNewThread = false
+                                                        
+                                                        DispatchQueue.main.async {
+                                                            
+                                                            newThreadName = ""
+                                                            selectedThread[selected.chatID] = trimmed
+                                                            focusedOnNewThread = false
+                                                        }
                                                     }
                                                 })
                                                 .font(.system(size: 14, weight: .semibold))
@@ -211,7 +221,7 @@ struct ChatView: View {
                                             .padding(.vertical, 8)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 8)
-                                                    .fill(Color.accentColor.opacity(0.1))
+                                                    .fill(Color.orange.opacity(0.1))
                                             )
                                         }
                                     }
@@ -219,7 +229,11 @@ struct ChatView: View {
                                     Divider()
                                     
                                     ForEach(threads, id: \.self) { thread in
-                                        Button(action: { selectedThread[selected.chatID] = thread }) {
+                                        Button(action: {
+                                            DispatchQueue.main.async {
+                                                selectedThread[selected.chatID] = thread
+                                            }
+                                        }) {
                                             HStack(spacing: 8) {
                                                 RoundedRectangle(cornerRadius: 2)
                                                     .fill(currentThread == thread ? Color.accentColor : Color.clear)
@@ -252,6 +266,11 @@ struct ChatView: View {
                                                     selectedThread[selected.chatID] = "general"
                                                 } label: {
                                                     Label("Remove Thread", systemImage: "trash")
+                                                }
+                                            } else if isLeaderInSelectedClub {
+                                                Button(role: .cancel) {
+                                                } label: {
+                                                    Label("Main Thread, Cannot Be Deleted.", systemImage: "lock")
                                                 }
                                             }
                                             
@@ -290,15 +309,21 @@ struct ChatView: View {
                     }
                 }
                 .onChange(of: selectedChat) { selChat in
-                    if let chat = selChat {
-                        let chatListener = chat.chatID
-                        if !listeningChats.contains(chatListener) {
-                            listeningChats.append(chatListener)
-                            setupMessagesListener(for: chatListener)
-                            selectedThread[chatListener] = "general"
+                    DispatchQueue.main.async {
+                        if let chat = selChat {
+                            let chatListener = chat.chatID
+                            if !listeningChats.contains(chatListener) {
+                                listeningChats.append(chatListener)
+                                setupMessagesListener(for: chatListener)
+                                selectedThread[chatListener] = "general"
+                            }
                         }
                     }
                 }
+            }
+            .onTapGesture(disabled: !focusedOnSendBar || !focusedOnNewThread) { // disables this gesture if either are not focused currently
+                focusedOnSendBar = false
+                focusedOnNewThread = false
             }
         }
         .onAppear {
@@ -358,22 +383,21 @@ struct ChatView: View {
                                             .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
                                             .contextMenu {
                                                 Button {
+                                                    UIPasteboard.general.string = message.message
+                                                    dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                } label: {
+                                                    Label("Copy", systemImage: "doc.on.doc")
+                                                }
+                                                
+                                                Button {
                                                     newMessageText = message.message
-                                                    
                                                     editingMessageID = message.messageID
-                                                    
                                                     focusedOnSendBar = true
                                                 } label: {
                                                     Label("Edit", systemImage: "pencil")
                                                 }
                                                 
                                                 
-                                                Button {
-                                                    UIPasteboard.general.string = message.message
-                                                    dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                                } label: {
-                                                    Label("Copy", systemImage: "doc.on.doc")
-                                                }
                                             }
                                             
                                         }
@@ -471,7 +495,7 @@ struct ChatView: View {
                                         .id(message.messageID) // needed for scrolling to
                                     }
                                 } else {
-                                    if calendarTimeIsNotSameByDayPreviousMessage {
+                                    if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
                                         HStack {
                                             Text(Date(timeIntervalSince1970: message.date), style: .date)
                                                 .font(.headline)
@@ -481,7 +505,7 @@ struct ChatView: View {
                                         }
                                     }
                                     
-                                    if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender {
+                                    if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender || previousMessage?.systemGenerated ?? false {
                                         Divider()
                                         
                                         HStack {
@@ -538,7 +562,7 @@ struct ChatView: View {
                                             Spacer()
                                         }
                                         
-                                        if calendarTimeIsNotSameByHourPreviousMessage && !(calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender) {
+                                        if calendarTimeIsNotSameByHourPreviousMessage && !calendarTimeIsNotSameByDayPreviousMessage && previousMessage?.sender ?? "" == message.sender && !(previousMessage?.systemGenerated ?? false) {
                                             HStack {
                                                 VStack {
                                                     Text(Date(timeIntervalSince1970: message.date), style: .time)
@@ -555,24 +579,21 @@ struct ChatView: View {
                                     }
                                     .id(message.messageID) // needed for scrolling to
                                     .contextMenu {
-                                        if message.sender == userInfo?.userID ?? "" {
-                                            Button {
-                                                newMessageText = message.message
-                                                
-                                                editingMessageID = message.messageID
-                                                
-                                                focusedOnSendBar = true
-                                            } label: {
-                                                Label("Edit", systemImage: "pencil")
-                                            }
-                                            
-                                        }
-                                        
-                                        Button {
+                                    Button {
                                             UIPasteboard.general.string = message.message
                                             dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
                                         } label: {
                                             Label("Copy", systemImage: "doc.on.doc")
+                                        }
+                                        
+                                        if message.sender == userInfo?.userID ?? "" {
+                                            Button {
+                                                newMessageText = message.message
+                                                editingMessageID = message.messageID
+                                                focusedOnSendBar = true
+                                            } label: {
+                                                Label("Edit", systemImage: "pencil")
+                                            }
                                         }
                                     }
                                 }
@@ -681,6 +702,7 @@ struct ChatView: View {
                                 .font(.system(size: 16, weight: .bold))
                         )
                         .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
                 }
                 .disabled(newMessageText.isEmpty)
                 .keyboardShortcut(.return)
@@ -688,7 +710,7 @@ struct ChatView: View {
             .background {
                 GlassBackground()
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal)
             .padding(.vertical, 12)
             .background(Color.black.opacity(0.05))
         }
@@ -761,12 +783,16 @@ struct ChatView: View {
                         .font(.system(size: 24))
                 }
             }
-            .onTapGesture {
-                if chat.chatID != "Loading..." {
-                    selectedChat = chat
-                    selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
-                }
-            }
+            .highPriorityGesture(
+                TapGesture()
+                    .onEnded({
+                        if chat.chatID != "Loading..." {
+                            selectedChat = chat
+                            selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
+                        }
+                        
+                    })
+            )
         }
     }
     
