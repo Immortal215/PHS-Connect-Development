@@ -367,8 +367,8 @@ struct Homepage: View {
                                                             .frame(maxWidth: screenWidth/3)
                                                             .opacity(0.7) 
                                                         
-                                                        Text("Due : \(dateFormatClean(str: dueDates[index]))")
-                                                            .shadow(color: .white.opacity(0.2), radius: 1, x: 0, y: 1)  
+                                                        Text(dateFormatClean(str: dueDates[index]))
+                                                            .shadow(color: .white.opacity(0.2), radius: 1, x: 0, y: 1)
                                                             .fixedSize()
                                                     }
                                                 }
@@ -997,31 +997,27 @@ struct Line {
     var color: Color = .white
 }
 
-func dateFormatClean(str : Date) -> String {
-    
+func dateFormatClean(str: Date) -> String {
     let now = Date()
-    
-    let calendar = Calendar.current
-    
-    let components = calendar.dateComponents([.day, .hour, .minute], from: now, to: str)
-    
-    let formatter = DateComponentsFormatter()
+    var interval = str.timeIntervalSince(now) // TimeInterval in seconds
 
-    if components.day ?? 0 == 1 {
-        
-        formatter.allowedUnits = [.day, .hour]
-        
-    } else if components.day ?? 0 < 1 {
-        
-        formatter.allowedUnits = [.hour, .minute]
-        
-    } else {
-        
-        formatter.allowedUnits = [.day]
-        
-    }
-    
+    let formatter = DateComponentsFormatter()
     formatter.unitsStyle = .full
-    
-    return formatter.string(from: components) ?? ""
+
+    if interval < 3600 { // less than 1 hour
+        formatter.allowedUnits = [.minute]
+    } else if interval < 21600 { // less than 6 hours
+        formatter.allowedUnits = [.hour]
+    } else { // more than 6 hours
+        interval += 86400 // so instead of showing 0 days, itll show 1 day
+        formatter.allowedUnits = [.day]
+    }
+
+    let timeLeft = formatter.string(from: interval)?.capitalized ?? ""
+
+    let dater = DateFormatter()
+    dater.dateFormat = "E, MMM / d / yyyy, h:mm a"
+    dater.locale = Locale(identifier: "en_US_POSIX")
+
+    return "\(timeLeft) - \(dater.string(from: str))"
 }

@@ -644,6 +644,7 @@ struct ChatView: View {
                         }
                     }
                 }
+                .defaultScrollAnchor(.bottom)
                 .padding(.horizontal, 16)
                 .onAppear {
                     if let selected = selectedChat {

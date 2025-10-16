@@ -34,7 +34,7 @@ struct Notebook: View {
     @State var deleteWarning = false
     @State var addWarning = false
     
-    @AppStorage("duedatesetter") var dueDateSetter = "One Day"
+    @AppStorage("duedatesetter") var dueDateSetter = "Two Days"
     @AppStorage("dueDater") var dueDater = "07:00"
     @AppStorage("organizedAssignments") var organizedAssignments = "Due By Descending (Recent to Oldest)"
     
@@ -760,8 +760,7 @@ struct Notebook: View {
                         //     .animation(.interactiveSpring(response: 0.5, dampingFraction: 0.8, blendDuration: 1.0))
                         .animation(.bouncy(duration: 1))
                         .offset(y:-25)
-                        
-                        
+                        .defaultScrollAnchor(infoArray.count > 2 ? .bottom : .top)
                         
                         // the editing tab
                     } else if currentTab == "+erder" {

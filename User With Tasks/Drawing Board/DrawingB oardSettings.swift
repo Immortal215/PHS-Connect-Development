@@ -6,7 +6,7 @@ struct Settinger: View {
     @State var screenWidth = UIScreen.main.bounds.width
     @State var screenHeight = UIScreen.main.bounds.height
     
-    @AppStorage("duedatesetter") var dueDateSetter = "One Day"
+    @AppStorage("duedatesetter") var dueDateSetter = "Two Days"
     @State var dueDaters : [String] = ["Today", "One Hour", "6 Hours", "One Day", "Two Days", "Four Days", "Five Days"]
     @AppStorage("dueDater") var dueDater = "07:00"
     @State var datedVar = Date()
