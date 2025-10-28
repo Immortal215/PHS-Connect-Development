@@ -385,6 +385,58 @@ struct ChatView: View {
                                             Spacer()
                                             
                                             VStack(alignment: .trailing, spacing: 5) {
+                                                if let replyToMessage = message.replyTo {
+                                                    if message.replyTo != previousMessage?.replyTo {
+                                                        HStack {
+                                                            Spacer()
+                                                            
+                                                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                                            
+                                                            WebImage(
+                                                                url: URL(
+                                                                    string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
+                                                                ),
+                                                                content: { image in
+                                                                    image
+                                                                        .resizable()
+                                                                        .frame(width: 36, height: 36)
+                                                                        .clipShape(Circle())
+                                                                },
+                                                                placeholder: {
+                                                                    GlassBackground()
+                                                                        .frame(width: 36, height: 36)
+                                                                    
+                                                                }
+                                                            )
+                                                            
+                                                            VStack(alignment: .leading, spacing: 2) {
+                                                                Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
+                                                                    .font(.subheadline)
+                                                                    .bold()
+                                                                    .padding(.leading, 5)
+                                                                
+                                                                HStack {
+                                                                    Text(replyMessage.message)
+                                                                        .lineLimit(1)
+                                                                        .font(.subheadline)
+                                                                        .padding(10)
+                                                                        .background(
+                                                                            RoundedRectangle(cornerRadius: 25)
+                                                                                .foregroundColor(.darkGray)
+                                                                        )
+                                                                    
+                                                                    ReplyLine(left: true)
+                                                                        .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                                                                        .frame(width: 40, height: 16)
+                                                                        .foregroundColor(.gray)
+                                                                        .padding(.top)
+                                                                }
+                                                            }
+                                                        }
+                                                        .padding(.top)
+                                                    }
+                                                }
+                                                
                                                 HStack {
                                                     Spacer()
                                                     
@@ -395,8 +447,8 @@ struct ChatView: View {
                                                             UnevenRoundedRectangle(
                                                                 topLeadingRadius: 25,
                                                                 bottomLeadingRadius: 25,
-                                                                bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage) ? 8 : 25,
-                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
+                                                                bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
+                                                                topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
                                                             )
                                                             .foregroundColor(.blue)
                                                             
@@ -489,6 +541,56 @@ struct ChatView: View {
                                                 }
                                                 
                                                 VStack(alignment: .leading, spacing: 5) {
+                                                    if let replyToMessage = message.replyTo {
+                                                        if message.replyTo != previousMessage?.replyTo {
+                                                            HStack {
+                                                                let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                                                
+                                                                ReplyLine()
+                                                                    .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                                                                    .frame(width: 40, height: 16)
+                                                                    .foregroundColor(.gray)
+                                                                    .padding(.top)
+                                                                
+                                                                WebImage(
+                                                                    url: URL(
+                                                                        string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
+                                                                    ),
+                                                                    content: { image in
+                                                                        image
+                                                                            .resizable()
+                                                                            .frame(width: 36, height: 36)
+                                                                            .clipShape(Circle())
+                                                                    },
+                                                                    placeholder: {
+                                                                        GlassBackground()
+                                                                            .frame(width: 36, height: 36)
+                                                                        
+                                                                    }
+                                                                )
+                                                                
+                                                                VStack(alignment: .leading, spacing: 2) {
+                                                                    Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
+                                                                        .font(.subheadline)
+                                                                        .bold()
+                                                                        .padding(.leading, 5)
+                                                                    
+                                                                    Text(replyMessage.message)
+                                                                        .lineLimit(1)
+                                                                        .font(.subheadline)
+                                                                        .padding(10)
+                                                                        .background(
+                                                                            RoundedRectangle(cornerRadius: 25)
+                                                                                .foregroundColor(.darkGray)
+                                                                        )
+                                                                }
+                                                                
+                                                                Spacer()
+                                                            }
+                                                            .padding(.top)
+                                                        }
+                                                    }
+                                                    
                                                     HStack {
                                                         Text(.init(message.message))
                                                             .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
@@ -505,8 +607,6 @@ struct ChatView: View {
                                                         
                                                         Spacer()
                                                     }
-                                                    
-                                                    
                                                 }
                                                 .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
                                                 .contextMenu {
@@ -549,48 +649,50 @@ struct ChatView: View {
                                         }
                                     }
                                     
-                                    let showImage = calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender || previousMessage?.systemGenerated ?? false || message.replyTo != nil
+                                    let showImage = calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender || previousMessage?.systemGenerated ?? false || message.replyTo != previousMessage?.replyTo
                                     
                                     if showImage {
                                         Divider()
                                     }
                                     
                                     if let replyToMessage = message.replyTo {
-                                        HStack {
-                                            ReplyLine()
-                                                .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                                                .frame(width: 40, height: 16)
-                                                .foregroundColor(.gray)
-                                                .padding(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 0))
-                                            
-                                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
-                                            
-                                            WebImage(
-                                                url: URL(
-                                                    string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
-                                                ),
-                                                content: { image in
-                                                    image
-                                                        .resizable()
-                                                        .frame(width: 18, height: 18)
-                                                        .clipShape(Circle())
-                                                },
-                                                placeholder: {
-                                                    GlassBackground()
-                                                        .frame(width: 18, height: 18)
-                                                    
-                                                }
-                                            )
-                                            
-                                            Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
-                                                .font(.subheadline)
-                                                .bold()
-                                            
-                                            Text(replyMessage.message)
-                                                .lineLimit(1)
-                                                .font(.subheadline)
-                                            
-                                            Spacer()
+                                        if message.replyTo != previousMessage?.replyTo {
+                                            HStack {
+                                                ReplyLine()
+                                                    .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                                                    .frame(width: 40, height: 16)
+                                                    .foregroundColor(.gray)
+                                                    .padding(EdgeInsets(top: 16, leading: 24, bottom: 0, trailing: 0))
+                                                
+                                                let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                                
+                                                WebImage(
+                                                    url: URL(
+                                                        string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
+                                                    ),
+                                                    content: { image in
+                                                        image
+                                                            .resizable()
+                                                            .frame(width: 18, height: 18)
+                                                            .clipShape(Circle())
+                                                    },
+                                                    placeholder: {
+                                                        GlassBackground()
+                                                            .frame(width: 18, height: 18)
+                                                        
+                                                    }
+                                                )
+                                                
+                                                Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
+                                                    .font(.subheadline)
+                                                    .bold()
+                                                
+                                                Text(replyMessage.message)
+                                                    .lineLimit(1)
+                                                    .font(.subheadline)
+                                                
+                                                Spacer()
+                                            }
                                         }
                                     }
                                     
