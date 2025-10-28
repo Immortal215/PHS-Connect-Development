@@ -32,6 +32,7 @@ struct ChatView: View {
     @State var bubbleBuffer = false
     @State var debounceCancellable: AnyCancellable?
     @State var editingMessageID: String? = nil // tracks which messageID is being edited
+    @State var replyingMessageID: String? = nil // tracks which messageID is being replied to
     
     @State var selectedThread : [String: String?] = [:] // chatID : selectedThread[selected?.chatID ?? ""]
     @State var newThreadName: String = ""
@@ -52,9 +53,9 @@ struct ChatView: View {
             
             NavigationStack {
                 HStack(spacing: 0) {
-                    // LEFT COLUMN: Servers (Chats) - Fixed 80pt width
+                    // LEFT COLUMN: Chats - Fixed 80pt width
                     VStack(spacing: 8) {
-                        // Toggle button for bubble mode
+                        // Toggle button for bubble (imessage) mode
                         CustomToggleSwitch(boolean: $bubbleBuffer, colors: [.gray, .accentColor], images: ["text.alignleft", "bubble.left.and.bubble.right"])
                             .frame(width: 60)
                             .padding(.top, safeArea.top + 8)
@@ -102,7 +103,7 @@ struct ChatView: View {
                         let isLeaderInSelectedClub : Bool = clubsLeaderIn.contains(where: { $0.clubID == selected.clubID })
                         
                         VStack(alignment: .leading, spacing: 0) {
-                            // Club name header (like Discord server name)
+                            // club name
                             if let club = clubs.first(where: { $0.clubID == selected.clubID }) {
                                 Text(club.name)
                                     .font(.headline)
@@ -163,7 +164,7 @@ struct ChatView: View {
                                             .buttonStyle(PlainButtonStyle())
 
                                         } else {
-                                            // editing mode
+                                            // editing mode for threads
                                             HStack(spacing: 8) {
                                                 RoundedRectangle(cornerRadius: 2)
                                                     .fill(Color.orange)
@@ -367,7 +368,7 @@ struct ChatView: View {
                     if let selected = selectedChat {
                         let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                         
-                        let messagesToShow = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
+                        let messagesToShow : [Chat.ChatMessage] = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
                         let clubColor = colorFromClub(club: selectedClub)
                         
                         ForEach(Array(messagesToShow.enumerated()), id: \.element) { index, message in
@@ -426,7 +427,13 @@ struct ChatView: View {
                                                     Label("Edit", systemImage: "pencil")
                                                 }
                                                 
-                                                
+                                                Button {
+                                                    newMessageText = ""
+                                                    replyingMessageID = message.messageID
+                                                    focusedOnSendBar = true
+                                                } label: {
+                                                    Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                }
                                             }
                                             
                                         }
@@ -509,6 +516,14 @@ struct ChatView: View {
                                                     } label: {
                                                         Label("Copy", systemImage: "doc.on.doc")
                                                     }
+                                                    
+                                                    Button {
+                                                        newMessageText = ""
+                                                        replyingMessageID = message.messageID
+                                                        focusedOnSendBar = true
+                                                    } label: {
+                                                        Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                    }
                                                 }
                                                 
                                                 Spacer()
@@ -534,9 +549,49 @@ struct ChatView: View {
                                         }
                                     }
                                     
-                                    if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender || previousMessage?.systemGenerated ?? false {
+                                    let showImage = calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.sender ?? "" != message.sender || previousMessage?.systemGenerated ?? false || message.replyTo != nil
+                                    
+                                    if showImage {
                                         Divider()
-                                        
+                                    }
+                                    
+                                    if let replyToMessage = message.replyTo {
+                                        HStack {
+                                            ReplyLine()
+                                                .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                                                .frame(width: 40, height: 16)
+                                                .foregroundColor(.gray)
+                                                .padding(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 0))
+                                            
+                                            var replyMessage : String = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                            
+//                                            WebImage(
+//                                                url: URL(
+//                                                    string: (message.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[message.sender]?.userImage) ?? ""
+//                                                ),
+//                                                content: { image in
+//                                                    image
+//                                                        .resizable()
+//                                                        .frame(width: 18, height: 18)
+//                                                        .clipShape(Circle())
+//                                                },
+//                                                placeholder: {
+//                                                    GlassBackground()
+//                                                        .frame(width: 18, height: 18)
+//                                                    
+//                                                }
+//                                            )
+                                            
+                                            Text(replyMessage.message)
+                                                .lineLimit(1)
+                                                .font(.subheadline)
+                                            
+                                            Spacer()
+                                        }
+                                        .padding(.top, 4)
+                                    }
+                                    
+                                    if showImage {
                                         HStack {
                                             WebImage( // saves the image in a cache so it doesnt re-pull every time
                                                 url: URL(
@@ -587,7 +642,7 @@ struct ChatView: View {
                                             Text(.init(message.message))
                                                 .multilineTextAlignment(.leading)
                                                 .padding(EdgeInsets(top: 0, leading: 60, bottom: 2, trailing: 0))
-                                                
+                                            
                                                 .background {
                                                     Color.clear
                                                 }
@@ -596,7 +651,7 @@ struct ChatView: View {
                                         }
                                         
                                         
-                                        if calendarTimeIsNotSameByHourPreviousMessage && !calendarTimeIsNotSameByDayPreviousMessage && previousMessage?.sender ?? "" == message.sender && !(previousMessage?.systemGenerated ?? false) {
+                                        if calendarTimeIsNotSameByHourPreviousMessage && !showImage {
                                             HStack {
                                                 VStack {
                                                     Text(Date(timeIntervalSince1970: message.date), style: .time)
@@ -613,7 +668,7 @@ struct ChatView: View {
                                     }
                                     .id(message.messageID) // needed for scrolling to
                                     .contextMenu {
-                                    Button {
+                                        Button {
                                             UIPasteboard.general.string = message.message
                                             dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
                                         } label: {
@@ -629,6 +684,14 @@ struct ChatView: View {
                                                 Label("Edit", systemImage: "pencil")
                                             }
                                         }
+                                        
+                                        Button {
+                                            newMessageText = ""
+                                            replyingMessageID = message.messageID
+                                            focusedOnSendBar = true
+                                        } label: {
+                                            Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                        }
                                     }
                                 }
                             } else { // message is system made
@@ -642,6 +705,7 @@ struct ChatView: View {
                                 }
                             }
                         }
+                        
                     }
                 }
                 .defaultScrollAnchor(.bottom)
@@ -663,9 +727,7 @@ struct ChatView: View {
             }
             
             VStack(spacing: 4) {
-                if let editingID = editingMessageID,
-                   let selected = selectedChat,
-                   let message = selected.messages?.first(where: { $0.messageID == editingID }) {
+                if let editingID = editingMessageID, let selected = selectedChat, let message = selected.messages?.first(where: { $0.messageID == editingID }) {
                     HStack {
                         Text("Editing messageID: \(message.messageID)")
                             .font(.caption)
@@ -686,7 +748,28 @@ struct ChatView: View {
                         }
                     }
                     .padding(.horizontal, 16)
-                }
+                } else if let replyingID = replyingMessageID, let selected = selectedChat, let message = selected.messages?.first(where: { $0.messageID == replyingID }) {
+                   HStack {
+                       Text("Replying to messageID: \(message.messageID)")
+                           .font(.caption)
+                           .foregroundColor(.white)
+                           .padding(8)
+                           .background(Color.gray.opacity(0.8))
+                           .cornerRadius(10)
+                       
+                       Spacer()
+                       
+                       Button {
+                           replyingMessageID = nil
+                           newMessageText = ""
+                           focusedOnSendBar = false
+                       } label: {
+                           Image(systemName: "xmark.circle.fill")
+                               .foregroundColor(.white)
+                       }
+                   }
+                   .padding(.horizontal, 16)
+               }
             }
             
             HStack(alignment: .bottom, spacing: 12) {
@@ -720,7 +803,8 @@ struct ChatView: View {
                                 message: newMessageText,
                                 sender: userInfo?.userID ?? "",
                                 date: Date().timeIntervalSince1970,
-                                threadName: (currentThread == "general" || currentThread == nil) ? nil : currentThread
+                                threadName: (currentThread == "general" || currentThread == nil) ? nil : currentThread,
+                                replyTo: replyingMessageID
                             )
                             sendMessage(chatID: selected.chatID, message: newMessage)
                         }

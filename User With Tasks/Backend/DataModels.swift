@@ -14,13 +14,13 @@ struct Club: Codable, Equatable, Hashable {
     var description: String // short description
     var name: String
     var normalMeetingTime: String?
-    var schoologyCode: String
+    var schoologyCode: String // schoology code is stored as "xxxx-xxxx-xxxxx (Group)"  inside the parentheseis itll either be Group or Course based on where it is, check refrences in createClubView and elsewhere to see how it is deciphered
     var genres: [String]?
     var clubPhoto: String?
     var abstract: String // club abstract
     var pendingMemberRequests: Set<String>? // UserID: emails
     var clubID: String
-    var location: String
+    var location: String // leader inputted location like "room 135"
     var locationInSchoolCoordinates : [Double]? // 0 is x and 1 is y
     var instagram: String? // Instagram link
     var clubColor: String? // color
@@ -52,17 +52,17 @@ struct Club: Codable, Equatable, Hashable {
 }
 
 struct Chat: Codable, Equatable, Hashable {
-    var chatID : String
-    var clubID: String
+    var chatID : String // chatId of the chat
+    var clubID: String // clubId that the chat is associated with
     var directMessageTo: String? // leader userID
-    var messages: [ChatMessage]?
-    var typingUsers: [String]? // updated live userID's 
+    var messages: [ChatMessage]? // array of Chat.ChatMessage
+    var typingUsers: [String]? // updated live userID's
     var pinned: [String]? // messageID's
     var lastMessage: ChatMessage?
     
     struct ChatMessage : Codable, Equatable, Hashable {
-        var messageID: String
-        var message : String
+        var messageID: String // messageId
+        var message : String // message (Only string content)
         var sender : String // userID
         var date : Double // use Date().timeIntervalSince1970
         
