@@ -563,24 +563,28 @@ struct ChatView: View {
                                                 .foregroundColor(.gray)
                                                 .padding(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 0))
                                             
-                                            var replyMessage : String = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
                                             
-//                                            WebImage(
-//                                                url: URL(
-//                                                    string: (message.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[message.sender]?.userImage) ?? ""
-//                                                ),
-//                                                content: { image in
-//                                                    image
-//                                                        .resizable()
-//                                                        .frame(width: 18, height: 18)
-//                                                        .clipShape(Circle())
-//                                                },
-//                                                placeholder: {
-//                                                    GlassBackground()
-//                                                        .frame(width: 18, height: 18)
-//                                                    
-//                                                }
-//                                            )
+                                            WebImage(
+                                                url: URL(
+                                                    string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
+                                                ),
+                                                content: { image in
+                                                    image
+                                                        .resizable()
+                                                        .frame(width: 18, height: 18)
+                                                        .clipShape(Circle())
+                                                },
+                                                placeholder: {
+                                                    GlassBackground()
+                                                        .frame(width: 18, height: 18)
+                                                    
+                                                }
+                                            )
+                                            
+                                            Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
+                                                .font(.subheadline)
+                                                .bold()
                                             
                                             Text(replyMessage.message)
                                                 .lineLimit(1)
@@ -588,7 +592,6 @@ struct ChatView: View {
                                             
                                             Spacer()
                                         }
-                                        .padding(.top, 4)
                                     }
                                     
                                     if showImage {
