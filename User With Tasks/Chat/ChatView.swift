@@ -432,6 +432,7 @@ struct ChatView: View {
                                                                         .padding(.top)
                                                                 }
                                                             }
+                                                            .padding(.trailing, 18)
                                                         }
                                                         .padding(.top)
                                                     }
@@ -454,6 +455,30 @@ struct ChatView: View {
                                                             
                                                         )
                                                         .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
+                                                        .contextMenu {
+                                                            Button {
+                                                                UIPasteboard.general.string = message.message
+                                                                dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                            } label: {
+                                                                Label("Copy", systemImage: "doc.on.doc")
+                                                            }
+                                                            
+                                                            Button {
+                                                                newMessageText = message.message
+                                                                editingMessageID = message.messageID
+                                                                focusedOnSendBar = true
+                                                            } label: {
+                                                                Label("Edit", systemImage: "pencil")
+                                                            }
+                                                            
+                                                            Button {
+                                                                newMessageText = ""
+                                                                replyingMessageID = message.messageID
+                                                                focusedOnSendBar = true
+                                                            } label: {
+                                                                Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                            }
+                                                        }
                                                 }
                                                 
                                                 if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
@@ -463,31 +488,6 @@ struct ChatView: View {
                                                 }
                                             }
                                             .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
-                                            .contextMenu {
-                                                Button {
-                                                    UIPasteboard.general.string = message.message
-                                                    dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                                } label: {
-                                                    Label("Copy", systemImage: "doc.on.doc")
-                                                }
-                                                
-                                                Button {
-                                                    newMessageText = message.message
-                                                    editingMessageID = message.messageID
-                                                    focusedOnSendBar = true
-                                                } label: {
-                                                    Label("Edit", systemImage: "pencil")
-                                                }
-                                                
-                                                Button {
-                                                    newMessageText = ""
-                                                    replyingMessageID = message.messageID
-                                                    focusedOnSendBar = true
-                                                } label: {
-                                                    Label("Reply", systemImage: "arrowshape.turn.up.left")
-                                                }
-                                            }
-                                            
                                         }
                                         .id(message.messageID) // needed for scrolling to
                                     } else { // another persons message
@@ -551,6 +551,7 @@ struct ChatView: View {
                                                                     .frame(width: 40, height: 16)
                                                                     .foregroundColor(.gray)
                                                                     .padding(.top)
+                                                                    .padding(.leading, 18)
                                                                 
                                                                 WebImage(
                                                                     url: URL(
@@ -598,33 +599,33 @@ struct ChatView: View {
                                                                 GlassBackground(
                                                                     color: clubColor,
                                                                     shape: AnyShape(UnevenRoundedRectangle(
-                                                                        topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
-                                                                        bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage ? 8 : 25,
+                                                                        topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+                                                                        bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
                                                                         bottomTrailingRadius: 25, topTrailingRadius: 25))
                                                                 )
                                                             )
                                                             .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
+                                                            .contextMenu {
+                                                                Button {
+                                                                    UIPasteboard.general.string = message.message
+                                                                    dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                                } label: {
+                                                                    Label("Copy", systemImage: "doc.on.doc")
+                                                                }
+                                                                
+                                                                Button {
+                                                                    newMessageText = ""
+                                                                    replyingMessageID = message.messageID
+                                                                    focusedOnSendBar = true
+                                                                } label: {
+                                                                    Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                                }
+                                                            }
                                                         
                                                         Spacer()
                                                     }
                                                 }
-                                                .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
-                                                .contextMenu {
-                                                    Button {
-                                                        UIPasteboard.general.string = message.message
-                                                        dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                                    } label: {
-                                                        Label("Copy", systemImage: "doc.on.doc")
-                                                    }
-                                                    
-                                                    Button {
-                                                        newMessageText = ""
-                                                        replyingMessageID = message.messageID
-                                                        focusedOnSendBar = true
-                                                    } label: {
-                                                        Label("Reply", systemImage: "arrowshape.turn.up.left")
-                                                    }
-                                                }
+                                                .padding(.leading, 5)
                                                 
                                                 Spacer()
                                             }
