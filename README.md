@@ -1,7 +1,7 @@
 # PHS Connect Development - SwiftUI
 
 > [!IMPORTANT]
-> This is the development github for PHS Connect, you will not find the official code here. 
+> This is the development github for PHS Connect, you will not find the production code here. 
 ## Overview
 ### Every Element of This App Was Fully Created By Prospect Students
 > [!NOTE]
