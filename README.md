@@ -62,6 +62,10 @@
 
 - **Custom Calendar View :**
   - Built using SwiftUI to show meeting times on a calendar for enrolled clubs.
+
+- **Custom Chat View :**
+  - Built using SwiftUI to allow students to chat with one another in their own clubs. 
+    
 - **Lots more! :**
 
 ### 2. **Backend**
