@@ -1,4 +1,10 @@
 import SwiftUI
+import FirebaseDatabase
+import FirebaseCore
+import FirebaseDatabaseInternal
+import FirebaseAuth
+import GoogleSignIn
+import GoogleSignInSwift
 
 @MainActor
 final class AuthenticationViewModel: ObservableObject {

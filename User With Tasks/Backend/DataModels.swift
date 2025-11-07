@@ -1,9 +1,3 @@
-import FirebaseDatabase
-import FirebaseCore
-import FirebaseDatabaseInternal
-import FirebaseAuth
-import GoogleSignIn
-import GoogleSignInSwift
 import SwiftUI
 
 struct Club: Codable, Equatable, Hashable {
@@ -19,7 +13,7 @@ struct Club: Codable, Equatable, Hashable {
     var clubPhoto: String?
     var abstract: String // club abstract
     var pendingMemberRequests: Set<String>? // UserID: emails
-    var clubID: String
+    private(set) var clubID: String  // private so it does not get changed outside
     var location: String // leader inputted location like "room 135"
     var locationInSchoolCoordinates : [Double]? // 0 is x and 1 is y
     var instagram: String? // Instagram link
@@ -49,10 +43,15 @@ struct Club: Codable, Equatable, Hashable {
         var fullDay: Bool? // need to add code for
         var visibleByArray: [String]? // array of emails that can see this meeting time, if you choose only leaders, it will add all leaders emails. If you choose only certain people then it will be them + leaders.
     }
+    
+    mutating func setClubID(_ newID: String) { // here so people dont just willy nilly change the clubID
+        clubID = newID
+    }
+
 }
 
 struct Chat: Codable, Equatable, Hashable {
-    var chatID : String // chatId of the chat
+    private(set) var chatID : String // chatId of the chat // private so it does not get changed outside
     var clubID: String // clubId that the chat is associated with
     var directMessageTo: String? // leader userID
     var messages: [ChatMessage]? // array of Chat.ChatMessage
@@ -61,7 +60,7 @@ struct Chat: Codable, Equatable, Hashable {
     var lastMessage: ChatMessage?
     
     struct ChatMessage : Codable, Equatable, Hashable {
-        var messageID: String // messageId
+        private(set) var messageID: String // messageId
         var message : String // message (Only string content)
         var sender : String // userID
         var date : Double // use Date().timeIntervalSince1970
@@ -82,7 +81,7 @@ struct Chat: Codable, Equatable, Hashable {
 }
 
 struct Personal: Codable, Equatable, Hashable {
-    var userID: String
+    private(set) var userID: String
     var favoritedClubs: [String] // clubIDs
     //var subjectPreferences: [String]?
     var userEmail: String

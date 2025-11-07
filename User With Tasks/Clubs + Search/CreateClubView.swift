@@ -75,11 +75,11 @@ struct CreateClubView: View {
                                     Int($1.clubID.replacingOccurrences(of: "clubID", with: ""))!
                             }.last!
                             let lastDigit = Int(lastClub.clubID.replacingOccurrences(of: "clubID", with: ""))!
-                            CreatedClub.clubID = "clubID\(lastDigit + 1)"
+                            CreatedClub.setClubID("clubID\(lastDigit + 1)") // we can do this becuase this does not get updated that often
                             
                             // CreatedClub.clubID = "clubID\(Int(clubs.sorted(by: { $0.clubID < $1.clubID }).last!.clubID.last!)! + 1)"
                         } else {
-                            CreatedClub.clubID = clubId
+                            CreatedClub.setClubID(clubId)
                         }
                         
                         if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
