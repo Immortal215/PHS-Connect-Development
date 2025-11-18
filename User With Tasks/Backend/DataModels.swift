@@ -77,6 +77,10 @@ struct Chat: Codable, Equatable, Hashable {
         var systemGenerated: Bool? // true if it’s a system-generated message like "John joined the club!"
         
         var mentions: [String]? // userIDs mentioned in the text block (by like @ symbols, need to add this functionality)
+        
+        mutating func setMessageID(_ newID: String) { // here so people dont just willy nilly change the messageID
+            messageID = newID
+        }
     }
 }
 

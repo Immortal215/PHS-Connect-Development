@@ -454,7 +454,7 @@ func sendMessage(chatID: String, message: Chat.ChatMessage, completion: ((Bool) 
         messageRef = messagesRef.child(messageToSend.messageID)
     } else {
         messageRef = messagesRef.childByAutoId()
-        messageToSend.messageID = messageRef.key ?? "ERROR"
+        messageToSend.setMessageID(messageRef.key ?? "ERROR")
     }
     
     guard let messageDict = try? DictionaryEncoder().encode(messageToSend) else {

@@ -24,7 +24,7 @@ struct MessageScrollView: View {
                     let messagesToShow = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
 
                     ForEach(Array(messages.enumerated()), id: \.element.messageID) { index, message in
-                        messageBubble(message: message, index: index, messages: messages, messagesToShow: messagesToShow)
+                        messageBubble(message: message, index: index, messages: messages, messagesToShow: messagesToShow, proxy: proxy)
                         .id(message.messageID)
                     }
                 }
@@ -56,7 +56,8 @@ struct MessageScrollView: View {
         message: Chat.ChatMessage,
         index: Int,
         messages: [Chat.ChatMessage],
-        messagesToShow: [Chat.ChatMessage]
+        messagesToShow: [Chat.ChatMessage],
+        proxy: ScrollViewProxy
     ) -> some View {
        let previousMessage : Chat.ChatMessage? = index > 0 ? messagesToShow[index - 1] : nil
        let nextMessage : Chat.ChatMessage? = index < messagesToShow.count - 1 ? messagesToShow[index + 1] : nil
@@ -119,6 +120,9 @@ struct MessageScrollView: View {
                                            }
                                        }
                                        .padding(.trailing, 18)
+//                                       .onTapGesture {
+//                                           proxy.scrollTo(replyMessage, anchor: .bottom)
+//                                       }
                                    }
                                    .padding(.top)
                                }
@@ -275,6 +279,9 @@ struct MessageScrollView: View {
                                            Spacer()
                                        }
                                        .padding(.top)
+//                                       .onTapGesture {
+//                                           proxy.scrollTo(replyToMessage, anchor: .bottom)
+//                                       }
                                    }
                                }
                                
@@ -380,6 +387,9 @@ struct MessageScrollView: View {
                            
                            Spacer()
                        }
+//                       .onTapGesture {
+//                           proxy.scrollTo(replyToMessage, anchor: .bottom)
+//                       }
                    }
                }
                
