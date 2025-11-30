@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>862892596647-cbiep9ov056gv8glunjl9alsiua8og3p.apps.googleusercontent.com</string>
+	<string>862892596647-a3ip1m0lgfa22jkki8q5hs56r2bg442g.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.862892596647-cbiep9ov056gv8glunjl9alsiua8og3p</string>
+	<string>com.googleusercontent.apps.862892596647-a3ip1m0lgfa22jkki8q5hs56r2bg442g</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCqCY6PzaLpdm5j0Gg6DyT2RkAyhKy1xjE</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,23 +13,23 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>Official.PHS-Dev</string>
+	<string>Official.PHS.Dev</string>
 	<key>PROJECT_ID</key>
 	<string>user-with-personal-tasks</string>
 	<key>STORAGE_BUCKET</key>
 	<string>user-with-personal-tasks.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:862892596647:ios:6dc74e08addf3361fa6a82</string>
+	<string>1:862892596647:ios:7b72b43c7ac907ecfa6a82</string>
 	<key>DATABASE_URL</key>
 	<string>https://user-with-personal-tasks-default-rtdb.firebaseio.com</string>
 </dict>

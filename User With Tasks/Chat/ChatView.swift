@@ -39,6 +39,9 @@ struct ChatView: View {
     @FocusState var focusedOnNewThread: Bool
     @State var threadNameAttempts = 0 // purely for the .shake animation from pow
     
+    @State var openChatIDFromNotification: String? = nil
+    @State var openThreadNameFromNotification: String? = nil
+
     var clubsLeaderIn: [Club] {
         let email = userInfo?.userEmail ?? ""
         return clubs.filter { $0.leaders.contains(email) }
@@ -374,12 +377,48 @@ struct ChatView: View {
                 focusedOnSendBar = false
                 focusedOnNewThread = false
             }
+            
         }
         .onAppear {
+            NotificationCenter.default.post(name: Notification.Name("RequestPendingChatID"), object: nil)
+
             bubbleBuffer = !bubbles
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SendPendingChatID"))) { notif in
+            if let info = notif.userInfo {
+                openChatIDFromNotification = info["chatID"] as? String
+                openThreadNameFromNotification = info["threadName"] as? String ?? "general"
+            }
+        }
+        .onChange(of: openChatIDFromNotification) { id in
+            guard let id else { return }
+
+            var attempts = 0
+            Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { timer in
+                attempts += 1
+                let allChats = clubs.flatMap { $0.chatIDs ?? [] }
+
+                if allChats.contains(id) {
+                    timer.invalidate()
+
+                    if let chat = chats.first(where: { $0.chatID == id }) {
+                        selectedChat = chat
+                        selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
+                    }
+
+                    selectedThread[id] = openThreadNameFromNotification
+                    openChatIDFromNotification = nil
+                }
+
+                if attempts > 50 {
+                    timer.invalidate()
+                    openChatIDFromNotification = nil
+                }
+            }
+        }
+
     }
-    
+        
     var messageSection: some View {
         return VStack(spacing: 0) {
             ScrollViewReader { proxy in

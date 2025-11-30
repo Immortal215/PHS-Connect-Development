@@ -32,7 +32,9 @@ struct ContentView: View {
     @ObservedObject var keyboardResponder = KeyboardResponder()
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("cachedClubIDs") var cachedClubIDs: String = "" // comma-separated chatIDs
-    
+    @State var pendingChatID: String? = nil
+    @State var pendingThreadName: String? = nil
+
     var body: some View {
         VStack {
             VStack {
@@ -159,21 +161,29 @@ struct ContentView: View {
                             ZStack {
                                 SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same
-                                
+                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
+
                                 if userInfo != nil {
                                     ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         .opacity(selectedTab == 1 ? 1 : 0)// keep INDEX the same
-                                    
+                                        .animation(.easeInOut(duration: 0.25), value: selectedTab)
+
                                     ChatView(clubs: $clubs, userInfo: $userInfo)
                                         .opacity(selectedTab == 6 ? 1 : 0) // keep INDEX the same
+                                        .offset(x: selectedTab == 6 ? 0 : 40)
+                                        .animation(.spring(response: 0.28, dampingFraction: 0.9), value: selectedTab)
                                     
                                     CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                         .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
+                                        .animation(.easeInOut(duration: 0.25), value: selectedTab)
+
                                 }
                                 
                                 SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                     .padding()
                                     .opacity(selectedTab == 3 ? 1 : 0) // keep INDEX the same
+                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
+
                             }
                             .transition(.opacity)
                             .ignoresSafeArea(edges: .all)
@@ -313,6 +323,36 @@ struct ContentView: View {
                         //                            }
                         //                        }
                         
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenChatFromNotification"))) { notif in // receives the notification you just clicked
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            let info = notif.userInfo
+                            let chatID = info?["chatID"] as? String
+                            let threadName = info?["threadName"] as? String ?? "general"
+                            
+                            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+                                if advSearchShown == true {
+                                    timer.invalidate()
+                                    
+                                    pendingChatID = chatID
+                                    pendingThreadName = threadName
+                                    
+                                    selectedTab = 6
+                                }
+                            }
+                        }
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RequestPendingChatID"))) { _ in
+                        if let pending = pendingChatID {
+                            NotificationCenter.default.post(
+                                name: Notification.Name("SendPendingChatID"),
+                                object: nil,
+                                userInfo: [
+                                    "chatID": pending,
+                                    "threadName": pendingThreadName ?? "general"
+                                ]
+                            )
+                        }
                     }
                     .refreshable {
                         if !viewModel.isGuestUser {
