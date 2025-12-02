@@ -1,5 +1,7 @@
 import SwiftUI
 import SDWebImageSwiftUI
+import SwiftUIX
+import ElegantEmojiPicker
 
 struct MessageScrollView: View {
     @Binding var selectedChat: Chat?
@@ -14,6 +16,9 @@ struct MessageScrollView: View {
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @Binding var clubColor: Color
+    @Binding var nonBubbleMenuMessage : Chat.ChatMessage?
+    @State var isEmojiPickerPresented = false
+    @State var selectedEmoji: Emoji? = nil
     
     var body: some View {
         ScrollViewReader { proxy in
@@ -26,7 +31,9 @@ struct MessageScrollView: View {
                     ForEach(Array(messages.enumerated()), id: \.element.messageID) { index, message in
                         messageBubble(message: message, index: index, messages: messages, messagesToShow: messagesToShow, proxy: proxy)
                         .id(message.messageID)
+
                     }
+
                 }
             }
             .defaultScrollAnchor(.bottom)
@@ -179,7 +186,6 @@ struct MessageScrollView: View {
                        }
                        .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30))
                    }
-                   .id(message.messageID) // needed for scrolling to
                } else { // another persons message
                    VStack(alignment: .leading) {
                        if previousMessage?.sender != message.sender {
@@ -330,7 +336,6 @@ struct MessageScrollView: View {
                                .padding(.leading, nextMessage?.sender ?? "" == message.sender ? 20 : 60) // same as message padding, + 40 for the userImage and padding
                        }
                    }
-                   .id(message.messageID) // needed for scrolling to
                }
            } else {
                if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
@@ -439,6 +444,7 @@ struct MessageScrollView: View {
                    .frame(height: 16)
                }
                
+               // main text
                ZStack {
                    HStack {
                        Text(.init(message.message))
@@ -468,33 +474,93 @@ struct MessageScrollView: View {
                        }
                    }
                }
-               .id(message.messageID) // needed for scrolling to
-               .contextMenu {
-                   Button {
-                       UIPasteboard.general.string = message.message
-                       dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                   } label: {
-                       Label("Copy", systemImage: "doc.on.doc")
-                   }
-                   
-                   if message.sender == userInfo?.userID ?? "" {
-                       Button {
-                           newMessageText = message.message
-                           editingMessageID = message.messageID
-                           focusedOnSendBar = true
-                       } label: {
-                           Label("Edit", systemImage: "pencil")
-                       }
-                   }
-                   
-                   Button {
-                       newMessageText = ""
-                       replyingMessageID = message.messageID
-                       focusedOnSendBar = true
-                   } label: {
-                       Label("Reply", systemImage: "arrowshape.turn.up.left")
+               .onLongPressGesture {
+                   withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                       nonBubbleMenuMessage = message
                    }
                }
+               .overlay {
+                   if nonBubbleMenuMessage != nil && nonBubbleMenuMessage?.messageID ?? "" == message.messageID {
+                       HStack {
+                           Spacer()
+                           
+                           ZStack {
+                               GlassBackground()
+                                   .ignoresSafeArea()
+                                   .onTapGesture {
+                                       withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                           nonBubbleMenuMessage = nil
+                                       }
+                                   }
+                               
+                               HStack(spacing: 4) {
+                                   bubbleMenuButton(
+                                    label: "Copy",
+                                    system: "doc.on.doc",
+                                    action: {
+                                        UIPasteboard.general.string = message.message
+                                        dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                            nonBubbleMenuMessage = nil
+                                        }
+                                    }
+                                   )
+                                   
+                                   if message.sender == userInfo?.userID {
+                                       bubbleMenuButton(
+                                        label: "Edit",
+                                        system: "pencil",
+                                        action: {
+                                            newMessageText = message.message
+                                            editingMessageID = message.messageID
+                                            focusedOnSendBar = true
+                                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                                nonBubbleMenuMessage = nil
+                                            }
+                                        }
+                                       )
+                                   }
+                                   
+                                   bubbleMenuButton(
+                                    label: "Reply",
+                                    system: "arrowshape.turn.up.left",
+                                    action: {
+                                        newMessageText = ""
+                                        replyingMessageID = message.messageID
+                                        focusedOnSendBar = true
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                            nonBubbleMenuMessage = nil
+                                        }
+                                    }
+                                   )
+                                   
+                                   Divider()
+                                   
+                                   Button() {
+                                       isEmojiPickerPresented.toggle()
+                                   } label: {
+                                       Image(systemName: "face.smiling")
+                                   }
+                                   .padding(.horizontal, 8)
+                               }
+                               
+                           }
+                           .padding(.vertical, 14)
+                           .padding(.horizontal, 18)
+                           .shadow(radius: 8)
+                           .scaleEffect(nonBubbleMenuMessage == nil ? 0.85 : 1)
+                           .animation(.spring(response: 0.25, dampingFraction: 0.7), value: nonBubbleMenuMessage == nil)
+                           .fixedSize()
+                       }
+                   }
+               }
+               .emojiPicker(
+                   isPresented: $isEmojiPickerPresented,
+                   selectedEmoji: $selectedEmoji
+                   // detents: [.large] // Specify which presentation detents to use for the slide sheet (Optional)
+                   // configuration: ElegantConfiguration(showRandom: false), // Pass configuration (Optional)
+                   // localization: ElegantLocalization(searchFieldPlaceholder: "Find your emoji...") // Pass localization (Optional)
+               )
            }
        } else { // message is system made
            HStack {

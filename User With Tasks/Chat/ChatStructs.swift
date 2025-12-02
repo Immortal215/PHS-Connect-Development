@@ -25,3 +25,20 @@ struct ReplyLine: Shape {
         }
     }
 }
+
+func bubbleMenuButton(label: String, system: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+        HStack(spacing: 10) {
+            Image(systemName: system)
+                .font(.system(size: 16, weight: .medium))
+
+            Text(label)
+                .font(.system(size: 15, weight: .medium))
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+    }
+    .buttonStyle(.plain)
+    //.highPriorityGesture(TapGesture().onEnded(action))
+}
+

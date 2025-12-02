@@ -41,6 +41,8 @@ struct ChatView: View {
     
     @State var openChatIDFromNotification: String? = nil
     @State var openThreadNameFromNotification: String? = nil
+   
+    @State var nonBubbleMenuMessage : Chat.ChatMessage? = nil
 
     var clubsLeaderIn: [Club] {
         let email = userInfo?.userEmail ?? ""
@@ -377,6 +379,11 @@ struct ChatView: View {
                 focusedOnSendBar = false
                 focusedOnNewThread = false
             }
+//            .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
+//                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+//                    nonBubbleMenuMessage = nil
+//                }
+//            }
             
         }
         .onAppear {
@@ -436,7 +443,8 @@ struct ChatView: View {
                             replyingMessageID: $replyingMessageID,
                             focusedOnSendBar: _focusedOnSendBar,
                             bubbles: $bubbles,
-                            clubColor: .constant(colorFromClub(club: selectedClub))
+                            clubColor: .constant(colorFromClub(club: selectedClub)),
+                            nonBubbleMenuMessage: $nonBubbleMenuMessage
                         )
                         .padding(.horizontal, 16)
                         
