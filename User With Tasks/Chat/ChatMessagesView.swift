@@ -225,7 +225,20 @@ struct MessageScrollView: View {
                                             isEmojiPickerPresented = true
                                             selectedEmojiMessage = message
                                         } label: {
-                                            Image(systemName: "face.smiling")
+                                            ZStack {
+                                                Image(systemName: "face.smiling")
+                                                    .font(.system(size: 20, weight: .medium))
+                                                
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 8, weight: .medium))
+                                                    .offset(x: 10, y: -8)
+                                                    .background {
+                                                        Circle()
+                                                            .fill(Color.systemGray5)
+                                                            .offset(x: 10, y: -8)
+                                                            .frame(width: 12, height: 12)
+                                                    }
+                                            }
                                         }
                                     }
                             }
@@ -384,7 +397,20 @@ struct MessageScrollView: View {
                                                 isEmojiPickerPresented = true
                                                 selectedEmojiMessage = message
                                             } label: {
-                                                Image(systemName: "face.smiling")
+                                                ZStack {
+                                                    Image(systemName: "face.smiling")
+                                                        .font(.system(size: 20, weight: .medium))
+                                                    
+                                                    Image(systemName: "plus")
+                                                        .font(.system(size: 8, weight: .medium))
+                                                        .offset(x: 10, y: -8)
+                                                        .background {
+                                                            Circle()
+                                                                .fill(Color.systemGray5)
+                                                                .offset(x: 10, y: -8)
+                                                                .frame(width: 12, height: 12)
+                                                        }
+                                                }
                                             }
                                         }
                                     
@@ -620,8 +646,20 @@ struct MessageScrollView: View {
                                             isEmojiPickerPresented = true
                                             selectedEmojiMessage = message
                                         } label: {
-                                            Image(systemName: "face.smiling")
-                                                .font(.system(size: 16, weight: .medium))
+                                            ZStack {
+                                                Image(systemName: "face.smiling")
+                                                    .font(.system(size: 20, weight: .medium))
+                                                
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 8, weight: .medium))
+                                                    .offset(x: 10, y: -8)
+                                                    .background {
+                                                        Circle()
+                                                            .fill(Color.systemGray5)
+                                                            .offset(x: 10, y: -8)
+                                                            .frame(width: 12, height: 12)
+                                                    }
+                                            }
                                         }
                                         .padding(.vertical, 6)
                                         .padding(.horizontal, 8)
@@ -699,9 +737,45 @@ struct MessageScrollView: View {
                             }
                         }
                         
+                        Button {
+                            isEmojiPickerPresented = true
+                            selectedEmojiMessage = message
+                        } label: {
+                            ZStack {
+                                Image(systemName: "face.smiling")
+                                    .font(.system(size: 20, weight: .medium))
+                                
+                                Image(systemName: "plus")
+                                    .font(.system(size: 8, weight: .medium))
+                                    .offset(x: 10, y: -8)
+                                    .background {
+                                        Circle()
+                                            .fill(Color.systemGray5)
+                                            .offset(x: 10, y: -8)
+                                            .frame(width: 12, height: 12)
+                                    }
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color(.systemGray5))
+                        )
+                        .overlay {
+                            Rectangle()
+                                .fill(.clear)
+                            
+                            .highPriorityGesture(TapGesture().onEnded {
+                                isEmojiPickerPresented = true
+                                selectedEmojiMessage = message
+                            })
+                        }
+
                         Spacer()
                     }
                     .padding(.top, 2)
+                    .padding(.leading, 60)
                 }
                 
             }

@@ -30,7 +30,7 @@ func bubbleMenuButton(label: String, system: String, action: @escaping () -> Voi
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: system)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                 
                 Text(label)
                     .font(.system(size: 15, weight: .medium))
