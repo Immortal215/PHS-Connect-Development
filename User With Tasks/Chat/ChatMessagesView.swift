@@ -670,9 +670,9 @@ struct MessageScrollView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(
-                                Capsule()
+                                RoundedRectangle(cornerRadius: 25)
                                     .fill(Color(.systemGray5))
-                                    .border(.blue, width: users.contains(userInfo?.userID ?? "") ? 2 : 0)
+                                    .border(.blue, width: users.contains(userInfo?.userID ?? "") ? 2 : 0, cornerRadius: 25)
                             )
                             .onTapGesture {
                                 guard let userID = userInfo?.userID, let chatID = selectedChat?.chatID
