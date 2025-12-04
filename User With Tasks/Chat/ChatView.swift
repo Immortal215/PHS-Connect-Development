@@ -41,9 +41,7 @@ struct ChatView: View {
     
     @State var openChatIDFromNotification: String? = nil
     @State var openThreadNameFromNotification: String? = nil
-   
-    @State var nonBubbleMenuMessage : Chat.ChatMessage? = nil
-
+    
     var clubsLeaderIn: [Club] {
         let email = userInfo?.userEmail ?? ""
         return clubs.filter { $0.leaders.contains(email) }
@@ -122,6 +120,7 @@ struct ChatView: View {
                                 Divider()
                                 
                                 ScrollView {
+                                    
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("THREADS")
                                             .font(.caption)
@@ -375,15 +374,13 @@ struct ChatView: View {
                     }
                 }
             }
-            .onTapGesture(disabled: !focusedOnSendBar || !focusedOnNewThread) { // disables this gesture if either are not focused currently
+            .onTapGesture(disabled: !focusedOnSendBar) {
                 focusedOnSendBar = false
+            }
+            .onTapGesture(disabled: !focusedOnNewThread) {
                 focusedOnNewThread = false
             }
-//            .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
-//                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-//                    nonBubbleMenuMessage = nil
-//                }
-//            }
+
             
         }
         .onAppear {
@@ -409,6 +406,7 @@ struct ChatView: View {
                     timer.invalidate()
 
                     if let chat = chats.first(where: { $0.chatID == id }) {
+                        
                         selectedChat = chat
                         selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
                     }
@@ -428,8 +426,7 @@ struct ChatView: View {
         
     var messageSection: some View {
         return VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
+
                     if let selected = selectedChat {
                         let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                         
@@ -444,29 +441,10 @@ struct ChatView: View {
                             focusedOnSendBar: _focusedOnSendBar,
                             bubbles: $bubbles,
                             clubColor: .constant(colorFromClub(club: selectedClub)),
-                            nonBubbleMenuMessage: $nonBubbleMenuMessage
                         )
                         .padding(.horizontal, 16)
                         
                     }
-                }
-                .defaultScrollAnchor(.bottom)
-                .padding(.horizontal, 16)
-                .onAppear {
-                    if let selected = selectedChat {
-                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-                        
-                        proxy.scrollTo(selected.messages?.filter({$0.threadName == currentThread || ($0.threadName == nil && currentThread == "general") }).last?.messageID ?? "0", anchor: .bottom) // if the thread is nil and the selected thread is general then scroll to the bottom
-                    }
-                }
-                .onChange(of: selectedChat?.messages) {
-                    if let selected = selectedChat {
-                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-                        
-                        proxy.scrollTo(selected.messages?.filter({$0.threadName == currentThread || ($0.threadName == nil && currentThread == "general") }).last?.messageID ?? "0", anchor: .bottom)
-                    }
-                }
-            }
             
             VStack(spacing: 4) {
                 if let editingID = editingMessageID, let selected = selectedChat, let message = selected.messages?.first(where: { $0.messageID == editingID }) {
@@ -606,6 +584,7 @@ struct ChatView: View {
                             systemGenerated: true
                         ))
                         chats[chatIndex] = chat
+                        
                         selectedChat = chat
                         selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
                         
@@ -648,10 +627,10 @@ struct ChatView: View {
                 TapGesture()
                     .onEnded({
                         if chat.chatID != "Loading..." {
+                            
                             selectedChat = chat
                             selectedClub = clubs.filter({$0.clubID == chat.clubID}).first!
-                        }
-                        
+                        }                        
                     })
             )
         }
@@ -725,6 +704,7 @@ struct ChatView: View {
                 chats[chatIndex] = cached
             }
             if selectedChat?.chatID == chatID {
+                
                 selectedChat = chats[chatIndex]
             }
         }
@@ -748,6 +728,7 @@ struct ChatView: View {
                         cache.save(chats[chatIndex])
                         
                         if selectedChat?.chatID == chatID {
+                            
                             selectedChat = chats[chatIndex]
                         }
                     }
@@ -771,6 +752,7 @@ struct ChatView: View {
                         cache.save(chats[chatIndex])
                         
                         if selectedChat?.chatID == chatID {
+                            
                             selectedChat = chats[chatIndex]
                         }
                     }
@@ -787,6 +769,7 @@ struct ChatView: View {
                 cache.save(chats[chatIndex])
                 
                 if selectedChat?.chatID == chatID {
+                    
                     selectedChat = chats[chatIndex]
                 }
             }
@@ -801,6 +784,7 @@ struct ChatView: View {
                 cache.save(chats[index])
                 
                 if selectedChat?.chatID == chatID {
+                    
                     selectedChat = chats[index]
                 }
             }
@@ -815,6 +799,7 @@ struct ChatView: View {
                 cache.save(chats[index])
                 
                 if selectedChat?.chatID == chatID {
+                    
                     selectedChat = chats[index]
                 }
             }

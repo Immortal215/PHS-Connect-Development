@@ -16,63 +16,76 @@ struct MessageScrollView: View {
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @Binding var clubColor: Color
-    @Binding var nonBubbleMenuMessage : Chat.ChatMessage?
+    @State var nonBubbleMenuMessage : Chat.ChatMessage? = nil
     @State var isEmojiPickerPresented = false
     @State var selectedEmoji: Emoji? = nil
     @State var selectedEmojiMessage : Chat.ChatMessage?
+    @State var scrolledToTopTimes = 1
     
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                if let selected = selectedChat {
-                    let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-                    let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
-                    let messagesToShow = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
-                    
-                    ForEach(Array(messages.enumerated()), id: \.element.messageID) { index, message in
-                        messageBubble(message: message, index: index, messages: messages, messagesToShow: messagesToShow, proxy: proxy)
-                            .id(message.messageID)
+
+                LazyVStack {
+                    if let selected = selectedChat {
+                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                        let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
+                        let visible = Array(messages)
                         
+                        ForEach(visible.indices, id: \.self) { i in
+                            let message = visible[i]
+                            messageBubble(message: message, index: i, messages: messages, messagesToShow: visible, proxy: proxy)
+                                .id(message.messageID)
+                        }
+                        .geometryGroup()
+                        
+
                     }
-                    
+                }
+            }
+            .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    nonBubbleMenuMessage = nil
                 }
             }
             .defaultScrollAnchor(.bottom)
-            .onAppear {
+            .onChange(of: selectedChat?.messages) {
+                scrolledToTopTimes = 1
                 scrollToBottom(proxy: proxy)
             }
-            .onChange(of: selectedChat?.messages) { _ in
+            .onChange(of: selectedChat) { _ in
+                scrolledToTopTimes = 1
                 scrollToBottom(proxy: proxy)
             }
             .onChange(of: selectedEmoji) { _ in
                 guard let emoji = selectedEmoji, var newMessage = selectedEmojiMessage, let userID = userInfo?.userID, let chatID = selectedChat?.chatID
                 else { return }
-
+                
                 var reactions = newMessage.reactions ?? [:]
-
+                
                 var users = reactions[emoji.emoji] ?? []
-
+                
                 if let index = users.firstIndex(of: userID) {
                     users.remove(at: index)
                 } else {
                     users.append(userID)
                 }
-
+                
                 if users.isEmpty {
                     reactions.removeValue(forKey: emoji.emoji)
                 } else {
                     reactions[emoji.emoji] = users
                 }
-
+                
                 newMessage.reactions = reactions
-
+                
                 sendMessage(chatID: chatID, message: newMessage)
-
+                
                 selectedEmoji = nil
                 isEmojiPickerPresented = false
                 selectedEmojiMessage = nil
             }
-
+            
         }
     }
     
@@ -193,6 +206,7 @@ struct MessageScrollView: View {
                                         Button {
                                             newMessageText = message.message
                                             editingMessageID = message.messageID
+                                            replyingMessageID = nil
                                             focusedOnSendBar = true
                                         } label: {
                                             Label("Edit", systemImage: "pencil")
@@ -201,6 +215,7 @@ struct MessageScrollView: View {
                                         Button {
                                             newMessageText = ""
                                             replyingMessageID = message.messageID
+                                            editingMessageID = nil
                                             focusedOnSendBar = true
                                         } label: {
                                             Label("Reply", systemImage: "arrowshape.turn.up.left")
@@ -359,6 +374,7 @@ struct MessageScrollView: View {
                                             Button {
                                                 newMessageText = ""
                                                 replyingMessageID = message.messageID
+                                                editingMessageID = nil
                                                 focusedOnSendBar = true
                                             } label: {
                                                 Label("Reply", systemImage: "arrowshape.turn.up.left")
@@ -574,6 +590,7 @@ struct MessageScrollView: View {
                                             action: {
                                                 newMessageText = message.message
                                                 editingMessageID = message.messageID
+                                                replyingMessageID = nil
                                                 focusedOnSendBar = true
                                                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                                     nonBubbleMenuMessage = nil
@@ -588,6 +605,7 @@ struct MessageScrollView: View {
                                         action: {
                                             newMessageText = ""
                                             replyingMessageID = message.messageID
+                                            editingMessageID = nil
                                             focusedOnSendBar = true
                                             withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                                 nonBubbleMenuMessage = nil
@@ -597,13 +615,26 @@ struct MessageScrollView: View {
                                     
                                     Divider()
                                     
-                                    Button {
-                                        isEmojiPickerPresented = true
-                                        selectedEmojiMessage = message
-                                    } label: {
-                                        Image(systemName: "face.smiling")
-                                    }
-                                    .padding(.horizontal, 8)
+                                    
+                                        Button {
+                                            isEmojiPickerPresented = true
+                                            selectedEmojiMessage = message
+                                        } label: {
+                                            Image(systemName: "face.smiling")
+                                                .font(.system(size: 16, weight: .medium))
+                                        }
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 8)
+                                        .overlay {
+                                            Rectangle()
+                                                .fill(.clear)
+                                            
+                                            .highPriorityGesture(TapGesture().onEnded {
+                                                isEmojiPickerPresented = true
+                                                selectedEmojiMessage = message
+                                            })
+                                        }
+
                                 }
                                 
                             }
@@ -624,7 +655,7 @@ struct MessageScrollView: View {
                     // localization: ElegantLocalization(searchFieldPlaceholder: "Find your emoji...") // Pass localization (Optional)
                 )
                 
-
+                
                 if let reactions = message.reactions, !reactions.isEmpty {
                     HStack(spacing: 4) {
                         ForEach(reactions.sorted(by: { $0.key < $1.key }), id: \.key) { emoji, users in
@@ -641,6 +672,7 @@ struct MessageScrollView: View {
                             .background(
                                 Capsule()
                                     .fill(Color(.systemGray5))
+                                    .border(.blue, width: users.contains(userInfo?.userID ?? "") ? 2 : 0)
                             )
                             .onTapGesture {
                                 guard let userID = userInfo?.userID, let chatID = selectedChat?.chatID
@@ -649,19 +681,19 @@ struct MessageScrollView: View {
                                 var newMessage = message
                                 var reactions = newMessage.reactions ?? [:]
                                 var usersForEmoji = reactions[emoji] ?? []
-
+                                
                                 if let index = usersForEmoji.firstIndex(of: userID) {
                                     usersForEmoji.remove(at: index)
                                 } else {
                                     usersForEmoji.append(userID)
                                 }
-
+                                
                                 if usersForEmoji.isEmpty {
                                     reactions.removeValue(forKey: emoji)
                                 } else {
                                     reactions[emoji] = usersForEmoji
                                 }
-
+                                
                                 newMessage.reactions = reactions
                                 sendMessage(chatID: chatID, message: newMessage)
                             }
@@ -671,7 +703,7 @@ struct MessageScrollView: View {
                     }
                     .padding(.top, 2)
                 }
-
+                
             }
         } else { // message is system made
             HStack {
