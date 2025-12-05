@@ -25,7 +25,7 @@ struct MessageScrollView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-
+                
                 LazyVStack {
                     if let selected = selectedChat {
                         let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
@@ -39,7 +39,7 @@ struct MessageScrollView: View {
                         }
                         .geometryGroup()
                         
-
+                        
                     }
                 }
             }
@@ -49,11 +49,15 @@ struct MessageScrollView: View {
                 }
             }
             .defaultScrollAnchor(.bottom)
-            .onChange(of: selectedChat?.messages) {
-                scrolledToTopTimes = 1
-                scrollToBottom(proxy: proxy)
+            .onChange(of: selectedChat?.messages?.last?.messageID, initial: false) { oldID, newID in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    if oldID != newID {
+                        scrolledToTopTimes = 1
+                        scrollToBottom(proxy: proxy)
+                    }
+                }
             }
-            .onChange(of: selectedChat) { _ in
+            .onChange(of: selectedChat?.chatID) { _ in
                 scrolledToTopTimes = 1
                 scrollToBottom(proxy: proxy)
             }

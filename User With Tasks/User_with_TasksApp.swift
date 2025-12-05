@@ -106,11 +106,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
 @main
 struct User_with_TasksApp: App {
+
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("autoColorScheme") var autoColorScheme = true
     @AppStorage("openToDo") var openToDo = false
-    @Environment(\.colorScheme) var colorScheme
     
     var body: some Scene {
         WindowGroup {
@@ -126,11 +126,5 @@ struct User_with_TasksApp: App {
                     .transition(.opacity)
             }
         }
-        .onChange(of: colorScheme) {
-            if autoColorScheme {
-                darkMode = (colorScheme == .dark)
-            }
-        }
-        
     }
 }

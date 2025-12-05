@@ -35,7 +35,7 @@ struct SettingsView: View {
     @State var autoBuffer = false
     @AppStorage("autoColorScheme") var autoColorScheme = true
     @Environment(\.colorScheme) var colorScheme
-    
+
     var body: some View {
         VStack {
             HStack(alignment: .top) {
@@ -97,10 +97,13 @@ struct SettingsView: View {
                                     .delay(for: .milliseconds(300), scheduler: DispatchQueue.main)
                                     .sink { finalValue in
                                         autoColorScheme = !finalValue
-                                        darkMode = (colorScheme == .dark)
                                     }
                             }
-                
+                            .onChange(of: colorScheme) {
+                                if autoColorScheme {
+                                    darkMode = (colorScheme == .dark)
+                                }
+                            }
                         
                         CustomToggleSwitch(boolean: $darkModeBuffer, enabled: !autoColorScheme, colors: [autoColorScheme ? .gray : .purple, autoColorScheme ? .gray : .yellow], images: ["moon.fill", "sun.max.fill"])
                             .onChange(of: darkModeBuffer) { newValue in // need all this stuff to make sure that when dark mode is changing (with a lil lag) it does not impede the switching animation which would look like lag
