@@ -8,21 +8,27 @@ struct GlassBackground: View {
     @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
-        shape
-            .fill(Color.systemGray6.opacity(darkMode ? 0.1 : 0.6))
-            .background {
-                shape.fill(.ultraThinMaterial)
-            }
-            .overlay(
-                shape
-                    .stroke((color ?? .white).opacity(0.2), lineWidth: 1)
-            )
-            .shadow(color: color ?? .clear, radius: 1)
+//        if #available(iOS 26, *) {
+//            shape
+//                .tint(color ?? .white)
+//                .glassEffect(.regular, in: .containerRelative)
+//        } else {
+            shape
+                .fill(Color.systemGray6.opacity(darkMode ? 0.1 : 0.6))
+                .background {
+                    shape.fill(.ultraThinMaterial)
+                }
+                .overlay(
+                    shape
+                        .stroke((color ?? .white).opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: color ?? .clear, radius: 1)
+      //  }
     }
 }
 
 struct AnyShape: Shape {
-    private let _path: (CGRect) -> Path
+    let _path: (CGRect) -> Path
 
     init<S: Shape>(_ shape: S) {
         _path = { rect in

@@ -496,9 +496,8 @@ struct ClubInfoView: View {
                     Text(club.name)
                         .font(.title)
                         .bold()
-                        .padding(.top)
                         .foregroundStyle(.primary)
-                    
+                        .fixedSize()
                 }
 //                ToolbarItem(placement: .topBarLeading) {
 //                    Circle()
@@ -518,8 +517,7 @@ struct ClubInfoView: View {
                                 Image(systemName: "gear")
                                     .imageScale(.large)
                             }
-                            .padding(.top)
-                            .sheet(isPresented: $showEditScreen) {
+                          .sheet(isPresented: $showEditScreen) {
                                 CreateClubView(viewCloser: {
                                     showEditScreen = false
                                     dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
