@@ -22,7 +22,6 @@ struct ChatView: View {
     @State var newMessageText: String = ""
     @State var chats: [Chat] = []
     @State var selectedChat: Chat?
-    @State var isLoading = true
     @State var listeningChats : [String] = []
     @State var users: [String : Personal] = [:] // UserID : UserStruct
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
@@ -74,7 +73,6 @@ struct ChatView: View {
                         
                         ScrollView {
                             VStack(spacing: 8) {
-                                if !isLoading {
                                     ForEach(clubsLeaderIn, id: \.clubID) { club in
                                         createChatSection(for: club)
                                     }
@@ -82,10 +80,6 @@ struct ChatView: View {
                                     ForEach(chats, id: \.chatID) { chat in
                                         chatRow(for: chat)
                                     }
-                                } else {
-                                    ProgressView()
-                                        .padding(.top, 20)
-                                }
                             }
                             .padding(.vertical, 8)
                         }
@@ -392,36 +386,16 @@ struct ChatView: View {
             if let info = notif.userInfo {
                 openChatIDFromNotification = info["chatID"] as? String
                 openThreadNameFromNotification = info["threadName"] as? String ?? "general"
-            }
-        }
-        .onChange(of: openChatIDFromNotification) { id in
-            guard let id else { return }
-
-            var attempts = 0
-            Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { timer in
-                attempts += 1
-                let allChats = clubs.flatMap { $0.chatIDs ?? [] }
-
-                if allChats.contains(id) {
-                    timer.invalidate()
-
-                    if let chat = chats.first(where: { $0.chatID == id }) {
-                        
-                        selectedChat = chat
-                        selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
-                    }
-
-                    selectedThread[id] = openThreadNameFromNotification
-                    openChatIDFromNotification = nil
-                }
-
-                if attempts > 50 {
-                    timer.invalidate()
-                    openChatIDFromNotification = nil
+                DispatchQueue.main.async {
+                    attemptOpenChatFromNotification()
                 }
             }
         }
-
+        .onChange(of: openChatIDFromNotification) { _ in
+            DispatchQueue.main.async {
+                attemptOpenChatFromNotification()
+            }
+        }
     }
         
     var messageSection: some View {
@@ -638,7 +612,6 @@ struct ChatView: View {
     
     func loadChats() {
         guard let email = userInfo?.userEmail else { return }
-        isLoading = true
         
         // filter clubs where user is leader or member and has chatIDs
         let relevantClubs = clubs.filter { club in
@@ -687,8 +660,9 @@ struct ChatView: View {
                     }
                 }
             }
-            isLoading = false
         }
+        
+        attemptOpenChatFromNotification()
     }
     
     func setupMessagesListener(for chatID: String) {
@@ -823,4 +797,20 @@ struct ChatView: View {
         }
         return nil
     }
+    
+    func attemptOpenChatFromNotification() {
+        guard let id = openChatIDFromNotification, !id.isEmpty else { return }
+
+        guard let chat = chats.first(where: { $0.chatID == id }) else { return }
+
+        DispatchQueue.main.async {
+            selectedChat = chat
+            selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
+            selectedThread[id] = openThreadNameFromNotification ?? "general"
+
+            openChatIDFromNotification = nil
+            openThreadNameFromNotification = nil
+        }
+    }
+
 }

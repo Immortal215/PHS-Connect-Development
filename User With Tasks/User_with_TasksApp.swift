@@ -6,7 +6,6 @@ import GoogleSignInSwift
 import SwiftUI
 import UserNotifications
 import FirebaseMessaging
-
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
 
     func application(
@@ -21,7 +20,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Messaging.messaging().delegate = self
 
         let options: UNAuthorizationOptions = [.alert, .badge, .sound]
-        UNUserNotificationCenter.current().requestAuthorization(options: options) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: options) { _, error in
             if let error = error {
                 print("Notification auth error:", error)
             }
@@ -29,21 +28,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         UIApplication.shared.registerForRemoteNotifications()
 
-        // HANDLE COLD START
         if let notification = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
-            let chatID = notification["chatID"] as? String ?? ""
-            let threadName = notification["threadName"] as? String ?? "general"
-
-            print("Cold start notification:", notification)
-
-            NotificationCenter.default.post(
-                name: Notification.Name("OpenChatFromNotification"),
-                object: nil,
-                userInfo: [
-                    "chatID": chatID,
-                    "threadName": threadName
-                ]
-            )
+            print("LaunchOptions remoteNotification:", notification)
+            NotificationOpenRouter.shared.handle(userInfo: notification)
         }
 
         return true
@@ -60,7 +47,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken else { return }
-
         print("FCM token:", fcmToken)
 
         if let uid = Auth.auth().currentUser?.uid {
@@ -85,20 +71,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-
-        let chatID = userInfo["chatID"] as? String ?? ""
-        let threadName = userInfo["threadName"] as? String ?? "general"
-
         print("Opened from notification:", userInfo)
 
-        NotificationCenter.default.post(
-            name: Notification.Name("OpenChatFromNotification"),
-            object: nil,
-            userInfo: [
-                "chatID": chatID,
-                "threadName": threadName
-            ]
-        )
+        NotificationOpenRouter.shared.handle(userInfo: userInfo)
 
         completionHandler()
     }

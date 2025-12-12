@@ -112,52 +112,6 @@ struct ContentView: View {
                 } else {
                     ZStack {
                         if advSearchShown {
-                            //                            TabView(selection: $selectedTab) {
-                            //                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                            //                                    .tabItem {
-                            //                                        Image(systemName: "magnifyingglass")
-                            //                                        Text("Clubs")
-                            //                                    }
-                            //                                    .tag(0)
-                            //
-                            //                                if userInfo != nil {
-                            //                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                            //                                        .tabItem {
-                            //                                            Image(systemName: "rectangle.3.group.bubble")
-                            //                                            Text("Home")
-                            //                                        }
-                            //                                        .tag(1)
-                            //
-                            //                                    ChatView(clubs: $clubs, userInfo: $userInfo)
-                            //                                        .tabItem {
-                            //                                            Image(systemName: "bubble.left.and.bubble.right")
-                            //                                            Text("Chat")
-                            //                                        }
-                            //                                        .tag(6)
-                            //
-                            //                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                            //                                        .tabItem {
-                            //                                            Image(systemName: "calendar.badge.clock")
-                            //                                            Text("Calendar")
-                            //                                        }
-                            //                                        .tag(2)
-                            //                                }
-                            //
-                            //                                SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                            //                                    .padding()
-                            //                                    .tabItem {
-                            //                                        Image(systemName: "gearshape")
-                            //                                        Text("Settings")
-                            //                                    }
-                            //                                    .tag(3)
-                            //                            }
-                            //                            .tabViewStyle(.page)
-                            //                            .transition(.opacity)
-                            //                            .ignoresSafeArea(edges: .all)
-                            //                            .background {
-                            //                                RandomShapesBackground()
-                            //                            }
-                            //
                             ZStack {
                                 SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
                                     .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same
@@ -310,6 +264,14 @@ struct ContentView: View {
                             selectedTab = 3 // settings
                         }
                         
+                        if let pending = NotificationOpenRouter.shared.consumePending() {
+                            pendingChatID = pending.chatID
+                            pendingThreadName = pending.threadName
+                            DispatchQueue.main.async {
+                                selectedTab = 6
+                            }
+                        }
+                        
                         //                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                         //
                         //                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary
@@ -325,21 +287,18 @@ struct ContentView: View {
                         
                     }
                     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenChatFromNotification"))) { notif in // receives the notification you just clicked
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            let info = notif.userInfo
-                            let chatID = info?["chatID"] as? String
-                            let threadName = info?["threadName"] as? String ?? "general"
-                            
-                            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                                if advSearchShown == true {
-                                    timer.invalidate()
-                                    
-                                    pendingChatID = chatID
-                                    pendingThreadName = threadName
-                                    
-                                    selectedTab = 6
-                                }
-                            }
+                        let info = notif.userInfo
+                        let chatID = info?["chatID"] as? String
+                        let threadName = info?["threadName"] as? String ?? "general"
+                        
+                        pendingChatID = chatID
+                        pendingThreadName = threadName
+                        
+                        guard showSignInView == false else { return }
+                        
+                        advSearchShown = true
+                        DispatchQueue.main.async {
+                            selectedTab = 6
                         }
                     }
                     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RequestPendingChatID"))) { _ in
