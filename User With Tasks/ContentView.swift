@@ -149,95 +149,93 @@ struct ContentView: View {
                             ProgressView()
                         }
                         
-                        if keyboardResponder.currentHeight > 0 && selectedTab != 6 {
-                            VStack(alignment: .center, spacing: 16) { // KEEP INDEXS THE SAME FOR ALL THE BELOW
-                                TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
-                                if !viewModel.isGuestUser {
-                                    TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
-                                    TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
-                                    TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
+                        if selectedTab != 6 {
+                            if keyboardResponder.currentHeight > 0 {
+                                VStack(alignment: .center, spacing: 16) { // KEEP INDEXS THE SAME FOR ALL THE BELOW
+                                    TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
+                                    if !viewModel.isGuestUser {
+                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                                        TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
+                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
+                                    }
+                                    TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                                 }
-                                TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
-                            }
-                            .animation(.easeInOut(duration: 0.2))
-                            .bold()
-                            .padding()
-                            .background(Color.systemBackground.opacity(0.95))
-                            .cornerRadius(10)
-                            .shadow(radius: 5)
-                            //     .transition(.push(from: .bottom))
-                            .asymmetricTransition(insertion: .opacity, removal: .opacity)
-                            //  .animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
-                            .fixedSize()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                            .offset(y: 75)
-                            
-                        } else {
-                            VStack {
-                                Spacer()
+                                .animation(.easeInOut(duration: 0.2))
+                                .bold()
+                                .padding()
+                                .background(Color.systemBackground.opacity(0.95))
+                                .cornerRadius(10)
+                                .shadow(radius: 5)
+                                //     .transition(.push(from: .bottom))
+                                .asymmetricTransition(insertion: .opacity, removal: .opacity)
+                                //  .animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
+                                .fixedSize()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                                .offset(y: 75)
                                 
-                                ZStack {
-                                    HStack {
-                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
-                                            .padding(.horizontal)
-                                        
-                                        if !viewModel.isGuestUser {
-                                            TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                            } else {
+                                VStack {
+                                    Spacer()
+                                    
+                                    ZStack {
+                                        HStack {
+                                            TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
                                                 .padding(.horizontal)
                                             
-                                            TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
+                                            if !viewModel.isGuestUser {
+                                                TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
+                                                    .padding(.horizontal)
+                                                
+                                                TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
+                                                    .padding(.horizontal)
+                                                
+                                                TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
+                                                    .padding(.horizontal)
+                                            }
+                                            
+                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
                                                 .padding(.horizontal)
                                             
-                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
-                                                .padding(.horizontal)
-                                        }
-                                        
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
-                                            .padding(.horizontal)
-                                        
-                                        if !networkMonitor.isConnected {
-                                            withAnimation(.smooth) { // make this look better later
-                                                VStack {
-                                                    Image(systemName: "wifi.slash")
-                                                        .imageScale(.large)
-                                                    Text("No Wifi")
-                                                        .font(.caption)
+                                            if !networkMonitor.isConnected {
+                                                withAnimation(.smooth) { // make this look better later
+                                                    VStack {
+                                                        Image(systemName: "wifi.slash")
+                                                            .imageScale(.large)
+                                                        Text("No Wifi")
+                                                            .font(.caption)
+                                                    }
+                                                    .foregroundStyle(.red)
+                                                    .padding(.horizontal)
                                                 }
-                                                .foregroundStyle(.red)
-                                                .padding(.horizontal)
                                             }
                                         }
-                                        
-                                        if selectedTab == 6 { // Chat tab
-                                            Spacer()
-                                        }
+                                        .frame(width: screenWidth)
+                                        .fixedSize()
+                                        .bold()
                                     }
-                                    .frame(width: screenWidth)
-                                    .fixedSize()
-                                    .bold()
+                                    
+                                    
                                 }
-                                
-                                
-                            }
-                            .animation(.easeInOut(duration: 0.2))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                            //.transition(.push(from: .top))
-                            .asymmetricTransition(insertion: .opacity, removal: .opacity)
-                            //.animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
-                            .background {
-                                HStack {
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                    .frame(height: screenHeight / 6)
-                                    .edgesIgnoringSafeArea(.all)
+                                .animation(.easeInOut(duration: 0.2))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                                //.transition(.push(from: .top))
+                                .asymmetricTransition(insertion: .opacity, removal: .opacity)
+                                //.animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
+                                .background {
+                                    HStack {
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                        .frame(height: screenHeight / 6)
+                                        .edgesIgnoringSafeArea(.all)
+                                    }
+                                    .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
+                                    .allowsHitTesting(false)
+                                    .offset(y: selectedTab == 6 ? 0 : 10)
+                                    .hidden(selectedTab == 3 || selectedTab == 6)
                                 }
-                                .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
-                                .allowsHitTesting(false)
-                                .offset(y: selectedTab == 6 ? 0 : 10)
-                                .hidden(selectedTab == 3 || selectedTab == 6)
                             }
                         }
                     }

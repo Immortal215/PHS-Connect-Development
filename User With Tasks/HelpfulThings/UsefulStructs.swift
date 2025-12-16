@@ -2,6 +2,7 @@ import SwiftUI
 import Pow
 import SwiftUIX
 import Shimmer
+import CommonSwiftUI
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3
@@ -27,6 +28,11 @@ struct TabBarButton: View {
                 //  .offset(y: selectedTab == index ? -20 : 0.0 )
                 .foregroundColor(selectedTab == index ? .blue : .primary)
                 .brightness(0.1)
+            }
+        }
+        .apply {
+            if #available(iOS 26, *) {
+                $0.buttonStyle(.glass)
             }
         }
     }
@@ -207,3 +213,4 @@ struct CustomToggleSwitch: View {
         }
     }
 }
+

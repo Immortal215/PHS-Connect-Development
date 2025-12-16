@@ -121,6 +121,19 @@ struct MessageScrollView: View {
         
         if message.systemGenerated == nil || message.systemGenerated == false {
             if bubbles {
+                if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
+                    HStack {
+                        Spacer()
+                        
+                        Text(Date(timeIntervalSince1970: message.date), style: .date)
+                            .font(.headline)
+                            .padding(.vertical)
+                            .underline()
+                        
+                        Spacer()
+                    }
+                }
+                
                 if message.sender == userInfo?.userID ?? "" {
                     HStack {
                         Spacer()
@@ -162,8 +175,9 @@ struct MessageScrollView: View {
                                                     .font(.subheadline)
                                                     .padding(10)
                                                     .background(
-                                                        RoundedRectangle(cornerRadius: 25)
-                                                            .foregroundColor(.darkGray)
+                                                        GlassBackground(
+                                                            shape: AnyShape(RoundedRectangle(cornerRadius: 25))
+                                                        )
                                                     )
                                                 
                                                 ReplyLine(left: true)
@@ -353,8 +367,9 @@ struct MessageScrollView: View {
                                                     .font(.subheadline)
                                                     .padding(10)
                                                     .background(
-                                                        RoundedRectangle(cornerRadius: 25)
-                                                            .foregroundColor(.darkGray)
+                                                        GlassBackground(
+                                                            shape: AnyShape(RoundedRectangle(cornerRadius: 25))
+                                                        )
                                                     )
                                             }
                                             
@@ -444,7 +459,7 @@ struct MessageScrollView: View {
                     )
                     
                 }
-            } else {
+            } else { // non-bubble mode
                 if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
                     HStack {
                         Text(Date(timeIntervalSince1970: message.date), style: .date)

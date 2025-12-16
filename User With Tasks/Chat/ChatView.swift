@@ -19,6 +19,7 @@ struct ChatView: View {
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("Animations+") var animationsPlus = false
     @AppStorage("selectedTab") var selectedTab = 3
+    
     @State var newMessageText: String = ""
     @State var chats: [Chat] = []
     @State var selectedChat: Chat?
@@ -40,6 +41,9 @@ struct ChatView: View {
     
     @State var openChatIDFromNotification: String? = nil
     @State var openThreadNameFromNotification: String? = nil
+    
+    @State var menuExpanded = false
+    @Namespace var namespace
     
     var clubsLeaderIn: [Club] {
         let email = userInfo?.userEmail ?? ""
@@ -73,15 +77,40 @@ struct ChatView: View {
                         
                         ScrollView {
                             VStack(spacing: 8) {
-                                    ForEach(clubsLeaderIn, id: \.clubID) { club in
-                                        createChatSection(for: club)
-                                    }
-                                    
-                                    ForEach(chats, id: \.chatID) { chat in
-                                        chatRow(for: chat)
-                                    }
+                                ForEach(clubsLeaderIn, id: \.clubID) { club in
+                                    createChatSection(for: club)
+                                }
+                                
+                                ForEach(chats, id: \.chatID) { chat in
+                                    chatRow(for: chat)
+                                }
+                                
+                                Spacer()
                             }
                             .padding(.vertical, 8)
+                        }
+                        
+                        if #available(iOS 26, *) {
+                            GlassEffectContainer {
+                                if menuExpanded {
+                                    VStack {
+                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs").glassEffect().glassEffectID(0, in: namespace)
+                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home").glassEffect().glassEffectID(1, in: namespace)
+                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar").glassEffect().glassEffectID(2, in: namespace)
+                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings").glassEffect().glassEffectID(3, in: namespace)
+                                    }
+                                }
+                                
+                                Button {
+                                    menuExpanded = !menuExpanded
+                                } label: {
+                                    Image(systemName: "line.3.horizontal")
+                                }
+                                .glassEffect()
+                                .buttonStyle(.glass)
+                                .padding(.bottom)
+                                .glassEffectID("toggle", in: namespace)
+                            }
                         }
                     }
                     .frame(width: 80)
@@ -322,6 +351,7 @@ struct ChatView: View {
                                                 .font(.system(size: 14, weight: .semibold))
                                                 .foregroundColor(.primary)
                                                 .padding(.horizontal)
+                                                .lineLimit(1)
                                         }
                                         
                                         ForEach(club.members, id: \.self) { member in
@@ -329,6 +359,7 @@ struct ChatView: View {
                                                 .font(.system(size: 14, weight: .regular))
                                                 .foregroundColor(.primary)
                                                 .padding(.horizontal)
+                                                .lineLimit(1)
                                         }
                                     }
                                     .padding(.bottom, 8)
