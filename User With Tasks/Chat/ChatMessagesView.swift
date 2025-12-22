@@ -42,6 +42,9 @@ struct MessageScrollView: View {
                         
                     }
                 }
+                
+                Color.clear.frame(height: 75) // purely just so you can scroll through the texts
+                    .id("bottomOfMessages")
             }
             .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -94,15 +97,7 @@ struct MessageScrollView: View {
     }
     
     func scrollToBottom(proxy: ScrollViewProxy) {
-        if let selected = selectedChat {
-            let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-            if let lastID = selected.messages?
-                .filter({ ($0.threadName ?? "general") == currentThread })
-                .last?.messageID
-            {
-                proxy.scrollTo(lastID, anchor: .bottom)
-            }
-        }
+                proxy.scrollTo("bottomOfMessages", anchor: .bottom)
     }
     
     @ViewBuilder
@@ -128,7 +123,7 @@ struct MessageScrollView: View {
                         Text(Date(timeIntervalSince1970: message.date), style: .date)
                             .font(.headline)
                             .padding(.vertical)
-                            .underline()
+                            .foregroundStyle(Color.systemGray)
                         
                         Spacer()
                     }

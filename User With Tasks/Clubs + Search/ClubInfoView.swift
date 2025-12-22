@@ -84,6 +84,7 @@ struct ClubInfoView: View {
                                             ZStack {
                                                 RoundedRectangle(cornerRadius: 25)
                                                     .foregroundStyle(.blue)
+                                                
                                                 Text(club.name)
                                                     .padding()
                                                     .foregroundStyle(.white)
@@ -285,6 +286,7 @@ struct ClubInfoView: View {
                             }, viewModel: viewModel)
                             .presentationSizing(.page)
                             .presentationDragIndicator(.visible)
+                            .background(GlassBackground())
                         }
                         
                     }
@@ -358,7 +360,7 @@ struct ClubInfoView: View {
                     .frame(height: screenHeight/10)
             }
             .refreshable {
-                
+                // so that the other big refresh doesnt over ride
             }
             .popup(isPresented: $showMap) {
                 ZStack {
@@ -461,9 +463,6 @@ struct ClubInfoView: View {
                 .frame(width: 400, height: 400, alignment: .center)
                 .clipShape(RoundedRectangle(cornerRadius: 25))
                 
-                      
-                    
-                
             } customize: {
                 $0
                     .type(.default)
@@ -563,7 +562,13 @@ struct ClubInfoView: View {
                     
                 }
             }
-            .toolbarBackground(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()).opacity(0.1), for: .automatic)
+            .apply {
+                if #available(iOS 26, *) {
+                    $0
+                } else {
+                    $0.toolbarBackground(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()).opacity(0.1), for: .automatic)
+                }
+            }
         }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
     }

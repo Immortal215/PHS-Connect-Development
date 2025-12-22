@@ -8,11 +8,14 @@ struct GlassBackground: View {
     @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
-//        if #available(iOS 26, *) {
-//            shape
-//                .tint(color ?? .white)
-//                .glassEffect(.regular, in: .containerRelative)
-//        } else {
+        if #available(iOS 26, *) {
+            let color = color?.opacity(0.2) ?? Color.systemBackground.opacity(0.2)
+            let glass = Glass.clear.tint(color)
+
+            shape
+                .glassEffect(glass, in: shape)
+                .foregroundStyle(.clear)
+        } else {
             shape
                 .fill(Color.systemGray6.opacity(darkMode ? 0.1 : 0.6))
                 .background {
@@ -23,7 +26,7 @@ struct GlassBackground: View {
                         .stroke((color ?? .white).opacity(0.2), lineWidth: 1)
                 )
                 .shadow(color: color ?? .clear, radius: 1)
-      //  }
+        }
     }
 }
 

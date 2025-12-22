@@ -353,6 +353,7 @@ struct SearchClubView: View {
             }
         }
         .animation(.smooth, value: currentSearchingBy)
+        
       
     }
     

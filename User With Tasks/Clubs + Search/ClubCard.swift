@@ -22,6 +22,8 @@ struct ClubCard: View {
     @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
+        let clubColor = Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())!
+
         ZStack(alignment: .bottom) {
          
             
@@ -40,7 +42,7 @@ struct ClubCard: View {
                             if club.clubPhoto == nil {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 25)
-                                        .foregroundStyle(.blue)
+                                       .foregroundStyle(.blue)
                                     Text(club.name)
                                         .padding()
                                         .foregroundStyle(.white)
@@ -88,7 +90,6 @@ struct ClubCard: View {
                             .font(.caption)
                     }
                 }
-                .foregroundStyle(.primary)
                 .frame(maxWidth: screenWidth / 2.8)
                 .padding()
                 
@@ -196,6 +197,10 @@ struct ClubCard: View {
                 }
                 .padding()
             }
+            .background(
+                GlassBackground(color: clubColor)
+            )
+            
             if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
                 Color.black.opacity(0.2)
                     .cornerRadius(25)
@@ -212,11 +217,6 @@ struct ClubCard: View {
                 .padding(.bottom, 10)
             }
         }
-        .background(
-            GlassBackground(color : Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
-            .clipShape(RoundedRectangle(cornerRadius: 25))
-
-        )
         .frame(minWidth: screenWidth / 2.2, maxWidth: screenWidth / 2, minHeight: screenHeight/5, maxHeight: screenHeight / 5)
         .animation(.snappy)
     }

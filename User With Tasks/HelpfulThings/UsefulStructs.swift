@@ -14,21 +14,16 @@ struct TabBarButton: View {
         Button {
             selectedTab = index
         } label: {
-            ZStack {
-                
                 VStack {
                     Image(systemName: image)
+                       // .font(.title)
                         .imageScale(.large)
-                    //  .rotationEffect(.degrees(selectedTab == index ? 10.0 : 0.0))
                     
-                    Text(labelr)
-                        .font(.caption)
-                    // .rotationEffect(.degrees(selectedTab == index ? -5.0 : 0.0))
+//                    Text(labelr)
+//                        .font(.caption)
                 }
-                //  .offset(y: selectedTab == index ? -20 : 0.0 )
                 .foregroundColor(selectedTab == index ? .blue : .primary)
                 .brightness(0.1)
-            }
         }
         .apply {
             if #available(iOS 26, *) {

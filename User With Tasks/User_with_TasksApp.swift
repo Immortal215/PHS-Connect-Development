@@ -6,6 +6,7 @@ import GoogleSignInSwift
 import SwiftUI
 import UserNotifications
 import FirebaseMessaging
+
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
 
     func application(
