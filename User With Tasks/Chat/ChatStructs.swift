@@ -38,9 +38,9 @@ func bubbleMenuButton(label: String, system: String, action: @escaping () -> Voi
             .padding(.vertical, 6)
             .padding(.horizontal)
         }
-        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
         .overlay {
-            Rectangle().fill(.clear).highPriorityGesture(TapGesture().onEnded(action))
+            Rectangle().fill(Color.clear.opacity(0.0)).highPriorityGesture(TapGesture().onEnded(action))
         }
     
 }

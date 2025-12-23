@@ -32,8 +32,10 @@ struct ContentView: View {
     @ObservedObject var keyboardResponder = KeyboardResponder()
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("cachedClubIDs") var cachedClubIDs: String = "" // comma-separated chatIDs
+    
     @State var pendingChatID: String? = nil
     @State var pendingThreadName: String? = nil
+    @State var pendingMessageID: String? = nil
 
     var body: some View {
         VStack {
@@ -265,6 +267,7 @@ struct ContentView: View {
                         if let pending = NotificationOpenRouter.shared.consumePending() {
                             pendingChatID = pending.chatID
                             pendingThreadName = pending.threadName
+                            pendingMessageID = pending.messageID
                             DispatchQueue.main.async {
                                 selectedTab = 6
                             }
@@ -288,9 +291,11 @@ struct ContentView: View {
                         let info = notif.userInfo
                         let chatID = info?["chatID"] as? String
                         let threadName = info?["threadName"] as? String ?? "general"
-                        
+                        let messageID = info?["messageID"] as? String
+
                         pendingChatID = chatID
                         pendingThreadName = threadName
+                        pendingMessageID = messageID
                         
                         guard showSignInView == false else { return }
                         
@@ -306,7 +311,8 @@ struct ContentView: View {
                                 object: nil,
                                 userInfo: [
                                     "chatID": pending,
-                                    "threadName": pendingThreadName ?? "general"
+                                    "threadName": pendingThreadName ?? "general",
+                                    "messageID" : pendingMessageID ?? ""
                                 ]
                             )
                         }
@@ -377,7 +383,6 @@ struct ContentView: View {
                     clubs.append(loadedClub)
                 }
             }
-            print(cachedClubIDs)
             setupClubsListener()
             
             

@@ -34,14 +34,15 @@ struct ChatView: View {
     @State var editingMessageID: String? = nil // tracks which messageID is being edited
     @State var replyingMessageID: String? = nil // tracks which messageID is being replied to
     
-    @State var selectedThread : [String: String?] = [:] // chatID : selectedThread[selected?.chatID ?? ""]
+    @State var selectedThread : [String: String?] = [:] // chatID : threadName
     @State var newThreadName: String = ""
     @FocusState var focusedOnNewThread: Bool
     @State var threadNameAttempts = 0 // purely for the .shake animation from pow
     
     @State var openChatIDFromNotification: String? = nil
     @State var openThreadNameFromNotification: String? = nil
-    
+    @State var openMessageIDFromNotification: String? = nil
+
     @State var menuExpanded = false
     @Namespace var namespace
     
@@ -129,7 +130,7 @@ struct ChatView: View {
                     .padding(.trailing, 8)
                     
                     // LEFTISH: Threads - Fixed 240pt width
-                    if let selected = selectedChat {
+                    if let selected = selectedChat  {
                         let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                         let isLeaderInSelectedClub : Bool = clubsLeaderIn.contains(where: { $0.clubID == selected.clubID })
                         
@@ -390,7 +391,7 @@ struct ChatView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
-           //     .background(Color.secondarySystemBackground)
+                .background(Color.secondarySystemBackground)
                 .onChange(of: selectedChat) { selChat in
                     DispatchQueue.main.async {
                         if let chat = selChat {
@@ -398,7 +399,9 @@ struct ChatView: View {
                             if !listeningChats.contains(chatListener) {
                                 listeningChats.append(chatListener)
                                 setupMessagesListener(for: chatListener)
-                                selectedThread[chatListener] = "general"
+                                if selectedThread[chatListener] == nil {
+                                    selectedThread[chatListener] = "general"
+                                }
                             }
                         }
                     }
@@ -420,6 +423,7 @@ struct ChatView: View {
             if let info = notif.userInfo {
                 openChatIDFromNotification = info["chatID"] as? String
                 openThreadNameFromNotification = info["threadName"] as? String ?? "general"
+                openMessageIDFromNotification = info["messageID"] as? String
                 DispatchQueue.main.async {
                     attemptOpenChatFromNotification()
                 }
@@ -435,7 +439,7 @@ struct ChatView: View {
     var messageSection: some View {
         return ZStack {
             
-            if let selected = selectedChat {
+            if let selected = selectedChat, openThreadNameFromNotification == nil {
                 let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                 
                 MessageScrollView(
@@ -449,6 +453,7 @@ struct ChatView: View {
                     focusedOnSendBar: _focusedOnSendBar,
                     bubbles: $bubbles,
                     clubColor: .constant(colorFromClub(club: selectedClub)),
+                    openMessageIDFromNotification: $openMessageIDFromNotification
                 )
                 .padding(.horizontal, 16)
                 
@@ -477,6 +482,7 @@ struct ChatView: View {
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.white)
+                                    .imageScale(.large)
                             }
                         }
                         .padding(.horizontal)
@@ -860,10 +866,12 @@ struct ChatView: View {
         
         guard let chat = chats.first(where: { $0.chatID == id }) else { return }
         
+        guard let thread = openThreadNameFromNotification else { return }
+        
         DispatchQueue.main.async {
             selectedChat = chat
             selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
-            selectedThread[id] = openThreadNameFromNotification ?? "general"
+            selectedThread[chat.chatID] = thread
             
             openChatIDFromNotification = nil
             openThreadNameFromNotification = nil

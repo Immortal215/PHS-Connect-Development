@@ -22,6 +22,8 @@ struct MessageScrollView: View {
     @State var selectedEmojiMessage : Chat.ChatMessage?
     @State var scrolledToTopTimes = 1
     
+    @Binding var openMessageIDFromNotification: String?
+    
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -50,6 +52,11 @@ struct MessageScrollView: View {
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                     nonBubbleMenuMessage = nil
                 }
+            }
+            .onAppear {
+                    proxy.scrollTo(openMessageIDFromNotification ?? "", anchor: .top)
+                    openMessageIDFromNotification = nil
+                
             }
             .defaultScrollAnchor(.bottom)
             .onChange(of: selectedChat?.messages?.last?.messageID, initial: false) { oldID, newID in
@@ -247,7 +254,7 @@ struct MessageScrollView: View {
                                                     .offset(x: 10, y: -8)
                                                     .background {
                                                         Circle()
-                                                            .fill(Color.systemGray5)
+                                                            .fill(Color.systemBackground)
                                                             .offset(x: 10, y: -8)
                                                             .frame(width: 12, height: 12)
                                                     }
@@ -602,15 +609,10 @@ struct MessageScrollView: View {
                             Spacer()
                             
                             ZStack {
-                                GlassBackground()
-                                    .ignoresSafeArea()
-                                    .onTapGesture {
-                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                            nonBubbleMenuMessage = nil
-                                        }
-                                    }
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.secondarySystemBackground)
                                 
-                                HStack(spacing: 4) {
+                                HStack {
                                     bubbleMenuButton(
                                         label: "Copy",
                                         system: "doc.on.doc",
