@@ -19,6 +19,8 @@ struct ChatView: View {
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("Animations+") var animationsPlus = false
     @AppStorage("selectedTab") var selectedTab = 3
+    @AppStorage("muted") var mutedThreads: String = "" // comma-separated (chatID.thread)
+    @AppStorage("readMessages") var lastReadMessages: String = "" // comma-separated (chatID.thread:messageID)
     
     @State var newMessageText: String = ""
     @State var chats: [Chat] = []
@@ -95,10 +97,10 @@ struct ChatView: View {
                             GlassEffectContainer(spacing: 24) { // spacing determines the morphism
                                 VStack(spacing: 16) {
                                     if menuExpanded {
-                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs").glassEffect().glassEffectID("searc", in: namespace)
-                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home").glassEffect().glassEffectID("home", in: namespace)
-                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar").glassEffect().glassEffectID("calendar", in: namespace)
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings").glassEffect().glassEffectID("settings", in: namespace)
+                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs").glassEffectID("search", in: namespace)
+                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home").glassEffectID("home", in: namespace)
+                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar").glassEffectID("calendar", in: namespace)
+                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings").glassEffectID("settings", in: namespace)
                                     }
                                     
                                     Button {
@@ -110,7 +112,6 @@ struct ChatView: View {
                                             .contentTransition(.symbolEffect(.replace))
                                             .imageScale(.large)
                                     }
-                                    .glassEffect()
                                     .buttonStyle(.glass)
                                     .glassEffectID("toggle", in: namespace)
                                 }
@@ -267,6 +268,7 @@ struct ChatView: View {
                                         Divider()
                                         
                                         ForEach(threads, id: \.self) { thread in
+                                            let lastMessageInThread = selected.messages?.last{$0.threadName == thread || ($0.threadName == nil && thread == "general")}?.messageID
                                             
                                             if currentThread == thread {
                                                 Button("") {
@@ -288,57 +290,81 @@ struct ChatView: View {
                                                 .frame(width: 0, height: 0)
                                             }
                                             
-                                            Button(action: {
-                                                DispatchQueue.main.async {
-                                                    selectedThread[selected.chatID] = thread
-                                                }
-                                            }) {
-                                                HStack(spacing: 8) {
-                                                    RoundedRectangle(cornerRadius: 2)
-                                                        .fill(currentThread == thread ? Color.accentColor : Color.clear)
-                                                        .frame(width: 3, height: 16)
-                                                    
-                                                    Image(systemName: "number")
-                                                        .foregroundColor(currentThread == thread ? .primary : .secondary)
-                                                        .font(.system(size: 14, weight: currentThread == thread ? .semibold : .regular))
-                                                    
-                                                    Text(thread)
-                                                        .font(.system(size: 14, weight: currentThread == thread ? .semibold : .regular))
-                                                        .foregroundColor(currentThread == thread ? .primary : .secondary)
-                                                    
-                                                    Spacer()
-                                                    
-                                                }
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 8)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(currentThread == thread ? Color.accentColor.opacity(0.1) : Color.clear)
-                                                )
-                                                .contentShape(Rectangle())
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                            .contextMenu {
-                                                if thread != "general" && isLeaderInSelectedClub {
-                                                    Button(role: .destructive) {
-                                                        removeThread(chatID: selected.chatID, threadName: thread)
-                                                        selectedThread[selected.chatID] = "general"
-                                                    } label: {
-                                                        Label("Remove Thread", systemImage: "trash")
+                                            HStack {
+                                                Button(action: {
+                                                    DispatchQueue.main.async {
+                                                        selectedThread[selected.chatID] = thread
+                                                        updateUnreadIndicator()
                                                     }
-                                                } else if isLeaderInSelectedClub {
-                                                    Button(role: .cancel) {
+                                                }) {
+                                                    HStack(spacing: 8) {
+                                                        RoundedRectangle(cornerRadius: 2)
+                                                            .fill(currentThread == thread ? Color.accentColor : Color.clear)
+                                                            .frame(width: 3, height: 16)
+                                                        
+                                                        Image(systemName: "number")
+                                                            .foregroundColor(currentThread == thread ? .primary : .secondary)
+                                                            .font(.system(size: 14, weight: currentThread == thread ? .semibold : .regular))
+                                                        
+                                                        Text(thread)
+                                                            .font(.system(size: 14, weight: currentThread == thread ? .semibold : .regular))
+                                                            .foregroundColor(currentThread == thread ? .primary : .secondary)
+                                                        
+                                                        if currentThread != thread {
+                                                            if let lastReadMessage = lastReadMessages.split(separator: ",").first{$0.hasPrefix(selected.chatID + "." + thread + ":")}?.split(separator: ":").last,
+                                                            let lastMessageID = lastMessageInThread {
+                                                                if lastMessageID != lastReadMessage {
+                                                                    Circle()
+                                                                        .frame(width: 8)
+                                                                        .foregroundStyle(.red)
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        Spacer()
+                                                    }
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 8)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(currentThread == thread ? Color.accentColor.opacity(0.1) : Color.clear)
+                                                    )
+                                                    .contentShape(Rectangle())
+                                                }
+                                                .buttonStyle(PlainButtonStyle())
+                                                .contextMenu {
+                                                    if thread != "general" && isLeaderInSelectedClub {
+                                                        Button(role: .destructive) {
+                                                            removeThread(chatID: selected.chatID, threadName: thread)
+                                                            selectedThread[selected.chatID] = "general"
+                                                        } label: {
+                                                            Label("Remove Thread", systemImage: "trash")
+                                                        }
+                                                    } else if isLeaderInSelectedClub {
+                                                        Button(role: .cancel) {
+                                                        } label: {
+                                                            Label("Main Thread, Cannot Be Deleted.", systemImage: "lock")
+                                                        }
+                                                    }
+                                                    
+                                                    Button {
+                                                        UIPasteboard.general.string = thread
+                                                        dropper(title: "Copied Thread Name!", subtitle: thread, icon: UIImage(systemName: "checkmark"))
                                                     } label: {
-                                                        Label("Main Thread, Cannot Be Deleted.", systemImage: "lock")
+                                                        Label("Copy Thread Name", systemImage: "doc.on.doc")
                                                     }
                                                 }
                                                 
-                                                Button {
-                                                    UIPasteboard.general.string = thread
-                                                    dropper(title: "Copied Thread Name!", subtitle: thread, icon: UIImage(systemName: "checkmark"))
-                                                } label: {
-                                                    Label("Copy Thread Name", systemImage: "doc.on.doc")
-                                                }
+                                                Image(systemName: mutedThreads.contains(selected.chatID + "." + thread) ? "bell.slash" : "bell")
+                                                    .padding(.trailing)
+                                                    .onTapGesture(perform: {
+                                                        if mutedThreads.contains(selected.chatID + "." + thread) {
+                                                            mutedThreads = mutedThreads.replacingOccurrences(of: selected.chatID + "." + thread + ",", with: "")
+                                                        } else {
+                                                            mutedThreads.append(selected.chatID + "." + thread + ",")
+                                                        }
+                                                    })
+                                                    .contentTransition(.symbolEffect(.replace))
                                             }
                                         }
                                         
@@ -559,6 +585,7 @@ struct ChatView: View {
                             }
                             
                             newMessageText = ""
+                            updateUnreadIndicator()
                         }
                     } label: {
                         Circle()
@@ -878,4 +905,17 @@ struct ChatView: View {
         }
     }
     
+    func updateUnreadIndicator() {
+        if let chat = selectedChat {
+            if let thread = selectedThread[chat.chatID]! {
+                if let lastMessageInThread = chat.messages?.last{$0.threadName == thread || ($0.threadName == nil && thread == "general")}?.messageID {
+                    if lastReadMessages.split(separator: ",").contains{$0.hasPrefix(chat.chatID + "." + thread + ":")} {
+                        lastReadMessages = lastReadMessages.split(separator: ",").map{$0.split(separator: ":")[0] == chat.chatID + "." + thread ? chat.chatID + "." + thread + ":" + lastMessageInThread : String($0)}.joined(separator: ",") + ","
+                    } else {
+                        lastReadMessages.append(chat.chatID + "." + thread + ":" + lastMessageInThread + ",")
+                    }
+                }
+            }
+        }
+    }
 }
