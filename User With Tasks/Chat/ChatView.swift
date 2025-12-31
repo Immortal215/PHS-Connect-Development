@@ -471,6 +471,7 @@ struct ChatView: View {
                 MessageScrollView(
                     selectedChat: $selectedChat,
                     selectedThread: $selectedThread,
+                    chats: $chats,
                     users: $users,
                     userInfo: $userInfo,
                     newMessageText: $newMessageText,
@@ -479,6 +480,7 @@ struct ChatView: View {
                     focusedOnSendBar: _focusedOnSendBar,
                     bubbles: $bubbles,
                     clubColor: .constant(colorFromClub(club: selectedClub)),
+                    clubsLeaderIn: clubsLeaderIn,
                     openMessageIDFromNotification: $openMessageIDFromNotification
                 )
                 .padding(.horizontal, 16)

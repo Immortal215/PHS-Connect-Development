@@ -75,6 +75,7 @@ struct Chat: Codable, Equatable, Hashable {
         var attachmentURL: String?
         var attachmentType: String? // "image", "file", "video"
         var systemGenerated: Bool? // true if it’s a system-generated message like "John joined the club!"
+        var flagged: Bool?
         
         var mentions: [String]? // userIDs mentioned in the text block (by like @ symbols, need to add this functionality)
         

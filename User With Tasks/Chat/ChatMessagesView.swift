@@ -6,6 +6,7 @@ import ElegantEmojiPicker
 struct MessageScrollView: View {
     @Binding var selectedChat: Chat?
     @Binding var selectedThread: [String: String?]
+    @Binding var chats: [Chat]
     @Binding var users: [String : Personal]
     @Binding var userInfo: Personal?
     @Binding var newMessageText: String
@@ -21,6 +22,7 @@ struct MessageScrollView: View {
     @State var selectedEmoji: Emoji? = nil
     @State var selectedEmojiMessage : Chat.ChatMessage?
     @State var scrolledToTopTimes = 1
+    @State var clubsLeaderIn: [Club]
     
     @Binding var openMessageIDFromNotification: String?
     
@@ -146,33 +148,37 @@ struct MessageScrollView: View {
                                     HStack {
                                         Spacer()
                                         
-                                        let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                        let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})
                                         
-                                        WebImage(
-                                            url: URL(
-                                                string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
-                                            ),
-                                            content: { image in
-                                                image
-                                                    .resizable()
-                                                    .frame(width: 36, height: 36)
-                                                    .clipShape(Circle())
-                                            },
-                                            placeholder: {
-                                                GlassBackground()
-                                                    .frame(width: 36, height: 36)
-                                                
-                                            }
-                                        )
+                                        if replyMessage != nil {
+                                            WebImage(
+                                                url: URL(
+                                                    string: (replyMessage!.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage!.sender]?.userImage) ?? ""
+                                                ),
+                                                content: { image in
+                                                    image
+                                                        .resizable()
+                                                        .frame(width: 36, height: 36)
+                                                        .clipShape(Circle())
+                                                },
+                                                placeholder: {
+                                                    GlassBackground()
+                                                        .frame(width: 36, height: 36)
+                                                    
+                                                }
+                                            )
+                                        }
                                         
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
-                                                .font(.subheadline)
-                                                .bold()
-                                                .padding(.leading, 5)
+                                            if replyMessage != nil {
+                                                Text((replyMessage!.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage!.sender]?.userName.capitalized) ?? "Loading...")
+                                                    .font(.subheadline)
+                                                    .bold()
+                                                    .padding(.leading, 5)
+                                            }
                                             
                                             HStack {
-                                                Text(replyMessage.message)
+                                                Text(replyMessage?.message ?? "[Deleted Message]")
                                                     .lineLimit(1)
                                                     .font(.subheadline)
                                                     .padding(10)
@@ -245,22 +251,31 @@ struct MessageScrollView: View {
                                             isEmojiPickerPresented = true
                                             selectedEmojiMessage = message
                                         } label: {
-                                            ZStack {
-                                                Image(systemName: "face.smiling")
-                                                    .font(.system(size: 20, weight: .medium))
-                                                
-                                                Image(systemName: "plus")
-                                                    .font(.system(size: 8, weight: .medium))
-                                                    .offset(x: 10, y: -8)
-                                                    .background {
-                                                        Circle()
-                                                            .fill(Color.systemBackground)
-                                                            .offset(x: 10, y: -8)
-                                                            .frame(width: 12, height: 12)
-                                                    }
+                                            HStack {
+                                                ZStack {
+                                                    Image(systemName: "face.smiling")
+                                                        .font(.system(size: 20, weight: .medium))
+                                                    
+                                                    Image(systemName: "plus")
+                                                        .font(.system(size: 8, weight: .medium))
+                                                        .offset(x: 10, y: -8)
+                                                        .background {
+                                                            Circle()
+                                                                .fill(Color.systemBackground)
+                                                                .offset(x: 10, y: -8)
+                                                                .frame(width: 12, height: 12)
+                                                        }
+                                                }
                                             }
+                                            
+                                            Text("React")
                                         }
                                     }
+                                
+                                if message.flagged ?? false {
+                                    Image(systemName: "exclamationmark.circle")
+                                        .foregroundStyle(.red)
+                                }
                             }
                             
                             if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
@@ -332,7 +347,7 @@ struct MessageScrollView: View {
                                 if let replyToMessage = message.replyTo {
                                     if message.replyTo != previousMessage?.replyTo {
                                         HStack {
-                                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})
                                             
                                             ReplyLine()
                                                 .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
@@ -341,30 +356,34 @@ struct MessageScrollView: View {
                                                 .padding(.top)
                                                 .padding(.leading, 18)
                                             
-                                            WebImage(
-                                                url: URL(
-                                                    string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
-                                                ),
-                                                content: { image in
-                                                    image
-                                                        .resizable()
-                                                        .frame(width: 36, height: 36)
-                                                        .clipShape(Circle())
-                                                },
-                                                placeholder: {
-                                                    GlassBackground()
-                                                        .frame(width: 36, height: 36)
-                                                    
-                                                }
-                                            )
+                                            if replyMessage != nil {
+                                                WebImage(
+                                                    url: URL(
+                                                        string: (replyMessage!.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage!.sender]?.userImage) ?? ""
+                                                    ),
+                                                    content: { image in
+                                                        image
+                                                            .resizable()
+                                                            .frame(width: 36, height: 36)
+                                                            .clipShape(Circle())
+                                                    },
+                                                    placeholder: {
+                                                        GlassBackground()
+                                                            .frame(width: 36, height: 36)
+                                                        
+                                                    }
+                                                )
+                                            }
                                             
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
-                                                    .font(.subheadline)
-                                                    .bold()
-                                                    .padding(.leading, 5)
+                                                if replyMessage != nil {
+                                                    Text((replyMessage!.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage!.sender]?.userName.capitalized) ?? "Loading...")
+                                                        .font(.subheadline)
+                                                        .bold()
+                                                        .padding(.leading, 5)
+                                                }
                                                 
-                                                Text(replyMessage.message)
+                                                Text(replyMessage?.message ?? "[Deleted Message]")
                                                     .lineLimit(1)
                                                     .font(.subheadline)
                                                     .padding(10)
@@ -385,6 +404,11 @@ struct MessageScrollView: View {
                                 }
                                 
                                 HStack {
+                                    if message.flagged ?? false {
+                                        Image(systemName: "exclamationmark.circle")
+                                            .foregroundStyle(.red)
+                                    }
+                                    
                                     Text(.init(message.message))
                                         .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                         .background (
@@ -418,19 +442,57 @@ struct MessageScrollView: View {
                                                 isEmojiPickerPresented = true
                                                 selectedEmojiMessage = message
                                             } label: {
-                                                ZStack {
-                                                    Image(systemName: "face.smiling")
-                                                        .font(.system(size: 20, weight: .medium))
+                                                HStack {
+                                                    ZStack {
+                                                        Image(systemName: "face.smiling")
+                                                            .font(.system(size: 20, weight: .medium))
+                                                        
+                                                        Image(systemName: "plus")
+                                                            .font(.system(size: 8, weight: .medium))
+                                                            .offset(x: 10, y: -8)
+                                                            .background {
+                                                                Circle()
+                                                                    .fill(Color.systemGray5)
+                                                                    .offset(x: 10, y: -8)
+                                                                    .frame(width: 12, height: 12)
+                                                            }
+                                                    }
                                                     
-                                                    Image(systemName: "plus")
-                                                        .font(.system(size: 8, weight: .medium))
-                                                        .offset(x: 10, y: -8)
-                                                        .background {
-                                                            Circle()
-                                                                .fill(Color.systemGray5)
-                                                                .offset(x: 10, y: -8)
-                                                                .frame(width: 12, height: 12)
+                                                    Text("React")
+                                                }
+                                            }
+                                            
+                                            if message.flagged ?? false {
+                                                if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
+                                                    Button {
+                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                            if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                chats[chatIndex].messages?[messageIndex].flagged = false
+                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                            }
                                                         }
+                                                    } label: {
+                                                        Label("Mark as Safe", systemImage: "checkmark.circle")
+                                                    }
+                                                    
+                                                    Button {
+                                                        deleteMessage(chatID: selectedChat!.chatID, messageDeleteID: message.messageID)
+                                                    } label: {
+                                                        Label("Delete", systemImage: "trash")
+                                                    }
+                                                }
+                                            } else {
+                                                if message.flagged == nil {
+                                                    Button {
+                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                            if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                chats[chatIndex].messages?[messageIndex].flagged = true
+                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                            }
+                                                        }
+                                                    } label: {
+                                                        Label("Report", systemImage: "exclamationmark.circle")
+                                                    }
                                                 }
                                             }
                                         }
@@ -487,30 +549,32 @@ struct MessageScrollView: View {
                                 .foregroundColor(.gray)
                                 .padding(EdgeInsets(top: 16, leading: 24, bottom: 0, trailing: 0))
                             
-                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})!
+                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})
                             
-                            WebImage(
-                                url: URL(
-                                    string: (replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage.sender]?.userImage) ?? ""
-                                ),
-                                content: { image in
-                                    image
-                                        .resizable()
-                                        .frame(width: 18, height: 18)
-                                        .clipShape(Circle())
-                                },
-                                placeholder: {
-                                    GlassBackground()
-                                        .frame(width: 18, height: 18)
-                                    
-                                }
-                            )
+                            if replyMessage != nil {
+                                WebImage(
+                                    url: URL(
+                                        string: (replyMessage!.sender == userInfo?.userID ?? "" ? userInfo?.userImage : users[replyMessage!.sender]?.userImage) ?? ""
+                                    ),
+                                    content: { image in
+                                        image
+                                            .resizable()
+                                            .frame(width: 18, height: 18)
+                                            .clipShape(Circle())
+                                    },
+                                    placeholder: {
+                                        GlassBackground()
+                                            .frame(width: 18, height: 18)
+                                        
+                                    }
+                                )
+                                
+                                Text((replyMessage!.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage!.sender]?.userName.capitalized) ?? "Loading...")
+                                    .font(.subheadline)
+                                    .bold()
+                            }
                             
-                            Text((replyMessage.sender == userInfo?.userID ?? "" ? userInfo?.userName.capitalized : users[replyMessage.sender]?.userName.capitalized) ?? "Loading...")
-                                .font(.subheadline)
-                                .bold()
-                            
-                            Text(replyMessage.message)
+                            Text(replyMessage?.message ?? "[Deleted Message]")
                                 .lineLimit(1)
                                 .font(.subheadline)
                             
@@ -571,16 +635,20 @@ struct MessageScrollView: View {
                 // main text
                 ZStack {
                     HStack {
+                        if message.flagged ?? false {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundStyle(.red)
+                        }
+                        
                         Text(.init(message.message))
                             .multilineTextAlignment(.leading)
-                            .padding(EdgeInsets(top: 0, leading: 60, bottom: 2, trailing: 0))
-                        
                             .background {
                                 Color.clear
                             }
                         
                         Spacer()
                     }
+                    .padding(EdgeInsets(top: 0, leading: 60, bottom: 2, trailing: 0))
                     
                     
                     if calendarTimeIsNotSameByHourPreviousMessage && !showImage {
@@ -613,12 +681,59 @@ struct MessageScrollView: View {
                                     .fill(Color.secondarySystemBackground)
                                 
                                 HStack {
+                                    Button {
+                                        isEmojiPickerPresented = true
+                                        selectedEmojiMessage = message
+                                    } label: {
+                                        ZStack {
+                                            Image(systemName: "face.smiling")
+                                                .font(.system(size: 20, weight: .medium))
+                                            
+                                            Image(systemName: "plus")
+                                                .font(.system(size: 8, weight: .medium))
+                                                .offset(x: 10, y: -8)
+                                                .background {
+                                                    Circle()
+                                                        .fill(Color.systemGray5)
+                                                        .offset(x: 10, y: -8)
+                                                        .frame(width: 12, height: 12)
+                                                }
+                                        }
+                                    }
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 8)
+                                    .overlay {
+                                        Rectangle()
+                                            .fill(.clear)
+                                        
+                                        .highPriorityGesture(TapGesture().onEnded {
+                                            isEmojiPickerPresented = true
+                                            selectedEmojiMessage = message
+                                        })
+                                    }
+                                    
+                                    Divider()
+                                    
                                     bubbleMenuButton(
                                         label: "Copy",
                                         system: "doc.on.doc",
                                         action: {
                                             UIPasteboard.general.string = message.message
                                             dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                                nonBubbleMenuMessage = nil
+                                            }
+                                        }
+                                    )
+                                    
+                                    bubbleMenuButton(
+                                        label: "Reply",
+                                        system: "arrowshape.turn.up.left",
+                                        action: {
+                                            newMessageText = ""
+                                            replyingMessageID = message.messageID
+                                            editingMessageID = nil
+                                            focusedOnSendBar = true
                                             withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                                 nonBubbleMenuMessage = nil
                                             }
@@ -639,58 +754,48 @@ struct MessageScrollView: View {
                                                 }
                                             }
                                         )
-                                    }
-                                    
-                                    bubbleMenuButton(
-                                        label: "Reply",
-                                        system: "arrowshape.turn.up.left",
-                                        action: {
-                                            newMessageText = ""
-                                            replyingMessageID = message.messageID
-                                            editingMessageID = nil
-                                            focusedOnSendBar = true
-                                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                                nonBubbleMenuMessage = nil
-                                            }
-                                        }
-                                    )
-                                    
-                                    Divider()
-                                    
-                                    
-                                        Button {
-                                            isEmojiPickerPresented = true
-                                            selectedEmojiMessage = message
-                                        } label: {
-                                            ZStack {
-                                                Image(systemName: "face.smiling")
-                                                    .font(.system(size: 20, weight: .medium))
-                                                
-                                                Image(systemName: "plus")
-                                                    .font(.system(size: 8, weight: .medium))
-                                                    .offset(x: 10, y: -8)
-                                                    .background {
-                                                        Circle()
-                                                            .fill(Color.systemGray5)
-                                                            .offset(x: 10, y: -8)
-                                                            .frame(width: 12, height: 12)
+                                    } else {
+                                        if message.flagged ?? false {
+                                            if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
+                                                bubbleMenuButton(
+                                                    label: "Mark as Safe",
+                                                    system: "checkmark.circle",
+                                                    action: {
+                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                            if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                chats[chatIndex].messages?[messageIndex].flagged = false
+                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                            }
+                                                        }
                                                     }
+                                                )
+                                                
+                                                bubbleMenuButton(
+                                                    label: "Delete",
+                                                    system: "trash",
+                                                    action: {
+                                                        deleteMessage(chatID: selectedChat!.chatID, messageDeleteID: message.messageID)
+                                                    }
+                                                )
+                                            }
+                                        } else {
+                                            if message.flagged == nil {
+                                                bubbleMenuButton(
+                                                    label: "Report",
+                                                    system: "exclamationmark.circle",
+                                                    action: {
+                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                            if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                chats[chatIndex].messages?[messageIndex].flagged = true
+                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                            }
+                                                        }
+                                                    }
+                                                )
                                             }
                                         }
-                                        .padding(.vertical, 6)
-                                        .padding(.horizontal, 8)
-                                        .overlay {
-                                            Rectangle()
-                                                .fill(.clear)
-                                            
-                                            .highPriorityGesture(TapGesture().onEnded {
-                                                isEmojiPickerPresented = true
-                                                selectedEmojiMessage = message
-                                            })
-                                        }
-
+                                    }
                                 }
-                                
                             }
                             .padding(.vertical, 14)
                             .padding(.horizontal, 18)
