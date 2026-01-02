@@ -85,13 +85,11 @@ struct Chat: Codable, Equatable, Hashable {
     }
 }
 
-struct Personal: Codable, Equatable, Hashable {
+struct Personal: Codable, Equatable, Hashable { // individual user info
     private(set) var userID: String
     var favoritedClubs: [String] // clubIDs
-    //var subjectPreferences: [String]?
     var userEmail: String
     var userImage: String
     var userName: String
     var fcmToken: String?
-    var lastReadMessages: [String : String]? // chatID : messageID
 }

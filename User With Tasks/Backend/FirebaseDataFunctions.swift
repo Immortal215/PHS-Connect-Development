@@ -516,26 +516,3 @@ func removeThread(chatID: String, threadName: String) {
         }
     }
 }
-
-func deleteMessage(chatID: String, messageDeleteID: String) {
-    let messagesRef = Database.database().reference().child("chats").child(chatID).child("messages")
-    
-    messagesRef.observeSingleEvent(of: .value) { snapshot in
-        guard let messagesDict = snapshot.value as? [String: [String: Any]] else {
-            print("No messages found for chat \(chatID)")
-            return
-        }
-        
-        for (messageID, messageData) in messagesDict {
-            if messageID == messageDeleteID {
-                messagesRef.child(messageID).removeValue { error, _ in
-                    if let error = error {
-                        print("Error removing message \(messageID): \(error)")
-                    } else {
-                        print("Removed message \(messageID)")
-                    }
-                }
-            }
-        }
-    }
-}
