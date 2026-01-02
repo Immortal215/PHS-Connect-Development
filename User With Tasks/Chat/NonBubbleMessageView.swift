@@ -26,10 +26,10 @@ struct NonBubbleMessageView : View {
     @FocusState var focusedOnSendBar: Bool
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
-    @State var nonBubbleMenuMessage : Chat.ChatMessage? = nil
-    @State var isEmojiPickerPresented = false
-    @State var selectedEmoji: Emoji? = nil
-    @State var selectedEmojiMessage : Chat.ChatMessage?
+    @Binding var nonBubbleMenuMessage : Chat.ChatMessage? 
+    @Binding var isEmojiPickerPresented : Bool
+    @Binding var selectedEmoji: Emoji?
+    @Binding var selectedEmojiMessage : Chat.ChatMessage?
     @State var clubsLeaderIn: [Club]
     
     var body : some View {

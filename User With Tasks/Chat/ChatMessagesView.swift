@@ -539,6 +539,8 @@ struct MessageScrollView: View {
                 NonBubbleMessageView(
                     message: message,
                     messagesToShow: messagesToShow,
+                    previousMessage: previousMessage,
+                    nextMessage: nextMessage,
                     calendarTimeIsNotSameByHourNextMessage: calendarTimeIsNotSameByHourNextMessage,
                     calendarTimeIsNotSameByHourPreviousMessage: calendarTimeIsNotSameByHourPreviousMessage,
                     calendarTimeIsNotSameByDayPreviousMessage: calendarTimeIsNotSameByDayPreviousMessage,
@@ -551,7 +553,11 @@ struct MessageScrollView: View {
                     editingMessageID: $editingMessageID,
                     replyingMessageID: $replyingMessageID,
                     focusedOnSendBar: _focusedOnSendBar,
-                    clubsLeaderIn: clubsLeaderIn,
+                    nonBubbleMenuMessage: $nonBubbleMenuMessage,
+                    isEmojiPickerPresented: $isEmojiPickerPresented,
+                    selectedEmoji: $selectedEmoji,
+                    selectedEmojiMessage: $selectedEmojiMessage,
+                    clubsLeaderIn: clubsLeaderIn
                 )
             }
         } else { // message is system made
