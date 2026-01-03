@@ -44,3 +44,24 @@ class ClubCache {
     }
 }
 
+
+class TabsCache {
+    public let cacheURL: URL
+
+    init() {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        self.cacheURL = dir.appendingPathComponent("\tab_preferences_data.json")
+    }
+
+    func load() -> UserTabPreferences? {
+        guard let data = try? Data(contentsOf: cacheURL) else { return nil }
+        return (try? JSONDecoder().decode(UserTabPreferences.self, from: data))
+    }
+
+    func save(tabPrefrences: UserTabPreferences) {
+        if let data = try? JSONEncoder().encode(tabPrefrences) {
+            try? data.write(to: cacheURL)
+            
+        }
+    }
+}

@@ -36,7 +36,9 @@ struct ContentView: View {
     @State var pendingChatID: String? = nil
     @State var pendingThreadName: String? = nil
     @State var pendingMessageID: String? = nil
-
+    
+    @State var tabsCache : UserTabPreferences?
+    
     var body: some View {
         VStack {
             VStack {
@@ -151,95 +153,16 @@ struct ContentView: View {
                             ProgressView()
                         }
                         
-                        if selectedTab != 6 {
-                            if keyboardResponder.currentHeight > 0 {
-                                VStack(alignment: .center, spacing: 16) { // KEEP INDEXS THE SAME FOR ALL THE BELOW
-                                    TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
-                                    if !viewModel.isGuestUser {
-                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
-                                        TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
-                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
-                                    }
-                                    TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
-                                }
-                                .animation(.easeInOut(duration: 0.2))
-                                .bold()
-                                .padding()
-                                .background(Color.systemBackground.opacity(0.95))
-                                .cornerRadius(10)
-                                .shadow(radius: 5)
-                                //     .transition(.push(from: .bottom))
-                                .asymmetricTransition(insertion: .opacity, removal: .opacity)
-                                //  .animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
-                                .fixedSize()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                                .offset(y: 75)
-                                
-                            } else {
-                                VStack {
-                                    Spacer()
-                                    
-                                    ZStack {
-                                        HStack {
-                                            TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs") // keep INDEX the same
-                                                .padding(.horizontal)
-                                            
-                                            if !viewModel.isGuestUser {
-                                                TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home") // keep INDEX the same
-                                                    .padding(.horizontal)
-                                                
-                                                TabBarButton(image: "bubble.left.and.bubble.right", index: 6, labelr: "Chat") // keep INDEX the same
-                                                    .padding(.horizontal)
-                                                
-                                                TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar") // keep INDEX the same
-                                                    .padding(.horizontal)
-                                            }
-                                            
-                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings") // keep INDEX the same
-                                                .padding(.horizontal)
-                                            
-                                            if !networkMonitor.isConnected {
-                                                withAnimation(.smooth) { // make this look better later
-                                                    VStack {
-                                                        Image(systemName: "wifi.slash")
-                                                            .imageScale(.large)
-                                                        Text("No Wifi")
-                                                            .font(.caption)
-                                                    }
-                                                    .foregroundStyle(.red)
-                                                    .padding(.horizontal)
-                                                }
-                                            }
-                                        }
-                                        .frame(width: screenWidth)
-                                        .fixedSize()
-                                        .bold()
-                                    }
-                                    
-                                    
-                                }
-                                .animation(.easeInOut(duration: 0.2))
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                //.transition(.push(from: .top))
-                                .asymmetricTransition(insertion: .opacity, removal: .opacity)
-                                //.animation(.smooth(duration: 0.3), value: keyboardResponder.currentHeight)
-                                .background {
-                                    HStack {
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                        .frame(height: screenHeight / 6)
-                                        .edgesIgnoringSafeArea(.all)
-                                    }
-                                    .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
-                                    .allowsHitTesting(false)
-                                    .offset(y: selectedTab == 6 ? 0 : 10)
-                                    .hidden(selectedTab == 3 || selectedTab == 6)
-                                }
-                            }
-                        }
+                        FloatingTabBar(
+                            tabsCache: tabsCache,
+                            isGuestUser: viewModel.isGuestUser,
+                            keyboardHeight: keyboardResponder.currentHeight,
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            isConnected: networkMonitor.isConnected,
+                            selectedTab: selectedTab
+                        )
+
                     }
                     .onAppear {
                         if let UserID = viewModel.uid, !viewModel.isGuestUser {
@@ -352,8 +275,21 @@ struct ContentView: View {
                 } else {
                     print("NO")
                 }
+                
+                let cache = TabsCache()
+                tabsCache = cache.load()
+                
+                if (tabsCache == nil) {
+                    tabsCache = UserTabPreferences(order: [.search, .clubs, .chat, .calendar, .settings], hidden: [])
+                }
+                
+                print(tabsCache?.order[0].name)
             }
             
+        }
+        .onChange(of: tabsCache) {
+            let cache = TabsCache()
+            cache.save(tabPrefrences: tabsCache ?? UserTabPreferences(order: [], hidden: Set()))
         }
         //    .scrollDismissesKeyboard(.immediately)
         .scrollDismissesKeyboard(.interactively)
@@ -462,101 +398,3 @@ struct ContentView: View {
     
 }
 
-func dropper(title: String, subtitle: String, icon: UIImage?) {
-    Drops.hideAll()
-    
-    let drop = Drop(
-        title: title,
-        subtitle: subtitle,
-        icon: icon,
-        action: .init {
-            print("Drop tapped")
-            Drops.hideCurrent()
-        },
-        position: .top,
-        duration: 3.0,
-        accessibility: "Alert: Title, Subtitle"
-    )
-    Drops.show(drop)
-}
-
-struct RandomShapesBackground: View {
-    let screenWidth = UIScreen.main.bounds.width
-    let screenHeight = UIScreen.main.bounds.height
-    
-    @State var positions: [CGPoint] = []
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<12, id: \.self) { i in
-                Circle()
-                    .fill(Color.primary.opacity(0.1))
-                    .frame(width: 90, height: 90)
-                    .position(positions.count > i ? positions[i] : CGPoint.zero)
-                    .blur(radius: 8)
-            }
-            
-            ForEach(12..<24, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.primary.opacity(0.15), lineWidth: 5)
-                    .frame(width: 140, height: 70)
-                    .rotationEffect(.degrees(Double(i) * 15))
-                    .position(positions.count > i ? positions[i] : CGPoint.zero)
-            }
-        }
-        .edgesIgnoringSafeArea(.all)
-        .onAppear {
-            generateRandomPositions()
-        }
-    }
-    
-    func generateRandomPositions() {
-        var circPositions: [CGPoint] = []
-        var rectPositions: [CGPoint] = []
-        
-        for _ in 0..<12 {
-            var attempts = 0
-            var newPoint: CGPoint
-            
-            repeat {
-                newPoint = CGPoint(
-                    x: Double.random(in: 0...(screenWidth)),
-                    y: Double.random(in: 0...(screenHeight))
-                )
-                attempts += 1
-            } while !isValidPosition(newPoint, existingPositions: circPositions) && attempts < 100
-            
-            circPositions.append(newPoint)
-        }
-        
-        for i in 12..<24 {
-            var attempts = 0
-            var newPoint: CGPoint
-            
-            repeat {
-                newPoint = CGPoint(
-                    x: Double.random(in: 0...(screenWidth)),
-                    y: Double.random(in: 0...(screenHeight))
-                )
-                attempts += 1
-            } while !isValidPosition(newPoint, existingPositions: rectPositions) && attempts < 100
-            
-            rectPositions.append(newPoint)
-        }
-        
-        positions = circPositions + rectPositions
-    }
-    
-    func isValidPosition(_ point: CGPoint, existingPositions: [CGPoint]) -> Bool {
-        let minDistance: Double = 120
-        
-        for existingPoint in existingPositions {
-            let distance = sqrt(pow(point.x - existingPoint.x, 2) + pow(point.y - existingPoint.y, 2))
-            if distance < minDistance {
-                return false
-            }
-        }
-        
-        return true
-    }
-}

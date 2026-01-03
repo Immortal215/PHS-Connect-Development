@@ -139,7 +139,7 @@ struct MessageScrollView: View {
                     }
                 }
                 
-                if message.sender == userInfo?.userID ?? "" {
+                if message.sender == userInfo?.userID ?? "" { // if ur message
                     HStack {
                         Spacer()
                         
