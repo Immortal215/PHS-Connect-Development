@@ -36,9 +36,10 @@ final class NotificationOpenRouter {
         let chatID = userInfo["chatID"] as? String ?? ""
         let threadName = userInfo["threadName"] as? String ?? "general"
         let messageID = userInfo["messageID"] as? String ?? ""
+        let type = userInfo["type"] as? String ?? ""
         
-        guard !chatID.isEmpty else { return }
-        guard !messageID.isEmpty else { return }
+        guard !chatID.isEmpty, !messageID.isEmpty else { return }
+        guard type == "message" || type == "reaction" else { return }
 
         setPending(chatID: chatID, threadName: threadName, messageID: messageID)
 
