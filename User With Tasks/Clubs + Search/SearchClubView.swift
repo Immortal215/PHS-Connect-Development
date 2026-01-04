@@ -90,6 +90,7 @@ struct SearchClubView: View {
                                     } label: {
                                         Image(systemName: "plus")
                                             .foregroundColor(.green)
+                                            .imageScale(.large)
                                     }
                                     .sheet(isPresented: $createClubToggler) {
                                         CreateClubView(viewCloser: { createClubToggler = false }, clubs: clubs)
@@ -98,7 +99,6 @@ struct SearchClubView: View {
                                             .cornerRadius(25)
 
                                     }
-                                    .padding(.leading)
                                 }
                             }
                             .padding()
@@ -211,9 +211,6 @@ struct SearchClubView: View {
                                                 .foregroundColor(.secondary)
                                         }
                                         
-                                        //                                        Text("Search for Other Clubs! 🙃")
-                                        //                                            .frame(height: screenHeight / 3, alignment: .top)
-                                        //                                            .foregroundColor(.secondary)
                                     }
                                     .overlay {
                                         if let chosenClub = clubs.first(where: { scales[$0.clubID] == 1.5 }) {
@@ -383,31 +380,6 @@ struct SearchClubView: View {
                     !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
                 }
         } else {
-            //                return clubs
-            //                    .filter {
-            //                        $0.description.localizedCaseInsensitiveContains(searchText) || $0.abstract.localizedCaseInsensitiveContains(searchText) || $0.name.localizedCaseInsensitiveContains(searchText)
-            //                    }
-            //                    .sorted {
-            //                        $0.name.localizedCaseInsensitiveCompare($1.name) == (ascendingStyle ? .orderedAscending : .orderedDescending)
-            //                    }
-            //                    .sorted {
-            //                        userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-            //                        !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-            //                    }
-            //                case "Info":
-            //                    return clubs
-            //                        .filter {
-            
-            //                        }
-            //                        .sorted {
-            //                            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            //                        }
-            //                        .sorted {
-            //                            userInfo?.favoritedClubs.contains($0.clubID) ?? false &&
-            //                            !(userInfo?.favoritedClubs.contains($1.clubID) ?? false)
-            //                        }
-            //searchText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-            
             return clubs
                 .filter { club in
                     if let genres = club.genres {

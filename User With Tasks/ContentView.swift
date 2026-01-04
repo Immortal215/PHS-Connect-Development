@@ -119,7 +119,7 @@ struct ContentView: View {
                         if advSearchShown {
                             ZStack {
                                 SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same
+                                    .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same or change in the TabsStructs
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
 
                                 if userInfo != nil {
@@ -141,6 +141,10 @@ struct ContentView: View {
                                 SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                     .padding()
                                     .opacity(selectedTab == 3 ? 1 : 0) // keep INDEX the same
+                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
+                                
+                                ProspectorView()
+                                    .opacity(selectedTab == 7 ? 1 : 0) // keep INDEX the same
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
 
                             }

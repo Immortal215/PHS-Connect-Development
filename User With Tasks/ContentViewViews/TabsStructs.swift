@@ -6,6 +6,7 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
     case chat
     case calendar
     case settings
+    case news
 
     var name: String {
         switch self {
@@ -14,6 +15,7 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
             case .chat: return "Chat"
             case .calendar: return "Calendar"
             case .settings: return "Settings"
+            case .news: return "Prospector"
         }
     }
 
@@ -24,15 +26,15 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
             case .chat: return "bubble.left.and.bubble.right"
             case .calendar: return "calendar.badge.clock"
             case .settings: return "gearshape"
+            case .news: return "newspaper"
         }
     }
 
     var loginRequired: Bool {
         switch self {
-            case .search, .settings:
-                return false
             case .clubs, .chat, .calendar:
                 return true
+            default : return false
         }
     }
     
@@ -43,6 +45,7 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
             case .chat: return 6
             case .calendar: return 2
             case .settings: return 3
+            case .news: return 7
         }
     }
 }
