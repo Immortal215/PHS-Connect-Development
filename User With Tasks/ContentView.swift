@@ -38,6 +38,7 @@ struct ContentView: View {
     @State var pendingMessageID: String? = nil
     
     @State var tabsCache : UserTabPreferences?
+    @State var tabChooserPageOpen = false
     
     var body: some View {
         VStack {
@@ -162,7 +163,16 @@ struct ContentView: View {
                             isConnected: networkMonitor.isConnected,
                             selectedTab: selectedTab
                         )
+                        .onTapGesture(count: 2) {
+                            tabChooserPageOpen.toggle()
+                        }
 
+                    }
+                    .sheet(isPresented: $tabChooserPageOpen) {
+                        TabChooserSheet(
+                            tabsCache: $tabsCache,
+                            isGuestUser: viewModel.isGuestUser
+                        )
                     }
                     .onAppear {
                         if let UserID = viewModel.uid, !viewModel.isGuestUser {
@@ -198,7 +208,7 @@ struct ContentView: View {
                         
                         //                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                         //
-                        //                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary
+                        //                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary, ONLY USE ONCE AND THEN DELETE THIS
                         //                            Database.database().reference().child("clubs").observeSingleEvent(of: .value) { snapshot in
                         //                                for case let child as DataSnapshot in snapshot.children {
                         //                                    if var clubDict = child.value as? [String: Any],

@@ -83,53 +83,39 @@ exports.sendReactionNotification = onValueWritten(
     const beforeArr = event.data.before.exists() ? (event.data.before.val() || []) : [];
     const afterArr = event.data.after.exists() ? (event.data.after.val() || []) : [];
 
-    // Only notify when a reaction was added (array grew)
     if (!Array.isArray(afterArr)) return;
-    if (afterArr.length <= (Array.isArray(beforeArr) ? beforeArr.length : 0)) return;
+    const beforeLen = Array.isArray(beforeArr) ? beforeArr.length : 0;
+    if (afterArr.length <= beforeLen) return;
 
-    // Find who got added (best effort)
     const beforeSet = new Set(Array.isArray(beforeArr) ? beforeArr : []);
-    const addedUID = afterArr.find((u) => !beforeSet.has(u));
-    if (!addedUID) return;
+    const reactorUID = afterArr.find((u) => !beforeSet.has(u));
+    if (!reactorUID) return;
 
     try {
-      const chatSnap = await admin.database().ref(`/chats/${chatID}`).once("value");
-      const chatData = chatSnap.val();
-      if (!chatData || !chatData.clubID) return;
+      const chatSnap = await admin.database().ref(`/chats/${chatID}/clubID`).once("value");
+      const clubID = chatSnap.val() || "";
 
-      const clubID = chatData.clubID;
+      const senderSnap = await admin.database().ref(`/chats/${chatID}/messages/${messageID}/sender`).once("value");
+      const messageSenderUID = senderSnap.val();
+      if (!messageSenderUID) return;
 
-      const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
-      const clubData = clubSnap.val();
-      if (!clubData) return;
+      if (messageSenderUID === reactorUID) return;
 
-      const clubMembersEmails = clubData.members || [];
-      const clubLeadersEmails = clubData.leaders || [];
-      const clubName = clubData.name || "Reaction";
+      const tokenSnap = await admin.database().ref(`/users/${messageSenderUID}/fcmToken`).once("value");
+      const token = tokenSnap.val();
+      if (!token) return;
 
-      const usersSnap = await admin.database().ref("/users").once("value");
-      const allUsers = usersSnap.val();
+      const reactorNameSnap = await admin.database().ref(`/users/${reactorUID}/userName`).once("value");
+      const reactorName = reactorNameSnap.val() || "Someone";
 
-      const reactorName = allUsers?.[addedUID]?.userName || "Someone";
-      const tokens = [];
-
-      for (const uid in allUsers) {
-        if (uid === addedUID) continue;
-
-        const user = allUsers[uid];
-        if (!user) continue;
-
-        const email = user.userEmail;
-        const isMember = clubMembersEmails.includes(email);
-        const isLeader = clubLeadersEmails.includes(email);
-
-        if ((isMember || isLeader) && user.fcmToken) tokens.push(user.fcmToken);
+      let clubName = "Reaction";
+      if (clubID) {
+        const clubNameSnap = await admin.database().ref(`/clubs/${clubID}/name`).once("value");
+        clubName = clubNameSnap.val() || "Reaction";
       }
 
-      if (tokens.length === 0) return;
-
-      return admin.messaging().sendEachForMulticast({
-        tokens,
+      return admin.messaging().send({
+        token,
         notification: {
           title: `${reactorName} • ${clubName}`,
           body: `reacted ${emoji}`
@@ -138,9 +124,9 @@ exports.sendReactionNotification = onValueWritten(
           type: "reaction",
           chatID,
           messageID,
-          clubID,
+          clubID: clubID || "",
           clubName,
-          reactorUID: addedUID,
+          reactorUID,
           reactorName,
           emoji
         }
