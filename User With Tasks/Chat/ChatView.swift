@@ -513,6 +513,29 @@ struct ChatView: View {
                         }
                     }
                     .clipped()
+                    .overlay(alignment: .topTrailing) {
+                        if attachmentLoaded {
+                            Button {
+                                attachmentLoaded = false
+                                attachmentURL = ""
+                            } label: {
+                                Circle()
+                                    .frame(width: 24, height: 24)
+                                    .overlay(
+                                        Image(systemName: "xmark")
+                                            .foregroundStyle(.white)
+                                            .font(.system(size: 12, weight: .bold))
+                                    )
+                                    .tintColor(.clear)
+                                    .apply {
+                                        if #available(iOS 26, *) {
+                                            $0.glassEffect()
+                                        }
+                                    }
+                            }
+                            .offset(x: 12, y: -12)
+                        }
+                    }
                     .padding()
                 }
                 
@@ -608,7 +631,7 @@ struct ChatView: View {
                         Button {
                             focusedOnSendBar = false
                             
-                            if let selected = selectedChat, !(newMessageText.isEmpty) {
+                            if let selected = selectedChat, !newMessageText.isEmpty || attachmentLoaded {
                                 let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                                 
                                 if let editingID = editingMessageID {
@@ -634,16 +657,18 @@ struct ChatView: View {
                                         
                                         sendMessage(chatID: selected.chatID, message: attchment)
                                     }
-
-                                    let newMessage = Chat.ChatMessage(
-                                        messageID: String(),
-                                        message: newMessageText,
-                                        sender: userInfo?.userID ?? "",
-                                        date: Date().timeIntervalSince1970,
-                                        threadName: currentThread == "general" ? nil : currentThread,
-                                        replyTo: replyingMessageID
-                                    )
-                                    sendMessage(chatID: selected.chatID, message: newMessage)
+                                    
+                                    if !newMessageText.isEmpty {
+                                        let newMessage = Chat.ChatMessage(
+                                            messageID: String(),
+                                            message: newMessageText,
+                                            sender: userInfo?.userID ?? "",
+                                            date: Date().timeIntervalSince1970,
+                                            threadName: currentThread == "general" ? nil : currentThread,
+                                            replyTo: replyingMessageID
+                                        )
+                                        sendMessage(chatID: selected.chatID, message: newMessage)
+                                    }
                                 }
                                 
                                 newMessageText = ""
@@ -653,7 +678,7 @@ struct ChatView: View {
                             }
                         } label: {
                             Circle()
-                                .fill(newMessageText.isEmpty ? Color.secondary.opacity(0.3) : Color.blue)
+                                .fill((newMessageText.isEmpty && !attachmentLoaded) ? Color.secondary.opacity(0.3) : Color.blue)
                                 .frame(width: 36, height: 36)
                                 .overlay(
                                     Image(systemName: "arrow.up")
@@ -663,7 +688,7 @@ struct ChatView: View {
                                 .padding(.vertical, 12)
                                 .padding(.horizontal, 16)
                         }
-                        .disabled(newMessageText.isEmpty)
+                        .disabled(newMessageText.isEmpty && !attachmentLoaded)
                         .keyboardShortcut(.return)
                     }
                     .apply {

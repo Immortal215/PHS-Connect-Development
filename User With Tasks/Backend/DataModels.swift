@@ -75,7 +75,6 @@ struct Chat: Codable, Equatable, Hashable {
         var edited : Bool? // if edited or not
         
         var attachmentURL: String?
-        var attachmentType: String? // "image", "file", "video"
         var systemGenerated: Bool? // true if it’s a system-generated message like "John joined the club!"
         var flagged: Bool?
         
