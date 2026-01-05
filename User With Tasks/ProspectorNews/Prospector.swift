@@ -166,7 +166,7 @@ struct ProspectorArticle: Identifiable, Equatable {
     let featuredImageURL: URL?
 }
 
-struct WPPost: Decodable {
+struct WPPost: Decodable { // A lot are structs becuase they are returned as objects not strings by wordpress so it needs to be like this
     struct Rendered: Decodable { let rendered: String }
 
     let id: Int
@@ -176,7 +176,7 @@ struct WPPost: Decodable {
     let excerpt: Rendered
     let _embedded: Embedded?
 
-    struct Embedded: Decodable {
+    struct Embedded: Decodable { // needed cause normally itll only return author ID so the embedded data needed to be found deeper
         let author: [Author]?
         let featuredMedia: [FeaturedMedia]?
 

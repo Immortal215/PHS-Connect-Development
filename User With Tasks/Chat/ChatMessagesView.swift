@@ -30,7 +30,7 @@ struct MessageScrollView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 
-                LazyVStack {
+                LazyVStack(spacing: bubbles ? nil : 0) { // not 0 by default!
                     if let selected = selectedChat {
                         let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                         let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
@@ -178,7 +178,7 @@ struct MessageScrollView: View {
                                             }
                                             
                                             HStack {
-                                                Text(replyMessage?.message ?? "[Deleted Message]")
+                                                Text(replyMessage?.message == "" ? "[Attachment]" : replyMessage?.message ?? "[Deleted Message]")
                                                     .lineLimit(1)
                                                     .font(.subheadline)
                                                     .padding(10)
@@ -199,7 +199,9 @@ struct MessageScrollView: View {
                                     }
                                     .padding(.top)
                                     .onTapGesture {
-                                        proxy.scrollTo(replyToMessage, anchor: .top)
+                                        withAnimation {
+                                            proxy.scrollTo(replyToMessage, anchor: .top)
+                                        }
                                     }
                                 }
                             }
@@ -462,7 +464,7 @@ struct MessageScrollView: View {
                                                         .padding(.leading, 5)
                                                 }
                                                 
-                                                Text(replyMessage?.message ?? "[Deleted Message]")
+                                                Text(replyMessage?.message == "" ? "[Attachment]" : replyMessage?.message ?? "[Deleted Message]")
                                                     .lineLimit(1)
                                                     .font(.subheadline)
                                                     .padding(10)
@@ -477,7 +479,9 @@ struct MessageScrollView: View {
                                         }
                                         .padding(.top)
                                         .onTapGesture {
-                                            proxy.scrollTo(replyToMessage, anchor: .top)
+                                            withAnimation {
+                                                proxy.scrollTo(replyToMessage, anchor: .top)
+                                            }
                                         }
                                     }
                                 }
@@ -707,7 +711,8 @@ struct MessageScrollView: View {
                     selectedEmoji: $selectedEmoji,
                     selectedEmojiMessage: $selectedEmojiMessage,
                     clubsLeaderIn: clubsLeaderIn,
-                    proxy: proxy
+                    proxy: proxy,
+                    replyToChatMessage: message.replyTo == nil ? nil : messages.first(where: { $0.messageID == message.replyTo! })
                 )
             }
         } else { // message is system made
