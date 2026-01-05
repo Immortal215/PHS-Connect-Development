@@ -32,6 +32,8 @@ struct NonBubbleMessageView : View {
     @Binding var selectedEmojiMessage : Chat.ChatMessage?
     @State var clubsLeaderIn: [Club]
     
+    var proxy: ScrollViewProxy
+    
     var body : some View {
         VStack {
         if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
@@ -90,9 +92,9 @@ struct NonBubbleMessageView : View {
                     
                     Spacer()
                 }
-                //                       .onTapGesture {
-                //                           proxy.scrollTo(replyToMessage, anchor: .bottom)
-                //                       }
+                .onTapGesture {
+                    proxy.scrollTo(replyToMessage, anchor: .top)
+                }
             }
         }
         

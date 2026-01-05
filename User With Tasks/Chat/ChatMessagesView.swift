@@ -125,7 +125,6 @@ struct MessageScrollView: View {
         
         if message.systemGenerated == nil || message.systemGenerated == false {
             if bubbles {
-                
                 if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
                     HStack {
                         Spacer()
@@ -197,11 +196,11 @@ struct MessageScrollView: View {
                                             }
                                         }
                                         .padding(.trailing, 18)
-                                        //                                       .onTapGesture {
-                                        //                                           proxy.scrollTo(replyMessage, anchor: .bottom)
-                                        //                                       }
                                     }
                                     .padding(.top)
+                                    .onTapGesture {
+                                        proxy.scrollTo(replyToMessage, anchor: .top)
+                                    }
                                 }
                             }
                             
@@ -477,9 +476,9 @@ struct MessageScrollView: View {
                                             Spacer()
                                         }
                                         .padding(.top)
-                                        //                                       .onTapGesture {
-                                        //                                           proxy.scrollTo(replyToMessage, anchor: .bottom)
-                                        //                                       }
+                                        .onTapGesture {
+                                            proxy.scrollTo(replyToMessage, anchor: .top)
+                                        }
                                     }
                                 }
                                 
@@ -707,7 +706,8 @@ struct MessageScrollView: View {
                     isEmojiPickerPresented: $isEmojiPickerPresented,
                     selectedEmoji: $selectedEmoji,
                     selectedEmojiMessage: $selectedEmojiMessage,
-                    clubsLeaderIn: clubsLeaderIn
+                    clubsLeaderIn: clubsLeaderIn,
+                    proxy: proxy
                 )
             }
         } else { // message is system made
