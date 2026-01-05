@@ -208,38 +208,34 @@ struct MessageScrollView: View {
                             HStack {
                                 Spacer()
                                 
-                                Text(.init(message.message))
-                                    .foregroundStyle(.white)
-                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                    .background(
-                                        UnevenRoundedRectangle(
-                                            topLeadingRadius: 25,
-                                            bottomLeadingRadius: 25,
-                                            bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
-                                            topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
-                                        )
-                                        .foregroundColor(.blue)
-                                        
-                                    )
-                                    .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
-                                    .contextMenu {
-                                        if message.message != "[Message Deleted]" {
-                                        Button {
-                                            UIPasteboard.general.string = message.message
-                                            dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                        } label: {
-                                            Label("Copy", systemImage: "doc.on.doc")
-                                        }
-                                        Button {
-                                                newMessageText = message.message
-                                                editingMessageID = message.messageID
-                                                replyingMessageID = nil
-                                                focusedOnSendBar = true
-                                            } label: {
-                                                Label("Edit", systemImage: "pencil")
+                                Group {
+                                    if message.attachmentURL != nil {
+                                        AsyncImage(url: URL(string: message.attachmentURL ?? "")) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .clipShape(
+                                                        UnevenRoundedRectangle(
+                                                            topLeadingRadius: 25,
+                                                            bottomLeadingRadius: 25,
+                                                            bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
+                                                            topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
+                                                        )
+                                                    )
+                                                    .overlay(alignment: .topLeading) {
+                                                        reactionOverlay(message: message, swap: true)
+                                                            .offset(x: -12, y: -12)
+                                                    }
+                                                    .frame(maxWidth: screenWidth * 0.5 - 100)
+                                            case .failure:
+                                                ProgressView()
+                                            case .empty:
+                                                Color.clear
                                             }
-                                            
-                                            
+                                        }
+                                        .contextMenu {
                                             Button {
                                                 newMessageText = ""
                                                 replyingMessageID = message.messageID
@@ -272,11 +268,89 @@ struct MessageScrollView: View {
                                                 
                                                 Text("React")
                                             }
-                                        } else {
-                                            Label("Deleted", systemImage: "exclamationmark.circle")
-                                                .tint(.red)
                                         }
+                                    } else {
+                                        Text(.init(message.message))
+                                            .foregroundStyle(.white)
+                                            .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                            .background(
+                                                UnevenRoundedRectangle(
+                                                    topLeadingRadius: 25,
+                                                    bottomLeadingRadius: 25,
+                                                    bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
+                                                    topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
+                                                )
+                                                .foregroundColor(.blue)
+                                            )
+                                            .contextMenu {
+                                                if message.message != "[Deleted Message]" {
+                                                    Button {
+                                                        UIPasteboard.general.string = message.message
+                                                        dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                    } label: {
+                                                        Label("Copy", systemImage: "doc.on.doc")
+                                                    }
+                                                    
+                                                    Button {
+                                                        newMessageText = message.message
+                                                        editingMessageID = message.messageID
+                                                        replyingMessageID = nil
+                                                        focusedOnSendBar = true
+                                                    } label: {
+                                                        Label("Edit", systemImage: "pencil")
+                                                    }
+                                                    
+                                                    Button {
+                                                        newMessageText = ""
+                                                        replyingMessageID = message.messageID
+                                                        editingMessageID = nil
+                                                        focusedOnSendBar = true
+                                                    } label: {
+                                                        Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                    }
+                                                    
+                                                    Button {
+                                                        isEmojiPickerPresented = true
+                                                        selectedEmojiMessage = message
+                                                    } label: {
+                                                        HStack {
+                                                            ZStack {
+                                                                Image(systemName: "face.smiling")
+                                                                    .font(.system(size: 20, weight: .medium))
+                                                                
+                                                                Image(systemName: "plus")
+                                                                    .font(.system(size: 8, weight: .medium))
+                                                                    .offset(x: 10, y: -8)
+                                                                    .background {
+                                                                        Circle()
+                                                                            .fill(Color.systemBackground)
+                                                                            .offset(x: 10, y: -8)
+                                                                            .frame(width: 12, height: 12)
+                                                                    }
+                                                            }
+                                                        }
+                                                        
+                                                        Text("React")
+                                                    }
+                                                } else {
+                                                    Label("Deleted", systemImage: "exclamationmark.circle")
+                                                        .tint(.red)
+                                                }
+                                            }
+                                            .overlay(alignment: .topLeading) {
+                                                reactionOverlay(message: message, swap: true)
+                                                    .offset(x: -12, y: -12)
+                                            }
+                                            .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
                                     }
+                                }
+                                .apply {
+                                    if let reactions = message.reactions, !reactions.isEmpty {
+                                        $0.padding(.top, 8)
+                                    } else {
+                                        $0
+                                    }
+                                }
                                 
                                 if message.flagged ?? false {
                                     Image(systemName: "exclamationmark.circle")
@@ -413,30 +487,39 @@ struct MessageScrollView: View {
                                     if message.flagged ?? false {
                                         Image(systemName: "exclamationmark.circle")
                                             .foregroundStyle(.red)
+                                            .overlay(alignment: .topTrailing) {
+                                                reactionOverlay(message: message)
+                                            }
                                     }
                                     
-                                    Text(.init(message.message))
-                                        .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                        .background (
-                                            GlassBackground(
-                                                color: clubColor,
-                                                shape: AnyShape(UnevenRoundedRectangle(
-                                                    topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
-                                                    bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
-                                                    bottomTrailingRadius: 25, topTrailingRadius: 25))
-                                            )
-                                        )
-                                        .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
-                                        .contextMenu {
-                                            if message.message != "[Message Deleted]" {
-                                                
-                                                Button {
-                                                    UIPasteboard.general.string = message.message
-                                                    dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                                } label: {
-                                                    Label("Copy", systemImage: "doc.on.doc")
+                                    Group {
+                                        if message.attachmentURL != nil {
+                                            AsyncImage(url: URL(string: message.attachmentURL ?? "")) { phase in
+                                                switch phase {
+                                                case .success(let image):
+                                                    image
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .clipShape(
+                                                            UnevenRoundedRectangle(
+                                                                topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+                                                                bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
+                                                                bottomTrailingRadius: 25,
+                                                                topTrailingRadius: 25
+                                                            )
+                                                        )
+                                                        .overlay(alignment: .topTrailing) {
+                                                            reactionOverlay(message: message)
+                                                                .offset(x: 12, y: -12)
+                                                        }
+                                                        .frame(maxWidth: screenWidth * 0.5 - 100)
+                                                case .failure:
+                                                    ProgressView()
+                                                case .empty:
+                                                    Color.clear
                                                 }
-                                                
+                                            }
+                                            .contextMenu {
                                                 Button {
                                                     newMessageText = ""
                                                     replyingMessageID = message.messageID
@@ -460,63 +543,130 @@ struct MessageScrollView: View {
                                                                 .offset(x: 10, y: -8)
                                                                 .background {
                                                                     Circle()
-                                                                        .fill(Color.systemGray5)
+                                                                        .fill(Color.systemBackground)
                                                                         .offset(x: 10, y: -8)
                                                                         .frame(width: 12, height: 12)
                                                                 }
                                                         }
-                                                        
-                                                        Text("React")
                                                     }
+                                                    
+                                                    Text("React")
                                                 }
-                                                
-                                                if message.flagged ?? false {
-                                                    if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
-                                                        Button {
-                                                            if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
-                                                                if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
-                                                                    chats[chatIndex].messages?[messageIndex].flagged = false
-                                                                    sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
-                                                                }
-                                                            }
-                                                        } label: {
-                                                            Label("Mark as Safe", systemImage: "checkmark.circle")
-                                                        }
-                                                        
-                                                        Button {
-                                                            deleteMessage(chatID: selectedChat!.chatID, message: message)
-                                                        } label: {
-                                                            Label("Delete", systemImage: "trash")
-                                                        }
-                                                    }
-                                                } else {
-                                                    if message.flagged == nil {
-                                                        Button {
-                                                            if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
-                                                                if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
-                                                                    chats[chatIndex].messages?[messageIndex].flagged = true
-                                                                    sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
-                                                                }
-                                                            }
-                                                        } label: {
-                                                            Label("Report", systemImage: "exclamationmark.circle")
-                                                        }
-                                                    }
-                                                }
-                                            } else {
-                                                Label("Deleted", systemImage: "exclamationmark.circle")
-                                                    .tint(.red)
                                             }
+                                        } else {
+                                            Text(.init(message.message))
+                                                .foregroundStyle(.white)
+                                                .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                                .background(
+                                                    GlassBackground(
+                                                        color: clubColor,
+                                                        shape: AnyShape(UnevenRoundedRectangle(
+                                                            topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+                                                            bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
+                                                            bottomTrailingRadius: 25, topTrailingRadius: 25))
+                                                    )
+                                                )
+                                                .contextMenu {
+                                                    if message.message != "[Deleted Message]" {
+                                                        Button {
+                                                            UIPasteboard.general.string = message.message
+                                                            dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                                            
+                                                            print(message)
+                                                        } label: {
+                                                            Label("Copy", systemImage: "doc.on.doc")
+                                                        }
+                                                        
+                                                        Button {
+                                                            newMessageText = ""
+                                                            replyingMessageID = message.messageID
+                                                            editingMessageID = nil
+                                                            focusedOnSendBar = true
+                                                        } label: {
+                                                            Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                        }
+                                                        
+                                                        Button {
+                                                            isEmojiPickerPresented = true
+                                                            selectedEmojiMessage = message
+                                                        } label: {
+                                                            HStack {
+                                                                ZStack {
+                                                                    Image(systemName: "face.smiling")
+                                                                        .font(.system(size: 20, weight: .medium))
+                                                                    
+                                                                    Image(systemName: "plus")
+                                                                        .font(.system(size: 8, weight: .medium))
+                                                                        .offset(x: 10, y: -8)
+                                                                        .background {
+                                                                            Circle()
+                                                                                .fill(Color.systemGray5)
+                                                                                .offset(x: 10, y: -8)
+                                                                                .frame(width: 12, height: 12)
+                                                                        }
+                                                                }
+                                                                
+                                                                Text("React")
+                                                            }
+                                                        }
+                                                        
+                                                        if message.flagged ?? false {
+                                                            if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
+                                                                Button {
+                                                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                        if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                            chats[chatIndex].messages?[messageIndex].flagged = false
+                                                                            sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                        }
+                                                                    }
+                                                                } label: {
+                                                                    Label("Mark as Safe", systemImage: "checkmark.circle")
+                                                                }
+                                                                
+                                                                Button {
+                                                                    deleteMessage(chatID: selectedChat!.chatID, message: message)
+                                                                } label: {
+                                                                    Label("Delete", systemImage: "trash")
+                                                                }
+                                                            }
+                                                        } else {
+                                                            if message.flagged == nil {
+                                                                Button {
+                                                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                        if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                            chats[chatIndex].messages?[messageIndex].flagged = true
+                                                                            sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                        }
+                                                                    }
+                                                                } label: {
+                                                                    Label("Report", systemImage: "exclamationmark.circle")
+                                                                }
+                                                            }
+                                                        }
+                                                    } else {
+                                                        Label("Deleted", systemImage: "exclamationmark.circle")
+                                                            .tint(.red)
+                                                    }
+                                                }
+                                                .overlay(alignment: .topTrailing) {
+                                                    reactionOverlay(message: message)
+                                                        .offset(x: 12, y: -12)
+                                                }
+                                                .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
                                         }
+                                    }
+                                    .apply {
+                                        if let reactions = message.reactions, !reactions.isEmpty {
+                                            $0.padding(.top, 8)
+                                        } else {
+                                            $0
+                                        }
+                                    }
                                     
                                     Spacer()
                                 }
-                                
-                                
                             }
                             .padding(.leading, 5)
-                            
-                            Spacer()
                         }
                         
                         if nextMessage == nil || calendarTimeIsNotSameByHourNextMessage {
@@ -571,10 +721,145 @@ struct MessageScrollView: View {
             }
         }
     }
+    
+    @ViewBuilder
+    func reactionOverlay(message: Chat.ChatMessage, swap: Bool = false) -> some View {
+        if let reactions = message.reactions, !reactions.isEmpty {
+            HStack(spacing: 4) {
+                if swap {
+                    Button {
+                        isEmojiPickerPresented = true
+                        selectedEmojiMessage = message
+                    } label: {
+                        ZStack {
+                            Image(systemName: "face.smiling")
+                                .font(.system(size: 20, weight: .medium))
+                            
+                            Image(systemName: "plus")
+                                .font(.system(size: 8, weight: .medium))
+                                .offset(x: 10, y: -8)
+                                .background {
+                                    Circle()
+                                        .fill(Color.systemGray5)
+                                        .offset(x: 10, y: -8)
+                                        .frame(width: 12, height: 12)
+                                }
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .apply {
+                                if #available(iOS 26, *) {
+                                    $0.glassEffect()
+                                }
+                            }
+                    )
+                    .overlay {
+                        Rectangle()
+                            .fill(.clear)
+                        
+                            .highPriorityGesture(TapGesture().onEnded {
+                                isEmojiPickerPresented = true
+                                selectedEmojiMessage = message
+                            })
+                    }
+                }
+                
+                ForEach(reactions.sorted(by: { $0.key < $1.key }), id: \.key) { emoji, users in
+                    HStack(spacing: 4) {
+                        Text(emoji)
+                        if users.count > 1 {
+                            Text("\(users.count)")
+                                .font(.caption2)
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .apply {
+                                if #available(iOS 26, *) {
+                                    $0.glassEffect()
+                                }
+                            }
+                            .border(.blue, width: users.contains(userInfo?.userID ?? "") ? 2 : 0, cornerRadius: 25)
+                    )
+                    .onTapGesture {
+                        guard let userID = userInfo?.userID, let chatID = selectedChat?.chatID
+                        else { return }
+                        
+                        var newMessage = message
+                        var reactions = newMessage.reactions ?? [:]
+                        var usersForEmoji = reactions[emoji] ?? []
+                        
+                        if let index = usersForEmoji.firstIndex(of: userID) {
+                            usersForEmoji.remove(at: index)
+                        } else {
+                            usersForEmoji.append(userID)
+                        }
+                        
+                        if usersForEmoji.isEmpty {
+                            reactions.removeValue(forKey: emoji)
+                        } else {
+                            reactions[emoji] = usersForEmoji
+                        }
+                        
+                        newMessage.reactions = reactions
+                        sendMessage(chatID: chatID, message: newMessage)
+                    }
+                }
+                
+                if !swap {
+                    Button {
+                        isEmojiPickerPresented = true
+                        selectedEmojiMessage = message
+                    } label: {
+                        ZStack {
+                            Image(systemName: "face.smiling")
+                                .font(.system(size: 20, weight: .medium))
+                            
+                            Image(systemName: "plus")
+                                .font(.system(size: 8, weight: .medium))
+                                .offset(x: 10, y: -8)
+                                .background {
+                                    Circle()
+                                        .fill(Color.systemGray5)
+                                        .offset(x: 10, y: -8)
+                                        .frame(width: 12, height: 12)
+                                }
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .apply {
+                                if #available(iOS 26, *) {
+                                    $0.glassEffect()
+                                }
+                            }
+                    )
+                    .overlay {
+                        Rectangle()
+                            .fill(.clear)
+                        
+                            .highPriorityGesture(TapGesture().onEnded {
+                                isEmojiPickerPresented = true
+                                selectedEmojiMessage = message
+                            })
+                    }
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+        }
+    }
 }
 
 func deleteMessage(chatID: String, message: Chat.ChatMessage) {
     var deletedMessage = message
-    deletedMessage.message = "[Message Deleted]"
+    deletedMessage.message = "[Deleted Message]"
     sendMessage(chatID: chatID, message: deletedMessage)
 }

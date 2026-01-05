@@ -150,11 +150,28 @@ struct NonBubbleMessageView : View {
                         .foregroundStyle(.red)
                 }
                 
-                Text(.init(message.message))
-                    .multilineTextAlignment(.leading)
-                    .background {
-                        Color.clear
+                VStack(alignment: .leading) {
+                    if message.attachmentURL != nil {
+                        AsyncImage(url: URL(string: message.attachmentURL ?? "")) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(RoundedRectangle(cornerRadius: 32))
+                                    .frame(maxWidth: screenWidth * 0.5, maxHeight: screenHeight * 0.3, alignment: .leading)
+                            case .failure:
+                                ProgressView()
+                            case .empty:
+                                Color.clear
+                            }
+                        }
+                    } else {
+                        Text(.init(message.message))
+                            .multilineTextAlignment(.leading)
+                            .background{Color.clear}
                     }
+                }
                 
                 Spacer()
             }
@@ -226,17 +243,19 @@ struct NonBubbleMessageView : View {
                                 
                                 Divider()
                                 
-                                bubbleMenuButton(
-                                    label: "Copy",
-                                    system: "doc.on.doc",
-                                    action: {
-                                        UIPasteboard.general.string = message.message
-                                        dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                            nonBubbleMenuMessage = nil
+                                if message.attachmentURL == nil {
+                                    bubbleMenuButton(
+                                        label: "Copy",
+                                        system: "doc.on.doc",
+                                        action: {
+                                            UIPasteboard.general.string = message.message
+                                            dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
+                                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                                nonBubbleMenuMessage = nil
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                }
                                 
                                 bubbleMenuButton(
                                     label: "Reply",
@@ -253,19 +272,21 @@ struct NonBubbleMessageView : View {
                                 )
                                 
                                 if message.sender == userInfo?.userID {
-                                    bubbleMenuButton(
-                                        label: "Edit",
-                                        system: "pencil",
-                                        action: {
-                                            newMessageText = message.message
-                                            editingMessageID = message.messageID
-                                            replyingMessageID = nil
-                                            focusedOnSendBar = true
-                                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                                nonBubbleMenuMessage = nil
+                                    if message.attachmentURL == nil {
+                                        bubbleMenuButton(
+                                            label: "Edit",
+                                            system: "pencil",
+                                            action: {
+                                                newMessageText = message.message
+                                                editingMessageID = message.messageID
+                                                replyingMessageID = nil
+                                                focusedOnSendBar = true
+                                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                                    nonBubbleMenuMessage = nil
+                                                }
                                             }
-                                        }
-                                    )
+                                        )
+                                    }
                                 } else {
                                     if message.flagged ?? false {
                                         if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {

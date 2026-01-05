@@ -44,6 +44,10 @@ struct ChatView: View {
     @State var openChatIDFromNotification: String? = nil
     @State var openThreadNameFromNotification: String? = nil
     @State var openMessageIDFromNotification: String? = nil
+    
+    @State var attachmentPresented = false
+    @State var attachmentURL: String = ""
+    @State var attachmentLoaded = false
 
     @State var menuExpanded = false
     @Namespace var namespace
@@ -491,6 +495,27 @@ struct ChatView: View {
             VStack {
                 Spacer()
                 
+                HStack {
+                    Spacer()
+                    
+                    AsyncImage(url: URL(string: attachmentURL)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 160)
+                                .border(cornerRadius: 16, stroke: .init(.gray, lineWidth: 2))
+                        case .failure:
+                            Color.clear
+                        case .empty:
+                            Color.clear
+                        }
+                    }
+                    .clipped()
+                    .padding()
+                }
+                
                 VStack(spacing: 4) {
                     if let editingID = editingMessageID, let selected = selectedChat, let message = selected.messages?.first(where: { $0.messageID == editingID }) {
                         HStack {
@@ -538,84 +563,187 @@ struct ChatView: View {
                     }
                 } // editing or replying to a message
                 
-                HStack(alignment: .bottom, spacing: 12) {
-                    TextEditor(text: $newMessageText)
-                        .overlay {
-                            HStack {
-                                if newMessageText == "" {
-                                    Text("Enter Message Text")
-                                        .foregroundStyle(Color.systemGray)
-                                        .padding(.leading, 8)
-                                    
-                                    Spacer()
-                                }
-                            }
-                        }
-                        .scrollContentBackground(.hidden)
-                        .frame(minHeight: 30, maxHeight: screenHeight/2)
-                        .lineLimit(4)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
-                        .focused($focusedOnSendBar)
-                    
+                HStack {
                     Button {
-                        focusedOnSendBar = false
-                        
-                        if let selected = selectedChat, !(newMessageText.isEmpty) {
-                            let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-                            
-                            if let editingID = editingMessageID {
-                                if let chatIndex = chats.firstIndex(where: { $0.chatID == selected.chatID }) {
-                                    if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == editingID }) {
-                                        chats[chatIndex].messages?[messageIndex].message = newMessageText
-                                        
-                                        sendMessage(chatID: selected.chatID, message: chats[chatIndex].messages![messageIndex])
-                                    }
-                                }
-                                editingMessageID = nil
-                            } else {
-                                let newMessage = Chat.ChatMessage(
-                                    messageID: String(),
-                                    message: newMessageText,
-                                    sender: userInfo?.userID ?? "",
-                                    date: Date().timeIntervalSince1970,
-                                    threadName: currentThread == "general" ? nil : currentThread,
-                                    replyTo: replyingMessageID
-                                )
-                                sendMessage(chatID: selected.chatID, message: newMessage)
-                            }
-                            
-                            newMessageText = ""
-                            updateUnreadIndicator()
-                        }
+                        attachmentPresented = true
+                        attachmentLoaded = false
+                        attachmentURL = ""
                     } label: {
                         Circle()
-                            .fill(newMessageText.isEmpty ? Color.secondary.opacity(0.3) : Color.blue)
                             .frame(width: 36, height: 36)
                             .overlay(
-                                Image(systemName: "arrow.up")
+                                Image(systemName: "plus")
                                     .foregroundStyle(.white)
                                     .font(.system(size: 16, weight: .bold))
                             )
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 16)
+                            .tintColor(.clear)
+                            .apply {
+                                if #available(iOS 26, *) {
+                                    $0.glassEffect()
+                                }
+                            }
                     }
-                    .disabled(newMessageText.isEmpty)
-                    .keyboardShortcut(.return)
-                }
-                .apply {
-                    if #available(iOS 26, *) {
-                        $0
-                    } else {
-                        $0.background(Color.black.opacity(0.05))
+                    
+                    HStack(spacing: 12) {
+                        TextEditor(text: $newMessageText)
+                            .overlay {
+                                HStack {
+                                    if newMessageText == "" {
+                                        Text("Enter Message Text")
+                                            .foregroundStyle(Color.systemGray)
+                                            .padding(.leading, 8)
+                                        
+                                        Spacer()
+                                    }
+                                }
+                            }
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 30, maxHeight: screenHeight/2)
+                            .lineLimit(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal)
+                            .focused($focusedOnSendBar)
+                        
+                        Button {
+                            focusedOnSendBar = false
+                            
+                            if let selected = selectedChat, !(newMessageText.isEmpty) {
+                                let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                                
+                                if let editingID = editingMessageID {
+                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selected.chatID }) {
+                                        if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == editingID }) {
+                                            chats[chatIndex].messages?[messageIndex].message = newMessageText
+                                            
+                                            sendMessage(chatID: selected.chatID, message: chats[chatIndex].messages![messageIndex])
+                                        }
+                                    }
+                                    editingMessageID = nil
+                                } else {
+                                    if attachmentLoaded {
+                                        let attchment = Chat.ChatMessage(
+                                            messageID: String(),
+                                            message: "",
+                                            sender: userInfo?.userID ?? "",
+                                            date: Date().timeIntervalSince1970,
+                                            threadName: currentThread == "general" ? nil : currentThread,
+                                            replyTo: replyingMessageID,
+                                            attachmentURL: attachmentURL
+                                        )
+                                        
+                                        sendMessage(chatID: selected.chatID, message: attchment)
+                                    }
+
+                                    let newMessage = Chat.ChatMessage(
+                                        messageID: String(),
+                                        message: newMessageText,
+                                        sender: userInfo?.userID ?? "",
+                                        date: Date().timeIntervalSince1970,
+                                        threadName: currentThread == "general" ? nil : currentThread,
+                                        replyTo: replyingMessageID
+                                    )
+                                    sendMessage(chatID: selected.chatID, message: newMessage)
+                                }
+                                
+                                newMessageText = ""
+                                attachmentURL = ""
+                                attachmentLoaded = false
+                                updateUnreadIndicator()
+                            }
+                        } label: {
+                            Circle()
+                                .fill(newMessageText.isEmpty ? Color.secondary.opacity(0.3) : Color.blue)
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Image(systemName: "arrow.up")
+                                        .foregroundStyle(.white)
+                                        .font(.system(size: 16, weight: .bold))
+                                )
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 16)
+                        }
+                        .disabled(newMessageText.isEmpty)
+                        .keyboardShortcut(.return)
                     }
-                }
-                .background {
-                    GlassBackground()
+                    .apply {
+                        if #available(iOS 26, *) {
+                            $0
+                        } else {
+                            $0.background(Color.black.opacity(0.05))
+                        }
+                    }
+                    .background {
+                        GlassBackground()
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 12)
+                .sheet(isPresented: $attachmentPresented) {
+                    VStack {
+                        Text("Paste Attachment URL")
+                            .padding()
+                        
+                        HStack(alignment: .center) {
+                            TextField(text: $attachmentURL)
+                                .frame(height: 48)
+                                .padding(.horizontal)
+                                .background(GlassBackground(color: .gray, shape: AnyShape(RoundedRectangle(cornerRadius: 24))))
+                            
+                            Button {
+                                if attachmentLoaded {
+                                    attachmentPresented = false
+                                }
+                            } label: {
+                                Circle()
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Image(systemName: attachmentLoaded ? "checkmark" : "xmark")
+                                            .foregroundStyle(.white)
+                                            .font(.system(size: 16, weight: .bold))
+                                            .contentTransition(.symbolEffect(.replace))
+                                    )
+                                    .tint(attachmentLoaded ? .accentColor : .gray)
+                                    .animation(.easeInOut(duration: 0.6), value: attachmentLoaded)
+                                    .apply {
+                                        if #available(iOS 26, *) {
+                                            $0.glassEffect()
+                                        }
+                                    }
+                            }
+                        }
+                        .frame(height: 56)
+                        .padding()
+                        
+                        AsyncImage(url: URL(string: attachmentURL)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .onAppear {
+                                        attachmentLoaded = true
+                                    }
+                            case .failure:
+                                ProgressView()
+                                    .onAppear {
+                                        attachmentLoaded = false
+                                    }
+                            case .empty:
+                                Color.clear
+                                    .onAppear {
+                                        attachmentLoaded = false
+                                    }
+                            }
+                        }
+                        .frame(minWidth: 0.3 * screenWidth, maxHeight: 0.5 * screenHeight, alignment: .center)
+                        .clipped()
+                    }
+                    .presentationDetents([.height(0.5 * screenHeight + 160)])
+                    .presentationBackground {
+                        GlassBackground(color: .clear)
+                    }
+                }
             }
             .padding(.trailing)
         }
