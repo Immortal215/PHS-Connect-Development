@@ -516,7 +516,7 @@ struct ChatView: View {
                     ScrollView(.horizontal) {
                         HStack {
                             ForEach(Array(attachments.enumerated()), id: \.offset) { index, url in
-                                AsyncImage(url: URL(string: url)) { phase in
+                                WebImage(url: URL(string: url)) { phase in
                                     switch phase {
                                     case .success(let image):
                                         image
