@@ -136,7 +136,7 @@ struct ChatView: View {
                     }
                     .frame(width: 80)
                     .background {
-                        GlassBackground()                            
+                        GlassBackground()
                     }
                     .onAppear {
                         loadChats()
@@ -431,7 +431,14 @@ struct ChatView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
-                .background(Color.secondarySystemBackground)
+                .background{
+                    ZStack {
+                        RandomShapesBackground()
+                        
+                        Color.secondarySystemBackground.opacity(0.4)
+
+                    }
+                }
                 .onChange(of: selectedChat) { selChat in
                     DispatchQueue.main.async {
                         if let chat = selChat {
@@ -713,7 +720,7 @@ struct ChatView: View {
                         }
                     }
                     .background {
-                        GlassBackground()
+                        GlassBackground(color: Color.systemBackground)
                     }
                 }
                 .padding(.horizontal)

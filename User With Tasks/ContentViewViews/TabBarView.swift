@@ -101,7 +101,6 @@ struct FloatingTabBar: View {
             }
             .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
             .allowsHitTesting(false)
-            .offset(y: selectedTab == 6 ? 0 : 10)
             .hidden(selectedTab == 3 || selectedTab == 6)
         }
     }

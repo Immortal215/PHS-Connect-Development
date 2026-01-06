@@ -166,20 +166,15 @@ struct NonBubbleMessageView : View {
                         
                         VStack(alignment: .leading) {
                             if message.attachmentURL != nil {
-                                AsyncImage(url: URL(string: message.attachmentURL ?? "")) { phase in
-                                    switch phase {
-                                    case .success(let image):
+                                WebImage(url: URL(string: message.attachmentURL ?? "")) { image in
                                         image
                                             .resizable()
                                             .scaledToFit()
                                             .clipShape(RoundedRectangle(cornerRadius: 32))
                                             .frame(maxWidth: screenWidth * 0.5, maxHeight: screenHeight * 0.3, alignment: .leading)
-                                    case .failure:
+                                    } placeholder: {
                                         ProgressView()
-                                    case .empty:
-                                        Color.clear
                                     }
-                                }
                             } else {
                                 Text(.init(message.message))
                                     .multilineTextAlignment(.leading)

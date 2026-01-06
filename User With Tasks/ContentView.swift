@@ -333,6 +333,7 @@ struct ContentView: View {
                     clubs.append(loadedClub)
                 }
             }
+            
             setupClubsListener()
             
             

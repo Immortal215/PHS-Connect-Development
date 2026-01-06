@@ -123,6 +123,7 @@ struct SearchClubView: View {
                                     .font(.headline)
                                     .foregroundColor(.primary)
                             }
+                            
                             ZStack {
                                 if filteredItems.isEmpty && selectedGenres.isEmpty && searchText.isEmpty {
                                     ProgressView("Loading Clubs...")

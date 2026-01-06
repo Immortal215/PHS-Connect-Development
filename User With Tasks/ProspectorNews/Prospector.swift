@@ -1,6 +1,7 @@
 import SwiftUI
 import SafariServices
 import SDWebImageSwiftUI
+import RichText
 
 struct ProspectorView: View {
     @StateObject var vm = ProspectorViewModel()
@@ -8,30 +9,34 @@ struct ProspectorView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if let err = vm.errorText {
-                    Text(err)
-                        .foregroundStyle(.red)
-                        .font(.caption)
-                }
-
-                ForEach(vm.articles) { article in
-                    Button {
-                        openURL = article.link
-                    } label: {
-                        ArticleRow(article: article)
+            ScrollView {
+                LazyVStack {
+                    if let err = vm.errorText {
+                        Text(err)
+                            .foregroundStyle(.red)
+                            .font(.caption)
                     }
-                    .buttonStyle(.plain)
-                    .onAppear {
-                        Task { await vm.loadMoreIfNeeded(current: article) }
+                    
+                    ForEach(vm.articles) { article in
+                        Button {
+                            openURL = article.link
+                        } label: {
+                            ArticleRow(article: article)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            Task { await vm.loadMoreIfNeeded(current: article) }
+                        }
+                        
+                        Divider()
                     }
-                }
-
-                if vm.isLoading {
-                    HStack { Spacer(); ProgressView(); Spacer() }
+                    
+                    if vm.isLoading {
+                        HStack { Spacer(); ProgressView(); Spacer() }
+                    }
                 }
             }
-            .listStyle(.plain)
+            .padding()
             .navigationTitle("ProspectorNow")
             .refreshable { await vm.refresh() }
             .task { if vm.articles.isEmpty { await vm.refresh() } }
@@ -63,12 +68,12 @@ struct ArticleRow: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(article.title)
+                RichText(html: article.title)
                     .font(.headline)
                     .foregroundStyle(.primary)
 
                 if !article.excerpt.isEmpty {
-                    Text(article.excerpt)
+                    RichText(html: article.excerpt)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
@@ -153,52 +158,6 @@ final class ProspectorNowService {
         decoder.dateDecodingStrategy = .custom(WPDateDecoder.decode)
         let raw = try decoder.decode([WPPost].self, from: data)
         return raw.map { $0.toArticle() }
-    }
-}
-
-struct ProspectorArticle: Identifiable, Equatable {
-    let id: Int
-    let title: String
-    let excerpt: String
-    let date: Date
-    let link: URL
-    let authorName: String?
-    let featuredImageURL: URL?
-}
-
-struct WPPost: Decodable { // A lot are structs becuase they are returned as objects not strings by wordpress so it needs to be like this
-    struct Rendered: Decodable { let rendered: String }
-
-    let id: Int
-    let date: Date
-    let link: URL
-    let title: Rendered
-    let excerpt: Rendered
-    let _embedded: Embedded?
-
-    struct Embedded: Decodable { // needed cause normally itll only return author ID so the embedded data needed to be found deeper
-        let author: [Author]?
-        let featuredMedia: [FeaturedMedia]?
-
-        enum CodingKeys: String, CodingKey {
-            case author
-            case featuredMedia = "wp:featuredmedia"
-        }
-
-        struct Author: Decodable { let name: String? }
-        struct FeaturedMedia: Decodable { let source_url: URL? }
-    }
-
-    func toArticle() -> ProspectorArticle {
-        ProspectorArticle(
-            id: id,
-            title: title.rendered.cleanHTML(),
-            excerpt: excerpt.rendered.cleanHTML(),
-            date: date,
-            link: link,
-            authorName: _embedded?.author?.first?.name,
-            featuredImageURL: _embedded?.featuredMedia?.first?.source_url
-        )
     }
 }
 

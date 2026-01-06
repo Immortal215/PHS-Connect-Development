@@ -211,7 +211,7 @@ struct MessageScrollView: View {
                                 
                                 Group {
                                     if message.attachmentURL != nil {
-                                        AsyncImage(url: URL(string: message.attachmentURL ?? "")) { phase in
+                                        WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
                                             switch phase {
                                             case .success(let image):
                                                 image
@@ -497,7 +497,7 @@ struct MessageScrollView: View {
                                     
                                     Group {
                                         if message.attachmentURL != nil {
-                                            AsyncImage(url: URL(string: message.attachmentURL ?? "")) { phase in
+                                            WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
                                                 switch phase {
                                                 case .success(let image):
                                                     image
@@ -825,16 +825,6 @@ struct MessageScrollView: View {
                         ZStack {
                             Image(systemName: "face.smiling")
                                 .font(.system(size: 20, weight: .medium))
-                            
-                            Image(systemName: "plus")
-                                .font(.system(size: 8, weight: .medium))
-                                .offset(x: 10, y: -8)
-                                .background {
-                                    Circle()
-                                        .fill(Color.systemGray5)
-                                        .offset(x: 10, y: -8)
-                                        .frame(width: 12, height: 12)
-                                }
                         }
                     }
                     .padding(.horizontal, 8)

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftUIX
 
 struct RandomShapesBackground: View {
     let screenWidth = UIScreen.main.bounds.width
@@ -23,6 +24,14 @@ struct RandomShapesBackground: View {
                     .rotationEffect(.degrees(Double(i) * 15))
                     .position(positions.count > i ? positions[i] : CGPoint.zero)
             }
+            
+            ForEach(24..<36, id: \.self) { i in
+                RoundedRhombus(cornerRadius: 16)
+                    .stroke(Color.primary.opacity(0.15), lineWidth: 5)
+                    .frame(width: 140, height: 70)
+                    .rotationEffect(.degrees(Double(i) * 15))
+                    .position(positions.count > i ? positions[i] : CGPoint.zero)
+            }
         }
         .edgesIgnoringSafeArea(.all)
         .onAppear {
@@ -33,6 +42,7 @@ struct RandomShapesBackground: View {
     func generateRandomPositions() {
         var circPositions: [CGPoint] = []
         var rectPositions: [CGPoint] = []
+        var hexPositions: [CGPoint] = []
         
         for _ in 0..<12 {
             var attempts = 0
@@ -64,7 +74,22 @@ struct RandomShapesBackground: View {
             rectPositions.append(newPoint)
         }
         
-        positions = circPositions + rectPositions
+        for i in 24..<36 {
+            var attempts = 0
+            var newPoint: CGPoint
+            
+            repeat {
+                newPoint = CGPoint(
+                    x: Double.random(in: 0...(screenWidth)),
+                    y: Double.random(in: 0...(screenHeight))
+                )
+                attempts += 1
+            } while !isValidPosition(newPoint, existingPositions: rectPositions + hexPositions) && attempts < 100
+            
+            hexPositions.append(newPoint)
+        }
+        
+        positions = circPositions + rectPositions + hexPositions
     }
     
     func isValidPosition(_ point: CGPoint, existingPositions: [CGPoint]) -> Bool {
