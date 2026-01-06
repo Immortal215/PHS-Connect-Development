@@ -97,32 +97,41 @@ struct ChatView: View {
                             .padding(.vertical, 8)
                         }
                         
-                        if #available(iOS 26, *) {
-                            GlassEffectContainer(spacing: 24) { // spacing determines the morphism
-                                VStack(spacing: 16) {
-                                    if menuExpanded {
-                                        TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs").glassEffectID("search", in: namespace)
-                                        TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home").glassEffectID("home", in: namespace)
-                                        TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar").glassEffectID("calendar", in: namespace)
-                                        TabBarButton(image: "gearshape", index: 3, labelr: "Settings").glassEffectID("settings", in: namespace)
-                                    }
-                                    
-                                    Button {
-                                        withAnimation {
-                                            menuExpanded.toggle()
+                        Group {
+                            if #available(iOS 26, *) {
+                                GlassEffectContainer(spacing: 24) { // spacing determines the morphism
+                                    VStack(spacing: 16) {
+                                        if menuExpanded {
+                                            TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs").glassEffectID("search", in: namespace)
+                                            TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home").glassEffectID("home", in: namespace)
+                                            TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar").glassEffectID("calendar", in: namespace)
+                                            TabBarButton(image: "gearshape", index: 3, labelr: "Settings").glassEffectID("settings", in: namespace)
                                         }
-                                    } label: {
-                                        Image(systemName: menuExpanded ? "xmark" : "line.3.horizontal")
-                                            .contentTransition(.symbolEffect(.replace))
-                                            .imageScale(.large)
+                                        
+                                        Button {
+                                            withAnimation {
+                                                menuExpanded.toggle()
+                                            }
+                                        } label: {
+                                            Image(systemName: menuExpanded ? "xmark" : "line.3.horizontal")
+                                                .contentTransition(.symbolEffect(.replace))
+                                                .imageScale(.large)
+                                        }
+                                        .buttonStyle(.glass)
+                                        .glassEffectID("toggle", in: namespace)
                                     }
-                                    .buttonStyle(.glass)
-                                    .glassEffectID("toggle", in: namespace)
+                                }
+                            } else {
+                                VStack(spacing: 16) {
+                                    TabBarButton(image: "magnifyingglass", index: 0, labelr: "Clubs")
+                                    TabBarButton(image: "rectangle.3.group.bubble", index: 1, labelr: "Home")
+                                    TabBarButton(image: "calendar.badge.clock", index: 2, labelr: "Calendar")
+                                    TabBarButton(image: "gearshape", index: 3, labelr: "Settings")
                                 }
                             }
-                            .padding(.bottom)
-                            .zIndex(10) // so above others if needed
                         }
+                        .padding(.bottom)
+                        .zIndex(10) // so above others if needed
                     }
                     .frame(width: 80)
                     .background {
