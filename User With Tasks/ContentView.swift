@@ -254,30 +254,30 @@ struct ContentView: View {
                             )
                         }
                     }
-                    .refreshable {
-                        if !viewModel.isGuestUser {
-                            if let UserID = viewModel.uid {
-                                fetchUser(for: UserID) { user in
-                                    if let user = user {
-                                        userInfo = user
-                                    } else {
-                                        print("Failed to fetch user")
-                                        showSignInView = true
-                                    }
-                                }
-                                
-                            }
-                        }
-                        
-                        calendarScrollPoint = 6
-                        scale = 0.7
-                        advSearchShown = !advSearchShown
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            advSearchShown = !advSearchShown
-                        }
-                        dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
-                    }
+//                    .refreshable {
+//                        if !viewModel.isGuestUser {
+//                            if let UserID = viewModel.uid {
+//                                fetchUser(for: UserID) { user in
+//                                    if let user = user {
+//                                        userInfo = user
+//                                    } else {
+//                                        print("Failed to fetch user")
+//                                        showSignInView = true
+//                                    }
+//                                }
+//                                
+//                            }
+//                        }
+//                        
+//                        calendarScrollPoint = 6
+//                        scale = 0.7
+//                        advSearchShown = !advSearchShown
+//                        
+//                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//                            advSearchShown = !advSearchShown
+//                        }
+//                        dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
+//                    }
                 }
             }
             .onChange(of: showSignInView) {

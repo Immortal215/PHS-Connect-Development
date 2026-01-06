@@ -359,9 +359,9 @@ struct ClubInfoView: View {
                 Color.clear
                     .frame(height: screenHeight/10)
             }
-            .refreshable {
-                // so that the other big refresh doesnt over ride
-            }
+//            .refreshable {
+//                // so that the other big refresh doesnt over ride
+//            }
             .popup(isPresented: $showMap) {
                 ZStack {
                     Map(position: $cameraPosition, interactionModes: []) {

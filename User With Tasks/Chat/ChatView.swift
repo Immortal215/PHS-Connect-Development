@@ -48,6 +48,7 @@ struct ChatView: View {
     @State var attachmentPresented = false
     @State var attachmentURL: String = ""
     @State var attachmentLoaded = false
+    @State var attachments: [String] = []
 
     @State var menuExpanded = false
     @Namespace var namespace
@@ -504,48 +505,50 @@ struct ChatView: View {
             VStack {
                 Spacer()
                 
-                HStack {
-                    Spacer()
-                    
-                    AsyncImage(url: URL(string: attachmentURL)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxHeight: 160)
-                                .border(cornerRadius: 16, stroke: .init(.gray, lineWidth: 2))
-                        case .failure:
-                            Color.clear
-                        case .empty:
-                            Color.clear
-                        }
-                    }
-                    .clipped()
-                    .overlay(alignment: .topTrailing) {
-                        if attachmentLoaded {
-                            Button {
-                                attachmentLoaded = false
-                                attachmentURL = ""
-                            } label: {
-                                Circle()
-                                    .frame(width: 24, height: 24)
-                                    .overlay(
-                                        Image(systemName: "xmark")
-                                            .foregroundStyle(.white)
-                                            .font(.system(size: 12, weight: .bold))
-                                    )
-                                    .tintColor(.clear)
-                                    .apply {
-                                        if #available(iOS 26, *) {
-                                            $0.glassEffect()
-                                        }
+                if !attachments.isEmpty {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(Array(attachments.enumerated()), id: \.offset) { index, url in
+                                AsyncImage(url: URL(string: url)) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(maxHeight: 160)
+                                            .border(cornerRadius: 16, stroke: .init(.gray, lineWidth: 2))
+                                    case .failure:
+                                        Color.clear
+                                    case .empty:
+                                        Color.clear
                                     }
+                                }
+                                .clipped()
+                                .overlay(alignment: .topTrailing) {
+                                    Button {
+                                        attachments.remove(at: index)
+                                    } label: {
+                                        Circle()
+                                            .frame(width: 24, height: 24)
+                                            .overlay(
+                                                Image(systemName: "xmark")
+                                                    .foregroundStyle(.white)
+                                                    .font(.system(size: 12, weight: .bold))
+                                            )
+                                            .tintColor(.clear)
+                                            .apply {
+                                                if #available(iOS 26, *) {
+                                                    $0.glassEffect()
+                                                }
+                                            }
+                                    }
+                                    .offset(x: 12, y: -12)
+                                }
+                                .padding()
                             }
-                            .offset(x: 12, y: -12)
                         }
                     }
-                    .padding()
+                    .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
                 }
                 
                 VStack(spacing: 4) {
@@ -640,7 +643,7 @@ struct ChatView: View {
                         Button {
                             focusedOnSendBar = false
                             
-                            if let selected = selectedChat, !newMessageText.isEmpty || attachmentLoaded {
+                            if let selected = selectedChat, !newMessageText.isEmpty || !attachments.isEmpty {
                                 let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
                                 
                                 if let editingID = editingMessageID {
@@ -653,18 +656,19 @@ struct ChatView: View {
                                     }
                                     editingMessageID = nil
                                 } else {
-                                    if attachmentLoaded {
-                                        let attchment = Chat.ChatMessage(
-                                            messageID: String(),
-                                            message: "",
-                                            sender: userInfo?.userID ?? "",
-                                            date: Date().timeIntervalSince1970,
-                                            threadName: currentThread == "general" ? nil : currentThread,
-                                            replyTo: replyingMessageID,
-                                            attachmentURL: attachmentURL
-                                        )
-                                        
-                                        sendMessage(chatID: selected.chatID, message: attchment)
+                                    if !attachments.isEmpty {
+                                        for url in attachments {
+                                            let attachment = Chat.ChatMessage(
+                                                messageID: String(),
+                                                message: "",
+                                                sender: userInfo?.userID ?? "",
+                                                date: Date().timeIntervalSince1970,
+                                                threadName: currentThread == "general" ? nil : currentThread,
+                                                replyTo: replyingMessageID,
+                                                attachmentURL: url
+                                            )
+                                            sendMessage(chatID: selected.chatID, message: attachment)
+                                        }
                                     }
                                     
                                     if !newMessageText.isEmpty {
@@ -683,11 +687,12 @@ struct ChatView: View {
                                 newMessageText = ""
                                 attachmentURL = ""
                                 attachmentLoaded = false
+                                attachments = []
                                 updateUnreadIndicator()
                             }
                         } label: {
                             Circle()
-                                .fill((newMessageText.isEmpty && !attachmentLoaded) ? Color.secondary.opacity(0.3) : Color.blue)
+                                .fill((newMessageText.isEmpty && attachments.isEmpty) ? Color.secondary.opacity(0.3) : Color.blue)
                                 .frame(width: 36, height: 36)
                                 .overlay(
                                     Image(systemName: "arrow.up")
@@ -697,7 +702,7 @@ struct ChatView: View {
                                 .padding(.vertical, 12)
                                 .padding(.horizontal, 16)
                         }
-                        .disabled(newMessageText.isEmpty && !attachmentLoaded)
+                        .disabled(newMessageText.isEmpty && attachments.isEmpty)
                         .keyboardShortcut(.return)
                     }
                     .apply {
@@ -727,6 +732,7 @@ struct ChatView: View {
                             Button {
                                 if attachmentLoaded {
                                     attachmentPresented = false
+                                    attachments.append(attachmentURL)
                                 }
                             } label: {
                                 Circle()
