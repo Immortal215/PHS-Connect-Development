@@ -434,8 +434,17 @@ struct ChatView: View {
                 .background{
                     ZStack {
                         RandomShapesBackground()
+                            .apply {
+                                if bubbles {
+                                    $0
+                                } else {
+                                    $0.blur(radius: 6)
+                                }
+                            }
                         
-                        Color.secondarySystemBackground.opacity(0.4)
+                        if bubbles {
+                            Color.secondarySystemBackground.opacity(0.4)
+                        }
 
                     }
                 }
