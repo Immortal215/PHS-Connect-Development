@@ -143,9 +143,14 @@ struct ContentView: View {
                                     .opacity(selectedTab == 3 ? 1 : 0) // keep INDEX the same
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
                                 
-                                ProspectorView()
-                                    .opacity(selectedTab == 7 ? 1 : 0) // keep INDEX the same
-                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
+                                if selectedTab == 7 {
+                                    ProspectorView() // this view is massive, we need to close it
+                                        .transition(.opacity)
+                                        .animation(.easeInOut(duration: 0.25), value: selectedTab)
+
+                                } else {
+                                    EmptyView()
+                                }
 
                             }
                             .transition(.opacity)

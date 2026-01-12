@@ -898,9 +898,34 @@ struct ChatView: View {
         if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
             let isSelected = selectedChat?.chatID == chat.chatID
             
+            var unread: Bool { // if there are any unread messages in the chat at all, make it red
+                for i in lastReadMessages.split(separator: ",") {
+                    
+                    let parts = i.split(separator: ":")
+                    guard parts.count == 2 else { continue }
+                    
+                    let left = parts[0].split(separator: ".")
+                    guard left.count == 2 else { continue }
+                    
+                    let chatID = left[0]
+                    
+                    if chatID != chat.chatID { continue }
+                    
+                    let thread = left[1]
+                    let messageID = parts[1]
+                    
+                    guard let lastMessageInThread = chat.messages?.last{$0.threadName ?? "" == thread || ($0.threadName == nil && thread == "general")}?.messageID else { continue }
+                    
+                    if messageID != lastMessageInThread {
+                        return true
+                    }
+                }
+                return false
+            }
+            
             ZStack {
                 Circle()
-                    .fill(isSelected ? Color.accentColor : Color.systemGray6)
+                    .fill(isSelected ? Color.accentColor : (unread ? Color.red : Color.systemGray6))
                     .frame(width: 56, height: 56)
                 
                 if let clubPhoto = club.clubPhoto, let url = URL(string: clubPhoto) {
