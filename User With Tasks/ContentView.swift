@@ -294,7 +294,7 @@ struct ContentView: View {
                 tabsCache = cache.load()
                 
                 if (tabsCache == nil) {
-                    tabsCache = UserTabPreferences(order: [.search, .clubs, .chat, .calendar, .settings], hidden: [])
+                    tabsCache = UserTabPreferences(order: [.search, .clubs, .chat, .news, .settings], hidden: [])
                 }
                 
                 print(tabsCache?.order[0].name)

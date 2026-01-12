@@ -3,6 +3,19 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+/**
+ * Notification rules (stored under each user: /users/{uid}/...)
+ *
+ * user.chatNotifStyles: { [chatID]: "all" | "thread" | "none" | "mentions" }
+ * user.mutedThreadsByChat: { [chatID]: [threadName, ...] }   // thread NAMES exactly as stored
+ *
+ * Precedence:
+ * - none: never notify
+ * - mentions: only notify if isMention == true (mention detection not implemented here)
+ * - all: notify always
+ * - thread: notify unless threadName is in mutedThreadsByChat[chatID]
+ */
+
 exports.sendChatNotification = onValueCreated(
   "/chats/{chatID}/messages/{messageID}",
   async (event) => {
@@ -13,6 +26,8 @@ exports.sendChatNotification = onValueCreated(
     const senderUID = message.sender;
     const messageText = message.message || "";
     const threadName = message.threadName || "general";
+
+    const isMention = false;
 
     try {
       const chatSnap = await admin.database().ref(`/chats/${chatID}`).once("value");
@@ -30,21 +45,44 @@ exports.sendChatNotification = onValueCreated(
       const clubName = clubData.name || "New Message";
 
       const usersSnap = await admin.database().ref("/users").once("value");
-      const allUsers = usersSnap.val();
+      const allUsers = usersSnap.val() || {};
 
       const senderName = allUsers?.[senderUID]?.userName || "Someone";
       const tokens = [];
 
       for (const uid in allUsers) {
         if (uid === senderUID) continue;
+
         const user = allUsers[uid];
         if (!user) continue;
+        if (!user.fcmToken) continue;
 
         const email = user.userEmail;
         const isMember = clubMembersEmails.includes(email);
         const isLeader = clubLeadersEmails.includes(email);
+        if (!(isMember || isLeader)) continue;
 
-        if ((isMember || isLeader) && user.fcmToken) tokens.push(user.fcmToken);
+        const style =
+          (user.chatNotifStyles && user.chatNotifStyles[chatID]) || "all";
+
+        if (style === "none") continue;
+
+        if (style === "mentions") {
+          if (!isMention) continue;
+        }
+
+        if (style === "thread") {
+          const muted =
+            (user.mutedThreadsByChat &&
+              user.mutedThreadsByChat[chatID] &&
+              Array.isArray(user.mutedThreadsByChat[chatID]) &&
+              user.mutedThreadsByChat[chatID].includes(threadName)) || false;
+
+          if (muted) continue;
+        }
+
+        // style === "all" falls through, notify
+        tokens.push(user.fcmToken);
       }
 
       if (tokens.length === 0) return;
@@ -55,7 +93,7 @@ exports.sendChatNotification = onValueCreated(
         tokens,
         notification: {
           title: `${senderName} • ${clubName}`,
-          body: threadName === "general" ? preview : `[${threadName}] ${preview}`
+          body: threadName === "general" ? preview : `[${threadName}] ${preview}`,
         },
         data: {
           type: "message",
@@ -66,8 +104,8 @@ exports.sendChatNotification = onValueCreated(
           clubID,
           clubName,
           senderName,
-          preview
-        }
+          preview,
+        },
       });
     } catch (err) {
       console.error("Error sending push notification:", err);
@@ -92,21 +130,33 @@ exports.sendReactionNotification = onValueWritten(
     if (!reactorUID) return;
 
     try {
-      const chatSnap = await admin.database().ref(`/chats/${chatID}/clubID`).once("value");
-      const clubID = chatSnap.val() || "";
-
       const senderSnap = await admin.database().ref(`/chats/${chatID}/messages/${messageID}/sender`).once("value");
       const messageSenderUID = senderSnap.val();
       if (!messageSenderUID) return;
 
+      // Don't notify yourself
       if (messageSenderUID === reactorUID) return;
 
-      const tokenSnap = await admin.database().ref(`/users/${messageSenderUID}/fcmToken`).once("value");
-      const token = tokenSnap.val();
+      const receiverSnap = await admin.database().ref(`/users/${messageSenderUID}`).once("value");
+      const receiver = receiverSnap.val();
+      if (!receiver) return;
+
+      const style =
+        (receiver.chatNotifStyles && receiver.chatNotifStyles[chatID]) || "all";
+
+      if (style === "none") return;
+
+
+      if (style === "mentions") return;
+
+      const token = receiver.fcmToken;
       if (!token) return;
 
       const reactorNameSnap = await admin.database().ref(`/users/${reactorUID}/userName`).once("value");
       const reactorName = reactorNameSnap.val() || "Someone";
+
+      const clubIDSnap = await admin.database().ref(`/chats/${chatID}/clubID`).once("value");
+      const clubID = clubIDSnap.val() || "";
 
       let clubName = "Reaction";
       if (clubID) {
@@ -118,7 +168,7 @@ exports.sendReactionNotification = onValueWritten(
         token,
         notification: {
           title: `${reactorName} • ${clubName}`,
-          body: `reacted ${emoji}`
+          body: `reacted ${emoji}`,
         },
         data: {
           type: "reaction",
@@ -128,8 +178,8 @@ exports.sendReactionNotification = onValueWritten(
           clubName,
           reactorUID,
           reactorName,
-          emoji
-        }
+          emoji,
+        },
       });
     } catch (err) {
       console.error("Error sending reaction notification:", err);

@@ -179,6 +179,35 @@ struct ChatView: View {
                                 ScrollView {
                                     VStack(alignment: .leading, spacing: 2) {
                                         if settings {
+                                            let currentStyleLabel: String = {
+                                                let style = userInfo?.chatNotifStyles?[selected.chatID] ?? .all
+                                                switch style {
+                                                case .all: return "All"
+                                                case .thread: return "By Thread"
+                                                case .none: return "None"
+                                                case .mentions: return "Mentions"
+                                                }
+                                            }()
+                                            
+                                            HStack(spacing: 12) {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text("Notifications")
+                                                        .font(.headline)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Menu {
+                                                    Button("All") { updateNotifStyle(chatID: selected.chatID, style: .all) }
+                                                    Button("By Thread") { updateNotifStyle(chatID: selected.chatID, style: .thread) }
+                                                    Button("None") { updateNotifStyle(chatID: selected.chatID, style: .none) }
+                                                    // Button("Mentions") { updateNotifStyle(chatID: selected.chatID, style: "mentions") }
+                                                } label: {
+                                                    Label(currentStyleLabel, systemImage: "bell")
+                                                }
+                                            }
+                                            .padding()
+                                            
                                             Text("Members")
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.secondary)
@@ -405,16 +434,19 @@ struct ChatView: View {
                                                         }
                                                     }
                                                     
-                                                    Image(systemName: mutedThreads.contains(selected.chatID + "." + thread) ? "bell.slash" : "bell")
-                                                        .padding(.trailing)
-                                                        .onTapGesture(perform: {
-                                                            if mutedThreads.contains(selected.chatID + "." + thread) {
-                                                                mutedThreads = mutedThreads.replacingOccurrences(of: selected.chatID + "." + thread + ",", with: "")
-                                                            } else {
-                                                                mutedThreads.append(selected.chatID + "." + thread + ",")
-                                                            }
-                                                        })
-                                                        .contentTransition(.symbolEffect(.replace))
+                                                    if userInfo?.chatNotifStyles?[selected.chatID] ?? .all == .thread {
+                                                        Image(systemName: userInfo?.mutedThreadsByChat?[selected.chatID]?.contains(thread) == true ? "bell.slash" : "bell")
+                                                            .padding(.trailing)
+                                                            .onTapGesture(perform: {
+                                                                toggleMutedThread(chatID: selected.chatID, threadName: thread)
+                                                                //                                                            if mutedThreads.contains(selected.chatID + "." + thread) {
+                                                                //                                                                mutedThreads = mutedThreads.replacingOccurrences(of: selected.chatID + "." + thread + ",", with: "")
+                                                                //                                                            } else {
+                                                                //                                                                mutedThreads.append(selected.chatID + "." + thread + ",")
+                                                                //                                                            }
+                                                            })
+                                                            .contentTransition(.symbolEffect(.replace))
+                                                    }
                                                 }
                                             }
                                         }
@@ -457,10 +489,8 @@ struct ChatView: View {
                                 }
                             }
                         
-                        if bubbles {
                             Color.secondarySystemBackground.opacity(0.4)
                                 .frame(height: screenHeight + 20)
-                        }
 
                     }
                 }
@@ -1123,4 +1153,54 @@ struct ChatView: View {
             }
         }
     }
+    
+    func updateNotifStyle(chatID : String, style: Personal.ChatNotifStyle) {
+        if var user = userInfo {
+            if user.chatNotifStyles == nil { user.chatNotifStyles = [:] }
+            user.chatNotifStyles?[chatID] = style
+            
+            updateUserNotificationSettings(
+                userID: user.userID,
+                chatNotifStyles: user.chatNotifStyles,
+                mutedThreadsByChat: user.mutedThreadsByChat
+            )
+            
+            DispatchQueue.main.async {
+                fetchUser(for: user.userID) { u in
+                        userInfo = u
+                }
+            }
+        }
+    }
+    
+    func toggleMutedThread(chatID: String, threadName : String) {
+        if var user = userInfo {
+            if user.mutedThreadsByChat == nil { user.mutedThreadsByChat = [:] }
+            
+            var arr = user.mutedThreadsByChat?[chatID] ?? []
+            
+            if let i = arr.firstIndex(of: threadName) {
+                arr.remove(at: i)
+            } else {
+                arr.append(threadName)
+            }
+            
+            user.mutedThreadsByChat?[chatID] = arr
+            
+            updateUserNotificationSettings(
+                userID: user.userID,
+                chatNotifStyles: user.chatNotifStyles,
+                mutedThreadsByChat: user.mutedThreadsByChat
+            )
+            
+            DispatchQueue.main.async {
+                fetchUser(for: user.userID) { u in
+                        userInfo = u
+                }
+            }
+        }
+        
+
+    }
+
 }

@@ -93,4 +93,13 @@ struct Personal: Codable, Equatable, Hashable { // individual user info
     var userImage: String
     var userName: String
     var fcmToken: String?
+    var chatNotifStyles: [String : ChatNotifStyle]? // [chatID : mute style] array of chat mute style for every chat - "all" : every message will notify, "thread" : each thread is different and chosen in threadNotifCustomization and by default
+    var mutedThreadsByChat: [String: [String]]? // [chatID : [thread names]], if in this then it will not notify you for that thread
+    
+    enum ChatNotifStyle: String, Codable {
+        case all, // every message will notify
+             thread, // by thread
+             none, // not added yet
+             mentions // not added yet
+        }
 }

@@ -516,3 +516,25 @@ func removeThread(chatID: String, threadName: String) {
         }
     }
 }
+
+func updateUserNotificationSettings(
+    userID: String,
+    chatNotifStyles: [String: Personal.ChatNotifStyle]?,
+    mutedThreadsByChat: [String: [String]]?
+) {
+    let ref = Database.database().reference().child("users").child(userID)
+    
+    var updates: [String: Any] = [:]
+    
+    if let styles = chatNotifStyles {
+        updates["chatNotifStyles"] = styles.mapValues { $0.rawValue }
+    }
+    
+    if let muted = mutedThreadsByChat {
+        updates["mutedThreadsByChat"] = muted
+    }
+    
+    if !updates.isEmpty {
+        ref.updateChildValues(updates)
+    }
+}

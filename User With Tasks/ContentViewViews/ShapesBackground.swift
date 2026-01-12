@@ -35,7 +35,9 @@ struct RandomShapesBackground: View {
         }
         .edgesIgnoringSafeArea(.all)
         .onAppear {
-            generateRandomPositions()
+            DispatchQueue.main.async {
+                generateRandomPositions()
+            }
         }
     }
     
