@@ -116,42 +116,40 @@ struct ContentView: View {
                     }
                 } else {
                     ZStack {
-                        if advSearchShown {
+                        if advSearchShown { // add indexing is in TabStructs.swift
                             ZStack {
                                 SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .opacity(selectedTab == 0 ? 1 : 0) // keep INDEX the same or change in the TabsStructs
+                                    .opacity(selectedTab == AppTab.search.index ? 1 : 0)
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
 
                                 if userInfo != nil {
                                     ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .opacity(selectedTab == 1 ? 1 : 0)// keep INDEX the same
+                                        .opacity(selectedTab == AppTab.clubs.index ? 1 : 0)
                                         .animation(.easeInOut(duration: 0.25), value: selectedTab)
 
                                     ChatView(clubs: $clubs, userInfo: $userInfo)
-                                        .opacity(selectedTab == 6 ? 1 : 0) // keep INDEX the same
-                                        .offset(x: selectedTab == 6 ? 0 : 40)
+                                        .opacity(selectedTab == 6 ? 1 : 0)
+                                        .offset(x: selectedTab == AppTab.chat.index ? 0 : 40)
                                         .animation(.spring(response: 0.28, dampingFraction: 0.9), value: selectedTab)
                                     
                                     CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .opacity(selectedTab == 2 ? 1 : 0) // keep INDEX the same
+                                        .opacity(selectedTab == AppTab.calendar.index ? 1 : 0)
                                         .animation(.easeInOut(duration: 0.25), value: selectedTab)
 
                                 }
                                 
                                 SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
                                     .padding()
-                                    .opacity(selectedTab == 3 ? 1 : 0) // keep INDEX the same
+                                    .opacity(selectedTab == AppTab.settings.index ? 1 : 0)
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
                                 
-                                if selectedTab == 7 {
-                                    ProspectorView() // this view is massive, we need to close it
-                                        .transition(.opacity)
+                                ProspectorView()
+                                    .opacity(selectedTab == AppTab.news.index ? 1 : 0)
                                         .animation(.easeInOut(duration: 0.25), value: selectedTab)
-
-                                } else {
-                                    EmptyView()
-                                }
-
+                                
+                                DeckView()
+                                    .opacity(selectedTab == AppTab.flashcards.index ? 1 : 0)
+                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
                             }
                             .transition(.opacity)
                             .ignoresSafeArea(edges: .all)

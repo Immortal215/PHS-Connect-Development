@@ -142,7 +142,6 @@ func getFavoritedClubNames(from clubIDs: [String], completion: @escaping ([Strin
     }
 }
 
-
 func addAnnouncement(announcement: Club.Announcements) {
     let reference = Database.database().reference()
     let announcementReference = reference.child("clubs").child(announcement.clubID).child("announcements")
@@ -428,6 +427,7 @@ func createClubGroupChat(clubId: String, messageTo: String?, completion: @escapi
                 if !chatIDs.contains(chatID) {
                     chatIDs.append(chatID)
                     clubsRef.child("chatIDs").setValue(chatIDs)
+                    clubsRef.child("lastUpdated").setValue(Date().timeIntervalSince1970)
                 }
             }
         }

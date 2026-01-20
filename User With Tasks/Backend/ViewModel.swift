@@ -35,7 +35,7 @@ final class AuthenticationViewModel: ObservableObject {
         let userReference = reference.child("users").child(userID)
         
         userReference.observeSingleEvent(of: .value) { snapshot in
-            if !snapshot.exists() {
+            if !snapshot.exists() || ((snapshot.value as? [String: Any])?["userImage"] == nil) {
                 guard let currentUser = Auth.auth().currentUser else { return }
                 
                 let newUser = Personal(

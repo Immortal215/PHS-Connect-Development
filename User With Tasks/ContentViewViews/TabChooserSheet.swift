@@ -69,7 +69,7 @@ struct TabChooserSheet: View {
                             
                             Text(tab.name)
                             
-                            if(tab == .clubs || tab == .settings) {
+                            if(tab == .settings) {
                                 Text("Cannot be removed!")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -87,7 +87,7 @@ struct TabChooserSheet: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            if !(tab == .clubs || tab == .settings) {
+                            if !(tab == .settings) {
                                 guard canToggle(tab) else { return }
                                 toggleHidden(tab)
                             }
