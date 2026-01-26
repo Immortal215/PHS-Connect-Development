@@ -853,9 +853,8 @@ struct ChatView: View {
     
     @ViewBuilder
     func createChatSection(for club: Club) -> some View {
-        let hasChat = chats.contains { chat in
-            chat.clubID == club.clubID && chat.directMessageTo == nil
-        }
+        let hasChat = club.chatIDs != nil
+
         
         if !hasChat {
             ZStack {

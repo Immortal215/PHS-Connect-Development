@@ -143,10 +143,6 @@ struct ContentView: View {
                                     .opacity(selectedTab == AppTab.settings.index ? 1 : 0)
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
                                 
-                                ProspectorView()
-                                    .opacity(selectedTab == AppTab.news.index ? 1 : 0)
-                                        .animation(.easeInOut(duration: 0.25), value: selectedTab)
-                                
                                 DeckView()
                                     .opacity(selectedTab == AppTab.flashcards.index ? 1 : 0)
                                     .animation(.easeInOut(duration: 0.25), value: selectedTab)
@@ -297,10 +293,9 @@ struct ContentView: View {
                 tabsCache = cache.load()
                 
                 if (tabsCache == nil) {
-                    tabsCache = UserTabPreferences(order: [.search, .clubs, .chat, .news, .settings], hidden: [])
+                    tabsCache = UserTabPreferences(order: [.search, .clubs, .chat, .flashcards, .settings], hidden: [])
                 }
                 
-                print(tabsCache?.order[0].name)
             }
             
         }

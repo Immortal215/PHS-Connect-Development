@@ -6,7 +6,6 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
     case chat
     case calendar
     case settings
-    case news
     case flashcards
     
     var name: String {
@@ -16,7 +15,6 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
             case .chat: return "Chat"
             case .calendar: return "Calendar"
             case .settings: return "Settings"
-            case .news: return "Prospector"
         case .flashcards: return "Memory Cards"
         }
     }
@@ -28,7 +26,6 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
             case .chat: return "bubble.left.and.bubble.right"
             case .calendar: return "calendar.badge.clock"
             case .settings: return "gearshape"
-            case .news: return "newspaper"
         case .flashcards: return "rectangle.on.rectangle"
         }
     }
@@ -48,7 +45,6 @@ enum AppTab: String, CaseIterable, Codable { // add new tabs here
             case .chat: return 6
             case .calendar: return 2
             case .settings: return 3
-            case .news: return 7
             case .flashcards: return 8
         }
     }

@@ -163,7 +163,15 @@ exports.sendReactionNotification = onValueWritten(
         const clubNameSnap = await admin.database().ref(`/clubs/${clubID}/name`).once("value");
         clubName = clubNameSnap.val() || "Reaction";
       }
+        const messageSnap = await admin
+          .database()
+          .ref(`/chats/${chatID}/messages/${messageID}`)
+          .once("value");
 
+        const message = messageSnap.val();
+        if (!message) return;
+
+        const threadName = message.threadName || "general";
       return admin.messaging().send({
         token,
         notification: {
@@ -174,6 +182,7 @@ exports.sendReactionNotification = onValueWritten(
           type: "reaction",
           chatID,
           messageID,
+          threadName,
           clubID: clubID || "",
           clubName,
           reactorUID,

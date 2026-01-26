@@ -65,3 +65,28 @@ class TabsCache {
         }
     }
 }
+
+
+final class DeckCache {
+    let cacheURL: URL
+    
+    init(deckID: String) {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        self.cacheURL = dir.appendingPathComponent("\(deckID)_deck.json")
+    }
+    
+    func load() -> Deck? {
+        guard let data = try? Data(contentsOf: cacheURL) else { return nil }
+        return try? JSONDecoder().decode(Deck.self, from: data)
+    }
+    
+    func save(_ deck: Deck) {
+        if let data = try? JSONEncoder().encode(deck) {
+            try? data.write(to: cacheURL)
+        }
+    }
+    
+    func delete() {
+        try? FileManager.default.removeItem(at: cacheURL)
+    }
+}
