@@ -174,6 +174,16 @@ struct NonBubbleMessageView : View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .border(cornerRadius: 32, style: StrokeStyle(lineWidth: 1))
+                                                .overlay(alignment: .topTrailing) {
+                                                    Button {
+                                                        if let url = URL(string: message.attachmentURL ?? "") {
+                                                            openURL(url)
+                                                        }
+                                                    } label: {
+                                                        Image(systemName: "safari")
+                                                    }
+                                                    .buttonStyle(.glass)
+                                                }
                                                 .frame(maxWidth: screenWidth * 0.5, maxHeight: screenHeight * 0.3, alignment: .leading)
                                         } placeholder: {
                                             ProgressView()
@@ -187,6 +197,8 @@ struct NonBubbleMessageView : View {
                                                 .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                 
                                                 Text(message.message)
+                                                    .frame(maxWidth: screenWidth * 0.2)
+                                                    .lineLimit(1)
                                                     .padding()
                                             }
                                             .background(.tertiary)

@@ -244,6 +244,16 @@ struct MessageScrollView: View {
                                                             topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
                                                         )
                                                     )
+                                                    .overlay(alignment: .bottomLeading) {
+                                                        Button {
+                                                            if let url = URL(string: message.attachmentURL ?? "") {
+                                                                openURL(url)
+                                                            }
+                                                        } label: {
+                                                            Image(systemName: "safari")
+                                                        }
+                                                        .buttonStyle(.glass)
+                                                    }
                                                     .overlay(alignment: .topLeading) {
                                                         reactionOverlay(message: message, swap: true)
                                                             .offset(x: -12, y: -12)
@@ -298,9 +308,11 @@ struct MessageScrollView: View {
                                                 .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                 
                                                 Text(message.message)
+                                                    .frame(maxWidth: screenWidth * 0.2)
+                                                    .lineLimit(1)
                                                     .padding()
                                             }
-                                            .background(.tertiary)
+                                            .background{GlassBackground(color: .gray)}
                                             .clipShape(
                                                 UnevenRoundedRectangle(
                                                     topLeadingRadius: 25,
@@ -554,6 +566,16 @@ struct MessageScrollView: View {
                                                                 topTrailingRadius: 25
                                                             )
                                                         )
+                                                        .overlay(alignment: .bottomTrailing) {
+                                                            Button {
+                                                                if let url = URL(string: message.attachmentURL ?? "") {
+                                                                    openURL(url)
+                                                                }
+                                                            } label: {
+                                                                Image(systemName: "safari")
+                                                            }
+                                                            .buttonStyle(.glass)
+                                                        }
                                                         .overlay(alignment: .topTrailing) {
                                                             reactionOverlay(message: message)
                                                                 .offset(x: 12, y: -12)
@@ -608,9 +630,11 @@ struct MessageScrollView: View {
                                                     .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                     
                                                     Text(message.message)
+                                                        .frame(maxWidth: screenWidth * 0.2)
+                                                        .lineLimit(1)
                                                         .padding()
                                                 }
-                                                .background(.tertiary)
+                                                .background{GlassBackground(color: .gray)}
                                                 .clipShape(
                                                     UnevenRoundedRectangle(
                                                         topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,

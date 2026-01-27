@@ -884,6 +884,10 @@ struct ChatView: View {
                         cachedChatIDs.append(chat.chatID + ",")
                         
                         settings = false
+                        
+                        DispatchQueue.main.async {
+                            updateUnreadIndicator()
+                        }
                     }
                 }
             }
