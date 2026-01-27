@@ -1,9 +1,9 @@
 import SwiftUI
 import SDWebImageSwiftUI
+import SwiftUIX
 import ElegantEmojiPicker
 
 struct NonBubbleMessageView : View {
-    
     var message: Chat.ChatMessage
     
     var messagesToShow: [Chat.ChatMessage]
@@ -33,6 +33,7 @@ struct NonBubbleMessageView : View {
     @State var clubsLeaderIn: [Club]
     
     var proxy: ScrollViewProxy
+    @Environment(\.openURL) private var openURL
     
     var replyToChatMessage: Chat.ChatMessage?
     
@@ -178,9 +179,26 @@ struct NonBubbleMessageView : View {
                                             ProgressView()
                                         }
                                     } else {
-                                        Text(.init(message.message))
-                                            .multilineTextAlignment(.leading)
-                                            .background{Color.clear}
+                                        if let url = normalizedURL(message.message) {
+                                            VStack {
+                                                WebView(url: url) {
+                                                    ProgressView(message.message)
+                                                }
+                                                .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
+                                                
+                                                Text(message.message)
+                                                    .padding()
+                                            }
+                                            .background(.tertiary)
+                                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                                            .onTapGesture {
+                                                openURL(url)
+                                            }
+                                        } else {
+                                            Text(.init(message.message))
+                                                .multilineTextAlignment(.leading)
+                                                .background{Color.clear}
+                                        }
                                     }
                                 }
                                 

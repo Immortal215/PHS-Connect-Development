@@ -374,6 +374,7 @@ struct ChatView: View {
                                                         DispatchQueue.main.async {
                                                             selectedThread[selected.chatID] = thread
                                                             updateUnreadIndicator()
+                                                            replyingMessageID = nil
                                                         }
                                                     }) {
                                                         HStack(spacing: 8) {
@@ -481,16 +482,10 @@ struct ChatView: View {
                 .background{
                     ZStack {
                         RandomShapesBackground()
-                            .apply {
-                                if bubbles {
-                                    $0
-                                } else {
-                                    $0.blur(radius: 6)
-                                }
-                            }
+                            .blur(radius: bubbles ? 0 : 6)
                         
-                            Color.secondarySystemBackground.opacity(0.4)
-                                .frame(height: screenHeight + 20)
+                        Color.secondarySystemBackground.opacity(0.4)
+                            .frame(height: screenHeight + 20)
 
                     }
                 }
@@ -750,7 +745,10 @@ struct ChatView: View {
                                 attachmentURL = ""
                                 attachmentLoaded = false
                                 attachments = []
-                                updateUnreadIndicator()
+                                
+                                DispatchQueue.main.async {
+                                    updateUnreadIndicator()
+                                }
                             }
                         } label: {
                             Circle()
@@ -758,7 +756,7 @@ struct ChatView: View {
                                 .frame(width: 36, height: 36)
                                 .overlay(
                                     Image(systemName: "arrow.up")
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle((newMessageText.isEmpty && attachments.isEmpty) ? Color.primary : Color.white)
                                         .font(.system(size: 16, weight: .bold))
                                 )
                                 .padding(.vertical, 12)

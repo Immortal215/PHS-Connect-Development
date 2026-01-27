@@ -26,87 +26,106 @@ struct MessageScrollView: View {
     
     @Binding var openMessageIDFromNotification: String?
     
+    @Environment(\.openURL) private var openURL
+    
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                
-                LazyVStack(spacing: bubbles ? nil : 0) { // not 0 by default!
-                    if let selected = selectedChat {
-                        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-                        let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
-                        let visible = Array(messages)
-                        
-                        ForEach(visible.indices, id: \.self) { i in
-                            let message = visible[i]
-                            messageBubble(message: message, index: i, messages: messages, messagesToShow: visible, proxy: proxy)
-                                .id(message.messageID)
+            ZStack {
+                ScrollView {
+                    LazyVStack(spacing: bubbles ? nil : 0) { // not 0 by default!
+                        if let selected = selectedChat {
+                            let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+                            let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
+                            let visible = Array(messages)
+                            
+                            ForEach(visible.indices, id: \.self) { i in
+                                let message = visible[i]
+                                messageBubble(message: message, index: i, messages: messages, messagesToShow: visible, proxy: proxy)
+                                    .id(message.messageID)
+                            }
+                            .geometryGroup()
+                            
+                            
                         }
-                        .geometryGroup()
-                        
-                        
+                    }
+                    
+                    Color.clear.frame(height: 75) // purely just so you can scroll through the texts
+                        .id("bottomOfMessages")
+                }
+                .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                        nonBubbleMenuMessage = nil
                     }
                 }
-                
-                Color.clear.frame(height: 75) // purely just so you can scroll through the texts
-                    .id("bottomOfMessages")
-            }
-            .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    nonBubbleMenuMessage = nil
-                }
-            }
-            .onAppear {
+                .onAppear {
                     proxy.scrollTo(openMessageIDFromNotification ?? "", anchor: .top)
                     openMessageIDFromNotification = nil
-                
-            }
-            .defaultScrollAnchor(.bottom)
-            .onChange(of: selectedChat?.messages?.last?.messageID, initial: false) { oldID, newID in
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    if oldID != newID {
-                        scrolledToTopTimes = 1
-                        scrollToBottom(proxy: proxy)
+                    
+                }
+                .defaultScrollAnchor(.bottom)
+                .onChange(of: selectedChat?.messages?.last?.messageID, initial: false) { oldID, newID in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        if oldID != newID {
+                            scrolledToTopTimes = 1
+                            scrollToBottom(proxy: proxy)
+                        }
                     }
                 }
-            }
-            .onChange(of: selectedChat?.chatID) { _ in
-                scrolledToTopTimes = 1
-                scrollToBottom(proxy: proxy)
-            }
-            .onChange(of: selectedEmoji) { _ in
-                guard let emoji = selectedEmoji, var newMessage = selectedEmojiMessage, let userID = userInfo?.userID, let chatID = selectedChat?.chatID
-                else { return }
-                
-                var reactions = newMessage.reactions ?? [:]
-                
-                var users = reactions[emoji.emoji] ?? []
-                
-                if let index = users.firstIndex(of: userID) {
-                    users.remove(at: index)
-                } else {
-                    users.append(userID)
+                .onChange(of: selectedChat?.chatID) { _ in
+                    scrolledToTopTimes = 1
+                    scrollToBottom(proxy: proxy)
+                }
+                .onChange(of: selectedEmoji) { _ in
+                    guard let emoji = selectedEmoji, var newMessage = selectedEmojiMessage, let userID = userInfo?.userID, let chatID = selectedChat?.chatID
+                    else { return }
+                    
+                    var reactions = newMessage.reactions ?? [:]
+                    
+                    var users = reactions[emoji.emoji] ?? []
+                    
+                    if let index = users.firstIndex(of: userID) {
+                        users.remove(at: index)
+                    } else {
+                        users.append(userID)
+                    }
+                    
+                    if users.isEmpty {
+                        reactions.removeValue(forKey: emoji.emoji)
+                    } else {
+                        reactions[emoji.emoji] = users
+                    }
+                    
+                    newMessage.reactions = reactions
+                    
+                    sendMessage(chatID: chatID, message: newMessage)
+                    
+                    selectedEmoji = nil
+                    isEmojiPickerPresented = false
+                    selectedEmojiMessage = nil
                 }
                 
-                if users.isEmpty {
-                    reactions.removeValue(forKey: emoji.emoji)
-                } else {
-                    reactions[emoji.emoji] = users
+                VStack {
+                    HStack {
+                        Spacer()
+                        
+                        Button {
+                            scrollToBottom(proxy: proxy)
+                        } label: {
+                            Image(systemName: "arrow.down")
+                        }
+                        .buttonStyle(.glass)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 8)
+                    }
+                    
+                    Spacer()
                 }
-                
-                newMessage.reactions = reactions
-                
-                sendMessage(chatID: chatID, message: newMessage)
-                
-                selectedEmoji = nil
-                isEmojiPickerPresented = false
-                selectedEmojiMessage = nil
             }
-            
         }
     }
     
     func scrollToBottom(proxy: ScrollViewProxy) {
-                proxy.scrollTo("bottomOfMessages", anchor: .bottom)
+        proxy.scrollTo("bottomOfMessages", anchor: .bottom)
     }
     
     @ViewBuilder
@@ -271,8 +290,31 @@ struct MessageScrollView: View {
                                             }
                                         }
                                     } else {
-                                        Text(.init(message.message))
-                                            .foregroundStyle(.white)
+                                        if let url = normalizedURL(message.message) {
+                                            VStack {
+                                                WebView(url: url) {
+                                                    ProgressView(message.message)
+                                                }
+                                                .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
+                                                
+                                                Text(message.message)
+                                                    .padding()
+                                            }
+                                            .background(.tertiary)
+                                            .clipShape(
+                                                UnevenRoundedRectangle(
+                                                    topLeadingRadius: 25,
+                                                    bottomLeadingRadius: 25,
+                                                    bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
+                                                    topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
+                                                )
+                                            )
+                                            .onTapGesture {
+                                                openURL(url)
+                                            }
+                                        } else {
+                                            Text(.init(message.message))
+                                            .foregroundStyle(.white).brightness(1)
                                             .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                             .background(
                                                 UnevenRoundedRectangle(
@@ -281,7 +323,7 @@ struct MessageScrollView: View {
                                                     bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
                                                     topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
                                                 )
-                                                .foregroundColor(.blue)
+                                                .foregroundColor(.accentColor).saturation(0.8)
                                             )
                                             .contextMenu {
                                                 if message.message != "[Deleted Message]" {
@@ -343,6 +385,7 @@ struct MessageScrollView: View {
                                                     .offset(x: -12, y: -12)
                                             }
                                             .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
+                                        }
                                     }
                                 }
                                 .apply {
@@ -557,105 +600,129 @@ struct MessageScrollView: View {
                                                 }
                                             }
                                         } else {
-                                            Text(.init(message.message))
-                                                .foregroundStyle(.primary)
-                                                .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
-                                                .background(
-                                                    GlassBackground(
-                                                        color: clubColor,
-                                                        shape: AnyShape(UnevenRoundedRectangle(
-                                                            topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
-                                                            bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
-                                                            bottomTrailingRadius: 25, topTrailingRadius: 25))
+                                            if let url = normalizedURL(message.message) {
+                                                VStack {
+                                                    WebView(url: url) {
+                                                        ProgressView(message.message)
+                                                    }
+                                                    .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
+                                                    
+                                                    Text(message.message)
+                                                        .padding()
+                                                }
+                                                .background(.tertiary)
+                                                .clipShape(
+                                                    UnevenRoundedRectangle(
+                                                        topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+                                                        bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
+                                                        bottomTrailingRadius: 25,
+                                                        topTrailingRadius: 25
                                                     )
                                                 )
-                                                .contextMenu {
-                                                    if message.message != "[Deleted Message]" {
-                                                        Button {
-                                                            UIPasteboard.general.string = message.message
-                                                            dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
-                                                            
-                                                            print(message)
-                                                        } label: {
-                                                            Label("Copy", systemImage: "doc.on.doc")
-                                                        }
-                                                        
-                                                        Button {
-                                                            newMessageText = ""
-                                                            replyingMessageID = message.messageID
-                                                            editingMessageID = nil
-                                                            focusedOnSendBar = true
-                                                        } label: {
-                                                            Label("Reply", systemImage: "arrowshape.turn.up.left")
-                                                        }
-                                                        
-                                                        Button {
-                                                            isEmojiPickerPresented = true
-                                                            selectedEmojiMessage = message
-                                                        } label: {
-                                                            HStack {
-                                                                ZStack {
-                                                                    Image(systemName: "face.smiling")
-                                                                        .font(.system(size: 20, weight: .medium))
-                                                                    
-                                                                    Image(systemName: "plus")
-                                                                        .font(.system(size: 8, weight: .medium))
-                                                                        .offset(x: 10, y: -8)
-                                                                        .background {
-                                                                            Circle()
-                                                                                .fill(Color.systemGray5)
-                                                                                .offset(x: 10, y: -8)
-                                                                                .frame(width: 12, height: 12)
-                                                                        }
-                                                                }
+                                                .onTapGesture {
+                                                    openURL(url)
+                                                }
+                                            } else {
+                                                Text(.init(message.message))
+                                                    .foregroundStyle(.primary)
+                                                    .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
+                                                    .background(
+                                                        GlassBackground(
+                                                            color: clubColor,
+                                                            shape: AnyShape(UnevenRoundedRectangle(
+                                                                topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+                                                                bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
+                                                                bottomTrailingRadius: 25, topTrailingRadius: 25))
+                                                        )
+                                                    )
+                                                    .contextMenu {
+                                                        if message.message != "[Deleted Message]" {
+                                                            Button {
+                                                                UIPasteboard.general.string = message.message
+                                                                dropper(title: "Copied Message!", subtitle: message.message, icon: UIImage(systemName: "checkmark"))
                                                                 
-                                                                Text("React")
+                                                                print(message)
+                                                            } label: {
+                                                                Label("Copy", systemImage: "doc.on.doc")
                                                             }
-                                                        }
-                                                        
-                                                        if message.flagged ?? false {
-                                                            if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
-                                                                Button {
-                                                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
-                                                                        if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
-                                                                            chats[chatIndex].messages?[messageIndex].flagged = false
-                                                                            sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
-                                                                        }
+                                                            
+                                                            Button {
+                                                                newMessageText = ""
+                                                                replyingMessageID = message.messageID
+                                                                editingMessageID = nil
+                                                                focusedOnSendBar = true
+                                                            } label: {
+                                                                Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                                            }
+                                                            
+                                                            Button {
+                                                                isEmojiPickerPresented = true
+                                                                selectedEmojiMessage = message
+                                                            } label: {
+                                                                HStack {
+                                                                    ZStack {
+                                                                        Image(systemName: "face.smiling")
+                                                                            .font(.system(size: 20, weight: .medium))
+                                                                        
+                                                                        Image(systemName: "plus")
+                                                                            .font(.system(size: 8, weight: .medium))
+                                                                            .offset(x: 10, y: -8)
+                                                                            .background {
+                                                                                Circle()
+                                                                                    .fill(Color.systemGray5)
+                                                                                    .offset(x: 10, y: -8)
+                                                                                    .frame(width: 12, height: 12)
+                                                                            }
                                                                     }
-                                                                } label: {
-                                                                    Label("Mark as Safe", systemImage: "checkmark.circle")
+                                                                    
+                                                                    Text("React")
                                                                 }
-                                                                
-                                                                Button {
-                                                                    deleteMessage(chatID: selectedChat!.chatID, message: message)
-                                                                } label: {
-                                                                    Label("Delete", systemImage: "trash")
+                                                            }
+                                                            
+                                                            if message.flagged ?? false {
+                                                                if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
+                                                                    Button {
+                                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                            if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                                chats[chatIndex].messages?[messageIndex].flagged = false
+                                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                            }
+                                                                        }
+                                                                    } label: {
+                                                                        Label("Mark as Safe", systemImage: "checkmark.circle")
+                                                                    }
+                                                                    
+                                                                    Button {
+                                                                        deleteMessage(chatID: selectedChat!.chatID, message: message)
+                                                                    } label: {
+                                                                        Label("Delete", systemImage: "trash")
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                if message.flagged == nil {
+                                                                    Button {
+                                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                            if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
+                                                                                chats[chatIndex].messages?[messageIndex].flagged = true
+                                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                            }
+                                                                        }
+                                                                    } label: {
+                                                                        Label("Report", systemImage: "exclamationmark.circle")
+                                                                    }
                                                                 }
                                                             }
                                                         } else {
-                                                            if message.flagged == nil {
-                                                                Button {
-                                                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
-                                                                        if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
-                                                                            chats[chatIndex].messages?[messageIndex].flagged = true
-                                                                            sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
-                                                                        }
-                                                                    }
-                                                                } label: {
-                                                                    Label("Report", systemImage: "exclamationmark.circle")
-                                                                }
-                                                            }
+                                                            Label("Deleted", systemImage: "exclamationmark.circle")
+                                                                .tint(.red)
                                                         }
-                                                    } else {
-                                                        Label("Deleted", systemImage: "exclamationmark.circle")
-                                                            .tint(.red)
                                                     }
-                                                }
-                                                .overlay(alignment: .topTrailing) {
-                                                    reactionOverlay(message: message)
-                                                        .offset(x: 12, y: -12)
-                                                }
-                                                .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
+                                                    .overlay(alignment: .topTrailing) {
+                                                        reactionOverlay(message: message)
+                                                            .offset(x: 12, y: -12)
+                                                    }
+                                                    .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
+                                            }
                                         }
                                     }
                                     .apply {
