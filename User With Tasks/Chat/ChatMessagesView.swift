@@ -38,19 +38,20 @@ struct MessageScrollView: View {
                             let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
                             let visible = Array(messages)
                             
-                            ForEach(visible.indices, id: \.self) { i in
-                                let message = visible[i]
-                                messageBubble(message: message, index: i, messages: messages, messagesToShow: visible, proxy: proxy)
-                                    .id(message.messageID)
+                            Group {
+                                ForEach(visible.indices, id: \.self) { i in
+                                    let message = visible[i]
+                                    messageBubble(message: message, index: i, messages: messages, messagesToShow: visible, proxy: proxy)
+                                        .id(message.messageID)
+                                }
+                                
+                                
+                                Color.clear.frame(height: 75) // purely just so you can scroll through the texts
+                                    .id("bottomOfMessages")
                             }
                             .geometryGroup()
-                            
-                            
                         }
                     }
-                    
-                    Color.clear.frame(height: 75) // purely just so you can scroll through the texts
-                        .id("bottomOfMessages")
                 }
                 .onTapGesture(disabled: nonBubbleMenuMessage == nil) {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -125,7 +126,9 @@ struct MessageScrollView: View {
     }
     
     func scrollToBottom(proxy: ScrollViewProxy) {
-        proxy.scrollTo("bottomOfMessages", anchor: .bottom)
+        withAnimation(.easeInOut) {
+            proxy.scrollTo("bottomOfMessages", anchor: .bottom)
+        }
     }
     
     @ViewBuilder
@@ -552,40 +555,35 @@ struct MessageScrollView: View {
                                     
                                     Group {
                                         if message.attachmentURL != nil {
-                                            WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
-                                                switch phase {
-                                                case .success(let image):
-                                                    image
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .clipShape(
-                                                            UnevenRoundedRectangle(
-                                                                topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
-                                                                bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
-                                                                bottomTrailingRadius: 25,
-                                                                topTrailingRadius: 25
-                                                            )
+                                            WebImage(url: URL(string: message.attachmentURL ?? "")) { image in
+                                                image
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .clipShape(
+                                                        UnevenRoundedRectangle(
+                                                            topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+                                                            bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
+                                                            bottomTrailingRadius: 25,
+                                                            topTrailingRadius: 25
                                                         )
-                                                        .overlay(alignment: .bottomTrailing) {
-                                                            Button {
-                                                                if let url = URL(string: message.attachmentURL ?? "") {
-                                                                    openURL(url)
-                                                                }
-                                                            } label: {
-                                                                Image(systemName: "safari")
+                                                    )
+                                                    .overlay(alignment: .bottomTrailing) {
+                                                        Button {
+                                                            if let url = URL(string: message.attachmentURL ?? "") {
+                                                                openURL(url)
                                                             }
-                                                            .buttonStyle(.glass)
+                                                        } label: {
+                                                            Image(systemName: "safari")
                                                         }
-                                                        .overlay(alignment: .topTrailing) {
-                                                            reactionOverlay(message: message)
-                                                                .offset(x: 12, y: -12)
-                                                        }
-                                                        .frame(maxWidth: screenWidth * 0.5 - 100)
-                                                case .failure:
-                                                    ProgressView()
-                                                case .empty:
-                                                    Color.clear
-                                                }
+                                                        .buttonStyle(.glass)
+                                                    }
+                                                    .overlay(alignment: .topTrailing) {
+                                                        reactionOverlay(message: message)
+                                                            .offset(x: 12, y: -12)
+                                                    }
+                                                    .frame(maxWidth: screenWidth * 0.5 - 100)
+                                            } placeholder : {
+                                                ProgressView()
                                             }
                                             .contextMenu {
                                                 Button {
@@ -621,6 +619,42 @@ struct MessageScrollView: View {
                                                     Text("React")
                                                 }
                                             }
+//                                            WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
+//                                                switch phase {
+//                                                case .success(let image):
+//                                                    image
+//                                                        .resizable()
+//                                                        .scaledToFit()
+//                                                        .clipShape(
+//                                                            UnevenRoundedRectangle(
+//                                                                topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
+//                                                                bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
+//                                                                bottomTrailingRadius: 25,
+//                                                                topTrailingRadius: 25
+//                                                            )
+//                                                        )
+//                                                        .overlay(alignment: .bottomTrailing) {
+//                                                            Button {
+//                                                                if let url = URL(string: message.attachmentURL ?? "") {
+//                                                                    openURL(url)
+//                                                                }
+//                                                            } label: {
+//                                                                Image(systemName: "safari")
+//                                                            }
+//                                                            .buttonStyle(.glass)
+//                                                        }
+//                                                        .overlay(alignment: .topTrailing) {
+//                                                            reactionOverlay(message: message)
+//                                                                .offset(x: 12, y: -12)
+//                                                        }
+//                                                        .frame(maxWidth: screenWidth * 0.5 - 100)
+//                                                case .failure:
+//                                                    ProgressView()
+//                                                case .empty:
+//                                                    Color.clear
+//                                                }
+//                                            }
+                                            
                                         } else {
                                             if let url = normalizedURL(message.message) {
                                                 VStack {

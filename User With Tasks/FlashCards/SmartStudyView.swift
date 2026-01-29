@@ -37,7 +37,7 @@ struct SmartStudyView: View {
                     }
                     
                     
-                    withAnimation(after: .milliseconds(2000)) {
+                    withAnimation(after: .milliseconds(500)) {
                             apply(resp, cardID: card.id)
                         }
                 }

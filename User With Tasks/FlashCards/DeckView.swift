@@ -62,8 +62,8 @@ struct DeckView: View {
                     }
                 }
                 
-                ScrollView(.horizontal) {
-                    LazyHStack {
+                ScrollView(.vertical) {
+                    LazyVStack {
                         ForEach($decks) { $deck in
                             HStack {
                                 HStack {
@@ -119,6 +119,7 @@ struct DeckView: View {
                             }
                         }
                     }
+                    .padding()
                 }
             }
             .sheet(isPresented: $editingDeck) {

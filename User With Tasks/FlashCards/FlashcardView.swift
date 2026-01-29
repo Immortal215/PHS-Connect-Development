@@ -22,7 +22,7 @@ struct FlashcardView : View {
                     .padding()
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: UIScreen.main.bounds.width / 1.1)
         .frame(height: 600)
         .background {
             ZStack {
@@ -41,7 +41,7 @@ struct FlashcardView : View {
             }
         }
         .padding(.horizontal, 120)
-        .flip3D(flipped, axis: Axis3D(.horizontal), reverse:
+        .flip3D(flipped, axis: Axis3D(UIDevice.current.userInterfaceIdiom == .pad ? .horizontal : .vertical), reverse: // if phone do flip respective to the vertical
                     VStack {
             if let res = sortedResponse {
                 Text(res.name)
@@ -55,7 +55,7 @@ struct FlashcardView : View {
                     .padding()
             }
         }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: UIScreen.main.bounds.width / 1.1)
             .frame(height: 600)
             .background {
                 ZStack {

@@ -1048,8 +1048,11 @@ struct ChatView: View {
                     if chats[chatIndex].messages == nil { chats[chatIndex].messages = [] }
                     
                     if !(chats[chatIndex].messages?.contains(where: { $0.messageID == message.messageID }) ?? false) {
-                        chats[chatIndex].messages?.append(message)
+                        withAnimation {
+                            chats[chatIndex].messages?.append(message)
+                        }
                         chats[chatIndex].messages?.sort(by: { $0.date < $1.date })
+                            
                         cache.save(chats[chatIndex])
                         
                         if selectedChat?.chatID == chatID {
@@ -1072,7 +1075,9 @@ struct ChatView: View {
                     
                     if let messageIndex = chatMessages.firstIndex(where: { $0.messageID == updatedMessage.messageID }) {
                         chatMessages[messageIndex] = updatedMessage
-                        chats[chatIndex].messages = chatMessages
+                        withAnimation {
+                            chats[chatIndex].messages = chatMessages
+                        }
                         chats[chatIndex].messages?.sort(by: { $0.date < $1.date })
                         cache.save(chats[chatIndex])
                         
@@ -1089,8 +1094,9 @@ struct ChatView: View {
             
             DispatchQueue.main.async {
                 guard let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
-                
-                chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                withAnimation {
+                    chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                }
                 cache.save(chats[chatIndex])
                 
                 if selectedChat?.chatID == chatID {
