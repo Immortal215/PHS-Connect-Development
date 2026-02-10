@@ -4,12 +4,11 @@ import SwiftUIX
 import ElegantEmojiPicker
 
 struct MessageScrollView: View {
-    @Binding var selectedChat: Chat?
+    @Binding var selectedChatID: String?
     @Binding var selectedThread: [String: String?]
     @Binding var chats: [Chat]
     @Binding var users: [String : Personal]
     @Binding var userInfo: Personal?
-    @Binding var newMessageText: String
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
     @FocusState var focusedOnSendBar: Bool
@@ -23,25 +22,55 @@ struct MessageScrollView: View {
     @State var selectedEmojiMessage : Chat.ChatMessage?
     @State var scrolledToTopTimes = 1
     @State var clubsLeaderIn: [Club]
+    @State var loadingUsers: Set<String> = []
+    @State var expandedURLPreviewMessageID: String? = nil
+    @State var threadMessages: [Chat.ChatMessage] = []
+    @State var threadMessageLookup: [String: Chat.ChatMessage] = [:]
+    @State var visibleMessageLimit = 10
+    @State var buildGeneration = 0
+    @State var isLoadingOlder = false
     
     @Binding var openMessageIDFromNotification: String?
     
     @Environment(\.openURL) private var openURL
+    
+    var selectedChat: Chat? {
+        guard let selectedChatID else { return nil }
+        return chats.first(where: { $0.chatID == selectedChatID })
+    }
     
     var body: some View {
         ScrollViewReader { proxy in
             ZStack {
                 ScrollView {
                     LazyVStack(spacing: bubbles ? nil : 0) { // not 0 by default!
-                        if let selected = selectedChat {
-                            let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-                            let messages = selected.messages?.filter { ($0.threadName ?? "general") == currentThread } ?? []
-                            let visible = Array(messages)
+                        if selectedChat != nil {
+                            let messages = threadMessages
+                            let visibleCount = min(visibleMessageLimit, messages.count)
+                            let visible = Array(messages.suffix(visibleCount))
+                            let messageLookup = threadMessageLookup
                             
                             Group {
-                                ForEach(visible.indices, id: \.self) { i in
-                                    let message = visible[i]
-                                    messageBubble(message: message, index: i, messages: messages, messagesToShow: visible, proxy: proxy)
+                                if visibleCount < messages.count {
+                                    Button {
+                                        loadOlderMessages(totalCount: messages.count)
+                                    } label: {
+                                        HStack {
+                                            Spacer()
+                                            
+                                            Label(isLoadingOlder ? "Loading older..." : "Load older messages", systemImage: "arrow.up.circle")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            
+                                            Spacer()
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.top, 8)
+                                }
+                                
+                                ForEach(Array(visible.enumerated()), id: \.element.messageID) { i, message in
+                                    messageBubble(message: message, index: i, messagesToShow: visible, messageLookup: messageLookup, proxy: proxy)
                                         .id(message.messageID)
                                 }
                                 
@@ -59,13 +88,15 @@ struct MessageScrollView: View {
                     }
                 }
                 .onAppear {
+                    rebuildThreadMessages()
                     proxy.scrollTo(openMessageIDFromNotification ?? "", anchor: .top)
                     openMessageIDFromNotification = nil
                     
                 }
                 .defaultScrollAnchor(.bottom)
                 .onChange(of: selectedChat?.messages?.last?.messageID, initial: false) { oldID, newID in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    rebuildThreadMessages()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
                         if oldID != newID {
                             scrolledToTopTimes = 1
                             scrollToBottom(proxy: proxy)
@@ -74,7 +105,15 @@ struct MessageScrollView: View {
                 }
                 .onChange(of: selectedChat?.chatID) { _ in
                     scrolledToTopTimes = 1
+                    expandedURLPreviewMessageID = nil
+                    rebuildThreadMessages()
                     scrollToBottom(proxy: proxy)
+                }
+                .onChange(of: selectedThread) { _ in
+                    rebuildThreadMessages()
+                }
+                .onChange(of: selectedChat?.messages?.count) { _ in
+                    rebuildThreadMessages()
                 }
                 .onChange(of: selectedEmoji) { _ in
                     guard let emoji = selectedEmoji, var newMessage = selectedEmojiMessage, let userID = userInfo?.userID, let chatID = selectedChat?.chatID
@@ -103,6 +142,8 @@ struct MessageScrollView: View {
                     selectedEmoji = nil
                     isEmojiPickerPresented = false
                     selectedEmojiMessage = nil
+                }
+                .onDisappear {
                 }
                 
                 VStack {
@@ -135,12 +176,13 @@ struct MessageScrollView: View {
     func messageBubble(
         message: Chat.ChatMessage,
         index: Int,
-        messages: [Chat.ChatMessage],
         messagesToShow: [Chat.ChatMessage],
+        messageLookup: [String: Chat.ChatMessage],
         proxy: ScrollViewProxy
     ) -> some View {
         let previousMessage : Chat.ChatMessage? = index > 0 ? messagesToShow[index - 1] : nil
         let nextMessage : Chat.ChatMessage? = index < messagesToShow.count - 1 ? messagesToShow[index + 1] : nil
+        let sortedReactions = sortedReactionPairs(for: message)
         let calendarTimeIsNotSameByHourNextMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: nextMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
         let calendarTimeIsNotSameByHourPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
         let calendarTimeIsNotSameByDayPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .day)
@@ -167,10 +209,10 @@ struct MessageScrollView: View {
                         VStack(alignment: .trailing, spacing: 5) {
                             if let replyToMessage = message.replyTo {
                                 if message.replyTo != previousMessage?.replyTo {
-                                    HStack {
-                                        Spacer()
-                                        
-                                        let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})
+                                        HStack {
+                                            Spacer()
+                                            
+                                        let replyMessage = messageLookup[replyToMessage]
                                         
                                         if replyMessage != nil {
                                             WebImage(
@@ -258,7 +300,7 @@ struct MessageScrollView: View {
                                                         .buttonStyle(.glass)
                                                     }
                                                     .overlay(alignment: .topLeading) {
-                                                        reactionOverlay(message: message, swap: true)
+                                                        reactionOverlay(message: message, sortedReactions: sortedReactions, swap: true)
                                                             .offset(x: -12, y: -12)
                                                     }
                                                     .frame(maxWidth: screenWidth * 0.5 - 100)
@@ -270,7 +312,6 @@ struct MessageScrollView: View {
                                         }
                                         .contextMenu {
                                             Button {
-                                                newMessageText = ""
                                                 replyingMessageID = message.messageID
                                                 editingMessageID = nil
                                                 focusedOnSendBar = true
@@ -305,16 +346,50 @@ struct MessageScrollView: View {
                                     } else {
                                         if let url = normalizedURL(message.message) {
                                             VStack {
-                                                WebView(url: url) {
-                                                    ProgressView(message.message)
+                                                if expandedURLPreviewMessageID == message.messageID {
+                                                    WebView(url: url) {
+                                                        ProgressView(message.message)
+                                                    }
+                                                    .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                 }
-                                                .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
-                                                
-                                                Text(message.message)
-                                                    .frame(maxWidth: screenWidth * 0.2)
-                                                    .lineLimit(1)
-                                                    .padding()
+
+                                                HStack {
+                                                    Text(message.message)
+                                                        .frame(maxWidth: screenWidth * 0.2, alignment: .leading)
+                                                        .lineLimit(2)
+                                                    
+                                                    Spacer()
+                                                    
+                                                    if expandedURLPreviewMessageID == message.messageID {
+                                                        Button {
+                                                            withAnimation {
+                                                                expandedURLPreviewMessageID = nil
+                                                            }
+                                                        } label: {
+                                                            Image(systemName: "chevron.up")
+                                                        }
+                                                        .buttonStyle(.glass)
+                                                    } else {
+                                                        Button {
+                                                            withAnimation {
+                                                                expandedURLPreviewMessageID = message.messageID
+                                                            }
+                                                        } label: {
+                                                            Image(systemName: "chevron.down")
+                                                        }
+                                                        .buttonStyle(.glass)
+                                                    }
+                                                    
+                                                    Button {
+                                                        openURL(url)
+                                                    } label: {
+                                                        Image(systemName: "safari")
+                                                    }
+                                                    .buttonStyle(.glass)
+                                                }
+                                                .padding()
                                             }
+                                            .frame(maxWidth: screenWidth * 0.2 + 200)
                                             .background{GlassBackground(color: .gray)}
                                             .clipShape(
                                                 UnevenRoundedRectangle(
@@ -325,10 +400,14 @@ struct MessageScrollView: View {
                                                 )
                                             )
                                             .onTapGesture {
-                                                openURL(url)
+                                                if expandedURLPreviewMessageID != message.messageID {
+                                                    withAnimation {
+                                                        expandedURLPreviewMessageID = message.messageID
+                                                    }
+                                                }
                                             }
                                         } else {
-                                            Text(.init(message.message))
+                                            messageText(message.message)
                                             .foregroundStyle(.white).brightness(1)
                                             .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                             .background(
@@ -350,7 +429,6 @@ struct MessageScrollView: View {
                                                     }
                                                     
                                                     Button {
-                                                        newMessageText = message.message
                                                         editingMessageID = message.messageID
                                                         replyingMessageID = nil
                                                         focusedOnSendBar = true
@@ -359,7 +437,6 @@ struct MessageScrollView: View {
                                                     }
                                                     
                                                     Button {
-                                                        newMessageText = ""
                                                         replyingMessageID = message.messageID
                                                         editingMessageID = nil
                                                         focusedOnSendBar = true
@@ -396,7 +473,7 @@ struct MessageScrollView: View {
                                                 }
                                             }
                                             .overlay(alignment: .topLeading) {
-                                                reactionOverlay(message: message, swap: true)
+                                                reactionOverlay(message: message, sortedReactions: sortedReactions, swap: true)
                                                     .offset(x: -12, y: -12)
                                             }
                                             .frame(maxWidth: screenWidth * 0.5, alignment: .trailing)
@@ -439,15 +516,7 @@ struct MessageScrollView: View {
                                 .padding(EdgeInsets(top: 5, leading: 20, bottom: 0, trailing: 0)) // same as message padding
                                 .font(.headline)
                                 .onAppear {
-                                    if users[message.sender] == nil {
-                                        fetchUser(for: message.sender) { user in
-                                            if let user = user {
-                                                users[message.sender] = user
-                                            } else {
-                                                users[message.sender] = nil
-                                            }
-                                        }
-                                    }
+                                    ensureUserLoaded(message.sender)
                                 }
                         }
                         
@@ -486,7 +555,7 @@ struct MessageScrollView: View {
                                 if let replyToMessage = message.replyTo {
                                     if message.replyTo != previousMessage?.replyTo {
                                         HStack {
-                                            let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})
+                                            let replyMessage = messageLookup[replyToMessage]
                                             
                                             ReplyLine()
                                                 .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
@@ -549,7 +618,7 @@ struct MessageScrollView: View {
                                         Image(systemName: "exclamationmark.circle")
                                             .foregroundStyle(.red)
                                             .overlay(alignment: .topTrailing) {
-                                                reactionOverlay(message: message)
+                                                reactionOverlay(message: message, sortedReactions: sortedReactions)
                                             }
                                     }
                                     
@@ -578,7 +647,7 @@ struct MessageScrollView: View {
                                                         .buttonStyle(.glass)
                                                     }
                                                     .overlay(alignment: .topTrailing) {
-                                                        reactionOverlay(message: message)
+                                                        reactionOverlay(message: message, sortedReactions: sortedReactions)
                                                             .offset(x: 12, y: -12)
                                                     }
                                                     .frame(maxWidth: screenWidth * 0.5 - 100)
@@ -587,7 +656,6 @@ struct MessageScrollView: View {
                                             }
                                             .contextMenu {
                                                 Button {
-                                                    newMessageText = ""
                                                     replyingMessageID = message.messageID
                                                     editingMessageID = nil
                                                     focusedOnSendBar = true
@@ -658,16 +726,50 @@ struct MessageScrollView: View {
                                         } else {
                                             if let url = normalizedURL(message.message) {
                                                 VStack {
-                                                    WebView(url: url) {
-                                                        ProgressView(message.message)
+                                                    if expandedURLPreviewMessageID == message.messageID {
+                                                        WebView(url: url) {
+                                                            ProgressView(message.message)
+                                                        }
+                                                        .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                     }
-                                                    .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                     
-                                                    Text(message.message)
-                                                        .frame(maxWidth: screenWidth * 0.2)
-                                                        .lineLimit(1)
-                                                        .padding()
+                                                    HStack {
+                                                        Text(message.message)
+                                                            .frame(maxWidth: screenWidth * 0.2, alignment: .leading)
+                                                            .lineLimit(2)
+                                                        
+                                                        Spacer()
+                                                        
+                                                        if expandedURLPreviewMessageID == message.messageID {
+                                                            Button {
+                                                                withAnimation {
+                                                                    expandedURLPreviewMessageID = nil
+                                                                }
+                                                            } label: {
+                                                                Image(systemName: "chevron.up")
+                                                            }
+                                                            .buttonStyle(.glass)
+                                                        } else {
+                                                            Button {
+                                                                withAnimation {
+                                                                    expandedURLPreviewMessageID = message.messageID
+                                                                }
+                                                            } label: {
+                                                                Image(systemName: "chevron.down")
+                                                            }
+                                                            .buttonStyle(.glass)
+                                                        }
+                                                        
+                                                        Button {
+                                                            openURL(url)
+                                                        } label: {
+                                                            Image(systemName: "safari")
+                                                        }
+                                                        .buttonStyle(.glass)
+                                                    }
+                                                    .padding()
                                                 }
+                                                .frame(maxWidth: screenWidth * 0.2 + 200)
                                                 .background{GlassBackground(color: .gray)}
                                                 .clipShape(
                                                     UnevenRoundedRectangle(
@@ -678,10 +780,14 @@ struct MessageScrollView: View {
                                                     )
                                                 )
                                                 .onTapGesture {
-                                                    openURL(url)
+                                                    if expandedURLPreviewMessageID != message.messageID {
+                                                        withAnimation {
+                                                            expandedURLPreviewMessageID = message.messageID
+                                                        }
+                                                    }
                                                 }
                                             } else {
-                                                Text(.init(message.message))
+                                                messageText(message.message)
                                                     .foregroundStyle(.primary)
                                                     .padding(EdgeInsets(top: 15, leading: 20, bottom: 15, trailing: 20))
                                                     .background(
@@ -705,7 +811,6 @@ struct MessageScrollView: View {
                                                             }
                                                             
                                                             Button {
-                                                                newMessageText = ""
                                                                 replyingMessageID = message.messageID
                                                                 editingMessageID = nil
                                                                 focusedOnSendBar = true
@@ -776,7 +881,7 @@ struct MessageScrollView: View {
                                                         }
                                                     }
                                                     .overlay(alignment: .topTrailing) {
-                                                        reactionOverlay(message: message)
+                                                        reactionOverlay(message: message, sortedReactions: sortedReactions)
                                                             .offset(x: 12, y: -12)
                                                     }
                                                     .frame(maxWidth: screenWidth * 0.5, alignment: .leading)
@@ -816,7 +921,7 @@ struct MessageScrollView: View {
             } else { // non-bubble mode
                 NonBubbleMessageView(
                     message: message,
-                    messagesToShow: messagesToShow,
+                    messageLookup: messageLookup,
                     previousMessage: previousMessage,
                     nextMessage: nextMessage,
                     calendarTimeIsNotSameByHourNextMessage: calendarTimeIsNotSameByHourNextMessage,
@@ -824,10 +929,9 @@ struct MessageScrollView: View {
                     calendarTimeIsNotSameByDayPreviousMessage: calendarTimeIsNotSameByDayPreviousMessage,
                     userInfo: $userInfo,
                     users: $users,
-                    selectedChat: $selectedChat,
+                    selectedChatID: $selectedChatID,
                     selectedThread: $selectedThread,
                     chats: $chats,
-                    newMessageText: $newMessageText,
                     editingMessageID: $editingMessageID,
                     replyingMessageID: $replyingMessageID,
                     focusedOnSendBar: _focusedOnSendBar,
@@ -835,15 +939,17 @@ struct MessageScrollView: View {
                     isEmojiPickerPresented: $isEmojiPickerPresented,
                     selectedEmoji: $selectedEmoji,
                     selectedEmojiMessage: $selectedEmojiMessage,
+                    loadingUsers: $loadingUsers,
+                    expandedURLPreviewMessageID: $expandedURLPreviewMessageID,
                     clubsLeaderIn: clubsLeaderIn,
                     proxy: proxy,
-                    replyToChatMessage: message.replyTo == nil ? nil : messages.first(where: { $0.messageID == message.replyTo! })
+                    replyToChatMessage: message.replyTo == nil ? nil : messageLookup[message.replyTo!]
                 )
             }
         } else { // message is system made
             HStack {
                 Spacer()
-                Text(.init(message.message))
+                messageText(message.message)
                     .foregroundStyle(Color.gray)
                     .font(.headline)
                 
@@ -853,8 +959,8 @@ struct MessageScrollView: View {
     }
     
     @ViewBuilder
-    func reactionOverlay(message: Chat.ChatMessage, swap: Bool = false) -> some View {
-        if let reactions = message.reactions, !reactions.isEmpty {
+    func reactionOverlay(message: Chat.ChatMessage, sortedReactions: [(key: String, value: [String])], swap: Bool = false) -> some View {
+        if !sortedReactions.isEmpty {
             HStack(spacing: 4) {
                 if swap {
                     Button {
@@ -897,7 +1003,7 @@ struct MessageScrollView: View {
                     }
                 }
                 
-                ForEach(reactions.sorted(by: { $0.key < $1.key }), id: \.key) { emoji, users in
+                ForEach(sortedReactions, id: \.key) { emoji, users in
                     HStack(spacing: 4) {
                         Text(emoji)
                         if users.count > 1 {
@@ -975,6 +1081,86 @@ struct MessageScrollView: View {
             }
             .fixedSize(horizontal: true, vertical: false)
         }
+    }
+    
+    func sortedReactionPairs(for message: Chat.ChatMessage) -> [(key: String, value: [String])] {
+        (message.reactions ?? [:]).sorted(by: { $0.key < $1.key })
+    }
+    
+    @ViewBuilder
+    func messageText(_ text: String) -> some View {
+        if hasMarkdownSyntax(text) {
+            Text(.init(text))
+        } else {
+            Text(verbatim: text)
+        }
+    }
+    
+    func hasMarkdownSyntax(_ text: String) -> Bool {
+        text.contains("**") ||
+        text.contains("*") ||
+        text.contains("_") ||
+        text.contains("`") ||
+        text.contains("[") ||
+        text.contains("](") ||
+        text.contains("#") ||
+        text.contains("> ")
+    }
+    
+    func ensureUserLoaded(_ userID: String) {
+        if users[userID] != nil || loadingUsers.contains(userID) {
+            return
+        }
+        
+        loadingUsers.insert(userID)
+        fetchUser(for: userID) { user in
+            DispatchQueue.main.async {
+                users[userID] = user
+                loadingUsers.remove(userID)
+            }
+        }
+    }
+    
+    func currentContextID() -> String {
+        guard let selected = selectedChat else { return "" }
+        let thread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+        return selected.chatID + "::" + thread
+    }
+    
+    func rebuildThreadMessages() {
+        buildGeneration += 1
+        let generation = buildGeneration
+        
+        threadMessages = []
+        threadMessageLookup = [:]
+        visibleMessageLimit = 10
+        isLoadingOlder = false
+        
+        guard let selected = selectedChat else { return }
+        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+        let sourceMessages = selected.messages ?? []
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let filtered = sourceMessages.filter { ($0.threadName ?? "general") == currentThread }
+            let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.messageID, $0) })
+            
+            DispatchQueue.main.async {
+                guard generation == buildGeneration else { return }
+                
+                threadMessages = filtered
+                threadMessageLookup = lookup
+                visibleMessageLimit = min(10, filtered.count)
+            }
+        }
+    }
+    
+    func loadOlderMessages(totalCount: Int) {
+        guard visibleMessageLimit < totalCount else { return }
+        guard !isLoadingOlder else { return }
+        
+        isLoadingOlder = true
+        visibleMessageLimit = min(totalCount, visibleMessageLimit + 200)
+        isLoadingOlder = false
     }
 }
 

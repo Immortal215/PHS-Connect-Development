@@ -151,13 +151,13 @@ struct WeekCalendarView: View {
                 currentWeek = selectedDate
             }
         }
-        .animation(.smooth)
+        .animation(.smooth, value: currentWeek)
         .onAppear {
             if animationsPlus {
                 appear = Array(repeating: false, count: 4)
             }
         }
-        .onChange(of: currentWeek) { _ in
+        .onChange(of: currentWeek) { 
             if animationsPlus {
                 appear = Array(repeating: false, count: 4)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

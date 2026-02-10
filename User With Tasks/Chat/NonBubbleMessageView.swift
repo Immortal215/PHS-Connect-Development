@@ -6,7 +6,7 @@ import ElegantEmojiPicker
 struct NonBubbleMessageView : View {
     var message: Chat.ChatMessage
     
-    var messagesToShow: [Chat.ChatMessage]
+    var messageLookup: [String: Chat.ChatMessage]
     var previousMessage : Chat.ChatMessage?
     var nextMessage : Chat.ChatMessage?
     
@@ -17,10 +17,9 @@ struct NonBubbleMessageView : View {
     @Binding var userInfo: Personal?
     @Binding var users: [String : Personal]
 
-    @Binding var selectedChat: Chat?
+    @Binding var selectedChatID: String?
     @Binding var selectedThread: [String: String?]
     @Binding var chats: [Chat]
-    @Binding var newMessageText: String
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
     @FocusState var focusedOnSendBar: Bool
@@ -30,6 +29,8 @@ struct NonBubbleMessageView : View {
     @Binding var isEmojiPickerPresented : Bool
     @Binding var selectedEmoji: Emoji?
     @Binding var selectedEmojiMessage : Chat.ChatMessage?
+    @Binding var loadingUsers: Set<String>
+    @Binding var expandedURLPreviewMessageID: String?
     @State var clubsLeaderIn: [Club]
     
     var proxy: ScrollViewProxy
@@ -37,7 +38,14 @@ struct NonBubbleMessageView : View {
     
     var replyToChatMessage: Chat.ChatMessage?
     
+    var selectedChat: Chat? {
+        guard let selectedChatID else { return nil }
+        return chats.first(where: { $0.chatID == selectedChatID })
+    }
+    
     var body : some View {
+        let sortedReactions = sortedReactionPairs(for: message)
+        
         HStack {
             VStack {
                 if calendarTimeIsNotSameByDayPreviousMessage || previousMessage?.systemGenerated ?? false {
@@ -74,7 +82,7 @@ struct NonBubbleMessageView : View {
                                         .foregroundColor(.gray)
                                         .padding(EdgeInsets(top: 16, leading: 24, bottom: 0, trailing: 0))
                                     
-                                    let replyMessage = messagesToShow.first(where: {$0.messageID == replyToMessage})
+                                    let replyMessage = messageLookup[replyToMessage]
                                     
                                     if replyMessage != nil {
                                         WebImage(
@@ -139,15 +147,7 @@ struct NonBubbleMessageView : View {
                                     .font(.system(size: 18))
                                     .padding(EdgeInsets(top: 10, leading: 10, bottom: 6, trailing: 0))
                                     .onAppear {
-                                        if users[message.sender] == nil {
-                                            fetchUser(for: message.sender) { user in
-                                                if let user = user {
-                                                    users[message.sender] = user
-                                                } else {
-                                                    users[message.sender] = nil
-                                                }
-                                            }
-                                        }
+                                        ensureUserLoaded(message.sender)
                                     }
                                 
                                 Text(Date(timeIntervalSince1970: message.date), style: .time)
@@ -191,23 +191,61 @@ struct NonBubbleMessageView : View {
                                     } else {
                                         if let url = normalizedURL(message.message) {
                                             VStack {
-                                                WebView(url: url) {
-                                                    ProgressView(message.message)
+                                                if expandedURLPreviewMessageID == message.messageID {
+                                                    WebView(url: url) {
+                                                        ProgressView(message.message)
+                                                    }
+                                                    .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                 }
-                                                .frame(width: screenWidth * 0.2 + 200, height: screenHeight * 0.3)
                                                 
-                                                Text(message.message)
-                                                    .frame(maxWidth: screenWidth * 0.2)
-                                                    .lineLimit(1)
-                                                    .padding()
+                                                HStack {
+                                                    Text(message.message)
+                                                        .frame(maxWidth: screenWidth * 0.2, alignment: .leading)
+                                                        .lineLimit(2)
+                                                    
+                                                    Spacer()
+                                                    
+                                                    if expandedURLPreviewMessageID == message.messageID {
+                                                        Button {
+                                                            withAnimation {
+                                                                expandedURLPreviewMessageID = nil
+                                                            }
+                                                        } label: {
+                                                            Image(systemName: "chevron.up")
+                                                        }
+                                                        .buttonStyle(.glass)
+                                                    } else {
+                                                        Button {
+                                                            withAnimation {
+                                                                expandedURLPreviewMessageID = message.messageID
+                                                            }
+                                                        } label: {
+                                                            Image(systemName: "chevron.down")
+                                                        }
+                                                        .buttonStyle(.glass)
+                                                    }
+                                                    
+                                                    Button {
+                                                        openURL(url)
+                                                    } label: {
+                                                        Image(systemName: "safari")
+                                                    }
+                                                    .buttonStyle(.glass)
+                                                }
+                                                .padding()
                                             }
+                                            .frame(maxWidth: screenWidth * 0.2 + 200)
                                             .background(.tertiary)
                                             .clipShape(RoundedRectangle(cornerRadius: 24))
                                             .onTapGesture {
-                                                openURL(url)
+                                                if expandedURLPreviewMessageID != message.messageID {
+                                                    withAnimation {
+                                                        expandedURLPreviewMessageID = message.messageID
+                                                    }
+                                                }
                                             }
                                         } else {
-                                            Text(.init(message.message))
+                                            messageText(message.message)
                                                 .multilineTextAlignment(.leading)
                                                 .background{Color.clear}
                                         }
@@ -302,7 +340,6 @@ struct NonBubbleMessageView : View {
                                                     label: "Reply",
                                                     system: "arrowshape.turn.up.left",
                                                     action: {
-                                                        newMessageText = ""
                                                         replyingMessageID = message.messageID
                                                         editingMessageID = nil
                                                         focusedOnSendBar = true
@@ -318,7 +355,6 @@ struct NonBubbleMessageView : View {
                                                             label: "Edit",
                                                             system: "pencil",
                                                             action: {
-                                                                newMessageText = message.message
                                                                 editingMessageID = message.messageID
                                                                 replyingMessageID = nil
                                                                 focusedOnSendBar = true
@@ -392,9 +428,9 @@ struct NonBubbleMessageView : View {
                             // localization: ElegantLocalization(searchFieldPlaceholder: "Find your emoji...") // Pass localization (Optional)
                         )
                         
-                        if let reactions = message.reactions, !reactions.isEmpty {
+                        if !sortedReactions.isEmpty {
                             HStack(spacing: 4) {
-                                ForEach(reactions.sorted(by: { $0.key < $1.key }), id: \.key) { emoji, users in
+                                ForEach(sortedReactions, id: \.key) { emoji, users in
                                     HStack(spacing: 4) {
                                         Text(emoji)
                                         if users.count > 1 {
@@ -481,5 +517,43 @@ struct NonBubbleMessageView : View {
                 }
             }
         }
+    }
+    
+    func ensureUserLoaded(_ userID: String) {
+        if users[userID] != nil || loadingUsers.contains(userID) {
+            return
+        }
+        
+        loadingUsers.insert(userID)
+        fetchUser(for: userID) { user in
+            DispatchQueue.main.async {
+                users[userID] = user
+                loadingUsers.remove(userID)
+            }
+        }
+    }
+    
+    func sortedReactionPairs(for message: Chat.ChatMessage) -> [(key: String, value: [String])] {
+        (message.reactions ?? [:]).sorted(by: { $0.key < $1.key })
+    }
+    
+    @ViewBuilder
+    func messageText(_ text: String) -> some View {
+        if hasMarkdownSyntax(text) {
+            Text(.init(text))
+        } else {
+            Text(verbatim: text)
+        }
+    }
+    
+    func hasMarkdownSyntax(_ text: String) -> Bool {
+        text.contains("**") ||
+        text.contains("*") ||
+        text.contains("_") ||
+        text.contains("`") ||
+        text.contains("[") ||
+        text.contains("](") ||
+        text.contains("#") ||
+        text.contains("> ")
     }
 }
