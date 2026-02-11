@@ -67,7 +67,7 @@ struct ClubCardHome: View {
                             .font(.title)
                             .bold()
                         
-                        if club.leaders.contains(viewModel.userEmail ?? "") {
+                        if isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail) {
                             Image(systemName: "crown")
                                 .imageScale(.large)
                                 .foregroundStyle(.yellow)
@@ -131,11 +131,11 @@ struct ClubCardHome: View {
     
     // Counts unseen announcements for this club in the last 7 days for the current user
     func unseenNotificationCount(for club: Club) -> Int {
-        guard let email = viewModel.userEmail else { return 0 }
+        let email = normalizedEmail(viewModel.userEmail)
         return club.announcements?.values.filter { ann in
             let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
             let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
-            let isMemberOrLeader = club.members.contains(email) || club.leaders.contains(email)
+            let isMemberOrLeader = viewModel.isSuperAdmin || club.members.contains(email) || club.leaders.contains(email)
             return hasNotSeen && isRecent && isMemberOrLeader
         }.count ?? 0
     }

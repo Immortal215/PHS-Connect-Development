@@ -205,7 +205,7 @@ struct MonthPickerView: View {
     func meetings(for date: Date) -> [(clubID: String, count: Int)] {
         var meetingsForDate: [Club.MeetingTime] = []
         
-        for club in clubs.filter{$0.leaders.contains(viewModel.userEmail ?? "") || $0.members.contains(viewModel.userEmail ?? "")} {
+        for club in clubs.filter({ isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }) {
             let clubMeetings = club.meetingTimes?.filter { meeting in
                 Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
             } ?? []

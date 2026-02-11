@@ -42,7 +42,7 @@ struct ClubInfoView: View {
 
 
     var body: some View {
-        let clubLeader = club.leaders.contains(viewModel.userEmail ?? "")
+        let clubLeader = isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)
         var latestAnnouncementMessage: String {
             if let announcements = club.announcements {
                 let sortedAnnouncements = announcements.sorted {
@@ -292,7 +292,7 @@ struct ClubInfoView: View {
                     }
                     
                     if let announcements = club.announcements, viewModel.isGuestUser == false {
-                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: (club.members.contains(viewModel.userEmail ?? "") || clubLeader), userInfo: $userInfo)
+                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMemberLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail), userInfo: $userInfo)
                     }
                     
                     Text("Location")

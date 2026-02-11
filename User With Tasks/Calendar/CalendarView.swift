@@ -17,10 +17,10 @@ struct CalendarView: View {
         VStack {
             WeekCalendarView( // double check the below
                 meetingTimes: clubs
-                    .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
+                    .filter { isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }
                     .flatMap { club in
                         club.meetingTimes?.filter { meeting in
-                            meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || club.leaders.contains(viewModel.userEmail ?? "")
+                            meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)
                             
                         } ?? []
                     },
@@ -45,14 +45,13 @@ struct CalendarView: View {
     
     func meetings(for date: Date) -> [Club.MeetingTime] {
         clubs
-            .filter { $0.members.contains(viewModel.userEmail ?? "") || $0.leaders.contains(viewModel.userEmail ?? "") }
+            .filter { isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }
             .flatMap { club in
                 club.meetingTimes?.filter { meeting in
-                    (meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || club.leaders.contains(viewModel.userEmail ?? "")) &&
+                    (meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)) &&
                     Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
                 } ?? []
             }
         
     }
 }
-

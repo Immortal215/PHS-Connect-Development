@@ -84,7 +84,7 @@ struct SearchClubView: View {
                                     }
                                     .fixedSize(horizontal: true, vertical: false)
                                 
-                                if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
+                                if viewModel.isSuperAdmin {
                                     Button {
                                         createClubToggler = true
                                     } label: {

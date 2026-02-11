@@ -371,10 +371,13 @@ struct NonBubbleMessageView : View {
                                                                 label: "Mark as Safe",
                                                                 system: "checkmark.circle",
                                                                 action: {
-                                                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                    if let selectedChatID = selectedChat?.chatID,
+                                                                       let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChatID }) {
                                                                         if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
                                                                             chats[chatIndex].messages?[messageIndex].flagged = false
-                                                                            sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                            if let updatedMessage = chats[chatIndex].messages?[messageIndex] {
+                                                                                sendMessage(chatID: selectedChatID, message: updatedMessage)
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
@@ -384,7 +387,9 @@ struct NonBubbleMessageView : View {
                                                                 label: "Delete",
                                                                 system: "trash",
                                                                 action: {
-                                                                    deleteMessage(chatID: selectedChat!.chatID, message: message)
+                                                                    if let selectedChatID = selectedChat?.chatID {
+                                                                        deleteMessage(chatID: selectedChatID, message: message)
+                                                                    }
                                                                 }
                                                             )
                                                         }
@@ -394,10 +399,13 @@ struct NonBubbleMessageView : View {
                                                                 label: "Report",
                                                                 system: "exclamationmark.circle",
                                                                 action: {
-                                                                    if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                    if let selectedChatID = selectedChat?.chatID,
+                                                                       let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChatID }) {
                                                                         if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
                                                                             chats[chatIndex].messages?[messageIndex].flagged = true
-                                                                            sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                            if let updatedMessage = chats[chatIndex].messages?[messageIndex] {
+                                                                                sendMessage(chatID: selectedChatID, message: updatedMessage)
+                                                                            }
                                                                         }
                                                                     }
                                                                 }

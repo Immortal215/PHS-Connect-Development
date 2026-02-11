@@ -1,5 +1,28 @@
 import SwiftUI
 
+let superAdminEmails: Set<String> = [
+    "sharul.shah2008@gmail.com",
+    "frank.mirandola@d214.org"
+]
+
+func normalizedEmail(_ email: String?) -> String {
+    email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+}
+
+func isSuperAdminEmail(_ email: String?) -> Bool {
+    superAdminEmails.contains(normalizedEmail(email))
+}
+
+func isClubLeaderOrSuperAdmin(club: Club, userEmail: String?) -> Bool {
+    let email = normalizedEmail(userEmail)
+    return isSuperAdminEmail(email) || club.leaders.contains(email)
+}
+
+func isClubMemberLeaderOrSuperAdmin(club: Club, userEmail: String?) -> Bool {
+    let email = normalizedEmail(userEmail)
+    return isSuperAdminEmail(email) || club.leaders.contains(email) || club.members.contains(email)
+}
+
 func calculateLines(size: CGSize, variable: Binding<Bool>, maxLines: Int, textStyle: Font.TextStyle) {
     let uiFontTextStyle = convertToUIFontTextStyle(textStyle)
     let font = UIFont.preferredFont(forTextStyle: uiFontTextStyle)
@@ -11,7 +34,7 @@ func calculateLines(size: CGSize, variable: Binding<Bool>, maxLines: Int, textSt
     }
 }
 
-func convertToUIFontTextStyle(_ textStyle: Font.TextStyle) -> UIFont.TextStyle {  // very goofy and stupid, why do I need to convert to the same thing bro
+func convertToUIFontTextStyle(_ textStyle: Font.TextStyle) -> UIFont.TextStyle {  // very goofy, why do I need to convert to the same thing bro
     switch textStyle {
     case .largeTitle: return .largeTitle
     case .title: return .title1

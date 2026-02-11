@@ -96,7 +96,7 @@ struct ClubCard: View {
                 VStack(alignment: .trailing) {
                     
                     Image(
-                        systemName: club.leaders.contains(viewModel.userEmail ?? "") ?
+                        systemName: isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail) ?
                         "pencil" : "info.circle"
                     )
                     .allowsHitTesting(false)
@@ -135,7 +135,7 @@ struct ClubCard: View {
                         Spacer()
                         
                         Button(
-                            club.leaders.contains(viewModel.userEmail ?? "") ? "Leader" :
+                            isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail) ? "Leader" :
                                 club.members.contains(viewModel.userEmail ?? "") ? "Member" :
                                 (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) && club.requestNeeded != nil ? "Applied" :
                                 (club.requestNeeded != nil ? "Apply" : "Connect")
@@ -175,7 +175,7 @@ struct ClubCard: View {
                         .foregroundStyle(.white)
                         .buttonStyle(.borderedProminent)
                         .padding(.top)
-                        .tint(club.leaders.contains(viewModel.userEmail ?? "") ? .purple :
+                        .tint(isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail) ? .purple :
                                 club.members.contains(viewModel.userEmail ?? "") ? .green :
                                 (club.pendingMemberRequests?.contains(viewModel.userEmail ?? "") ?? false) && club.requestNeeded != nil ? .yellow :
                                 .blue)
@@ -201,7 +201,7 @@ struct ClubCard: View {
                 GlassBackground(color: clubColor)
             )
             
-            if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && (club.members.contains(viewModel.userEmail ?? "") || club.leaders.contains(viewModel.userEmail ?? "")) {
+            if let notificationCount = club.announcements?.filter { $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count, notificationCount > 0 && isClubMemberLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail) {
                 Color.black.opacity(0.2)
                     .cornerRadius(25)
                 

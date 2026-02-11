@@ -57,8 +57,7 @@ struct ChatView: View {
     let cacheWriteQueue = DispatchQueue(label: "chat.cache.queue", qos: .utility)
     
     var clubsLeaderIn: [Club] {
-        let email = userInfo?.userEmail ?? ""
-        return clubs.filter { $0.leaders.contains(email) }
+        return clubs.filter { isClubLeaderOrSuperAdmin(club: $0, userEmail: userInfo?.userEmail) }
     }
     
     var showLoadingOverlay: Bool {
@@ -90,6 +89,30 @@ struct ChatView: View {
                 }
             }
         )
+    }
+    
+    var topChats: [Chat] {
+        guard let currentUserID = userInfo?.userID else { return chats }
+        
+        return chats.sorted { lhs, rhs in
+            let lhsLastSent = lhs.messages?
+                .filter { $0.sender == currentUserID }
+                .map { $0.lastUpdated ?? $0.date }
+                .max() ?? 0
+            
+            let rhsLastSent = rhs.messages?
+                .filter { $0.sender == currentUserID }
+                .map { $0.lastUpdated ?? $0.date }
+                .max() ?? 0
+            
+            if lhsLastSent == rhsLastSent {
+                let lhsLatestAny = lhs.messages?.map { $0.lastUpdated ?? $0.date }.max() ?? 0
+                let rhsLatestAny = rhs.messages?.map { $0.lastUpdated ?? $0.date }.max() ?? 0
+                return lhsLatestAny > rhsLatestAny
+            }
+            
+            return lhsLastSent > rhsLastSent
+        }
     }
     
     var body: some View {
@@ -125,7 +148,7 @@ struct ChatView: View {
                                     createChatSection(for: club)
                                 }
                                 
-                                ForEach(chats, id: \.chatID) { chat in
+                                ForEach(topChats, id: \.chatID) { chat in
                                     chatRow(for: chat, unread: unreadChats.contains(chat.chatID))
                                 }
                                 
@@ -392,7 +415,7 @@ struct ChatView: View {
                                                 
                                                 if currentThread == thread {
                                                     Button("") {
-                                                        let index = threads.firstIndex(of: thread)!
+                                                        guard let index = threads.firstIndex(of: thread) else { return }
                                                         isThreadSwitching = true
                                                         loadingMessage = "Switching thread..."
                                                         selectedThread[selected.chatID] = threads[index != 0 ? index - 1 : threads.count - 1]
@@ -406,7 +429,7 @@ struct ChatView: View {
                                                     .frame(width: 0, height: 0)
                                                     
                                                     Button("") {
-                                                        let index = threads.firstIndex(of: thread)!
+                                                        guard let index = threads.firstIndex(of: thread) else { return }
                                                         isThreadSwitching = true
                                                         loadingMessage = "Switching thread..."
                                                         selectedThread[selected.chatID] = threads[index != threads.count - 1 ? index + 1 : 0]
@@ -816,7 +839,7 @@ struct ChatView: View {
         
         // filter clubs where user is leader or member and has chatIDs
         let relevantClubs = clubs.filter { club in
-            (club.leaders.contains(email) || club.members.contains(email)) && !(club.chatIDs?.isEmpty ?? true) // ensures the chatIds exist in the club
+            isClubMemberLeaderOrSuperAdmin(club: club, userEmail: email) && !(club.chatIDs?.isEmpty ?? true) // ensures the chatIds exist in the club
         }
         let cachedChatIDsSnapshot = Set(cachedChatIDs.split(separator: ",").map(String.init))
         
@@ -824,7 +847,7 @@ struct ChatView: View {
             // load cached chats off main thread
             var loadedChats: [Chat] = []
             for club in relevantClubs {
-                for chatID in club.chatIDs! {
+                for chatID in club.chatIDs ?? [] {
                     if cachedChatIDsSnapshot.contains(chatID) {
                         let cache = ChatCache(chatID: chatID)
                         if let cachedChat = cache.load() {
@@ -840,7 +863,7 @@ struct ChatView: View {
                 // chatIds to fetch
                 var chatIDsToFetch: [String] = []
                 for club in relevantClubs {
-                    let uncached = club.chatIDs!.filter { !cachedChatIDsSnapshot.contains($0) }
+                    let uncached = (club.chatIDs ?? []).filter { !cachedChatIDsSnapshot.contains($0) }
                     chatIDsToFetch.append(contentsOf: uncached)
                 }
                 
@@ -1011,16 +1034,27 @@ struct ChatView: View {
     }
     
     func updateUnreadIndicator() {
-        if let chat = selectedChat {
-            if let thread = selectedThread[chat.chatID]! {
-                if let lastMessageInThread = chat.messages?.last{$0.threadName == thread || ($0.threadName == nil && thread == "general")}?.messageID {
-                    if lastReadMessages.split(separator: ",").contains{$0.hasPrefix(chat.chatID + "." + thread + ":")} {
-                        lastReadMessages = lastReadMessages.split(separator: ",").map{$0.split(separator: ":")[0] == chat.chatID + "." + thread ? chat.chatID + "." + thread + ":" + lastMessageInThread : String($0)}.joined(separator: ",") + ","
-                    } else {
-                        lastReadMessages.append(chat.chatID + "." + thread + ":" + lastMessageInThread + ",")
-                    }
+        guard let chat = selectedChat else { return }
+        
+        let thread = (selectedThread[chat.chatID] ?? nil) ?? "general"
+        
+        guard let lastMessageInThread = chat.messages?
+            .last(where: { ($0.threadName ?? "general") == thread })?
+            .messageID
+        else { return }
+        
+        let key = chat.chatID + "." + thread
+        let entries = lastReadMessages.split(separator: ",")
+        
+        if entries.contains(where: { $0.hasPrefix(key + ":") }) {
+            lastReadMessages = entries
+                .map { entry in
+                    let parts = entry.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+                    return String(parts.first ?? "") == key ? key + ":" + lastMessageInThread : String(entry)
                 }
-            }
+                .joined(separator: ",") + ","
+        } else {
+            lastReadMessages.append(key + ":" + lastMessageInThread + ",")
         }
     }
     
@@ -1437,7 +1471,9 @@ struct ChatComposer: View {
             if let chatIndex = chats.firstIndex(where: { $0.chatID == selected.chatID }) {
                 if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == editingID }) {
                     chats[chatIndex].messages?[messageIndex].message = draftText
-                    sendMessage(chatID: selected.chatID, message: chats[chatIndex].messages![messageIndex])
+                    if let editedMessage = chats[chatIndex].messages?[messageIndex] {
+                        sendMessage(chatID: selected.chatID, message: editedMessage)
+                    }
                 }
             }
             editingMessageID = nil

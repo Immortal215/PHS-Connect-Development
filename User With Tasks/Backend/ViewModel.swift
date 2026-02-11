@@ -15,6 +15,10 @@ final class AuthenticationViewModel: ObservableObject {
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
     
+    var isSuperAdmin: Bool {
+        isSuperAdminEmail(userEmail)
+    }
+    
     init() {
         if let user = Auth.auth().currentUser {
             self.userEmail = user.email

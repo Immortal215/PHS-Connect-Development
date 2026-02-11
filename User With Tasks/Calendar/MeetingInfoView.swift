@@ -61,7 +61,8 @@ struct MeetingInfoView: View {
                         Spacer()
                         
                         
-                        if clubs.first(where: {$0.clubID == meeting.clubID})?.leaders.contains(viewModel?.userEmail ?? "") ?? false {
+                        if let selectedClub = clubs.first(where: { $0.clubID == meeting.clubID }),
+                           isClubLeaderOrSuperAdmin(club: selectedClub, userEmail: viewModel?.userEmail) {
                             VStack {
                                 Button {
                                     openSettings.toggle()
@@ -230,7 +231,7 @@ struct MeetingInfoView: View {
         .sheet(isPresented: $openSettings) {
             AddMeetingView(viewCloser: {
                 openSettings = false
-            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter {$0.leaders.contains(viewModel?.userEmail ?? "") }, editScreen: true, selectedDate: selectedDate!, userInfo: $userInfo)
+            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter { isClubLeaderOrSuperAdmin(club: $0, userEmail: viewModel?.userEmail) }, editScreen: true, selectedDate: selectedDate!, userInfo: $userInfo)
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
             .presentationBackground {
@@ -249,4 +250,3 @@ struct MeetingInfoView: View {
     }
     
 }
-

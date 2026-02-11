@@ -122,7 +122,7 @@ struct WeekCalendarView: View {
                     }
                 }
                 
-                if clubs.filter({ $0.leaders.contains(viewModel.userEmail ?? "") }).count > 0 {
+                if clubs.contains(where: { isClubLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }) {
                     Button {
                         addMeetingTimeView.toggle()
                     } label: {
@@ -142,7 +142,7 @@ struct WeekCalendarView: View {
             .sheet(isPresented: $addMeetingTimeView) {
                 AddMeetingView(viewCloser: {
                     addMeetingTimeView = false
-                }, leaderClubs: clubs.filter { $0.leaders.contains(viewModel.userEmail ?? "") }, selectedDate: selectedDate, userInfo: .constant(nil))
+                }, leaderClubs: clubs.filter { isClubLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }, selectedDate: selectedDate, userInfo: .constant(nil))
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
                 .cornerRadius(25)

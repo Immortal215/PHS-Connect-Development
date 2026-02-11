@@ -845,10 +845,13 @@ struct MessageScrollView: View {
                                                             if message.flagged ?? false {
                                                                 if clubsLeaderIn.contains(where: {$0.clubID == selectedChat?.clubID}) {
                                                                     Button {
-                                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                        if let selectedChatID = selectedChat?.chatID,
+                                                                           let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChatID }) {
                                                                             if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
                                                                                 chats[chatIndex].messages?[messageIndex].flagged = false
-                                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                                if let updatedMessage = chats[chatIndex].messages?[messageIndex] {
+                                                                                    sendMessage(chatID: selectedChatID, message: updatedMessage)
+                                                                                }
                                                                             }
                                                                         }
                                                                     } label: {
@@ -856,7 +859,9 @@ struct MessageScrollView: View {
                                                                     }
                                                                     
                                                                     Button {
-                                                                        deleteMessage(chatID: selectedChat!.chatID, message: message)
+                                                                        if let selectedChatID = selectedChat?.chatID {
+                                                                            deleteMessage(chatID: selectedChatID, message: message)
+                                                                        }
                                                                     } label: {
                                                                         Label("Delete", systemImage: "trash")
                                                                     }
@@ -864,10 +869,13 @@ struct MessageScrollView: View {
                                                             } else {
                                                                 if message.flagged == nil {
                                                                     Button {
-                                                                        if let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChat!.chatID }) {
+                                                                        if let selectedChatID = selectedChat?.chatID,
+                                                                           let chatIndex = chats.firstIndex(where: { $0.chatID == selectedChatID }) {
                                                                             if let messageIndex = chats[chatIndex].messages?.firstIndex(where: { $0.messageID == message.messageID }) {
                                                                                 chats[chatIndex].messages?[messageIndex].flagged = true
-                                                                                sendMessage(chatID: selectedChat!.chatID, message: chats[chatIndex].messages![messageIndex])
+                                                                                if let updatedMessage = chats[chatIndex].messages?[messageIndex] {
+                                                                                    sendMessage(chatID: selectedChatID, message: updatedMessage)
+                                                                                }
                                                                             }
                                                                         }
                                                                     } label: {

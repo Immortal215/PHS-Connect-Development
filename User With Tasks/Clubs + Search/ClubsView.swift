@@ -121,20 +121,20 @@ struct ClubView: View {
     }
     
     func enrolledClubs(from clubs: [Club]) -> [Club] {
-        guard let email = viewModel.userEmail else { return [] }
+        let email = normalizedEmail(viewModel.userEmail)
         return clubs
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            .filter { $0.leaders.contains(email) || $0.members.contains(email) }
+            .filter { viewModel.isSuperAdmin || $0.leaders.contains(email) || $0.members.contains(email) }
     }
     
     func unreadCount(from clubs: [Club]) -> Int {
-        guard let email = viewModel.userEmail else { return 0 }
+        let email = normalizedEmail(viewModel.userEmail)
         return clubs.reduce(0) { total, club in
             guard let announcements = club.announcements else { return total }
             let unread = announcements.values.filter { ann in
                 let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
                 let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
-                let isMemberOrLeader = club.members.contains(email) || club.leaders.contains(email)
+                let isMemberOrLeader = viewModel.isSuperAdmin || club.members.contains(email) || club.leaders.contains(email)
                 return hasNotSeen && isRecent && isMemberOrLeader
             }.count
             return total + unread
@@ -142,13 +142,13 @@ struct ClubView: View {
     }
     
     func unreadAnnouncements(from clubs: [Club]) -> [String: Club.Announcements] {
-        guard let email = viewModel.userEmail else { return [:] }
+        let email = normalizedEmail(viewModel.userEmail)
         return clubs.reduce(into: [String: Club.Announcements]()) { result, club in
             guard let announcements = club.announcements else { return }
             let filtered = announcements.filter { (_, ann) in
                 let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
                 let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
-                let isMemberOrLeader = club.members.contains(email) || club.leaders.contains(email)
+                let isMemberOrLeader = viewModel.isSuperAdmin || club.members.contains(email) || club.leaders.contains(email)
                 return hasNotSeen && isRecent && isMemberOrLeader
             }
             result.merge(filtered) { _, new in new }
