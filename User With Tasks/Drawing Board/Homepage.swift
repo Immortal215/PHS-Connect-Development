@@ -52,6 +52,9 @@ struct Homepage: View {
     @State var thoughtsOpened = false
     @AppStorage("selectedTab") var selectedTab = 1
     @AppStorage("urgentCount") var urgentCount = 3
+    @AppStorage("recentDeletedHomepageTasks") var recentDeletedRaw = ""
+    @AppStorage("recentDeletedHomepageOpen") var recentDeletedOpen = false
+    @State var recentDeleted: [RecentlyDeletedItem] = []
     
     // draw stuff
     @State var lines: [Line] = []
@@ -129,6 +132,100 @@ struct Homepage: View {
         myTimerPomo?.invalidate()
         myTimerPomo = timerPomo
     }
+    
+    func loadRecentDeleted() {
+        guard !recentDeletedRaw.isEmpty,
+              let data = recentDeletedRaw.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([RecentlyDeletedItem].self, from: data) else {
+            recentDeleted = []
+            return
+        }
+        
+        recentDeleted = Array(decoded.prefix(10))
+    }
+    
+    func saveRecentDeleted() {
+        guard let data = try? JSONEncoder().encode(Array(recentDeleted.prefix(10))),
+              let encoded = String(data: data, encoding: .utf8) else {
+            return
+        }
+        
+        recentDeletedRaw = encoded
+    }
+    
+    func addRecentDeleted(index: Int) {
+        guard names.indices.contains(index),
+              subjects.indices.contains(index),
+              infoArray.indices.contains(index),
+              dueDates.indices.contains(index) else {
+            return
+        }
+        
+        let item = RecentlyDeletedItem(
+            title: names[index],
+            subject: subjects[index],
+            description: infoArray[index],
+            dueDate: dueDates[index],
+            listName: currentTab,
+            deletedAt: Date()
+        )
+        
+        recentDeleted.insert(item, at: 0)
+        recentDeleted = Array(recentDeleted.prefix(10))
+        saveRecentDeleted()
+    }
+    
+    func restoreRecentDeleted(_ item: RecentlyDeletedItem) {
+        let fallbackTab = currentTab == "+erder" ? "Basic List" : currentTab
+        let chosenTab = bigDic[item.listName] != nil ? item.listName : fallbackTab
+        
+        var tabDict = bigDic[chosenTab] ?? ["subjects": [String()], "names": [String()], "description": [String()], "date": [String()]]
+        var namesArray = tabDict["names"] ?? []
+        var subjectsArray = tabDict["subjects"] ?? []
+        var infosArray = tabDict["description"] ?? []
+        var datesArray = tabDict["date"] ?? []
+        var dueArray = dueDic[chosenTab] ?? []
+        
+        // Keep parity with create-item behavior used in Notebook.
+        if namesArray == [] || namesArray == [""] {
+            namesArray = []
+            subjectsArray = []
+            infosArray = []
+            datesArray = []
+            dueArray = []
+        }
+        
+        namesArray.append(item.title)
+        subjectsArray.append(item.subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? " " : item.subject)
+        infosArray.append(item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? " " : item.description)
+        datesArray.append(Date.now.formatted())
+        dueArray.append(item.dueDate)
+        
+        tabDict["names"] = namesArray
+        tabDict["subjects"] = subjectsArray
+        tabDict["description"] = infosArray
+        tabDict["date"] = datesArray
+        
+        bigDic[chosenTab] = tabDict
+        dueDic[chosenTab] = dueArray
+        
+        UserDefaults.standard.set(bigDic, forKey: "DicKey")
+        UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
+        
+        if chosenTab == currentTab {
+            names = namesArray
+            subjects = subjectsArray
+            infoArray = infosArray
+            dates = datesArray
+            dueDates = dueArray
+            selectDelete = Array(repeating: false, count: infoArray.count)
+            caughtUp = false
+        }
+        
+        recentDeleted.removeAll { $0.id == item.id }
+        saveRecentDeleted()
+    }
+    
     var minutesPomo: String {
         let time = progressTimePomo % 3600 == 0 ? 60 : (progressTimePomo % 3600) / 60
         return time < 10 ? "0\(time)" : "\(time)"
@@ -147,10 +244,89 @@ struct Homepage: View {
     @AppStorage("cornerRadius") var cornerRadius = 300
     @AppStorage("drawer") var drawer = true 
     @AppStorage("writer") var writer = true 
+        
+    var recentDeletedSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "trash.circle.fill")
+                    .foregroundStyle(.red.opacity(0.9))
+                Text("Recently Deleted")
+                    .font(.headline.weight(.semibold))
+            }
+            
+            ScrollView {
+                VStack(spacing: 8) {
+                    if recentDeleted.isEmpty {
+                        Text("No recently deleted tasks.")
+                            .foregroundStyle(.gray)
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 8)
+                    }
+                    
+                    ForEach(Array(recentDeleted.prefix(10))) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(item.title)
+                                    .font(.subheadline.weight(.semibold))
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(item.deletedAt.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            HStack {
+                                Text("List: \(item.listName)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.gray)
+                                Spacer()
+                                
+                                Button {
+                                    restoreRecentDeleted(item)
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                                        Text("Restore")
+                                    }
+                                    .font(.caption.weight(.semibold))
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(.green)
+                            }
+                            
+                            if item.subject.trimmingCharacters(in: .whitespacesAndNewlines) != "" && item.subject != " " {
+                                Text(item.subject)
+                                    .font(.caption)
+                                    .foregroundStyle(Color(hexadecimal: subjectColor))
+                            }
+                            
+                            if item.description.trimmingCharacters(in: .whitespacesAndNewlines) != "" && item.description != " " {
+                                Text(item.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                            
+                            Text("Was due \(item.dueDate.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                }
+            }
+            .frame(maxHeight: 190)
+        }
+        .padding(14)
+        .background(Color.black, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white, lineWidth: 3))
+    }
+    
     var body: some View {
         ZStack {
-            
-            
             VStack {
                 Text("Home")
                     .font(.title)
@@ -185,6 +361,18 @@ struct Homepage: View {
                                             .stroke(.white, lineWidth: 3)
                                             .frame(width: 39, height: 39)
                                     }
+                                
+                                Button {
+                                    withAnimation(.snappy(duration: 0.25)) {
+                                        recentDeletedOpen.toggle()
+                                    }
+                                } label: {
+                                    Image(systemName: recentDeletedOpen ? "trash.fill" : "trash")
+                                        .resizable()
+                                        .frame(width: 24, height: 28)
+                                        .foregroundStyle(recentDeletedOpen ? .red : .white)
+                                }
+                                .padding(.horizontal)
                                 
                                 
                                 Text("Most Urgent!")
@@ -245,13 +433,13 @@ struct Homepage: View {
                                     ZStack {
                                         
                                         RoundedRectangle(cornerRadius: 25)
-                                            .foregroundStyle(.black)  
+                                            .foregroundStyle(.black)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 25)
                                                     .stroke(.white, lineWidth: 3)
                                                     .frame(width: screenWidth/2.1)
                                             )
-                                            .shadow(color: .white.opacity(0.2), radius: 8, x: 0, y: 4)   
+                                            .shadow(color: .white.opacity(0.2), radius: 8, x: 0, y: 4)
                                             .frame(width: screenWidth/2.1)
                                         
                                         VStack {
@@ -281,6 +469,7 @@ struct Homepage: View {
                                                         selectDelete[index].toggle()
                                                         
                                                         if selectDelete[index] == false {
+                                                            addRecentDeleted(index: index)
                                                             selectDelete.remove(at: index)
                                                             infoArray.remove(at: index)
                                                             names.remove(at: index)
@@ -396,6 +585,12 @@ struct Homepage: View {
 
                             }
                             .animation(.bouncy(duration: 1))
+                        }
+                        
+                        if recentDeletedOpen {
+                            recentDeletedSection
+                                .padding(.top, 8)
+                                .padding(.horizontal, 8)
                         }
                         Spacer()
                     }
@@ -731,6 +926,8 @@ struct Homepage: View {
             
         }
         .onAppear {
+            loadRecentDeleted()
+            
             if thoughtText != "" {
                 thoughtsOpened = true
             }
@@ -995,6 +1192,34 @@ func styleNotification(dueDate: Date, assignment: String, description: String, a
 struct Line {
     var points: [CGPoint]
     var color: Color = .white
+}
+
+struct RecentlyDeletedItem: Codable, Identifiable {
+    let id: String
+    let title: String
+    let subject: String
+    let description: String
+    let dueDate: Date
+    let listName: String
+    let deletedAt: Date
+    
+    init(
+        id: String = UUID().uuidString,
+        title: String,
+        subject: String,
+        description: String,
+        dueDate: Date,
+        listName: String,
+        deletedAt: Date
+    ) {
+        self.id = id
+        self.title = title
+        self.subject = subject
+        self.description = description
+        self.dueDate = dueDate
+        self.listName = listName
+        self.deletedAt = deletedAt
+    }
 }
 
 func dateFormatClean(str: Date) -> String {

@@ -27,7 +27,8 @@ struct ChatView: View {
     @State var listeningChats : [String] = []
     @State var users: [String : Personal] = [:] // UserID : UserStruct
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = "" // comma-separated chatIDs
-    @FocusState var focusedOnSendBar: Bool
+    @State var composerFocusRequestID = 0
+    @State var composerDismissRequestID = 0
     @State var selectedClub: Club?
     @AppStorage("bubbles") var bubbles = false
     @State var bubbleBuffer = false
@@ -51,6 +52,9 @@ struct ChatView: View {
     @State var isThreadSwitching = false
     @State var loadingMessage = "Loading chats..."
     @State var lastResumeRefresh = Date.distantPast
+    @State var chatsEnabled = true
+    @State var globalChatsRef: DatabaseReference?
+    @State var globalChatsHandle: DatabaseHandle?
     private let loadingOverlayHoldTime = 0.12
     @Namespace var namespace
     @Environment(\.scenePhase) var scenePhase
@@ -156,7 +160,8 @@ struct ChatView: View {
                             }
                             .padding(.vertical, 8)
                         }
-                        
+                        .allowsHitTesting(chatsEnabled)
+
                         Group {
                             if #available(iOS 26, *) {
                                 GlassEffectContainer(spacing: 24) { // spacing determines the morphism
@@ -351,7 +356,7 @@ struct ChatView: View {
                                                             let trimmed = newThreadName.trimmingCharacters(in: .whitespaces)
                                                             guard !trimmed.isEmpty else {
                                                                 newThreadName = ""
-                                                                focusedOnSendBar = false
+                                                                composerDismissRequestID += 1
                                                                 return
                                                             }
                                                             
@@ -384,7 +389,7 @@ struct ChatView: View {
                                                         
                                                         Button(action: {
                                                             newThreadName = ""
-                                                            focusedOnSendBar = false
+                                                            composerDismissRequestID += 1
                                                         }) {
                                                             Image(systemName: "xmark")
                                                                 .font(.system(size: 10, weight: .semibold))
@@ -540,6 +545,7 @@ struct ChatView: View {
                                 GlassBackground()
                             }
                             .clipped()
+                            .allowsHitTesting(chatsEnabled)
                         }
                     }
                     
@@ -547,6 +553,7 @@ struct ChatView: View {
                     if selectedChatID != nil {
                         messageSection
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .allowsHitTesting(chatsEnabled)
                     } else {
                         VStack {
                             Spacer()
@@ -561,12 +568,13 @@ struct ChatView: View {
                 .background{
                     ZStack {
                         RandomShapesBackground()
-                            .blur(radius: bubbles ? 0 : 6)
+                            .blur(radius: bubbles ? 0 : 4)
                         
-                        Color.secondarySystemBackground.opacity(0.4)
+                        Color.secondarySystemBackground.opacity(0.6)
                             .frame(height: screenHeight + 20)
 
                     }
+                    .ignoresSafeArea(.keyboard)
                 }
                 .onChange(of: selectedChatID) { selChatID in
                     DispatchQueue.main.async {
@@ -586,17 +594,21 @@ struct ChatView: View {
                     }
                 }
             }
-            .onTapGesture(disabled: !focusedOnSendBar) {
-                focusedOnSendBar = false
-            }
-            .onTapGesture(disabled: !focusedOnNewThread) {
-                focusedOnNewThread = false
+            .onTapGesture {
+                composerDismissRequestID += 1
+                if focusedOnNewThread {
+                    focusedOnNewThread = false
+                }
             }
             
         }
         .onAppear {
             NotificationCenter.default.post(name: Notification.Name("RequestPendingChatID"), object: nil)
             bubbleBuffer = !bubbles
+            startGlobalChatsListener()
+        }
+        .onDisappear {
+            stopGlobalChatsListener()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SendPendingChatID"))) { notif in
             if let info = notif.userInfo {
@@ -638,6 +650,13 @@ struct ChatView: View {
                 .allowsHitTesting(false)
             }
         }
+        .overlay {
+            if !chatsEnabled {
+                ChatBlockedOverlay()
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+            }
+        }
     }
     
     var messageSection: some View {
@@ -654,7 +673,11 @@ struct ChatView: View {
                     userInfo: $userInfo,
                     editingMessageID: $editingMessageID,
                     replyingMessageID: $replyingMessageID,
-                    focusedOnSendBar: _focusedOnSendBar,
+                    focusSendBar: {
+                        DispatchQueue.main.async {
+                            composerFocusRequestID += 1
+                        }
+                    },
                     bubbles: $bubbles,
                     clubColor: .constant(colorFromClub(club: selectedClub)),
                     clubsLeaderIn: clubsLeaderIn,
@@ -674,7 +697,8 @@ struct ChatView: View {
                     userInfo: $userInfo,
                     editingMessageID: $editingMessageID,
                     replyingMessageID: $replyingMessageID,
-                    focusedOnSendBar: _focusedOnSendBar,
+                    focusRequestID: composerFocusRequestID,
+                    dismissRequestID: composerDismissRequestID,
                     screenWidth: screenWidth,
                     screenHeight: screenHeight,
                     onDidSend: {
@@ -923,7 +947,6 @@ struct ChatView: View {
                     if !chatMessages.contains(where: { $0.messageID == message.messageID }) {
                         insertMessageSorted(message, into: &chatMessages)
                         chats[chatIndex].messages = chatMessages
-                        
                         saveChatToCacheAsync(chats[chatIndex])
                     }
                 }
@@ -946,6 +969,7 @@ struct ChatView: View {
                     }
                     
                     chats[chatIndex].messages = chatMessages
+                    
                     saveChatToCacheAsync(chats[chatIndex])
                 }
             }
@@ -1106,6 +1130,59 @@ struct ChatView: View {
         
 
     }
+    
+    func startGlobalChatsListener() {
+        stopGlobalChatsListener()
+        
+        let ref = Database.database().reference()
+            .child("global")
+            .child("chatsEnabled")
+        
+        globalChatsRef = ref
+        globalChatsHandle = ref.observe(.value) { snapshot in
+            DispatchQueue.main.async {
+                if let enabled = boolFromGlobalSetting(snapshot.value) {
+                    chatsEnabled = enabled
+                } else {
+                    chatsEnabled = true
+                }
+            }
+        }
+    }
+    
+    func stopGlobalChatsListener() {
+        if let ref = globalChatsRef, let handle = globalChatsHandle {
+            ref.removeObserver(withHandle: handle)
+        }
+        globalChatsHandle = nil
+        globalChatsRef = nil
+    }
+    
+    func boolFromGlobalSetting(_ rawValue: Any?) -> Bool? {
+        if let boolValue = rawValue as? Bool {
+            return boolValue
+        }
+        
+        if let numberValue = rawValue as? NSNumber {
+            return numberValue.boolValue
+        }
+        
+        if let intValue = rawValue as? Int {
+            return intValue != 0
+        }
+        
+        if let stringValue = rawValue as? String {
+            let normalized = stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if normalized == "true" || normalized == "1" || normalized == "yes" {
+                return true
+            }
+            if normalized == "false" || normalized == "0" || normalized == "no" {
+                return false
+            }
+        }
+        
+        return nil
+    }
 
 }
 
@@ -1187,6 +1264,54 @@ struct ChatLoadingOverlay: View {
     }
 }
 
+struct ChatBlockedOverlay: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.42)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(Color.red.opacity(0.16))
+                        .frame(width: 84, height: 84)
+                    
+                    Circle()
+                        .stroke(Color.red.opacity(0.55), lineWidth: 2)
+                        .frame(width: 84, height: 84)
+                    
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 44, weight: .bold))
+                        .foregroundStyle(.red)
+                }
+                
+                VStack(spacing: 4) {
+                    Text("Chats currently blocked by admins")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text("Try again in a bit")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 22)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.systemGray6.opacity(0.95))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.red.opacity(0.35), lineWidth: 1.5)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 20, x: 0, y: 12)
+            .padding(24)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
 struct ChatComposer: View {
     @Binding var selectedChat: Chat?
     @Binding var selectedThread: [String: String?]
@@ -1194,7 +1319,9 @@ struct ChatComposer: View {
     @Binding var userInfo: Personal?
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
-    @FocusState var focusedOnSendBar: Bool
+    var focusRequestID: Int
+    var dismissRequestID: Int
+    @FocusState private var focusedOnSendBar: Bool
     var screenWidth: CGFloat
     var screenHeight: CGFloat
     var onDidSend: () -> Void
@@ -1204,6 +1331,19 @@ struct ChatComposer: View {
     @State var attachmentURL: String = ""
     @State var attachmentLoaded = false
     @State var attachments: [String] = []
+    @State var isComposerFocusedUI = false
+    
+    var isDraftEmpty: Bool {
+        draftText.isEmpty && attachments.isEmpty
+    }
+    
+    var isD214User: Bool {
+        normalizedEmail(userInfo?.userEmail).contains("d214")
+    }
+    
+    var isSendDisabled: Bool {
+        isDraftEmpty || !(isSuperAdminEmail(userInfo?.userEmail) || isD214User)
+    }
     
     var body: some View {
         VStack {
@@ -1346,17 +1486,17 @@ struct ChatComposer: View {
                         sendCurrentDraft()
                     } label: {
                         Circle()
-                            .fill((draftText.isEmpty && attachments.isEmpty) ? Color.secondary.opacity(0.3) : Color.blue)
+                            .fill(isSendDisabled ? Color.secondary.opacity(0.3) : Color.blue)
                             .frame(width: 36, height: 36)
                             .overlay(
                                 Image(systemName: "arrow.up")
-                                    .foregroundStyle((draftText.isEmpty && attachments.isEmpty) ? Color.primary : Color.white)
+                                    .foregroundStyle(isSendDisabled ? Color.primary : Color.white)
                                     .font(.system(size: 16, weight: .bold))
                             )
                             .padding(.vertical, 12)
                             .padding(.horizontal, 16)
                     }
-                    .disabled(draftText.isEmpty && attachments.isEmpty)
+                    .disabled(isSendDisabled)
                     .keyboardShortcut(.return)
                 }
                 .apply {
@@ -1368,7 +1508,17 @@ struct ChatComposer: View {
                 }
                 .background {
                     GlassBackground(color: Color.systemBackground)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(
+                                    Color.accentColor.opacity(isComposerFocusedUI ? 0.22 : 0.08),
+                                    lineWidth: isComposerFocusedUI ? 1.6 : 1
+                                )
+                        }
                 }
+                .scaleEffect(isComposerFocusedUI ? 1.008 : 1.0)
+                .offset(y: isComposerFocusedUI ? -2 : 0)
+                .animation(.easeOut(duration: 0.16), value: isComposerFocusedUI)
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
@@ -1458,6 +1608,24 @@ struct ChatComposer: View {
             attachmentLoaded = false
             editingMessageID = nil
             replyingMessageID = nil
+        }
+        .onChange(of: focusRequestID) { _ in
+            DispatchQueue.main.async {
+                focusedOnSendBar = true
+            }
+        }
+        .onChange(of: dismissRequestID) { _ in
+            if focusedOnSendBar {
+                focusedOnSendBar = false
+            }
+        }
+        .onChange(of: focusedOnSendBar) { newValue in
+            withAnimation(.easeOut(duration: 0.16)) {
+                isComposerFocusedUI = newValue
+            }
+        }
+        .onAppear {
+            isComposerFocusedUI = focusedOnSendBar
         }
     }
     

@@ -1,5 +1,6 @@
 import FirebaseCore
 import FirebaseAuth
+import FirebaseDatabase
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
@@ -35,6 +36,15 @@ struct SettingsView: View {
     @State var autoBuffer = false
     @AppStorage("autoColorScheme") var autoColorScheme = true
     @Environment(\.colorScheme) var colorScheme
+    @State var globalChatsEnabled = true
+    @State var didLoadGlobalChatsSetting = false
+    @State var globalChatsRef: DatabaseReference?
+    @State var globalChatsHandle: DatabaseHandle?
+    @State var isSavingGlobalChatsSetting = false
+
+    var isSuperAdmin: Bool {
+        isSuperAdminEmail(viewModel.userEmail ?? userInfo?.userEmail)
+    }
 
     var body: some View {
         VStack {
@@ -84,6 +94,46 @@ struct SettingsView: View {
             .padding()
             
             Divider()
+
+            if isSuperAdmin {
+                HStack(spacing: 12) {
+                    Image(systemName: globalChatsEnabled ? "checkmark.bubble.fill" : "xmark.octagon.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(globalChatsEnabled ? .green : .red)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Global Chats")
+                            .font(.headline)
+                        Text(globalChatsEnabled ? "Chats are enabled for everyone" : "Chats are blocked for everyone")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: Binding(
+                        get: { globalChatsEnabled },
+                        set: { newValue in
+                            globalChatsEnabled = newValue
+                            setGlobalChatsEnabled(newValue)
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(globalChatsEnabled ? .green : .red)
+                    .disabled(!didLoadGlobalChatsSetting || isSavingGlobalChatsSetting)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.systemGray6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(globalChatsEnabled ? Color.green.opacity(0.35) : Color.red.opacity(0.45), lineWidth: 1.5)
+                        )
+                )
+                .padding(.horizontal)
+                .padding(.top, 8)
+            }
             
             Button {
             } label: {
@@ -236,6 +286,8 @@ struct SettingsView: View {
             .padding()
         }
         .onAppear {
+            startGlobalChatsListener()
+            
             if mostRecentVersionSeen != changeLogViewModel.currentVersion.version {
                 var features : [Changelog.Feature] = []
                 for i in changeLogViewModel.currentVersion.changes {
@@ -248,6 +300,9 @@ struct SettingsView: View {
             darkModeBuffer = darkMode
             animationsPlusBuffer = animationsPlus
         }
+        .onDisappear {
+            stopGlobalChatsListener()
+        }
         .sheet(isPresented: $isNewChangeLogShown, changelog: recentVersionForChangelogLibrary)
         .onChange(of: isNewChangeLogShown) { old, new in
             if old == true && new == false {  // onDismis dont work for some reason with this libary
@@ -258,5 +313,75 @@ struct SettingsView: View {
         .padding()
         .background(Color.systemGray6.cornerRadius(15).padding())
 
+    }
+    
+    func startGlobalChatsListener() {
+        stopGlobalChatsListener()
+        
+        let ref = Database.database().reference()
+            .child("global")
+            .child("chatsEnabled")
+        
+        globalChatsRef = ref
+        globalChatsHandle = ref.observe(.value) { snapshot in
+            DispatchQueue.main.async {
+                if let enabled = boolFromGlobalSetting(snapshot.value) {
+                    globalChatsEnabled = enabled
+                } else {
+                    globalChatsEnabled = true
+                }
+                didLoadGlobalChatsSetting = true
+            }
+        }
+    }
+    
+    func stopGlobalChatsListener() {
+        if let ref = globalChatsRef, let handle = globalChatsHandle {
+            ref.removeObserver(withHandle: handle)
+        }
+        globalChatsHandle = nil
+        globalChatsRef = nil
+    }
+    
+    func setGlobalChatsEnabled(_ enabled: Bool) {
+        guard isSuperAdmin else { return }
+        isSavingGlobalChatsSetting = true
+        globalChatsRef?.setValue(enabled) { error, _ in
+            DispatchQueue.main.async {
+                isSavingGlobalChatsSetting = false
+                if let error {
+                    print("Failed to update /global/chatsEnabled: \(error.localizedDescription)")
+                    globalChatsRef?.observeSingleEvent(of: .value) { snapshot in
+                        globalChatsEnabled = boolFromGlobalSetting(snapshot.value) ?? true
+                    }
+                }
+            }
+        }
+    }
+    
+    func boolFromGlobalSetting(_ rawValue: Any?) -> Bool? {
+        if let boolValue = rawValue as? Bool {
+            return boolValue
+        }
+        
+        if let numberValue = rawValue as? NSNumber {
+            return numberValue.boolValue
+        }
+        
+        if let intValue = rawValue as? Int {
+            return intValue != 0
+        }
+        
+        if let stringValue = rawValue as? String {
+            let normalized = stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if normalized == "true" || normalized == "1" || normalized == "yes" {
+                return true
+            }
+            if normalized == "false" || normalized == "0" || normalized == "no" {
+                return false
+            }
+        }
+        
+        return nil
     }
 }

@@ -2,108 +2,122 @@ import SwiftUI
 import SwiftUIX
 
 struct RandomShapesBackground: View {
-    let screenWidth = UIScreen.main.bounds.width
-    let screenHeight = UIScreen.main.bounds.height
-    
-    @State var positions: [CGPoint] = []
-    
     var body: some View {
-        ZStack {
-            ForEach(0..<12, id: \.self) { i in
-                Circle()
-                    .fill(Color.primary.opacity(0.1))
-                    .frame(width: 90, height: 90)
-                    .position(positions.count > i ? positions[i] : CGPoint.zero)
-                    .blur(radius: 8)
-            }
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
             
-            ForEach(12..<24, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.primary.opacity(0.15), lineWidth: 5)
-                    .frame(width: 140, height: 70)
-                    .rotationEffect(.degrees(Double(i) * 15))
-                    .position(positions.count > i ? positions[i] : CGPoint.zero)
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color.systemBackground,
+                        Color.systemGray6.opacity(0.8)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                
+                RadialGradient(
+                    colors: [
+                        Color.accentColor.opacity(0.10),
+                        Color.clear
+                    ],
+                    center: .topTrailing,
+                    startRadius: 20,
+                    endRadius: max(width, height) * 0.7
+                )
+                
+                ForEach(circleSpecs.indices, id: \.self) { i in
+                    let spec = circleSpecs[i]
+                    Circle()
+                        .fill(Color.primary.opacity(spec.opacity))
+                        .frame(width: spec.size, height: spec.size)
+                        .position(
+                            x: width * spec.x,
+                            y: height * spec.y
+                        )
+                        .blur(radius: spec.blur)
+                }
+                
+                ForEach(rectSpecs.indices, id: \.self) { i in
+                    let spec = rectSpecs[i]
+                    RoundedRectangle(cornerRadius: spec.cornerRadius)
+                        .stroke(Color.primary.opacity(spec.opacity), lineWidth: spec.lineWidth)
+                        .frame(width: spec.width, height: spec.height)
+                        .rotationEffect(.degrees(spec.rotation))
+                        .position(
+                            x: width * spec.x,
+                            y: height * spec.y
+                        )
+                }
+                
+                ForEach(rhombusSpecs.indices, id: \.self) { i in
+                    let spec = rhombusSpecs[i]
+                    RoundedRhombus(cornerRadius: spec.cornerRadius)
+                        .stroke(Color.primary.opacity(spec.opacity), lineWidth: spec.lineWidth)
+                        .frame(width: spec.width, height: spec.height)
+                        .rotationEffect(.degrees(spec.rotation))
+                        .position(
+                            x: width * spec.x,
+                            y: height * spec.y
+                        )
+                }
             }
-            
-            ForEach(24..<36, id: \.self) { i in
-                RoundedRhombus(cornerRadius: 16)
-                    .stroke(Color.primary.opacity(0.15), lineWidth: 5)
-                    .frame(width: 140, height: 70)
-                    .rotationEffect(.degrees(Double(i) * 15))
-                    .position(positions.count > i ? positions[i] : CGPoint.zero)
-            }
-        }
-        .edgesIgnoringSafeArea(.all)
-        .onAppear {
-            DispatchQueue.main.async {
-                generateRandomPositions()
-            }
+            .ignoresSafeArea()
         }
     }
-    
-    func generateRandomPositions() {
-        var circPositions: [CGPoint] = []
-        var rectPositions: [CGPoint] = []
-        var hexPositions: [CGPoint] = []
-        
-        for _ in 0..<12 {
-            var attempts = 0
-            var newPoint: CGPoint
-            
-            repeat {
-                newPoint = CGPoint(
-                    x: Double.random(in: 0...(screenWidth)),
-                    y: Double.random(in: 0...(screenHeight))
-                )
-                attempts += 1
-            } while !isValidPosition(newPoint, existingPositions: circPositions) && attempts < 100
-            
-            circPositions.append(newPoint)
-        }
-        
-        for i in 12..<24 {
-            var attempts = 0
-            var newPoint: CGPoint
-            
-            repeat {
-                newPoint = CGPoint(
-                    x: Double.random(in: 0...(screenWidth)),
-                    y: Double.random(in: 0...(screenHeight))
-                )
-                attempts += 1
-            } while !isValidPosition(newPoint, existingPositions: rectPositions) && attempts < 100
-            
-            rectPositions.append(newPoint)
-        }
-        
-        for i in 24..<36 {
-            var attempts = 0
-            var newPoint: CGPoint
-            
-            repeat {
-                newPoint = CGPoint(
-                    x: Double.random(in: 0...(screenWidth)),
-                    y: Double.random(in: 0...(screenHeight))
-                )
-                attempts += 1
-            } while !isValidPosition(newPoint, existingPositions: rectPositions + hexPositions) && attempts < 100
-            
-            hexPositions.append(newPoint)
-        }
-        
-        positions = circPositions + rectPositions + hexPositions
+}
+
+private extension RandomShapesBackground {
+    struct CircleSpec {
+        let x: CGFloat
+        let y: CGFloat
+        let size: CGFloat
+        let opacity: CGFloat
+        let blur: CGFloat
     }
     
-    func isValidPosition(_ point: CGPoint, existingPositions: [CGPoint]) -> Bool {
-        let minDistance: Double = 120
-        
-        for existingPoint in existingPositions {
-            let distance = sqrt(pow(point.x - existingPoint.x, 2) + pow(point.y - existingPoint.y, 2))
-            if distance < minDistance {
-                return false
-            }
-        }
-        
-        return true
+    struct ShapeSpec {
+        let x: CGFloat
+        let y: CGFloat
+        let width: CGFloat
+        let height: CGFloat
+        let rotation: Double
+        let opacity: CGFloat
+        let lineWidth: CGFloat
+        let cornerRadius: CGFloat
+    }
+    
+    var circleSpecs: [CircleSpec] {
+        [
+            .init(x: 0.08, y: 0.14, size: 120, opacity: 0.09, blur: 8),
+            .init(x: 0.86, y: 0.10, size: 140, opacity: 0.08, blur: 10),
+            .init(x: 0.22, y: 0.34, size: 90, opacity: 0.10, blur: 7),
+            .init(x: 0.74, y: 0.31, size: 95, opacity: 0.10, blur: 8),
+            .init(x: 0.11, y: 0.62, size: 115, opacity: 0.09, blur: 9),
+            .init(x: 0.48, y: 0.52, size: 100, opacity: 0.08, blur: 8),
+            .init(x: 0.88, y: 0.57, size: 110, opacity: 0.09, blur: 8),
+            .init(x: 0.32, y: 0.79, size: 92, opacity: 0.10, blur: 7),
+            .init(x: 0.69, y: 0.83, size: 118, opacity: 0.08, blur: 9)
+        ]
+    }
+    
+    var rectSpecs: [ShapeSpec] {
+        [
+            .init(x: 0.26, y: 0.12, width: 150, height: 74, rotation: 18, opacity: 0.14, lineWidth: 4, cornerRadius: 14),
+            .init(x: 0.62, y: 0.18, width: 130, height: 66, rotation: -14, opacity: 0.15, lineWidth: 4, cornerRadius: 12),
+            .init(x: 0.83, y: 0.42, width: 144, height: 70, rotation: 26, opacity: 0.13, lineWidth: 4, cornerRadius: 12),
+            .init(x: 0.44, y: 0.66, width: 136, height: 68, rotation: -20, opacity: 0.14, lineWidth: 4, cornerRadius: 12),
+            .init(x: 0.15, y: 0.84, width: 148, height: 72, rotation: 12, opacity: 0.14, lineWidth: 4, cornerRadius: 13)
+        ]
+    }
+    
+    var rhombusSpecs: [ShapeSpec] {
+        [
+            .init(x: 0.13, y: 0.28, width: 142, height: 68, rotation: -22, opacity: 0.14, lineWidth: 4, cornerRadius: 16),
+            .init(x: 0.53, y: 0.38, width: 138, height: 68, rotation: 16, opacity: 0.14, lineWidth: 4, cornerRadius: 16),
+            .init(x: 0.79, y: 0.70, width: 146, height: 70, rotation: -18, opacity: 0.14, lineWidth: 4, cornerRadius: 16),
+            .init(x: 0.37, y: 0.90, width: 134, height: 66, rotation: 24, opacity: 0.13, lineWidth: 4, cornerRadius: 16)
+        ]
     }
 }

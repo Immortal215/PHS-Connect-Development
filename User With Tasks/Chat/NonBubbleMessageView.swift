@@ -22,7 +22,7 @@ struct NonBubbleMessageView : View {
     @Binding var chats: [Chat]
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
-    @FocusState var focusedOnSendBar: Bool
+    var focusSendBar: () -> Void
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     @Binding var nonBubbleMenuMessage : Chat.ChatMessage? 
@@ -34,6 +34,7 @@ struct NonBubbleMessageView : View {
     @State var clubsLeaderIn: [Club]
     
     var proxy: ScrollViewProxy
+    var loadOlderMessages: () -> Void
     @Environment(\.openURL) private var openURL
     
     var replyToChatMessage: Chat.ChatMessage?
@@ -114,6 +115,7 @@ struct NonBubbleMessageView : View {
                                     Spacer()
                                 }
                                 .onTapGesture {
+                                    loadOlderMessages()
                                     withAnimation {
                                         proxy.scrollTo(replyToMessage, anchor: .top)
                                     }
@@ -342,7 +344,7 @@ struct NonBubbleMessageView : View {
                                                     action: {
                                                         replyingMessageID = message.messageID
                                                         editingMessageID = nil
-                                                        focusedOnSendBar = true
+                                                        focusSendBar()
                                                         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                                             nonBubbleMenuMessage = nil
                                                         }
@@ -357,7 +359,7 @@ struct NonBubbleMessageView : View {
                                                             action: {
                                                                 editingMessageID = message.messageID
                                                                 replyingMessageID = nil
-                                                                focusedOnSendBar = true
+                                                                focusSendBar()
                                                                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                                                     nonBubbleMenuMessage = nil
                                                                 }

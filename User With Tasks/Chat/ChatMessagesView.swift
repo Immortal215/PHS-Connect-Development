@@ -11,7 +11,7 @@ struct MessageScrollView: View {
     @Binding var userInfo: Personal?
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
-    @FocusState var focusedOnSendBar: Bool
+    var focusSendBar: () -> Void
     @Binding var bubbles: Bool
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
@@ -70,7 +70,16 @@ struct MessageScrollView: View {
                                 }
                                 
                                 ForEach(Array(visible.enumerated()), id: \.element.messageID) { i, message in
-                                    messageBubble(message: message, index: i, messagesToShow: visible, messageLookup: messageLookup, proxy: proxy)
+                                    let previousMessage = i > 0 ? visible[i - 1] : nil
+                                    let nextMessage = i < visible.count - 1 ? visible[i + 1] : nil
+                                    
+                                    messageBubble(
+                                        message: message,
+                                        previousMessage: previousMessage,
+                                        nextMessage: nextMessage,
+                                        messageLookup: messageLookup,
+                                        proxy: proxy
+                                    )
                                         .id(message.messageID)
                                 }
                                 
@@ -103,19 +112,19 @@ struct MessageScrollView: View {
                         }
                     }
                 }
-                .onChange(of: selectedChat?.chatID) { _ in
+                .onChange(of: selectedChat?.chatID) { 
                     scrolledToTopTimes = 1
                     expandedURLPreviewMessageID = nil
                     rebuildThreadMessages()
                     scrollToBottom(proxy: proxy)
                 }
-                .onChange(of: selectedThread) { _ in
+                .onChange(of: selectedThread) {
                     rebuildThreadMessages()
                 }
-                .onChange(of: selectedChat?.messages?.count) { _ in
+                .onChange(of: selectedChat?.messages?.count) {
                     rebuildThreadMessages()
                 }
-                .onChange(of: selectedEmoji) { _ in
+                .onChange(of: selectedEmoji) {
                     guard let emoji = selectedEmoji, var newMessage = selectedEmojiMessage, let userID = userInfo?.userID, let chatID = selectedChat?.chatID
                     else { return }
                     
@@ -175,13 +184,11 @@ struct MessageScrollView: View {
     @ViewBuilder
     func messageBubble(
         message: Chat.ChatMessage,
-        index: Int,
-        messagesToShow: [Chat.ChatMessage],
+        previousMessage: Chat.ChatMessage?,
+        nextMessage: Chat.ChatMessage?,
         messageLookup: [String: Chat.ChatMessage],
         proxy: ScrollViewProxy
     ) -> some View {
-        let previousMessage : Chat.ChatMessage? = index > 0 ? messagesToShow[index - 1] : nil
-        let nextMessage : Chat.ChatMessage? = index < messagesToShow.count - 1 ? messagesToShow[index + 1] : nil
         let sortedReactions = sortedReactionPairs(for: message)
         let calendarTimeIsNotSameByHourNextMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: nextMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
         let calendarTimeIsNotSameByHourPreviousMessage : Bool = !Calendar.current.isDate(Date(timeIntervalSince1970: message.date), equalTo: previousMessage.map{Date(timeIntervalSince1970: $0.date)} ?? Date.distantPast, toGranularity: .hour)
@@ -263,6 +270,7 @@ struct MessageScrollView: View {
                                     }
                                     .padding(.top)
                                     .onTapGesture {
+                                        loadOlderMessages(totalCount: threadMessages.count)
                                         withAnimation {
                                             proxy.scrollTo(replyToMessage, anchor: .top)
                                         }
@@ -314,7 +322,7 @@ struct MessageScrollView: View {
                                             Button {
                                                 replyingMessageID = message.messageID
                                                 editingMessageID = nil
-                                                focusedOnSendBar = true
+                                                focusSendBar()
                                             } label: {
                                                 Label("Reply", systemImage: "arrowshape.turn.up.left")
                                             }
@@ -431,7 +439,7 @@ struct MessageScrollView: View {
                                                     Button {
                                                         editingMessageID = message.messageID
                                                         replyingMessageID = nil
-                                                        focusedOnSendBar = true
+                                                        focusSendBar()
                                                     } label: {
                                                         Label("Edit", systemImage: "pencil")
                                                     }
@@ -439,7 +447,7 @@ struct MessageScrollView: View {
                                                     Button {
                                                         replyingMessageID = message.messageID
                                                         editingMessageID = nil
-                                                        focusedOnSendBar = true
+                                                        focusSendBar()
                                                     } label: {
                                                         Label("Reply", systemImage: "arrowshape.turn.up.left")
                                                     }
@@ -606,6 +614,7 @@ struct MessageScrollView: View {
                                         }
                                         .padding(.top)
                                         .onTapGesture {
+                                            loadOlderMessages(totalCount: threadMessages.count)
                                             withAnimation {
                                                 proxy.scrollTo(replyToMessage, anchor: .top)
                                             }
@@ -658,7 +667,7 @@ struct MessageScrollView: View {
                                                 Button {
                                                     replyingMessageID = message.messageID
                                                     editingMessageID = nil
-                                                    focusedOnSendBar = true
+                                                    focusSendBar()
                                                 } label: {
                                                     Label("Reply", systemImage: "arrowshape.turn.up.left")
                                                 }
@@ -813,7 +822,7 @@ struct MessageScrollView: View {
                                                             Button {
                                                                 replyingMessageID = message.messageID
                                                                 editingMessageID = nil
-                                                                focusedOnSendBar = true
+                                                                focusSendBar()
                                                             } label: {
                                                                 Label("Reply", systemImage: "arrowshape.turn.up.left")
                                                             }
@@ -942,7 +951,7 @@ struct MessageScrollView: View {
                     chats: $chats,
                     editingMessageID: $editingMessageID,
                     replyingMessageID: $replyingMessageID,
-                    focusedOnSendBar: _focusedOnSendBar,
+                    focusSendBar: focusSendBar,
                     nonBubbleMenuMessage: $nonBubbleMenuMessage,
                     isEmojiPickerPresented: $isEmojiPickerPresented,
                     selectedEmoji: $selectedEmoji,
@@ -951,6 +960,9 @@ struct MessageScrollView: View {
                     expandedURLPreviewMessageID: $expandedURLPreviewMessageID,
                     clubsLeaderIn: clubsLeaderIn,
                     proxy: proxy,
+                    loadOlderMessages: {
+                        loadOlderMessages(totalCount: threadMessages.count)
+                    },
                     replyToChatMessage: message.replyTo == nil ? nil : messageLookup[message.replyTo!]
                 )
             }
@@ -1167,7 +1179,7 @@ struct MessageScrollView: View {
         guard !isLoadingOlder else { return }
         
         isLoadingOlder = true
-        visibleMessageLimit = min(totalCount, visibleMessageLimit + 200)
+        visibleMessageLimit = totalCount 
         isLoadingOlder = false
     }
 }

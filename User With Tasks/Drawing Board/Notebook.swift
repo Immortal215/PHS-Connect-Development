@@ -880,7 +880,6 @@ struct Notebook: View {
             retrieveDueDic = UserDefaults.standard.dictionary(forKey: "DueDicKey") as? [String : [Date]] ?? [:]
             
             dueDic = (retrieveDueDic[currentTab] != nil ? retrieveDueDic : dueDic)
-            print("\(bigDic)")
             names = bigDic[currentTab]!["names"]!
             subjects = bigDic[currentTab]!["subjects"]!
             infoArray = bigDic[currentTab]!["description"]!
@@ -895,7 +894,6 @@ struct Notebook: View {
                     }
                 }
             }
-            print(allSubjects)
             
             selectDelete = []
             for _ in 0..<infoArray.count {
@@ -969,7 +967,6 @@ struct Notebook: View {
             retrieveDueDic = UserDefaults.standard.dictionary(forKey: "DueDicKey") as? [String : [Date]] ?? [:]
             
             dueDic = (retrieveDueDic[currentTab] != nil ? retrieveDueDic : dueDic)
-            print("\(bigDic)")
             names = bigDic[currentTab]!["names"]!
             subjects = bigDic[currentTab]!["subjects"]!
             infoArray = bigDic[currentTab]!["description"]!
@@ -984,7 +981,6 @@ struct Notebook: View {
                     }
                 }
             }
-            print(allSubjects)
             
             selectDelete = []
             for _ in 0..<infoArray.count {

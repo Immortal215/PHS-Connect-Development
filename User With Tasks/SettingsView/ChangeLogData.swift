@@ -3,10 +3,12 @@ import SwiftUI
 struct ChangelogData {
     static let currentVersion = ChangelogEntry(
         version: "1.1.0 Official Release",
-        date: "08-11-2025",
+        date: "02-12-2026",
         changes: [
             Change(title: "Update of Color!", notes: ["Color has been added everywhere", "The ui has been greatly reformed"], color: .green, symbol: "paintpalette"),
+            Change(title: "Update of Chats!", notes: ["Group Chats for every club has been added!", "Make sure to create feedback forms for any bugs!"], color: .blue, symbol: "bubblechart"),
             Change(title: "Map Editor added", notes: ["Choose the location of your club in Prospect"], color: .blue, symbol: "mappin"),
+            Change(title: "Improved app speed", notes: ["Completed caching"]),
             
         ]
     )
