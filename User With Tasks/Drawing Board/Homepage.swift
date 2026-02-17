@@ -372,7 +372,7 @@ struct Homepage: View {
                                         .frame(width: 24, height: 28)
                                         .foregroundStyle(recentDeletedOpen ? .red : .white)
                                 }
-                                .padding(.horizontal)
+                                .padding(.leading)
                                 
                                 
                                 Text("Most Urgent!")

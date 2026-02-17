@@ -935,7 +935,7 @@ struct ChatView: View {
         
         databaseRef.child("messages")
             .queryOrdered(byChild: "lastUpdated")
-            .queryStarting(atValue: lastTimestamp + 0.001)
+            .queryStarting(atValue: lastTimestamp + 0.001) // MUST DO THIS OR ELSE IT WILL PULL EVERY SINGLE BIT OF DATA EVERY SINGLE TIME
             .observe(.childAdded) { snapshot in
                 guard let message = decodeMessage(from: snapshot) else { return }
                 
@@ -954,7 +954,6 @@ struct ChatView: View {
         
         databaseRef.child("messages")
             .queryOrdered(byChild: "lastUpdated")
-            .queryStarting(atValue: lastTimestamp + 0.001)
             .observe(.childChanged) { snapshot in
                 guard let updatedMessage = decodeMessage(from: snapshot) else { return }
                 

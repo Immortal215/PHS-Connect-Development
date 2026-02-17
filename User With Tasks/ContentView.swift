@@ -343,10 +343,8 @@ struct ContentView: View {
         let databaseRef = Database.database().reference().child("clubs")
         
         let latestCachedTimestamp = clubs.compactMap { $0.lastUpdated }.max() ?? -0.001
-        
-        let query = databaseRef.queryOrdered(byChild: "lastUpdated").queryStarting(atValue: latestCachedTimestamp + 0.001)
-        
-        query.observe(.childAdded) { snapshot in
+                
+        databaseRef.queryOrdered(byChild: "lastUpdated").queryStarting(atValue: latestCachedTimestamp + 0.001).observe(.childAdded) { snapshot in
             if let club = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
                     if let index = clubs.firstIndex(where: { $0.clubID == club.clubID }) {
@@ -366,7 +364,7 @@ struct ContentView: View {
             }
         }
         
-        query.observe(.childChanged) { snapshot in
+        databaseRef.queryOrdered(byChild: "lastUpdated").observe(.childChanged) { snapshot in
             if let club = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
                     if let index = clubs.firstIndex(where: { $0.clubID == club.clubID }) {
