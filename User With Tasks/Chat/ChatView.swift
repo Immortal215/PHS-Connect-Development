@@ -945,9 +945,11 @@ struct ChatView: View {
                     var chatMessages = chats[chatIndex].messages ?? []
                     
                     if !chatMessages.contains(where: { $0.messageID == message.messageID }) {
-                        insertMessageSorted(message, into: &chatMessages)
-                        chats[chatIndex].messages = chatMessages
-                        saveChatToCacheAsync(chats[chatIndex])
+                            insertMessageSorted(message, into: &chatMessages)
+                        withAnimation(.smooth) {
+                            chats[chatIndex].messages = chatMessages
+                        }
+                            saveChatToCacheAsync(chats[chatIndex])
                     }
                 }
             }
@@ -966,8 +968,9 @@ struct ChatView: View {
                     } else {
                         insertMessageSorted(updatedMessage, into: &chatMessages)
                     }
-                    
-                    chats[chatIndex].messages = chatMessages
+                    withAnimation(.smooth) {
+                        chats[chatIndex].messages = chatMessages
+                    }
                     
                     saveChatToCacheAsync(chats[chatIndex])
                 }
@@ -978,7 +981,9 @@ struct ChatView: View {
             
             DispatchQueue.main.async {
                 guard let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
-                chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                withAnimation(.smooth) {
+                    chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
+                }
                 saveChatToCacheAsync(chats[chatIndex])
             }
         }

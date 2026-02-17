@@ -20,15 +20,9 @@ struct MessageScrollView: View {
     @State var isEmojiPickerPresented = false
     @State var selectedEmoji: Emoji? = nil
     @State var selectedEmojiMessage : Chat.ChatMessage?
-    @State var scrolledToTopTimes = 1
     @State var clubsLeaderIn: [Club]
     @State var loadingUsers: Set<String> = []
     @State var expandedURLPreviewMessageID: String? = nil
-    @State var threadMessages: [Chat.ChatMessage] = []
-    @State var threadMessageLookup: [String: Chat.ChatMessage] = [:]
-    @State var visibleMessageLimit = 10
-    @State var buildGeneration = 0
-    @State var isLoadingOlder = false
     
     @Binding var openMessageIDFromNotification: String?
     
@@ -39,39 +33,29 @@ struct MessageScrollView: View {
         return chats.first(where: { $0.chatID == selectedChatID })
     }
     
+    var currentThreadMessages: [Chat.ChatMessage] {
+        guard let selected = selectedChat else { return [] }
+        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
+        return (selected.messages ?? []).filter { ($0.threadName ?? "general") == currentThread }
+    }
+    
+    var currentMessageLookup: [String: Chat.ChatMessage] {
+        Dictionary(uniqueKeysWithValues: currentThreadMessages.map { ($0.messageID, $0) })
+    }
+    
     var body: some View {
         ScrollViewReader { proxy in
             ZStack {
                 ScrollView {
                     LazyVStack(spacing: bubbles ? nil : 0) { // not 0 by default!
                         if selectedChat != nil {
-                            let messages = threadMessages
-                            let visibleCount = min(visibleMessageLimit, messages.count)
-                            let visible = Array(messages.suffix(visibleCount))
-                            let messageLookup = threadMessageLookup
+                            let messages = currentThreadMessages
+                            let messageLookup = currentMessageLookup
                             
                             Group {
-                                if visibleCount < messages.count {
-                                    Button {
-                                        loadOlderMessages(totalCount: messages.count)
-                                    } label: {
-                                        HStack {
-                                            Spacer()
-                                            
-                                            Label(isLoadingOlder ? "Loading older..." : "Load older messages", systemImage: "arrow.up.circle")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            
-                                            Spacer()
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .padding(.top, 8)
-                                }
-                                
-                                ForEach(Array(visible.enumerated()), id: \.element.messageID) { i, message in
-                                    let previousMessage = i > 0 ? visible[i - 1] : nil
-                                    let nextMessage = i < visible.count - 1 ? visible[i + 1] : nil
+                                ForEach(Array(messages.enumerated()), id: \.element.messageID) { i, message in
+                                    let previousMessage = i > 0 ? messages[i - 1] : nil
+                                    let nextMessage = i < messages.count - 1 ? messages[i + 1] : nil
                                     
                                     messageBubble(
                                         message: message,
@@ -97,32 +81,24 @@ struct MessageScrollView: View {
                     }
                 }
                 .onAppear {
-                    rebuildThreadMessages()
                     proxy.scrollTo(openMessageIDFromNotification ?? "", anchor: .top)
                     openMessageIDFromNotification = nil
                     
                 }
                 .defaultScrollAnchor(.bottom)
                 .onChange(of: selectedChat?.messages?.last?.messageID, initial: false) { oldID, newID in
-                    rebuildThreadMessages()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
                         if oldID != newID {
-                            scrolledToTopTimes = 1
                             scrollToBottom(proxy: proxy)
                         }
                     }
                 }
                 .onChange(of: selectedChat?.chatID) { 
-                    scrolledToTopTimes = 1
                     expandedURLPreviewMessageID = nil
-                    rebuildThreadMessages()
                     scrollToBottom(proxy: proxy)
                 }
                 .onChange(of: selectedThread) {
-                    rebuildThreadMessages()
-                }
-                .onChange(of: selectedChat?.messages?.count) {
-                    rebuildThreadMessages()
+                    scrollToBottom(proxy: proxy)
                 }
                 .onChange(of: selectedEmoji) {
                     guard let emoji = selectedEmoji, var newMessage = selectedEmojiMessage, let userID = userInfo?.userID, let chatID = selectedChat?.chatID
@@ -270,7 +246,6 @@ struct MessageScrollView: View {
                                     }
                                     .padding(.top)
                                     .onTapGesture {
-                                        loadOlderMessages(totalCount: threadMessages.count)
                                         withAnimation {
                                             proxy.scrollTo(replyToMessage, anchor: .top)
                                         }
@@ -283,41 +258,36 @@ struct MessageScrollView: View {
                                 
                                 Group {
                                     if message.attachmentURL != nil {
-                                        WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
-                                            switch phase {
-                                            case .success(let image):
-                                                image
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .clipShape(
-                                                        UnevenRoundedRectangle(
-                                                            topLeadingRadius: 25,
-                                                            bottomLeadingRadius: 25,
-                                                            bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
-                                                            topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
-                                                        )
+                                        WebImage(url: URL(string: message.attachmentURL ?? ""), content: { image in
+                                            image
+                                                .resizable()
+                                                .scaledToFit()
+                                                .clipShape(
+                                                    UnevenRoundedRectangle(
+                                                        topLeadingRadius: 25,
+                                                        bottomLeadingRadius: 25,
+                                                        bottomTrailingRadius: (nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo) ? 8 : 25,
+                                                        topTrailingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25
                                                     )
-                                                    .overlay(alignment: .bottomLeading) {
-                                                        Button {
-                                                            if let url = URL(string: message.attachmentURL ?? "") {
-                                                                openURL(url)
-                                                            }
-                                                        } label: {
-                                                            Image(systemName: "safari")
+                                                )
+                                                .overlay(alignment: .bottomLeading) {
+                                                    Button {
+                                                        if let url = URL(string: message.attachmentURL ?? "") {
+                                                            openURL(url)
                                                         }
-                                                        .buttonStyle(.glass)
+                                                    } label: {
+                                                        Image(systemName: "safari")
                                                     }
-                                                    .overlay(alignment: .topLeading) {
-                                                        reactionOverlay(message: message, sortedReactions: sortedReactions, swap: true)
-                                                            .offset(x: -12, y: -12)
-                                                    }
-                                                    .frame(maxWidth: screenWidth * 0.5 - 100)
-                                            case .failure:
-                                                ProgressView()
-                                            case .empty:
-                                                Color.clear
-                                            }
-                                        }
+                                                    .buttonStyle(.glass)
+                                                }
+                                                .overlay(alignment: .topLeading) {
+                                                    reactionOverlay(message: message, sortedReactions: sortedReactions, swap: true)
+                                                        .offset(x: -12, y: -12)
+                                                }
+                                                .frame(maxWidth: screenWidth * 0.5 - 100)
+                                        }, placeholder: {
+                                            ProgressView()
+                                        })
                                         .contextMenu {
                                             Button {
                                                 replyingMessageID = message.messageID
@@ -614,7 +584,6 @@ struct MessageScrollView: View {
                                         }
                                         .padding(.top)
                                         .onTapGesture {
-                                            loadOlderMessages(totalCount: threadMessages.count)
                                             withAnimation {
                                                 proxy.scrollTo(replyToMessage, anchor: .top)
                                             }
@@ -960,9 +929,6 @@ struct MessageScrollView: View {
                     expandedURLPreviewMessageID: $expandedURLPreviewMessageID,
                     clubsLeaderIn: clubsLeaderIn,
                     proxy: proxy,
-                    loadOlderMessages: {
-                        loadOlderMessages(totalCount: threadMessages.count)
-                    },
                     replyToChatMessage: message.replyTo == nil ? nil : messageLookup[message.replyTo!]
                 )
             }
@@ -1141,47 +1107,6 @@ struct MessageScrollView: View {
         }
     }
     
-    func currentContextID() -> String {
-        guard let selected = selectedChat else { return "" }
-        let thread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-        return selected.chatID + "::" + thread
-    }
-    
-    func rebuildThreadMessages() {
-        buildGeneration += 1
-        let generation = buildGeneration
-        
-        threadMessages = []
-        threadMessageLookup = [:]
-        visibleMessageLimit = 10
-        isLoadingOlder = false
-        
-        guard let selected = selectedChat else { return }
-        let currentThread = (selectedThread[selected.chatID] ?? nil) ?? "general"
-        let sourceMessages = selected.messages ?? []
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            let filtered = sourceMessages.filter { ($0.threadName ?? "general") == currentThread }
-            let lookup = Dictionary(uniqueKeysWithValues: filtered.map { ($0.messageID, $0) })
-            
-            DispatchQueue.main.async {
-                guard generation == buildGeneration else { return }
-                
-                threadMessages = filtered
-                threadMessageLookup = lookup
-                visibleMessageLimit = min(10, filtered.count)
-            }
-        }
-    }
-    
-    func loadOlderMessages(totalCount: Int) {
-        guard visibleMessageLimit < totalCount else { return }
-        guard !isLoadingOlder else { return }
-        
-        isLoadingOlder = true
-        visibleMessageLimit = totalCount 
-        isLoadingOlder = false
-    }
 }
 
 func deleteMessage(chatID: String, message: Chat.ChatMessage) {

@@ -34,7 +34,6 @@ struct NonBubbleMessageView : View {
     @State var clubsLeaderIn: [Club]
     
     var proxy: ScrollViewProxy
-    var loadOlderMessages: () -> Void
     @Environment(\.openURL) private var openURL
     
     var replyToChatMessage: Chat.ChatMessage?
@@ -115,7 +114,6 @@ struct NonBubbleMessageView : View {
                                     Spacer()
                                 }
                                 .onTapGesture {
-                                    loadOlderMessages()
                                     withAnimation {
                                         proxy.scrollTo(replyToMessage, anchor: .top)
                                     }
