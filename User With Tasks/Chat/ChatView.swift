@@ -759,7 +759,7 @@ struct ChatView: View {
     
     @ViewBuilder
     func chatRow(for chat: Chat, unread: Bool) -> some View {
-        if let club = clubs.first(where: { $0.clubID == chat.clubID }) {
+        if let club = clubs.first(where: { $0.clubID == chat.clubID }), chat.messages?.isEmpty == false {
             let isSelected = selectedChatID == chat.chatID
             
             ZStack {
