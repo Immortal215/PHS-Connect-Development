@@ -41,7 +41,6 @@
 		B861A8842CB81714006AF254 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = B861A8832CB81714006AF254 /* FirebaseRemoteConfig */; };
 		B861A8862CB81714006AF254 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = B861A8852CB81714006AF254 /* FirebaseStorage */; };
 		B861A8882CB81714006AF254 /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = B861A8872CB81714006AF254 /* FirebaseStorageCombine-Community */; };
-		B861A88A2CB81714006AF254 /* FirebaseVertexAI-Preview in Frameworks */ = {isa = PBXBuildFile; productRef = B861A8892CB81714006AF254 /* FirebaseVertexAI-Preview */; };
 		B8A6DF642CC14F600014B5F8 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B8A6DF632CC14F600014B5F8 /* GoogleSignIn */; };
 		B8A6DF662CC14F600014B5F8 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B8A6DF652CC14F600014B5F8 /* GoogleSignInSwift */; };
 		B8BEC6202CCBE5DA00991A38 /* Drops in Frameworks */ = {isa = PBXBuildFile; productRef = B8BEC61F2CCBE5DA00991A38 /* Drops */; };
@@ -67,7 +66,6 @@
 			files = (
 				7165EA672E9D8A8300EBD5B0 /* ElegantEmojiPicker in Frameworks */,
 				71D450672F0D8287001EF534 /* RichText in Frameworks */,
-				B861A88A2CB81714006AF254 /* FirebaseVertexAI-Preview in Frameworks */,
 				716022FD2CDB0DEB00E2887B /* Pow in Frameworks */,
 				B861A8742CB81714006AF254 /* FirebaseFirestoreCombine-Community in Frameworks */,
 				B861A8762CB81714006AF254 /* FirebaseFunctions in Frameworks */,
@@ -169,7 +167,6 @@
 				B861A8832CB81714006AF254 /* FirebaseRemoteConfig */,
 				B861A8852CB81714006AF254 /* FirebaseStorage */,
 				B861A8872CB81714006AF254 /* FirebaseStorageCombine-Community */,
-				B861A8892CB81714006AF254 /* FirebaseVertexAI-Preview */,
 				B8A6DF632CC14F600014B5F8 /* GoogleSignIn */,
 				B8A6DF652CC14F600014B5F8 /* GoogleSignInSwift */,
 				B8BEC61F2CCBE5DA00991A38 /* Drops */,
@@ -392,7 +389,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = RST9Z3DY2L;
+				DEVELOPMENT_TEAM = 9SP33R5K89;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
@@ -426,7 +423,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = RST9Z3DY2L;
+				DEVELOPMENT_TEAM = 9SP33R5K89;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
@@ -758,11 +755,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B861A85A2CB81714006AF254 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = "FirebaseStorageCombine-Community";
-		};
-		B861A8892CB81714006AF254 /* FirebaseVertexAI-Preview */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B861A85A2CB81714006AF254 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = "FirebaseVertexAI-Preview";
 		};
 		B8A6DF632CC14F600014B5F8 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
