@@ -2,7 +2,8 @@ import SwiftUI
 
 let superAdminEmails: Set<String> = [
     "sharul.shah2008@gmail.com",
-    "frank.mirandola@d214.org"
+    "frank.mirandola@d214.org",
+    "devin.t.ramirez@gmail.com"
 ]
 
 func normalizedEmail(_ email: String?) -> String {

@@ -36,7 +36,12 @@ extension ChatComposer {
     var composerDropPasteView: some View {
         composerBaseView
         .overlay {
-            dropTargetOverlay
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.accentColor.opacity(0.75), style: StrokeStyle(lineWidth: 2, dash: [4, 5]))
+                    .padding(8)
+                    .allowsHitTesting(false)
+            }
         }
         .onDrop(of: [UTType.image.identifier], isTargeted: $isDropTargeted) { providers in
             handleImageProviders(providers)
@@ -85,16 +90,6 @@ extension ChatComposer {
         }
         .onAppear {
             isComposerFocusedUI = focusedOnSendBar
-        }
-    }
-
-    @ViewBuilder
-    var dropTargetOverlay: some View {
-        if isDropTargeted {
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(Color.accentColor.opacity(0.75), lineWidth: 2)
-                .padding(8)
-                .allowsHitTesting(false)
         }
     }
 
