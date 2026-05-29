@@ -4,8 +4,8 @@ import Pow
 struct MonthPickerView: View {
     @Binding var selectedDate: Date
     @State var currentYear: Int
-    @State var showDatePicker = false
     @Binding var clubs: [Club]
+    @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     @AppStorage("calendarTubeView") var isTubeView = true
     @AppStorage("darkMode") var darkMode = false
     @State var isLoading = true
@@ -59,6 +59,9 @@ struct MonthPickerView: View {
                                                                         .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                                                                         .padding(10)
                                                                         .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
+
+                                                                    let schoolBadge = schoolScheduleStore.badge(for: date)
+                                                                    SchoolDayBadgeView(text: schoolBadge.text, color: schoolBadge.color)
                                                                     
                                                                     let clubIDCounts = meetings(for: date)
                                                                     
@@ -154,7 +157,7 @@ struct MonthPickerView: View {
                             .onChange(of: selectedDate) { newDate in
                                 currentYear = Calendar.current.component(.year, from: newDate)
                             }
-                        
+
                         Button(action: {
                             isTubeView.toggle()
                             loadMeetings()
@@ -201,7 +204,7 @@ struct MonthPickerView: View {
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
-    
+
     func meetings(for date: Date) -> [(clubID: String, count: Int)] {
         var meetingsForDate: [Club.MeetingTime] = []
         

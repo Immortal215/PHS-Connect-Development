@@ -4,6 +4,8 @@ import SwiftUIX
 
 struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]
+    var schoolEvents: [SchoolScheduleEvent]
+    @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     var screenHeight: CGFloat
     @Binding var scale: Double
     @State var meetingInfo = false
@@ -17,6 +19,8 @@ struct FlowingScheduleView: View {
     @State var dragOffset: CGSize = .zero
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @Binding var userInfo: Personal?
+    @State private var showSchoolScheduleSheet = false
+    @State private var showSchoolScheduleEditor = false
     
     struct MeetingColumn: Equatable {
         let meeting: Club.MeetingTime
@@ -68,28 +72,41 @@ struct FlowingScheduleView: View {
                         }
                         
                         VStack {
-                            HStack(spacing: 0) {
-                                Spacer().frame(width: 60)
-                                ZStack(alignment: .leading) {
-                                    if refresher {
-                                        let columnAssignments = calculateColumnAssignments()
-                                        let maxColumns = (columnAssignments.map { $0.column }.max() ?? 0) + 1
+                        HStack(spacing: 0) {
+                            Spacer().frame(width: 60)
+                            ZStack(alignment: .leading) {
+                                if refresher {
+                                    let schoolTimelineEvents = schoolEvents.filter { !$0.isAllDay && $0.startDate != nil && $0.endDate != nil }
+                                    let columnAssignments = calculateColumnAssignments()
+                                    let maxColumns = (columnAssignments.map { $0.column }.max() ?? 0) + 1
+                                    let totalWidth = UIScreen.main.bounds.width / 1.1
+                                    let schoolEventWidth = totalWidth
+                                    
+                                    ForEach(schoolTimelineEvents, id: \.id) { event in
+                                        SchoolScheduleTimelineEventView(
+                                            event: event,
+                                            scale: scale,
+                                            hourHeight: hourHeight
+                                        )
+                                        .frame(width: schoolEventWidth)
+                                        .offset(x: totalWidth)
+                                        .zIndex(-1)
+                                    }
+                                    
+                                    ZStack {
+                                        Rectangle()
+                                            .fill(.clear)
+                                            .cornerRadius(5)
+                                    }
+                                    .position(x: totalWidth / -2)
+                                    .frame(width: totalWidth, height: 1)
+                                    
+                                    ForEach(columnAssignments, id: \.meeting) { meetingColumn in
+                                        let allMeets = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
+                                        let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: allMeets)
                                         
-                                        ZStack {
-                                            Rectangle()
-                                                .fill(.clear)
-                                                .cornerRadius(5)
-                                        }
-                                        .position(x: UIScreen.main.bounds.width / 1.1 / -2)
-                                        .frame(width: UIScreen.main.bounds.width / 1.1, height: 1)
-                                        
-                                        ForEach(columnAssignments, id: \.meeting) { meetingColumn in
-                                            let allMeets = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
-                                            let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: allMeets)
-                                            
-                                            let totalWidth = UIScreen.main.bounds.width / 1.1
-                                            let columnWidth = hasOverlap ? totalWidth / CGFloat(maxColumns) : totalWidth
-                                            let xOffset = hasOverlap ? CGFloat(meetingColumn.column + 1) * columnWidth : totalWidth
+                                        let columnWidth = hasOverlap ? totalWidth / CGFloat(maxColumns) : totalWidth
+                                        let xOffset = hasOverlap ? CGFloat(meetingColumn.column + 1) * columnWidth : totalWidth
                                             
                                             MeetingView(
                                                 meeting: meetingColumn.meeting,
@@ -184,7 +201,7 @@ struct FlowingScheduleView: View {
                                                 hasOverlap: false
                                             )
                                             .opacity(0.7)
-                                            .offset(x: UIScreen.main.bounds.width / 1.1, y: dragOffset.height)
+                                            .offset(x: totalWidth, y: dragOffset.height)
                                             .zIndex(100)
                                             .overlay(alignment: .topLeading) {
                                                 Text(formattedTime)
@@ -213,29 +230,53 @@ struct FlowingScheduleView: View {
                 }
                 .background(Color.systemGray6.cornerRadius(8))
                 .overlay(alignment: .top, content: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.blue)
-                        
-                        DatePicker("", selection: $selectedDate, displayedComponents: [.date])
-                            .labelsHidden()
-                            .colorMultiply(.white)
-                            .foregroundStyle(.white)
-                            .foregroundColor(.white)
-                            .tint(.white)
-                            .overlay(alignment: .center) {
-                                Text(String(selectedDate.formatted(date: .abbreviated, time: .omitted)))
-                                    .foregroundStyle(.white)
-                                    .offset(x: 1)
-                            }
+                    HStack(spacing: 8) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.blue)
+                            
+                            DatePicker("", selection: $selectedDate, displayedComponents: [.date])
+                                .labelsHidden()
+                                .colorMultiply(.white)
+                                .foregroundStyle(.white)
+                                .foregroundColor(.white)
+                                .tint(.white)
+                                .overlay(alignment: .center) {
+                                    Text(String(selectedDate.formatted(date: .abbreviated, time: .omitted)))
+                                        .foregroundStyle(.white)
+                                        .offset(x: 1)
+                                }
+                        }
+                        .fixedSize()
+
+                        Button {
+                            showSchoolScheduleSheet = true
+                        } label: {
+                            Image(systemName: "calendar.badge.clock")
+                                .foregroundStyle(.white)
+                                .imageScale(.medium)
+                                .frame(width: 35, height: 35)
+                                .background(Color.blue, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Open school schedule")
                     }
                     .fixedSize()
                     .padding(.top, 8)
                     
                 })
                 .onChange(of: selectedDate) {
-                    let closestHour = Calendar.current.component(.hour, from: dateFromString(meetings.sorted(by: { dateFromString($0.startTime) < dateFromString($1.startTime)}).first?.startTime ?? String()))
-                    proxy.scrollTo(closestHour > 0 ? closestHour - 1 : closestHour, anchor: .top)
+                    let timelineStarts = meetings
+                        .map { dateFromString($0.startTime) }
+                        .filter { Calendar.current.isDate($0, inSameDayAs: selectedDate) }
+                    let schoolStarts = schoolEvents
+                        .compactMap { $0.startDate }
+                        .filter { Calendar.current.isDate($0, inSameDayAs: selectedDate) }
+                    let earliestStart = (timelineStarts + schoolStarts).min()
+                    let targetHour = earliestStart.map {
+                        max(Calendar.current.component(.hour, from: $0) - 1, 0)
+                    } ?? calendarScrollPoint
+                    proxy.scrollTo(targetHour, anchor: .top)
                 }
                 .gesture(
                     DragGesture()
@@ -270,6 +311,30 @@ struct FlowingScheduleView: View {
                         }
                 }
             }
+        }
+        .sheet(isPresented: $showSchoolScheduleSheet) {
+            NavigationStack {
+                ScrollView {
+                    SchoolScheduleSectionView(
+                        schoolScheduleStore: schoolScheduleStore,
+                        selectedDate: selectedDate,
+                        isAdmin: viewModel?.isSuperAdmin == true,
+                        onEditTap: {
+                            showSchoolScheduleEditor = true
+                        }
+                    )
+                    .padding()
+                }
+                .navigationTitle("School Schedule")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: $showSchoolScheduleEditor) {
+            SchoolScheduleEditorView(config: schoolScheduleStore.config) { updatedConfig, completion in
+                schoolScheduleStore.save(updatedConfig, completion: completion)
+            }
+            .presentationDetents([.large])
         }
         .highPriorityGesture(
             MagnificationGesture()

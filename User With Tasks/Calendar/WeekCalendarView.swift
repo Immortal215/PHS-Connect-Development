@@ -4,6 +4,7 @@ struct WeekCalendarView: View {
     var meetingTimes: [Club.MeetingTime]
     @Binding var selectedDate: Date
     var viewModel: AuthenticationViewModel
+    @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     @State var currentWeek: Date = Date()
     @State var addMeetingTimeView = false
     @State var showMonthPicker = false
@@ -48,12 +49,19 @@ struct WeekCalendarView: View {
                 }
                 .padding()
                 .sheet(isPresented: $showMonthPicker) {
-                    MonthPickerView(selectedDate: $selectedDate, currentYear: Calendar.current.component(.year, from: selectedDate), clubs: $clubs, viewModel: viewModel)
+                    MonthPickerView(
+                        selectedDate: $selectedDate,
+                        currentYear: Calendar.current.component(.year, from: selectedDate),
+                        clubs: $clubs,
+                        schoolScheduleStore: schoolScheduleStore,
+                        viewModel: viewModel
+                    )
                         .frame(width: UIScreen.main.bounds.width/1.05)
                         .cornerRadius(25)
                 }
                 
                 ForEach(getDaysInWeek(for: currentWeek), id: \.self) { date in
+                    let schoolBadge = schoolScheduleStore.badge(for: date)
                     VStack {
                         Text(dayOfWeek(for: date))
                             .font(.caption)
@@ -63,6 +71,13 @@ struct WeekCalendarView: View {
                             .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
                             .padding(10)
                             .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
+
+                        Text(schoolBadge.text)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(schoolBadge.color, in: Capsule(style: .continuous))
                         
                         let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                             if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {

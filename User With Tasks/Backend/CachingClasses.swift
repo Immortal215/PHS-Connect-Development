@@ -90,3 +90,27 @@ final class DeckCache {
         try? FileManager.default.removeItem(at: cacheURL)
     }
 }
+
+final class SchoolScheduleCache {
+    public let cacheURL: URL
+    
+    init() {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        self.cacheURL = dir.appendingPathComponent("school_schedule_data.json")
+    }
+    
+    func load() -> SchoolScheduleConfig? {
+        guard let data = try? Data(contentsOf: cacheURL) else { return nil }
+        return try? JSONDecoder().decode(SchoolScheduleConfig.self, from: data)
+    }
+    
+    func save(_ config: SchoolScheduleConfig) {
+        if let data = try? JSONEncoder().encode(config) {
+            try? data.write(to: cacheURL)
+        }
+    }
+    
+    func delete() {
+        try? FileManager.default.removeItem(at: cacheURL)
+    }
+}

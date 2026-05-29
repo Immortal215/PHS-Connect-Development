@@ -27,6 +27,7 @@ struct ContentView: View {
     @AppStorage("uid") var uid: String?
     @State var clubs: [Club] = []
     @State var userInfo: Personal? = nil
+    @StateObject var schoolScheduleStore = SchoolScheduleStore()
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @ObservedObject var keyboardResponder = KeyboardResponder()
@@ -125,7 +126,7 @@ struct ContentView: View {
                                         .offset(x: selectedTab == AppTab.chat.index ? 0 : 40)
                                         .animation(.spring(response: 0.28, dampingFraction: 0.9), value: selectedTab)
                                     
-                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
+                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel, schoolScheduleStore: schoolScheduleStore)
                                         .opacity(selectedTab == AppTab.calendar.index ? 1 : 0)
                                         .animation(.easeInOut(duration: 0.25), value: selectedTab)
 
@@ -171,6 +172,8 @@ struct ContentView: View {
                         )
                     }
                     .onAppear {
+                        schoolScheduleStore.loadIfNeeded()
+
                         if let UserID = viewModel.uid, !viewModel.isGuestUser {
                             fetchUser(for: UserID) { fetchedUser in
                                 if let user = fetchedUser {
@@ -401,4 +404,3 @@ struct ContentView: View {
     
     
 }
-

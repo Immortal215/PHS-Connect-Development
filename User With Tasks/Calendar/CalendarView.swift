@@ -4,6 +4,7 @@ struct CalendarView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
     var viewModel: AuthenticationViewModel
+    @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     
@@ -23,15 +24,25 @@ struct CalendarView: View {
                             meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)
                             
                         } ?? []
-                    },
+                },
                 selectedDate: $selectedDate,
                 viewModel: viewModel,
+                schoolScheduleStore: schoolScheduleStore,
                 clubs: $clubs
             )
-            
             Divider()
             
-            FlowingScheduleView(meetings: meetings(for: selectedDate), screenHeight: screenHeight, scale: $scale, clubs: $clubs, viewModel: viewModel, selectedDate: $selectedDate, userInfo: $userInfo)
+            FlowingScheduleView(
+                meetings: meetings(for: selectedDate),
+                schoolEvents: schoolScheduleStore.timelineEvents(for: selectedDate),
+                schoolScheduleStore: schoolScheduleStore,
+                screenHeight: screenHeight,
+                scale: $scale,
+                clubs: $clubs,
+                viewModel: viewModel,
+                selectedDate: $selectedDate,
+                userInfo: $userInfo
+            )
                 .padding(.top, -8)
             
         }
