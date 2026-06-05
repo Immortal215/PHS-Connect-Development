@@ -1,10 +1,10 @@
-import SwiftUI
-import FirebaseDatabase
-import FirebaseCore
-import FirebaseDatabaseInternal
 import FirebaseAuth
+import FirebaseCore
+import FirebaseDatabase
+import FirebaseDatabaseInternal
 import GoogleSignIn
 import GoogleSignInSwift
+import SwiftUI
 
 @MainActor
 final class AuthenticationViewModel: ObservableObject {
@@ -14,11 +14,11 @@ final class AuthenticationViewModel: ObservableObject {
     @AppStorage("isGuestUser") var isGuestUser = true
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
-    
+
     var isSuperAdmin: Bool {
         isSuperAdminEmail(userEmail)
     }
-    
+
     init() {
         if let user = Auth.auth().currentUser {
             self.userEmail = user.email
@@ -28,20 +28,22 @@ final class AuthenticationViewModel: ObservableObject {
             self.uid = user.uid
         }
     }
-    
+
     func createUserNodeIfNeeded() {
         guard let userID = Auth.auth().currentUser?.uid else {
             print("User is not authenticated")
             return
         }
-        
+
         let reference = Database.database().reference()
         let userReference = reference.child("users").child(userID)
-        
+
         userReference.observeSingleEvent(of: .value) { snapshot in
-            if !snapshot.exists() || ((snapshot.value as? [String: Any])?["userImage"] == nil) {
+            if !snapshot.exists()
+                || ((snapshot.value as? [String: Any])?["userImage"] == nil)
+            {
                 guard let currentUser = Auth.auth().currentUser else { return }
-                
+
                 let newUser = Personal(
                     userID: currentUser.uid,
                     favoritedClubs: [""],
@@ -50,11 +52,13 @@ final class AuthenticationViewModel: ObservableObject {
                     userName: currentUser.displayName ?? "",
                     fcmToken: nil
                 )
-                
+
                 // Encode the struct into a dictionary
                 do {
                     let data = try JSONEncoder().encode(newUser)
-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    if let json = try JSONSerialization.jsonObject(with: data)
+                        as? [String: Any]
+                    {
                         userReference.setValue(json) { error, _ in
                             if let error = error {
                                 print("Error creating user node: \(error)")
@@ -71,8 +75,7 @@ final class AuthenticationViewModel: ObservableObject {
             }
         }
     }
-    
-    
+
     func signInAsGuest() {
         self.userName = "Guest Account"
         self.userEmail = "Explore!"
@@ -81,33 +84,41 @@ final class AuthenticationViewModel: ObservableObject {
         self.userType = "Guest"
         self.uid = "None"
     }
-    
+
     func signInGoogle() async throws {
         guard let topVC = Utilities.shared.topViewController() else {
             throw URLError(.cannotFindHost)
         }
-        
-        let gidSignInResult = try await GIDSignIn.sharedInstance.signIn(withPresenting: topVC)
-        
+
+        let gidSignInResult = try await GIDSignIn.sharedInstance.signIn(
+            withPresenting: topVC
+        )
+
         guard let idToken = gidSignInResult.user.idToken?.tokenString else {
             throw URLError(.badServerResponse)
         }
-        
-        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: gidSignInResult.user.accessToken.tokenString)
-        
+
+        let credential = GoogleAuthProvider.credential(
+            withIDToken: idToken,
+            accessToken: gidSignInResult.user.accessToken.tokenString
+        )
+
         let authResult = try await Auth.auth().signIn(with: credential)
         let user = authResult.user
-        
+
         self.userEmail = user.email
         self.userName = user.displayName
         self.userImage = user.photoURL?.absoluteString
         self.isGuestUser = false
         self.uid = user.uid
-        
+
         self.createUserNodeIfNeeded()
-        
+
         if let email = user.email {
-            self.userType = email.split(separator: ".").contains("d214") ? (email.contains("stu.d214.org") ? "D214 Student" : "D214 Teacher") : "Non D214 User"
+            self.userType =
+                email.split(separator: ".").contains("d214")
+                ? (email.contains("stu.d214.org")
+                    ? "D214 Student" : "D214 Teacher") : "Non D214 User"
         }
     }
 }

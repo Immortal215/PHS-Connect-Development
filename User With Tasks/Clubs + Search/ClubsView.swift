@@ -1,12 +1,12 @@
-import FirebaseCore
 import FirebaseAuth
+import FirebaseCore
+import FirebaseDatabase
 import GoogleSignIn
 import GoogleSignInSwift
-import SwiftUI
-import FirebaseDatabase
-import Pow
-import SwiftUIX
 import PopupView
+import Pow
+import SwiftUI
+import SwiftUIX
 
 struct ClubView: View {
     @Binding var clubs: [Club]
@@ -23,7 +23,7 @@ struct ClubView: View {
     @State var notificationBellClicked = false
     @AppStorage("selectedTab") var selectedTab = 3
     @State var notificationCount = 0
-    
+
     var body: some View {
         ZStack {
             if advSearchShown && !clubs.isEmpty {
@@ -32,16 +32,19 @@ struct ClubView: View {
                         Text("Home")
                             .bold()
                             .font(.title)
-                        
+
                         Spacer()
-                        
+
                         Button {
                             notificationBellClicked.toggle()
                         } label: {
                             ZStack {
-                                Image(systemName: notificationBellClicked ? "bell.fill" : "bell")
-                                    .imageScale(.large)
-                                
+                                Image(
+                                    systemName: notificationBellClicked
+                                        ? "bell.fill" : "bell"
+                                )
+                                .imageScale(.large)
+
                                 if notificationCount > 0 {
                                     Text("\(notificationCount)")
                                         .font(.caption2)
@@ -56,7 +59,7 @@ struct ClubView: View {
                     .padding(.horizontal)
                     .padding(.top)
                     .padding(.bottom, -8)
-                    
+
                     ScrollView {
                         if clubs.count > 1 {
                             HomePageScrollers(
@@ -83,7 +86,7 @@ struct ClubView: View {
         }
         .popup(isPresented: $notificationBellClicked) {
             let unreadAnnouncements = unreadAnnouncements(from: clubs)
-            
+
             VStack {
                 if unreadAnnouncements.isEmpty {
                     Text("No Announcements, Check Back Later!")
@@ -102,12 +105,12 @@ struct ClubView: View {
                     .padding()
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: screenHeight/1.8)
+            .frame(maxWidth: .infinity, maxHeight: screenHeight / 1.8)
             .background(Color(UIColor.systemGray6))
             .cornerRadius(16)
             .shadow(color: .secondary, radius: 10)
             .padding()
-            
+
         } customize: {
             $0
                 .isOpaque(true)
@@ -119,36 +122,54 @@ struct ClubView: View {
                 .animation(.easeInOut)
         }
     }
-    
+
     func enrolledClubs(from clubs: [Club]) -> [Club] {
         let email = normalizedEmail(viewModel.userEmail)
-        return clubs
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            .filter { viewModel.isSuperAdmin || $0.leaders.contains(email) || $0.members.contains(email) }
+        return
+            clubs
+            .sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name)
+                    == .orderedAscending
+            }
+            .filter {
+                viewModel.isSuperAdmin || $0.leaders.contains(email)
+                    || $0.members.contains(email)
+            }
     }
-    
+
     func unreadCount(from clubs: [Club]) -> Int {
         let email = normalizedEmail(viewModel.userEmail)
         return clubs.reduce(0) { total, club in
             guard let announcements = club.announcements else { return total }
             let unread = announcements.values.filter { ann in
                 let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
-                let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
-                let isMemberOrLeader = viewModel.isSuperAdmin || club.members.contains(email) || club.leaders.contains(email)
+                let isRecent =
+                    dateFromString(ann.date)
+                    > Date().addingTimeInterval(-604800)
+                let isMemberOrLeader =
+                    viewModel.isSuperAdmin || club.members.contains(email)
+                    || club.leaders.contains(email)
                 return hasNotSeen && isRecent && isMemberOrLeader
             }.count
             return total + unread
         }
     }
-    
-    func unreadAnnouncements(from clubs: [Club]) -> [String: Club.Announcements] {
+
+    func unreadAnnouncements(from clubs: [Club]) -> [String: Club.Announcements]
+    {
         let email = normalizedEmail(viewModel.userEmail)
-        return clubs.reduce(into: [String: Club.Announcements]()) { result, club in
+        return clubs.reduce(into: [String: Club.Announcements]()) {
+            result,
+            club in
             guard let announcements = club.announcements else { return }
             let filtered = announcements.filter { (_, ann) in
                 let hasNotSeen = !(ann.peopleSeen?.contains(email) ?? false)
-                let isRecent = dateFromString(ann.date) > Date().addingTimeInterval(-604800)
-                let isMemberOrLeader = viewModel.isSuperAdmin || club.members.contains(email) || club.leaders.contains(email)
+                let isRecent =
+                    dateFromString(ann.date)
+                    > Date().addingTimeInterval(-604800)
+                let isMemberOrLeader =
+                    viewModel.isSuperAdmin || club.members.contains(email)
+                    || club.leaders.contains(email)
                 return hasNotSeen && isRecent && isMemberOrLeader
             }
             result.merge(filtered) { _, new in new }

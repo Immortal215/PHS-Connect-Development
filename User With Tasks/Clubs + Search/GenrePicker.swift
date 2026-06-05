@@ -2,23 +2,26 @@ import SwiftUI
 
 struct MultiGenrePickerView: View {
     @Binding var selectedGenres: [String]
-    
+
     let genres: [String: [String]] = [
         "Types": ["Competitive", "Non-Competitive"],
-        "Subjects": ["Math", "Science", "Reading", "History", "Business", "Technology", "Art", "Fine Arts", "Speaking", "Health", "Law", "Engineering"],
-        "Descriptors": ["Cultural", "Physical", "Mental Health", "Safe Space"]
+        "Subjects": [
+            "Math", "Science", "Reading", "History", "Business", "Technology",
+            "Art", "Fine Arts", "Speaking", "Health", "Law", "Engineering",
+        ],
+        "Descriptors": ["Cultural", "Physical", "Mental Health", "Safe Space"],
     ]
-    
+
     var body: some View {
         HStack(spacing: 20) {
-            
+
             if !selectedGenres.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Selected")
                         .font(.headline)
                         .foregroundColor(.primary)
                         .fixedSize()
-                    
+
                     HStack(spacing: 10) {
                         ForEach(selectedGenres, id: \.self) { genre in
                             GenreTag(genre: genre, isSelected: true) {
@@ -29,13 +32,13 @@ struct MultiGenrePickerView: View {
                 }
                 .animation(.smooth)
             }
-            
+
             ForEach(genres.keys.sorted().reversed(), id: \.self) { section in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(section)
                         .font(.headline)
                         .foregroundColor(.primary)
-                    
+
                     HStack(spacing: 10) {
                         ForEach(genres[section]!, id: \.self) { genre in
                             if !selectedGenres.contains(genre) {
@@ -50,7 +53,7 @@ struct MultiGenrePickerView: View {
         }
         .padding(.horizontal)
     }
-    
+
     func toggleGenreSelection(_ genre: String) {
         if let index = selectedGenres.firstIndex(of: genre) {
             selectedGenres.remove(at: index)
@@ -65,12 +68,14 @@ struct GenreTag: View {
     let isSelected: Bool
     let onTap: () -> Void
     @AppStorage("darkMode") var darkMode = false
-    
+
     var body: some View {
         Text(genre)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .foregroundColor(isSelected ? Color.accentColor.opacity(0.7) : .primary)
+            .foregroundColor(
+                isSelected ? Color.accentColor.opacity(0.7) : .primary
+            )
             .background {
                 if isSelected {
                     Capsule()
@@ -81,7 +86,9 @@ struct GenreTag: View {
                         }
                 } else {
                     Capsule()
-                        .foregroundStyle(darkMode ? Color.systemGray4 : Color.systemGray6)
+                        .foregroundStyle(
+                            darkMode ? Color.systemGray4 : Color.systemGray6
+                        )
                 }
             }
             .onTapGesture {

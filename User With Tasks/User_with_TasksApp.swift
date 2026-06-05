@@ -1,17 +1,20 @@
-import FirebaseDatabase
-import FirebaseCore
 import FirebaseAuth
+import FirebaseCore
+import FirebaseDatabase
+import FirebaseMessaging
 import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 import UserNotifications
-import FirebaseMessaging
 
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate,
+    UNUserNotificationCenterDelegate, MessagingDelegate
+{
 
     func application(
         _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+        didFinishLaunchingWithOptions launchOptions: [UIApplication
+            .LaunchOptionsKey: Any]? = nil
     ) -> Bool {
 
         FirebaseApp.configure()
@@ -21,7 +24,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Messaging.messaging().delegate = self
 
         let options: UNAuthorizationOptions = [.alert, .badge, .sound]
-        UNUserNotificationCenter.current().requestAuthorization(options: options) { _, error in
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: options
+        ) { _, error in
             if let error = error {
                 print("Notification auth error:", error)
             }
@@ -29,7 +34,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         UIApplication.shared.registerForRemoteNotifications()
 
-        if let notification = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
+        if let notification = launchOptions?[.remoteNotification]
+            as? [AnyHashable: Any]
+        {
             print("LaunchOptions remoteNotification:", notification)
             NotificationOpenRouter.shared.handle(userInfo: notification)
         }
@@ -46,7 +53,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         print("APNs token:", token)
     }
 
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+    func messaging(
+        _ messaging: Messaging,
+        didReceiveRegistrationToken fcmToken: String?
+    ) {
         guard let fcmToken else { return }
         print("FCM token:", fcmToken)
 
@@ -61,7 +71,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
-        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+        withCompletionHandler completionHandler:
+            @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound, .badge])
     }
@@ -87,12 +98,14 @@ struct User_with_TasksApp: App {
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("autoColorScheme") var autoColorScheme = true
     @AppStorage("openToDo") var openToDo = false
-    
+
     var body: some Scene {
         WindowGroup {
             if !openToDo {
                 ContentView()
-                    .preferredColorScheme(autoColorScheme ? nil : (darkMode ? .dark : .light))
+                    .preferredColorScheme(
+                        autoColorScheme ? nil : (darkMode ? .dark : .light)
+                    )
                     .accentColor(.blue)
                     .transition(.opacity)
             } else {

@@ -1,17 +1,17 @@
-import FirebaseCore
 import FirebaseAuth
+import FirebaseCore
+import FirebaseDatabase
 import GoogleSignIn
 import GoogleSignInSwift
-import SwiftUI
-import FirebaseDatabase
-import Pow
-import SwiftUIX
-import PopupView
 import MapKit
+import PopupView
+import Pow
 import SDWebImageSwiftUI
+import SwiftUI
+import SwiftUIX
 
 struct ClubInfoView: View {
-    @State var club : Club
+    @State var club: Club
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
     var viewModel: AuthenticationViewModel
@@ -33,26 +33,38 @@ struct ClubInfoView: View {
     @AppStorage("debugTools") var debugTools = false
     @State var showMap = false
     @State var cameraPosition: MapCameraPosition = .region(
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 42.07905, longitude: -87.94951),
-                span: MKCoordinateSpan(latitudeDelta: 0.0025, longitudeDelta: 0.0025)
-        ))
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: 42.07905,
+                longitude: -87.94951
+            ),
+            span: MKCoordinateSpan(
+                latitudeDelta: 0.0025,
+                longitudeDelta: 0.0025
+            )
+        )
+    )
     @State var mapEditorMode = false
     @State var pinPosition = CGPoint(x: 200.0, y: 200.0)
 
-
     var body: some View {
-        let clubLeader = isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)
+        let clubLeader = isClubLeaderOrSuperAdmin(
+            club: club,
+            userEmail: viewModel.userEmail
+        )
         var latestAnnouncementMessage: String {
             if let announcements = club.announcements {
                 let sortedAnnouncements = announcements.sorted {
                     let date1 = dateFromString($0.value.date)
                     let date2 = dateFromString($1.value.date)
-                    return (date1 ?? Date.distantPast) > (date2 ?? Date.distantPast)
+                    return (date1 ?? Date.distantPast)
+                        > (date2 ?? Date.distantPast)
                 }
-                
-                if let latestAnnouncementDate = sortedAnnouncements.first?.value.date,
-                   Date() > dateFromString(latestAnnouncementDate) {
+
+                if let latestAnnouncementDate = sortedAnnouncements.first?.value
+                    .date,
+                    Date() > dateFromString(latestAnnouncementDate)
+                {
                     return "Add Announcement +"
                 } else {
                     return "Add Announcement + (Waiting)"
@@ -61,38 +73,48 @@ struct ClubInfoView: View {
                 return "Add First Announcement +"
             }
         }
-        
+
         NavigationView {
-            
+
             ScrollView {
-                
+
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .center) {
                         HStack(alignment: .top) {
                             WebImage(
                                 url: URL(
-                                    string: club.clubPhoto ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
+                                    string: club.clubPhoto
+                                        ?? "https://img.freepik.com/premium-photo/abstract-geometric-white-background-with-isometric-random-boxes_305440-1089.jpg"
                                 ),
                                 content: { image in
                                     ZStack {
                                         image
                                             .resizable()
                                             .scaledToFit()
-                                            .clipShape(RoundedRectangle(cornerRadius: 25))
-                                        
+                                            .clipShape(
+                                                RoundedRectangle(
+                                                    cornerRadius: 25
+                                                )
+                                            )
+
                                         if club.clubPhoto == nil {
                                             ZStack {
-                                                RoundedRectangle(cornerRadius: 25)
-                                                    .foregroundStyle(.blue)
-                                                
+                                                RoundedRectangle(
+                                                    cornerRadius: 25
+                                                )
+                                                .foregroundStyle(.blue)
+
                                                 Text(club.name)
                                                     .padding()
                                                     .foregroundStyle(.white)
                                             }
-                                            .frame(maxWidth: screenWidth / CGFloat(6 + 0.3))
+                                            .frame(
+                                                maxWidth: screenWidth
+                                                    / CGFloat(6 + 0.3)
+                                            )
                                             .fixedSize()
                                         }
-                                        
+
                                         //                            RoundedRectangle(cornerRadius: 25)
                                         //   .stroke(.black, lineWidth: 3)
                                         // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
@@ -102,12 +124,19 @@ struct ClubInfoView: View {
                                 placeholder: {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 25)
-                                            .shimmering(active: true, duration: 2.4)
+                                            .shimmering(
+                                                active: true,
+                                                duration: 2.4
+                                            )
                                     }
                                 }
                             )
-                            .frame(maxWidth: screenWidth/6, maxHeight: screenWidth/6, alignment: .topLeading)
-                            
+                            .frame(
+                                maxWidth: screenWidth / 6,
+                                maxHeight: screenWidth / 6,
+                                alignment: .topLeading
+                            )
+
                             VStack(alignment: .leading) {
                                 Text(.init(club.abstract))
                                     .font(.body)
@@ -117,37 +146,51 @@ struct ClubInfoView: View {
                                         GeometryReader { geometry in
                                             Color.clear
                                                 .onAppear {
-                                                    calculateLines(size: geometry.size, variable: $abstractGreaterThanFour, maxLines: 4, textStyle: .body)
+                                                    calculateLines(
+                                                        size: geometry.size,
+                                                        variable:
+                                                            $abstractGreaterThanFour,
+                                                        maxLines: 4,
+                                                        textStyle: .body
+                                                    )
                                                     abstractExpanded = false
                                                 }
                                         }
                                     )
-                                
+
                                 if abstractGreaterThanFour {
-                                    Text(abstractExpanded ? "Show less" : "Show more")
-                                        .font(.footnote)
-                                        .foregroundColor(.blue)
-                                        .onTapGesture {
-                                            abstractExpanded.toggle()
-                                        }
+                                    Text(
+                                        abstractExpanded
+                                            ? "Show less" : "Show more"
+                                    )
+                                    .font(.footnote)
+                                    .foregroundColor(.blue)
+                                    .onTapGesture {
+                                        abstractExpanded.toggle()
+                                    }
                                 }
                             }
                         }
-                        
-                        
+
                     }
-                    
+
                     if debugTools {
                         Text("Club Id \(club.clubID)")
                     }
-                    
+
                     if !club.leaders.isEmpty {
                         Text("Leaders (\(club.leaders.count))")
                             .font(.headline)
-                        
+
                         ScrollView(.horizontal) {
                             LazyHGrid(rows: [GridItem(.flexible())]) {
-                                ForEach(club.leaders.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}, id: \.self) { leader in
+                                ForEach(
+                                    club.leaders.sorted {
+                                        $0.localizedCaseInsensitiveCompare($1)
+                                            == .orderedAscending
+                                    },
+                                    id: \.self
+                                ) { leader in
                                     CodeSnippetView(code: leader)
                                         .padding(1)
                                         .padding(.trailing, 8)
@@ -155,11 +198,11 @@ struct ClubInfoView: View {
                             }
                         }
                     }
-                    
+
                     if let meetingTime = club.normalMeetingTime {
                         Text("Normal Meeting Time")
                             .font(.headline)
-                        
+
                         HStack {
                             Image(systemName: "arrow.turn.down.right")
 
@@ -167,54 +210,89 @@ struct ClubInfoView: View {
                                 .font(.subheadline)
                         }
                     }
-                    
-                    if let meetingTimes = club.meetingTimes, !meetingTimes.isEmpty {
-                        if let closestMeeting = meetingTimes.sorted(by: {dateFromString($0.startTime) < dateFromString($1.startTime)}).filter({ meeting in
+
+                    if let meetingTimes = club.meetingTimes,
+                        !meetingTimes.isEmpty
+                    {
+                        if let closestMeeting = meetingTimes.sorted(by: {
+                            dateFromString($0.startTime)
+                                < dateFromString($1.startTime)
+                        }).filter({ meeting in
                             return dateFromString(meeting.startTime) >= Date()
                         }).first {
-                            
-                            Text("Next Meeting (\(dateFromString(closestMeeting.startTime).formatted(date: .abbreviated, time: .omitted)))")
-                                .font(.headline)
-                            
+
+                            Text(
+                                "Next Meeting (\(dateFromString(closestMeeting.startTime).formatted(date: .abbreviated, time: .omitted)))"
+                            )
+                            .font(.headline)
+
                             Button {
                                 meetingFull.toggle()
                                 refresher.toggle()
                             } label: {
-                                if refresher { // when refreshing, it does not look like anything changes, this is so monkey to do tho, have to figure a better way to refresh the view
-                                    
-                                    MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
-                                        .padding(.vertical)
-                                        .frame(width: UIScreen.main.bounds.width / 1.1)
-                                        .foregroundStyle(.black)
-                                        .offset(x: UIScreen.main.bounds.width / 1.1)
+                                if refresher {  // when refreshing, it does not look like anything changes, this is so monkey to do tho, have to figure a better way to refresh the view
+
+                                    MeetingView(
+                                        meeting: closestMeeting,
+                                        scale: 1.0,
+                                        hourHeight: 60,
+                                        meetingInfo: meetingFull,
+                                        preview: true,
+                                        clubs: [club],
+                                        numOfOverlapping: 1,
+                                        hasOverlap: true
+                                    )
+                                    .padding(.vertical)
+                                    .frame(
+                                        width: UIScreen.main.bounds.width / 1.1
+                                    )
+                                    .foregroundStyle(.black)
+                                    .offset(x: UIScreen.main.bounds.width / 1.1)
                                 } else {
-                                    MeetingView(meeting: closestMeeting, scale: 1.0, hourHeight: 60, meetingInfo: meetingFull, preview: true, clubs: [club], numOfOverlapping: 1, hasOverlap: true)
-                                        .padding(.vertical)
-                                        .frame(width: UIScreen.main.bounds.width / 1.1)
-                                        .foregroundStyle(.black)
-                                        .offset(x: UIScreen.main.bounds.width / 1.1)
+                                    MeetingView(
+                                        meeting: closestMeeting,
+                                        scale: 1.0,
+                                        hourHeight: 60,
+                                        meetingInfo: meetingFull,
+                                        preview: true,
+                                        clubs: [club],
+                                        numOfOverlapping: 1,
+                                        hasOverlap: true
+                                    )
+                                    .padding(.vertical)
+                                    .frame(
+                                        width: UIScreen.main.bounds.width / 1.1
+                                    )
+                                    .foregroundStyle(.black)
+                                    .offset(x: UIScreen.main.bounds.width / 1.1)
                                 }
                             }
-                            
-                            
+
                         }
                     }
-                    
+
                     if clubLeader {
                         Text("Members (\(club.members.count))")
                             .font(.headline)
-                        
-                        var mem = club.members.sorted{$0.localizedCaseInsensitiveCompare($1) == .orderedAscending}.joined(separator: ", ")
-                        
-                        CodeSnippetView(code: mem, textSmall: club.members.count > 10 ? true : false )
-                            .padding(.top, -8)
-                            .frame(maxHeight: screenHeight/6)
-                        
+
+                        var mem = club.members.sorted {
+                            $0.localizedCaseInsensitiveCompare($1)
+                                == .orderedAscending
+                        }.joined(separator: ", ")
+
+                        CodeSnippetView(
+                            code: mem,
+                            textSmall: club.members.count > 10 ? true : false
+                        )
+                        .padding(.top, -8)
+                        .frame(maxHeight: screenHeight / 6)
+
                     }
-                    
-                    
+
                     if clubLeader {
-                        if let cluber = club.pendingMemberRequests, club.requestNeeded != nil {
+                        if let cluber = club.pendingMemberRequests,
+                            club.requestNeeded != nil
+                        {
                             if !cluber.isEmpty {
                                 Text("Pending Requests")
                                     .font(.headline)
@@ -224,27 +302,34 @@ struct ClubInfoView: View {
                                     ForEach(Array(cluber), id: \.self) { i in
                                         HStack {
                                             Text(i)
-                                            
+
                                             Button {
-                                                club.pendingMemberRequests?.remove(i)
+                                                club.pendingMemberRequests?
+                                                    .remove(i)
                                                 club.members.append(i)
                                                 addClub(club: club)
                                             } label: {
-                                                Image(systemName: "checkmark.circle")
-                                                    .foregroundStyle(.green)
+                                                Image(
+                                                    systemName:
+                                                        "checkmark.circle"
+                                                )
+                                                .foregroundStyle(.green)
                                             }
                                             .imageScale(.large)
-                                            
+
                                             Button {
-                                                club.pendingMemberRequests?.remove(i)
+                                                club.pendingMemberRequests?
+                                                    .remove(i)
                                                 addClub(club: club)
                                             } label: {
-                                                Image(systemName: "xmark.circle")
-                                                    .foregroundStyle(.red)
+                                                Image(
+                                                    systemName: "xmark.circle"
+                                                )
+                                                .foregroundStyle(.red)
                                             }
                                             .imageScale(.large)
                                         }
-                                        
+
                                         if i != Array(cluber).last! {
                                             Divider()
                                         }
@@ -252,22 +337,30 @@ struct ClubInfoView: View {
                                 }
                             }
                         }
-                        
+
                         Button {
                             if let announcements = club.announcements {
                                 let sortedAnnouncements = announcements.sorted {
                                     let date1 = dateFromString($0.value.date)
                                     let date2 = dateFromString($1.value.date)
-                                    return (date1 ?? Date.distantPast) > (date2 ?? Date.distantPast)
+                                    return (date1 ?? Date.distantPast)
+                                        > (date2 ?? Date.distantPast)
                                 }
-                                
-                                if let latestAnnouncementDate = sortedAnnouncements.first?.value.date,
-                                   Date() > dateFromString(latestAnnouncementDate) {
+
+                                if let latestAnnouncementDate =
+                                    sortedAnnouncements.first?.value.date,
+                                    Date()
+                                        > dateFromString(latestAnnouncementDate)
+                                {
                                     showAddAnnouncement.toggle()
                                 } else {
-                                    dropper(title: "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
-                                            subtitle: "One Announcement Per Minute!",
-                                            icon: UIImage(systemName: "timer"))
+                                    dropper(
+                                        title:
+                                            "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
+                                        subtitle:
+                                            "One Announcement Per Minute!",
+                                        icon: UIImage(systemName: "timer")
+                                    )
                                 }
                             } else {
                                 showAddAnnouncement.toggle()
@@ -281,20 +374,38 @@ struct ClubInfoView: View {
                                 .cornerRadius(8)
                         }
                         .sheet(isPresented: $showAddAnnouncement) {
-                            AddAnnouncementSheet(clubName: club.name, email: viewModel.userEmail ?? "", clubID: club.clubID, onSubmit: {
-                                oneMinuteAfter = Date().addingTimeInterval(60)
-                            }, viewModel: viewModel)
+                            AddAnnouncementSheet(
+                                clubName: club.name,
+                                email: viewModel.userEmail ?? "",
+                                clubID: club.clubID,
+                                onSubmit: {
+                                    oneMinuteAfter = Date().addingTimeInterval(
+                                        60
+                                    )
+                                },
+                                viewModel: viewModel
+                            )
                             .presentationSizing(.page)
                             .presentationDragIndicator(.visible)
                             .background(GlassBackground())
                         }
-                        
+
                     }
-                    
-                    if let announcements = club.announcements, viewModel.isGuestUser == false {
-                        AnnouncementsView(announcements: announcements, viewModel: viewModel, isClubMember: isClubMemberLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail), userInfo: $userInfo)
+
+                    if let announcements = club.announcements,
+                        viewModel.isGuestUser == false
+                    {
+                        AnnouncementsView(
+                            announcements: announcements,
+                            viewModel: viewModel,
+                            isClubMember: isClubMemberLeaderOrSuperAdmin(
+                                club: club,
+                                userEmail: viewModel.userEmail
+                            ),
+                            userInfo: $userInfo
+                        )
                     }
-                    
+
                     Text("Location")
                         .font(.headline)
                     HStack {
@@ -303,48 +414,69 @@ struct ClubInfoView: View {
                         Text(club.location)
                             .font(.subheadline)
                             .onTapGesture {
-                                if clubLeader || club.locationInSchoolCoordinates != nil {
+                                if clubLeader
+                                    || club.locationInSchoolCoordinates != nil
+                                {
                                     showMap = true
                                 }
                             }
-                            .padding(club.locationInSchoolCoordinates != nil || clubLeader ? 6 : 0)
-                            .background(club.locationInSchoolCoordinates != nil || clubLeader ? Color.blue.opacity(0.2) : .clear)
+                            .padding(
+                                club.locationInSchoolCoordinates != nil
+                                    || clubLeader ? 6 : 0
+                            )
+                            .background(
+                                club.locationInSchoolCoordinates != nil
+                                    || clubLeader
+                                    ? Color.blue.opacity(0.2) : .clear
+                            )
                             .cornerRadius(8)
-                            .foregroundColor(club.locationInSchoolCoordinates != nil || clubLeader ? .blue : .primary)
+                            .foregroundColor(
+                                club.locationInSchoolCoordinates != nil
+                                    || clubLeader ? .blue : .primary
+                            )
                     }
-                    
+
                     HStack {
                         Text("Schoology Code")
                             .font(.headline)
-                        
+
                         CodeSnippetView(code: club.schoologyCode)
-                        
+
                     }
-                    
+
                     if let username = club.instagram {
                         InstagramLinkButton(username: username)
                     }
-                    
+
                     if let genres = club.genres, !genres.isEmpty {
                         VStack(alignment: .leading) {
                             Text("Genres")
                                 .font(.headline)
-                            
+
                             HStack {
-                                ForEach(genres.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }, id: \.self) { genre in
+                                ForEach(
+                                    genres.sorted {
+                                        $0.localizedCaseInsensitiveCompare($1)
+                                            == .orderedAscending
+                                    },
+                                    id: \.self
+                                ) { genre in
                                     HStack(spacing: 10) {
                                         Button(action: {
                                             tagsExpanded = false
                                             currentSearchingBy = "Genre"
                                             selectedTab = 0
                                             sharedGenre = genre
-                                            presentationMode.wrappedValue.dismiss()
+                                            presentationMode.wrappedValue
+                                                .dismiss()
                                         }) {
                                             Text(genre)
                                                 .font(.subheadline)
                                                 .foregroundStyle(.blue)
                                                 .padding(6)
-                                                .background(Color.blue.opacity(0.2))
+                                                .background(
+                                                    Color.blue.opacity(0.2)
+                                                )
                                                 .cornerRadius(8)
                                         }
                                     }
@@ -352,39 +484,51 @@ struct ClubInfoView: View {
                             }
                         }
                     }
-                    
+
                 }
                 .padding()
-           
+
                 Color.clear
-                    .frame(height: screenHeight/10)
+                    .frame(height: screenHeight / 10)
             }
-//            .refreshable {
-//                // so that the other big refresh doesnt over ride
-//            }
+            //            .refreshable {
+            //                // so that the other big refresh doesnt over ride
+            //            }
             .popup(isPresented: $showMap) {
                 ZStack {
                     Map(position: $cameraPosition, interactionModes: []) {
                         if let coords = club.locationInSchoolCoordinates {
-                          
+
                         } else if !mapEditorMode {
-                            
-                            Annotation(club.name, coordinate: CLLocationCoordinate2D(latitude: 42.07925, longitude: -87.94971)) {
+
+                            Annotation(
+                                club.name,
+                                coordinate: CLLocationCoordinate2D(
+                                    latitude: 42.07925,
+                                    longitude: -87.94971
+                                )
+                            ) {
                                 VStack {
                                     Text("Tap Screen to Choose Location!")
                                         .font(.caption)
-                                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .fill(Color.blue)
+                                        )
                                     Image(systemName: "mappin")
                                         .foregroundColor(.red)
                                     Text("Drag Pin!")
                                         .font(.caption2)
-                                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .fill(Color.blue)
+                                        )
 
                                 }
                             }
-                            
+
                         }
-                        
+
                     }
                     .mapStyle(.imagery)
                     .onTapGesture {
@@ -392,35 +536,49 @@ struct ClubInfoView: View {
                             mapEditorMode = true
                         }
                     }
-                    
+
                     if mapEditorMode {
                         ZStack(alignment: .bottomTrailing) {
                             Color.gray.opacity(0.2)
-                            
+
                             VStack {
                                 Text(club.name)
                                     .font(.caption)
-                                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 5).fill(
+                                            Color.blue
+                                        )
+                                    )
                                 Image(systemName: "mappin")
                                     .foregroundColor(.red)
                                 Text(club.location)
                                     .font(.caption2)
-                                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 5).fill(
+                                            Color.blue
+                                        )
+                                    )
 
                             }
-                                .position(pinPosition)
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { value in
-                                            pinPosition = value.location
-                                        }
-                                        .onEnded { value in
-                                            pinPosition = value.location
-                                        }
-                                )
+                            .position(pinPosition)
+                            .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        pinPosition = value.location
+                                    }
+                                    .onEnded { value in
+                                        pinPosition = value.location
+                                    }
+                            )
                             Button("Edit") {
-                                club.locationInSchoolCoordinates = [pinPosition.x, pinPosition.y]
-                                addLocationCoords(clubID: club.clubID, locationCoords: club.locationInSchoolCoordinates!)
+                                club.locationInSchoolCoordinates = [
+                                    pinPosition.x, pinPosition.y,
+                                ]
+                                addLocationCoords(
+                                    clubID: club.clubID,
+                                    locationCoords: club
+                                        .locationInSchoolCoordinates!
+                                )
                                 mapEditorMode = false
                             }
                             .buttonStyle(.borderedProminent)
@@ -430,20 +588,33 @@ struct ClubInfoView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .onAppear {
-                            if let coords = club.locationInSchoolCoordinates, coords.count >= 2 {
-                                pinPosition = CGPoint(x: coords[0], y: coords[1])
+                            if let coords = club.locationInSchoolCoordinates,
+                                coords.count >= 2
+                            {
+                                pinPosition = CGPoint(
+                                    x: coords[0],
+                                    y: coords[1]
+                                )
                             }
                         }
                     } else if let coords = club.locationInSchoolCoordinates {
                         VStack {
                             Text(club.name)
                                 .font(.caption)
-                                .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                .background(
+                                    RoundedRectangle(cornerRadius: 5).fill(
+                                        Color.blue
+                                    )
+                                )
                             Image(systemName: "mappin")
                                 .foregroundColor(.red)
                             Text(club.location)
                                 .font(.caption2)
-                                .background(RoundedRectangle(cornerRadius: 5).fill(Color.blue))
+                                .background(
+                                    RoundedRectangle(cornerRadius: 5).fill(
+                                        Color.blue
+                                    )
+                                )
 
                         }
                         .position(x: coords[0], y: coords[1])
@@ -451,7 +622,9 @@ struct ClubInfoView: View {
                             DragGesture()
                                 .onChanged { value in
                                     pinPosition = value.location
-                                    club.locationInSchoolCoordinates = [pinPosition.x, pinPosition.y]
+                                    club.locationInSchoolCoordinates = [
+                                        pinPosition.x, pinPosition.y,
+                                    ]
                                 }
                                 .onEnded { value in
                                     pinPosition = value.location
@@ -462,7 +635,7 @@ struct ClubInfoView: View {
                 }
                 .frame(width: 400, height: 400, alignment: .center)
                 .clipShape(RoundedRectangle(cornerRadius: 25))
-                
+
             } customize: {
                 $0
                     .type(.default)
@@ -473,10 +646,16 @@ struct ClubInfoView: View {
                     .closeOnTapOutside(true)
             }
             .popup(isPresented: $meetingFull) {
-                if let closestMeeting = club.meetingTimes!.sorted(by: {dateFromString($0.startTime) < dateFromString($1.startTime)}).filter({ meeting in
+                if let closestMeeting = club.meetingTimes!.sorted(by: {
+                    dateFromString($0.startTime) < dateFromString($1.startTime)
+                }).filter({ meeting in
                     return dateFromString(meeting.startTime) >= Date()
                 }).first {
-                    MeetingInfoView(meeting: closestMeeting, clubs: [club], userInfo: .constant(nil))
+                    MeetingInfoView(
+                        meeting: closestMeeting,
+                        clubs: [club],
+                        userInfo: .constant(nil)
+                    )
                 }
             } customize: {
                 $0
@@ -486,10 +665,10 @@ struct ClubInfoView: View {
                     .animation(.snappy)
                     .closeOnTapOutside(false)
                     .closeOnTap(false)
-                
+
             }
             .foregroundStyle(.primary)
-            .animation(.easeInOut, value: abstractExpanded) // smooth transition with whenever u expand abstract to show more
+            .animation(.easeInOut, value: abstractExpanded)  // smooth transition with whenever u expand abstract to show more
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Text(club.name)
@@ -498,81 +677,122 @@ struct ClubInfoView: View {
                         .foregroundStyle(.primary)
                         .fixedSize()
                 }
-//                ToolbarItem(placement: .topBarLeading) {
-//                    Circle()
-//                        .font(.title)
-//                        .bold()
-//                        .padding(.top)
-//                        .foregroundStyle(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
-//                }
+                //                ToolbarItem(placement: .topBarLeading) {
+                //                    Circle()
+                //                        .font(.title)
+                //                        .bold()
+                //                        .padding(.top)
+                //                        .foregroundStyle(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
+                //                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Group {
                         if clubLeader {
                             Button {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + 0.01
+                                ) {
                                     showEditScreen.toggle()
                                 }
                             } label: {
                                 Image(systemName: "gear")
                                     .imageScale(.large)
                             }
-                          .sheet(isPresented: $showEditScreen) {
-                                CreateClubView(viewCloser: {
-                                    showEditScreen = false
-                                    dropper(title: "Club Edited!", subtitle: club.name, icon: UIImage(systemName: "checkmark"))
-                                }, CreatedClub: club)
+                            .sheet(isPresented: $showEditScreen) {
+                                CreateClubView(
+                                    viewCloser: {
+                                        showEditScreen = false
+                                        dropper(
+                                            title: "Club Edited!",
+                                            subtitle: club.name,
+                                            icon: UIImage(
+                                                systemName: "checkmark"
+                                            )
+                                        )
+                                    },
+                                    CreatedClub: club
+                                )
                                 .presentationDragIndicator(.visible)
                                 .presentationSizing(.page)
                             }
                         } else {
                             if !viewModel.isGuestUser {
                                 Button {
-                                    if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                    if userInfo?.favoritedClubs.contains(
+                                        club.clubID
+                                    ) ?? false {
                                         removeClubFromFavorites(
                                             for: viewModel.uid ?? "",
                                             clubID: club.clubID
                                         )
                                         refreshUserInfo()
-                                        dropper(title: "Club Unpinned", subtitle: club.name, icon: UIImage(systemName: "pin"))
+                                        dropper(
+                                            title: "Club Unpinned",
+                                            subtitle: club.name,
+                                            icon: UIImage(systemName: "pin")
+                                        )
                                     } else {
-                                        addClubToFavorites(for: viewModel.uid ?? "", clubID: club.clubID)
+                                        addClubToFavorites(
+                                            for: viewModel.uid ?? "",
+                                            clubID: club.clubID
+                                        )
                                         refreshUserInfo()
-                                        dropper(title: "Club Pinned", subtitle: club.name, icon: UIImage(systemName: "pin.fill"))
+                                        dropper(
+                                            title: "Club Pinned",
+                                            subtitle: club.name,
+                                            icon: UIImage(
+                                                systemName: "pin.fill"
+                                            )
+                                        )
                                     }
                                 } label: {
-                                    if userInfo?.favoritedClubs.contains(club.clubID) ?? false {
+                                    if userInfo?.favoritedClubs.contains(
+                                        club.clubID
+                                    ) ?? false {
                                         Image(systemName: "pin.fill")
                                             .foregroundStyle(.red)
                                             .shadow(radius: 5)
                                             .transition(.movingParts.pop(.red))
-                                        
+
                                     } else {
                                         Image(systemName: "pin")
                                             .transition(
-                                                .asymmetric(insertion: .opacity, removal: .movingParts.vanish(Color(white: 0.8), mask: Circle()))
+                                                .asymmetric(
+                                                    insertion: .opacity,
+                                                    removal: .movingParts
+                                                        .vanish(
+                                                            Color(white: 0.8),
+                                                            mask: Circle()
+                                                        )
+                                                )
                                             )
                                             .foregroundStyle(.primary)
                                     }
                                 }
                                 .padding(.top)
                             }
-                            
+
                         }
                     }
-                    
+
                 }
             }
             .apply {
                 if #available(iOS 26, *) {
                     $0
                 } else {
-                    $0.toolbarBackground(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()).opacity(0.1), for: .automatic)
+                    $0.toolbarBackground(
+                        Color(
+                            hexadecimal: club.clubColor
+                                ?? colorFromClub(club: club).toHexString()
+                        ).opacity(0.1),
+                        for: .automatic
+                    )
                 }
             }
         }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
     }
-    
+
     func refreshUserInfo() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             if let userID = viewModel.uid {
@@ -582,5 +802,5 @@ struct ClubInfoView: View {
             }
         }
     }
-    
+
 }

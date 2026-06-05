@@ -12,7 +12,7 @@ struct WeekCalendarView: View {
     @AppStorage("darkMode") var darkMode = false
     @State var appear = Array(repeating: true, count: 4)
     @AppStorage("Animations+") var animationsPlus = false
-    
+
     var body: some View {
         VStack {
             HStack(alignment: .center) {
@@ -35,8 +35,8 @@ struct WeekCalendarView: View {
                 .padding()
             }
             .padding()
-            
-            HStack(alignment:.center, spacing: 15) {
+
+            HStack(alignment: .center, spacing: 15) {
                 Button {
                     showMonthPicker.toggle()
                 } label: {
@@ -51,51 +51,83 @@ struct WeekCalendarView: View {
                 .sheet(isPresented: $showMonthPicker) {
                     MonthPickerView(
                         selectedDate: $selectedDate,
-                        currentYear: Calendar.current.component(.year, from: selectedDate),
+                        currentYear: Calendar.current.component(
+                            .year,
+                            from: selectedDate
+                        ),
                         clubs: $clubs,
                         meetingIndex: meetingIndex,
                         schoolScheduleStore: schoolScheduleStore,
                         viewModel: viewModel
                     )
-                        .frame(width: UIScreen.main.bounds.width/1.05)
-                        .cornerRadius(25)
+                    .frame(width: UIScreen.main.bounds.width / 1.05)
+                    .cornerRadius(25)
                 }
-                
+
                 ForEach(getDaysInWeek(for: currentWeek), id: \.self) { date in
                     let schoolBadge = schoolScheduleStore.badge(for: date)
                     VStack {
                         Text(dayOfWeek(for: date))
                             .font(.caption)
-                        
+
                         Text("\(Calendar.current.component(.day, from: date))")
                             .font(.headline)
-                            .foregroundColor(isSelected(date) ? .white : isToday(date) ? .blue : .primary)
+                            .foregroundColor(
+                                isSelected(date)
+                                    ? .white : isToday(date) ? .blue : .primary
+                            )
                             .padding(10)
-                            .background(isSelected(date) ? Circle().fill(Color.blue) : isToday(date) ? Circle().fill(Color.blue.opacity(0.3)) : nil)
+                            .background(
+                                isSelected(date)
+                                    ? Circle().fill(Color.blue)
+                                    : isToday(date)
+                                        ? Circle().fill(Color.blue.opacity(0.3))
+                                        : nil
+                            )
 
                         Text(schoolBadge.text)
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 7)
                             .padding(.vertical, 3)
-                            .background(schoolBadge.color, in: Capsule(style: .continuous))
-                        
-                        let clubIDCounts = meetingIndex.visibleMeetings(on: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
-                            if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
+                            .background(
+                                schoolBadge.color,
+                                in: Capsule(style: .continuous)
+                            )
+
+                        let clubIDCounts = meetingIndex.visibleMeetings(
+                            on: date
+                        ).reduce(into: [(clubID: String, count: Int)]()) {
+                            result,
+                            meeting in
+                            if let index = result.firstIndex(where: {
+                                $0.clubID == meeting.clubID
+                            }) {
                                 result[index].count += 1
                             } else {
                                 result.append((meeting.clubID, 1))
                             }
-                        }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: { $0.count > $1.count })
-                        
+                        }.sorted(by: { $0.clubID < $1.clubID }).sorted(by: {
+                            $0.count > $1.count
+                        })
+
                         if !clubIDCounts.isEmpty {
                             HStack(spacing: -4) {
-                                ForEach(Array(clubIDCounts.prefix(3).enumerated()), id: \.element.clubID) { index, club in
+                                ForEach(
+                                    Array(clubIDCounts.prefix(3).enumerated()),
+                                    id: \.element.clubID
+                                ) { index, club in
                                     ZStack {
                                         Circle()
-                                            .fill(colorFromClub(club: clubs.first(where: { $0.clubID == club.clubID })!))
+                                            .fill(
+                                                colorFromClub(
+                                                    club: clubs.first(where: {
+                                                        $0.clubID == club.clubID
+                                                    })!
+                                                )
+                                            )
                                             .frame(width: 12, height: 12)
-                                        
+
                                         if club.count > 1 {
                                             Text("\(club.count)")
                                                 .font(.system(size: 12))
@@ -104,18 +136,23 @@ struct WeekCalendarView: View {
                                     }
                                     .opacity(appear[index] ? 1 : 0)
                                     .offset(y: appear[index] ? 0 : -20)
-                                    .animation(.smooth(duration: 0.2), value: appear[index])
+                                    .animation(
+                                        .smooth(duration: 0.2),
+                                        value: appear[index]
+                                    )
                                 }
-                                
-                                
+
                                 if clubIDCounts.count > 3 {
                                     Image(systemName: "plus")
                                         .foregroundColor(.primary)
                                         .imageScale(.small)
                                         .opacity(appear[3] ? 1 : 0)
                                         .offset(y: appear[3] ? 0 : -20)
-                                        .animation(.smooth(duration: 0.2), value: appear[3])
-                                    
+                                        .animation(
+                                            .smooth(duration: 0.2),
+                                            value: appear[3]
+                                        )
+
                                 } else {
                                     Image(systemName: "plus")
                                         .foregroundColor(.clear)
@@ -137,8 +174,13 @@ struct WeekCalendarView: View {
                         selectedDate = date
                     }
                 }
-                
-                if clubs.contains(where: { isClubLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }) {
+
+                if clubs.contains(where: {
+                    isClubLeaderOrSuperAdmin(
+                        club: $0,
+                        userEmail: viewModel.userEmail
+                    )
+                }) {
                     Button {
                         addMeetingTimeView.toggle()
                     } label: {
@@ -156,9 +198,19 @@ struct WeekCalendarView: View {
             }
             .padding(.horizontal)
             .sheet(isPresented: $addMeetingTimeView) {
-                AddMeetingView(viewCloser: {
-                    addMeetingTimeView = false
-                }, leaderClubs: clubs.filter { isClubLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }, selectedDate: selectedDate, userInfo: .constant(nil))
+                AddMeetingView(
+                    viewCloser: {
+                        addMeetingTimeView = false
+                    },
+                    leaderClubs: clubs.filter {
+                        isClubLeaderOrSuperAdmin(
+                            club: $0,
+                            userEmail: viewModel.userEmail
+                        )
+                    },
+                    selectedDate: selectedDate,
+                    userInfo: .constant(nil)
+                )
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
                 .cornerRadius(25)
@@ -173,12 +225,15 @@ struct WeekCalendarView: View {
                 appear = Array(repeating: false, count: 4)
             }
         }
-        .onChange(of: currentWeek) { 
+        .onChange(of: currentWeek) {
             if animationsPlus {
                 appear = Array(repeating: false, count: 4)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     for index in 0..<4 {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int(Double(index) * 100))) {
+                        DispatchQueue.main.asyncAfter(
+                            deadline: .now()
+                                + .milliseconds(Int(Double(index) * 100))
+                        ) {
                             appear[index] = true
                         }
                     }
@@ -191,44 +246,61 @@ struct WeekCalendarView: View {
                 .onEnded { value in
                     if value.translation.width < -50 {
                         navigateWeek(by: 1)
-                    }
-                    else if value.translation.width > 50 {
+                    } else if value.translation.width > 50 {
                         navigateWeek(by: -1)
                     }
                 }
         )
     }
-    
+
     func getDaysInWeek(for date: Date) -> [Date] {
-        guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return [] }
+        guard
+            let weekInterval = Calendar.current.dateInterval(
+                of: .weekOfYear,
+                for: date
+            )
+        else { return [] }
         let startOfWeek = weekInterval.start
-        return (0..<7).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: startOfWeek) }
+        return (0..<7).compactMap {
+            Calendar.current.date(byAdding: .day, value: $0, to: startOfWeek)
+        }
     }
-    
+
     func navigateWeek(by value: Int) {
-        guard let newWeek = Calendar.current.date(byAdding: .weekOfYear, value: value, to: currentWeek) else { return }
-        
+        guard
+            let newWeek = Calendar.current.date(
+                byAdding: .weekOfYear,
+                value: value,
+                to: currentWeek
+            )
+        else { return }
+
         if animationsPlus {
             withAnimation {
                 appear = Array(repeating: false, count: 4)
             }
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             withAnimation {
                 currentWeek = newWeek
             }
         }
     }
-    
+
     func weekRange(for date: Date) -> String {
-        guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return "" }
+        guard
+            let weekInterval = Calendar.current.dateInterval(
+                of: .weekOfYear,
+                for: date
+            )
+        else { return "" }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-        return "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: weekInterval.start)))"
+        return
+            "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: weekInterval.start)))"
     }
-    
-    
+
     func isSelected(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }

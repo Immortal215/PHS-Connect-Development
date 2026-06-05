@@ -3,7 +3,7 @@ import SwiftUI
 let superAdminEmails: Set<String> = [
     "sharul.shah2008@gmail.com",
     "frank.mirandola@d214.org",
-    "devin.t.ramirez@gmail.com"
+    "devin.t.ramirez@gmail.com",
 ]
 
 func normalizedEmail(_ email: String?) -> String {
@@ -21,21 +21,29 @@ func isClubLeaderOrSuperAdmin(club: Club, userEmail: String?) -> Bool {
 
 func isClubMemberLeaderOrSuperAdmin(club: Club, userEmail: String?) -> Bool {
     let email = normalizedEmail(userEmail)
-    return isSuperAdminEmail(email) || club.leaders.contains(email) || club.members.contains(email)
+    return isSuperAdminEmail(email) || club.leaders.contains(email)
+        || club.members.contains(email)
 }
 
-func calculateLines(size: CGSize, variable: Binding<Bool>, maxLines: Int, textStyle: Font.TextStyle) {
+func calculateLines(
+    size: CGSize,
+    variable: Binding<Bool>,
+    maxLines: Int,
+    textStyle: Font.TextStyle
+) {
     let uiFontTextStyle = convertToUIFontTextStyle(textStyle)
     let font = UIFont.preferredFont(forTextStyle: uiFontTextStyle)
     let lineHeight = font.lineHeight
     let totalLines = Int(size.height / lineHeight)
-    
+
     DispatchQueue.main.async {
-        variable.wrappedValue = (totalLines != maxLines ? totalLines > maxLines : false)
+        variable.wrappedValue =
+            (totalLines != maxLines ? totalLines > maxLines : false)
     }
 }
 
-func convertToUIFontTextStyle(_ textStyle: Font.TextStyle) -> UIFont.TextStyle {  // very goofy, why do I need to convert to the same thing bro
+func convertToUIFontTextStyle(_ textStyle: Font.TextStyle) -> UIFont.TextStyle
+{  // very goofy, why do I need to convert to the same thing bro
     switch textStyle {
     case .largeTitle: return .largeTitle
     case .title: return .title1
@@ -58,33 +66,37 @@ func colorFromClub(club: Club?) -> Color {
             return Color(hexadecimal: clubColor)
         } else {
             let number = Int(club.clubID.dropFirst(6)) ?? 0
-            
+
             let red = CGFloat((number * 50) % 255) / 255.0
             let green = CGFloat((number * 30) % 255) / 255.0
             let blue = CGFloat((number * 20) % 255) / 255.0
-            
+
             return Color(red: red, green: green, blue: blue)
         }
     } else {
-        return(.primary)
+        return (.primary)
     }
 }
 
 extension Color {
     func toHexString() -> String {
-        guard let components = UIColor(self).cgColor.components else { return "#FFFFFF" }
-        
+        guard let components = UIColor(self).cgColor.components else {
+            return "#FFFFFF"
+        }
+
         let r = Int(components[0] * 255.0)
         let g = Int(components[1] * 255.0)
         let b = Int(components[2] * 255.0)
-        
+
         return String(format: "#%02X%02X%02X", r, g, b)
     }
 }
 
 func normalizedURL(_ string: String) -> URL? {
     var urlString = string.trimmingCharacters(in: .whitespacesAndNewlines)
-    let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+    let detector = try? NSDataDetector(
+        types: NSTextCheckingResult.CheckingType.link.rawValue
+    )
     let range = NSRange(location: 0, length: urlString.utf16.count)
     let matches = detector?.matches(in: urlString, options: [], range: range)
     if matches?.first?.range.length == range.length {

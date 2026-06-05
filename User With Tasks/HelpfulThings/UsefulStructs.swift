@@ -1,29 +1,29 @@
-import SwiftUI
-import Pow
-import SwiftUIX
-import Shimmer
 import CommonSwiftUI
+import Pow
+import Shimmer
+import SwiftUI
+import SwiftUIX
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3
     var image: String
     var index: Int
     var labelr: String
-    
+
     var body: some View {
         Button {
             selectedTab = index
         } label: {
-                VStack {
-                    Image(systemName: image)
-                       // .font(.title)
-                        .imageScale(.large)
-                    
-//                    Text(labelr)
-//                        .font(.caption)
-                }
-                .foregroundColor(selectedTab == index ? .blue : .primary)
-                .brightness(0.1)
+            VStack {
+                Image(systemName: image)
+                    // .font(.title)
+                    .imageScale(.large)
+
+                //                    Text(labelr)
+                //                        .font(.caption)
+            }
+            .foregroundColor(selectedTab == index ? .blue : .primary)
+            .brightness(0.1)
         }
         .apply {
             if #available(iOS 26, *) {
@@ -33,14 +33,13 @@ struct TabBarButton: View {
     }
 }
 
-
 struct Box: View {
-    let text : String
-    
+    let text: String
+
     init(_ text: String) {
         self.text = text
     }
-    
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 15)
@@ -51,7 +50,7 @@ struct Box: View {
                 )
                 .shadow(radius: 5)
                 .scaleEffect(0.9)
-            
+
             Text(text)
                 .padding()
         }
@@ -61,12 +60,12 @@ struct Box: View {
 struct CodeSnippetView: View {
     @State var code: String = ""
     @State var clicked = false
-    @State var textSmall : Bool? = false
-    
+    @State var textSmall: Bool? = false
+
     var body: some View {
         HStack {
             Text(code)
-                .font(textSmall! ? .footnote :.subheadline)
+                .font(textSmall! ? .footnote : .subheadline)
                 .padding()
                 .background {
                     GlassBackground()
@@ -74,18 +73,26 @@ struct CodeSnippetView: View {
                 }
                 .onTapGesture {
                     UIPasteboard.general.string = replaceSchoologyExtras(code)
-                    dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
+                    dropper(
+                        title: "Copied!",
+                        subtitle: "\(replaceSchoologyExtras(code))",
+                        icon: UIImage(systemName: "checkmark")
+                    )
                     clicked = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                         clicked = false
                     }
                 }
                 .shimmering(active: clicked, duration: 2.4)
-            
+
             Button(action: {
                 UIPasteboard.general.string = replaceSchoologyExtras(code)
-                
-                dropper(title: "Copied!", subtitle: "\(replaceSchoologyExtras(code))", icon: UIImage(systemName: "checkmark"))
+
+                dropper(
+                    title: "Copied!",
+                    subtitle: "\(replaceSchoologyExtras(code))",
+                    icon: UIImage(systemName: "checkmark")
+                )
                 clicked = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     clicked = false
@@ -105,7 +112,7 @@ struct CodeSnippetView: View {
                 .background(.blue)
                 .foregroundColor(.white)
                 .cornerRadius(clicked ? 100 : 8)
-                
+
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -115,15 +122,16 @@ struct CodeSnippetView: View {
 }
 
 func replaceSchoologyExtras(_ string: String) -> String {
-    return string.replacingOccurrences(of: " (Course)", with: "").replacingOccurrences(of:  " (Group)", with: "")
+    return string.replacingOccurrences(of: " (Course)", with: "")
+        .replacingOccurrences(of: " (Group)", with: "")
 }
 
 struct CustomizableDropdown: View {
     @Binding var selectedClubId: String
     let leaderClubs: [Club]
-    
+
     @State var isExpanded: Bool = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
@@ -132,16 +140,31 @@ struct CustomizableDropdown: View {
                 }
             } label: {
                 HStack {
-                    Text(leaderClubs.first(where: { $0.clubID == selectedClubId })?.name ?? "Select a Club")
+                    Text(
+                        leaderClubs.first(where: { $0.clubID == selectedClubId }
+                        )?.name ?? "Select a Club"
+                    )
                     Spacer()
                     Image(systemName: "arrowtriangle.down.fill")
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
-                .foregroundStyle(colorFromClub(club: leaderClubs.first(where: {$0.clubID == selectedClubId})))
+                .foregroundStyle(
+                    colorFromClub(
+                        club: leaderClubs.first(where: {
+                            $0.clubID == selectedClubId
+                        })
+                    )
+                )
                 .padding()
-                .background(colorFromClub(club: leaderClubs.first(where: {$0.clubID == selectedClubId})).opacity(0.2))
+                .background(
+                    colorFromClub(
+                        club: leaderClubs.first(where: {
+                            $0.clubID == selectedClubId
+                        })
+                    ).opacity(0.2)
+                )
             }
-            
+
             if isExpanded {
                 ForEach(leaderClubs, id: \.self) { club in
                     if club.clubID != selectedClubId {
@@ -159,7 +182,7 @@ struct CustomizableDropdown: View {
                             .foregroundStyle(colorFromClub(club: club))
                             .padding()
                             .background(colorFromClub(club: club).opacity(0.2))
-                            
+
                         }
                         .buttonStyle(.plain)
                     }
@@ -174,18 +197,18 @@ struct CustomizableDropdown: View {
 struct CustomToggleSwitch: View {
     @Binding var boolean: Bool
     var enabled: Bool = true
-    var colors : [Color]
-    var images : [String]
-    
+    var colors: [Color]
+    var images: [String]
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
                 .fill(boolean ? colors[0].opacity(0.4) : colors[1].opacity(0.4))
                 .frame(width: 60, height: 30)
-            
+
             HStack {
                 if !boolean { Spacer() }
-                
+
                 Circle()
                     .fill(boolean ? colors[0] : colors[1])
                     .frame(width: 26, height: 26)
@@ -208,4 +231,3 @@ struct CustomToggleSwitch: View {
         }
     }
 }
-

@@ -1,15 +1,16 @@
 import SwiftUI
 
-import SwiftUI
-
 struct GlassBackground: View {
     var color: Color?
-    var shape: AnyShape = AnyShape(RoundedRectangle(cornerRadius: 25, style: .continuous)) // must pass in a shape with AnyShape() around it!!!
+    var shape: AnyShape = AnyShape(
+        RoundedRectangle(cornerRadius: 25, style: .continuous)
+    )  // must pass in a shape with AnyShape() around it!!!
     @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
         if #available(iOS 26, *) {
-            let color = color?.opacity(0.2) ?? Color.systemBackground.opacity(0.2)
+            let color =
+                color?.opacity(0.2) ?? Color.systemBackground.opacity(0.2)
             let glass = Glass.clear.tint(color)
 
             shape

@@ -7,7 +7,7 @@ struct MeetingInfoView: View {
     @State var meeting: Club.MeetingTime
     @State var clubs: [Club]
     @State var openSettings = false
-    var viewModel : AuthenticationViewModel?
+    var viewModel: AuthenticationViewModel?
     @State var showMoreTitle = true
     @State var showMoreDescription = true
     @State var showMoreLocation = true
@@ -20,122 +20,179 @@ struct MeetingInfoView: View {
     @State var showInfo = false
     @Binding var userInfo: Personal?
     @AppStorage("darkMode") var darkMode = false
-    
+
     var body: some View {
-        var club = clubs.first(where: {$0.clubID == meeting.clubID})!
-        var clubColor : Color {Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString())}
+        var club = clubs.first(where: { $0.clubID == meeting.clubID })!
+        var clubColor: Color {
+            Color(
+                hexadecimal: club.clubColor
+                    ?? colorFromClub(club: club).toHexString()
+            )
+        }
         VStack(alignment: .leading, spacing: 10) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text((meeting.title.first?.uppercased() ?? "") + meeting.title.suffix(from: meeting.title.index(after: meeting.title.startIndex)))
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.leading)
-                            .padding(.bottom, 5)
-                            .lineLimit(showMoreTitle ? nil : 4)
-                            .overlay(alignment: .bottomTrailing) {
-                                if titleMoreThan4 {
-                                    Text(showMoreTitle ? "" : "..+")
-                                        .font(.title2)
-                                        .bold()
-                                        .padding(.bottom, 5).offset(x: 6).background(colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).padding(.bottom, 5).offset(x: 6))
-                                }
+                        Text(
+                            (meeting.title.first?.uppercased() ?? "")
+                                + meeting.title.suffix(
+                                    from: meeting.title.index(
+                                        after: meeting.title.startIndex
+                                    )
+                                )
+                        )
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                        .padding(.bottom, 5)
+                        .lineLimit(showMoreTitle ? nil : 4)
+                        .overlay(alignment: .bottomTrailing) {
+                            if titleMoreThan4 {
+                                Text(showMoreTitle ? "" : "..+")
+                                    .font(.title2)
+                                    .bold()
+                                    .padding(.bottom, 5).offset(x: 6)
+                                    .background(
+                                        colorFromClub(club: club).opacity(
+                                            darkMode ? 0.5 : 0.2
+                                        ).background(.systemGray6).padding(
+                                            .bottom,
+                                            5
+                                        ).offset(x: 6)
+                                    )
                             }
-                            .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    showMoreTitle.toggle()
-                                }
+                        }
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showMoreTitle.toggle()
                             }
-                            .background(
-                                GeometryReader { geometry in
-                                    Color.clear
-                                        .onAppear {
-                                            calculateLines(size: geometry.size, variable: $titleMoreThan4, maxLines: 4, textStyle: .title2)
-                                            showMoreTitle = false
-                                        }
-                                }
-                            )
-                        
+                        }
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .onAppear {
+                                        calculateLines(
+                                            size: geometry.size,
+                                            variable: $titleMoreThan4,
+                                            maxLines: 4,
+                                            textStyle: .title2
+                                        )
+                                        showMoreTitle = false
+                                    }
+                            }
+                        )
+
                         Spacer()
-                        
-                        
-                        if let selectedClub = clubs.first(where: { $0.clubID == meeting.clubID }),
-                           isClubLeaderOrSuperAdmin(club: selectedClub, userEmail: viewModel?.userEmail) {
+
+                        if let selectedClub = clubs.first(where: {
+                            $0.clubID == meeting.clubID
+                        }),
+                            isClubLeaderOrSuperAdmin(
+                                club: selectedClub,
+                                userEmail: viewModel?.userEmail
+                            )
+                        {
                             VStack {
                                 Button {
                                     openSettings.toggle()
                                 } label: {
                                     Image(systemName: "gearshape")
                                         .imageScale(.large)
-                                        .foregroundColor(darkMode ? .white : .accentColor)
+                                        .foregroundColor(
+                                            darkMode ? .white : .accentColor
+                                        )
                                 }
                                 .padding(.horizontal)
-                                
+
                                 Spacer()
                             }
                         }
                     }
                     .padding(.bottom, -8)
-                    
+
                     Button {
                         if userInfo != nil {
                             showInfo.toggle()
                         }
                     } label: {
-                        Text(clubs.first(where: {$0.clubID == meeting.clubID})?.name ?? "Club Name")
-                            .foregroundStyle(colorFromClub(club: club))
-                            .bold()
-                    }
-                    
-                    
-                    Text("\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))")
-                        .foregroundColor(darkMode ? .gray : .darkGray)
+                        Text(
+                            clubs.first(where: { $0.clubID == meeting.clubID })?
+                                .name ?? "Club Name"
+                        )
+                        .foregroundStyle(colorFromClub(club: club))
                         .bold()
-                    
-                    if meeting.location != nil || meeting.description != nil{
+                    }
+
+                    Text(
+                        "\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))"
+                    )
+                    .foregroundColor(darkMode ? .gray : .darkGray)
+                    .bold()
+
+                    if meeting.location != nil || meeting.description != nil {
                         Divider()
                     }
-                    
+
                     if let location = meeting.location {
                         HStack(alignment: .top) {
                             Text("Location")
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
-                            
-                            Text(.init((location.first?.uppercased() ?? "") + location.suffix(from: location.index(after: location.startIndex))))
-                                .textSelection(.enabled)
-                                .foregroundColor(darkMode ? .gray : .darkGray)
-                                .lineLimit(showMoreLocation ? nil : 1)
-                                .overlay(alignment: .bottomTrailing) {
-                                    if locationMoreThan1 {
-                                        Text(showMoreLocation ? "" : "..+")
-                                            .font(.callout)
-                                            .foregroundColor(darkMode ? .gray : .darkGray)
-                                            .offset(x: 7)    .background (
-                                                colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:7))
-                                    }
-                                }
-                                .onTapGesture {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        showMoreLocation.toggle()
-                                    }
-                                }
-                                .background(
-                                    GeometryReader { geometry in
-                                        Color.clear
-                                            .onAppear {
-                                                calculateLines(size: geometry.size, variable: $locationMoreThan1, maxLines: 1, textStyle: .callout)
-                                                showMoreLocation = false
-                                            }
-                                    }
+
+                            Text(
+                                .init(
+                                    (location.first?.uppercased() ?? "")
+                                        + location.suffix(
+                                            from: location.index(
+                                                after: location.startIndex
+                                            )
+                                        )
                                 )
+                            )
+                            .textSelection(.enabled)
+                            .foregroundColor(darkMode ? .gray : .darkGray)
+                            .lineLimit(showMoreLocation ? nil : 1)
+                            .overlay(alignment: .bottomTrailing) {
+                                if locationMoreThan1 {
+                                    Text(showMoreLocation ? "" : "..+")
+                                        .font(.callout)
+                                        .foregroundColor(
+                                            darkMode ? .gray : .darkGray
+                                        )
+                                        .offset(x: 7).background(
+                                            colorFromClub(club: club).opacity(
+                                                darkMode ? 0.5 : 0.2
+                                            ).background(.systemGray6).offset(
+                                                x: 7
+                                            )
+                                        )
+                                }
+                            }
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showMoreLocation.toggle()
+                                }
+                            }
+                            .background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            calculateLines(
+                                                size: geometry.size,
+                                                variable: $locationMoreThan1,
+                                                maxLines: 1,
+                                                textStyle: .callout
+                                            )
+                                            showMoreLocation = false
+                                        }
+                                }
+                            )
                         }
                         .font(.callout)
                         .padding(.trailing)
                     }
-                    
+
                     if let description = meeting.description {
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Notes")
@@ -149,11 +206,18 @@ struct MeetingInfoView: View {
                                 .overlay(alignment: .bottomTrailing) {
                                     if descMoreThan9 {
                                         Text(showMoreDescription ? "" : "..+")
-                                            .foregroundColor(darkMode ? .gray : .darkGray)
+                                            .foregroundColor(
+                                                darkMode ? .gray : .darkGray
+                                            )
                                             .font(.callout)
                                             .offset(x: -1)
-                                            .background (
-                                                colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6).offset(x:-1))
+                                            .background(
+                                                colorFromClub(club: club)
+                                                    .opacity(
+                                                        darkMode ? 0.5 : 0.2
+                                                    ).background(.systemGray6)
+                                                    .offset(x: -1)
+                                            )
                                     }
                                 }
                                 .onTapGesture {
@@ -165,7 +229,12 @@ struct MeetingInfoView: View {
                                     GeometryReader { geometry in
                                         Color.clear
                                             .onAppear {
-                                                calculateLines(size: geometry.size, variable: $descMoreThan9, maxLines: 9, textStyle: .callout)
+                                                calculateLines(
+                                                    size: geometry.size,
+                                                    variable: $descMoreThan9,
+                                                    maxLines: 9,
+                                                    textStyle: .callout
+                                                )
                                                 showMoreDescription = false
                                             }
                                     }
@@ -174,11 +243,11 @@ struct MeetingInfoView: View {
                         .font(.callout)
                         .padding(.trailing)
                     }
-                    
+
                     Divider()
-                    
+
                     if let peopleAttending = meeting.visibleByArray {
-                        
+
                         Text(.init(peopleAttending.joined(separator: ", ")))
                             .font(.caption)
                             .foregroundColor(darkMode ? .gray : .darkGray)
@@ -188,14 +257,21 @@ struct MeetingInfoView: View {
                                 GeometryReader { geometry in
                                     Color.clear
                                         .onAppear {
-                                            calculateLines(size: geometry.size, variable: $attendingMoreThan2, maxLines: 2, textStyle: .caption)
+                                            calculateLines(
+                                                size: geometry.size,
+                                                variable: $attendingMoreThan2,
+                                                maxLines: 2,
+                                                textStyle: .caption
+                                            )
                                             showMoreAttending = false
                                         }
                                 }
                             )
-                        
+
                         if attendingMoreThan2 {
-                            Button(showMoreAttending ? "Show Less" : "Show More") {
+                            Button(
+                                showMoreAttending ? "Show Less" : "Show More"
+                            ) {
                                 showMoreAttending.toggle()
                             }
                         }
@@ -203,50 +279,70 @@ struct MeetingInfoView: View {
                         Text("All Club Members")
                             .font(.caption)
                     }
-                    
-                    Color.clear.frame(height: screenHeight/3)
+
+                    Color.clear.frame(height: screenHeight / 3)
                 }
             }
             .sheet(isPresented: $showInfo) {
                 if userInfo != nil {
-                    if let cluber = clubs.first(where: { $0.clubID == meeting.clubID }) {
-                        ClubInfoView(club: cluber, viewModel: viewModel!, userInfo: $userInfo)
-                            .presentationDragIndicator(.visible)
-                            .frame(width: UIScreen.main.bounds.width/1.05)
-                            .foregroundColor(nil)
-                            .presentationBackground {
-                                GlassBackground(color: clubColor)
+                    if let cluber = clubs.first(where: {
+                        $0.clubID == meeting.clubID
+                    }) {
+                        ClubInfoView(
+                            club: cluber,
+                            viewModel: viewModel!,
+                            userInfo: $userInfo
+                        )
+                        .presentationDragIndicator(.visible)
+                        .frame(width: UIScreen.main.bounds.width / 1.05)
+                        .foregroundColor(nil)
+                        .presentationBackground {
+                            GlassBackground(color: clubColor)
                                 .cornerRadius(25)
-                            }
+                        }
                     } else {
                         Text("Club not found")
                     }
                 }
             }
-            
+
         }
         .saturation(darkMode ? 1.3 : 1.0)
         .brightness(darkMode ? 0.3 : 0.0)
         .animation(.smooth)
         .sheet(isPresented: $openSettings) {
-            AddMeetingView(viewCloser: {
-                openSettings = false
-            }, CreatedMeetingTime: meeting, leaderClubs: clubs.filter { isClubLeaderOrSuperAdmin(club: $0, userEmail: viewModel?.userEmail) }, editScreen: true, selectedDate: selectedDate!, userInfo: $userInfo)
+            AddMeetingView(
+                viewCloser: {
+                    openSettings = false
+                },
+                CreatedMeetingTime: meeting,
+                leaderClubs: clubs.filter {
+                    isClubLeaderOrSuperAdmin(
+                        club: $0,
+                        userEmail: viewModel?.userEmail
+                    )
+                },
+                editScreen: true,
+                selectedDate: selectedDate!,
+                userInfo: $userInfo
+            )
             .presentationDragIndicator(.visible)
             .presentationSizing(.page)
             .presentationBackground {
                 GlassBackground(color: clubColor)
-                .cornerRadius(25)
+                    .cornerRadius(25)
             }
             .cornerRadius(25)
         }
         .padding()
         .frame(width: screenWidth / 2.5)
-        .background (
-            colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(.systemGray6)
-            
+        .background(
+            colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(
+                .systemGray6
+            )
+
         )
         .cornerRadius(10)
     }
-    
+
 }

@@ -2,17 +2,22 @@ import Foundation
 import UIKit
 
 final class Utilities {
-    
+
     static let shared = Utilities()
     private init() {}
-    
+
     @MainActor
-    func topViewController(controller: UIViewController? = nil) -> UIViewController? {
-        
-        let controller = controller ?? UIApplication.shared.keyWindow?.rootViewController
-        
+    func topViewController(controller: UIViewController? = nil)
+        -> UIViewController?
+    {
+
+        let controller =
+            controller ?? UIApplication.shared.keyWindow?.rootViewController
+
         if let navigationController = controller as? UINavigationController {
-            return topViewController(controller: navigationController.visibleViewController)
+            return topViewController(
+                controller: navigationController.visibleViewController
+            )
         }
         if let tabController = controller as? UITabBarController {
             if let selected = tabController.selectedViewController {
@@ -24,5 +29,5 @@ final class Utilities {
         }
         return controller
     }
-    
+
 }

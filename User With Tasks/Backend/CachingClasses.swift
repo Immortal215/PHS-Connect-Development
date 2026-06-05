@@ -5,7 +5,10 @@ class ChatCache {
 
     init(chatID: String) {
         // each chat gets its own file
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
         self.cacheURL = dir.appendingPathComponent("\(chatID)_chat.json")
     }
 
@@ -21,13 +24,15 @@ class ChatCache {
     }
 }
 
-
 class ClubCache {
     public let cacheURL: URL
 
     init(clubID: String) {
         // each club gets its own file
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
         self.cacheURL = dir.appendingPathComponent("\(clubID)_data.json")
     }
 
@@ -39,17 +44,19 @@ class ClubCache {
     func save(club: Club) {
         if let data = try? JSONEncoder().encode(club) {
             try? data.write(to: cacheURL)
-            
+
         }
     }
 }
-
 
 class TabsCache {
     public let cacheURL: URL
 
     init() {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
         self.cacheURL = dir.appendingPathComponent("\tab_preferences_data.json")
     }
 
@@ -61,31 +68,33 @@ class TabsCache {
     func save(tabPrefrences: UserTabPreferences) {
         if let data = try? JSONEncoder().encode(tabPrefrences) {
             try? data.write(to: cacheURL)
-            
+
         }
     }
 }
 
-
 final class DeckCache {
     let cacheURL: URL
-    
+
     init(deckID: String) {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
         self.cacheURL = dir.appendingPathComponent("\(deckID)_deck.json")
     }
-    
+
     func load() -> Deck? {
         guard let data = try? Data(contentsOf: cacheURL) else { return nil }
         return try? JSONDecoder().decode(Deck.self, from: data)
     }
-    
+
     func save(_ deck: Deck) {
         if let data = try? JSONEncoder().encode(deck) {
             try? data.write(to: cacheURL)
         }
     }
-    
+
     func delete() {
         try? FileManager.default.removeItem(at: cacheURL)
     }
@@ -93,23 +102,26 @@ final class DeckCache {
 
 final class SchoolScheduleCache {
     public let cacheURL: URL
-    
+
     init() {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
         self.cacheURL = dir.appendingPathComponent("school_schedule_data.json")
     }
-    
+
     func load() -> SchoolScheduleConfig? {
         guard let data = try? Data(contentsOf: cacheURL) else { return nil }
         return try? JSONDecoder().decode(SchoolScheduleConfig.self, from: data)
     }
-    
+
     func save(_ config: SchoolScheduleConfig) {
         if let data = try? JSONEncoder().encode(config) {
             try? data.write(to: cacheURL)
         }
     }
-    
+
     func delete() {
         try? FileManager.default.removeItem(at: cacheURL)
     }

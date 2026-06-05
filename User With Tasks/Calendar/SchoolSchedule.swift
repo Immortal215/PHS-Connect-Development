@@ -15,7 +15,9 @@ enum SchoolScheduleRotationSide: String, Codable, Equatable {
 
     var displayName: String { self == .a ? "A Day" : "B Day" }
     var badgeText: String { rawValue }
-    var accentColor: Color { self == .a ? SchoolSchedulePalette.navy : SchoolSchedulePalette.columbia }
+    var accentColor: Color {
+        self == .a ? SchoolSchedulePalette.navy : SchoolSchedulePalette.columbia
+    }
 }
 
 enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
@@ -24,10 +26,14 @@ enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
     var displayName: String { "Straight 8" }
     var badgeText: String { "8" }
     var accentColor: Color { SchoolSchedulePalette.navy }
-    var detail: String { "A/B lunch is based on your 5th period teacher's last name." }
+    var detail: String {
+        "A/B lunch is based on your 5th period teacher's last name."
+    }
 }
 
-struct SchoolScheduleSpecialDayOverride: Codable, Equatable, Hashable, Identifiable {
+struct SchoolScheduleSpecialDayOverride: Codable, Equatable, Hashable,
+    Identifiable
+{
     var id: String { "\(date)-\(kind.rawValue)" }
 
     var date: String
@@ -62,25 +68,77 @@ struct SchoolScheduleConfig: Codable, Equatable {
             kind: .straight8,
             label: "First Day of Semester 2",
             note: "A/B lunch is based on your 5th period teacher's last name."
-        )
+        ),
     ]
 
     static let default2025_2026 = SchoolScheduleConfig(
         rotationStartDate: "2025-08-14",
         breakRanges: [
-            SchoolBreakRange(startDate: "2025-08-11", endDate: "2025-08-12", label: "Institute / In-Service"),
-            SchoolBreakRange(startDate: "2025-09-01", endDate: "2025-09-01", label: "Labor Day"),
-            SchoolBreakRange(startDate: "2025-10-02", endDate: "2025-10-02", label: "Non-Attendance Day"),
-            SchoolBreakRange(startDate: "2025-10-13", endDate: "2025-10-13", label: "Institute Day"),
-            SchoolBreakRange(startDate: "2025-11-26", endDate: "2025-11-28", label: "Thanksgiving Break"),
-            SchoolBreakRange(startDate: "2025-12-19", endDate: "2025-12-19", label: "Final Exams"),
-            SchoolBreakRange(startDate: "2025-12-22", endDate: "2026-01-02", label: "Winter Break"),
-            SchoolBreakRange(startDate: "2026-01-05", endDate: "2026-01-06", label: "Institute / In-Service"),
-            SchoolBreakRange(startDate: "2026-01-19", endDate: "2026-01-19", label: "Martin Luther King Jr. Day"),
-            SchoolBreakRange(startDate: "2026-02-16", endDate: "2026-02-16", label: "Presidents' Day"),
-            SchoolBreakRange(startDate: "2026-03-23", endDate: "2026-03-27", label: "Spring Break"),
-            SchoolBreakRange(startDate: "2026-04-03", endDate: "2026-04-03", label: "Non-Attendance Day"),
-            SchoolBreakRange(startDate: "2026-05-25", endDate: "2026-05-25", label: "Memorial Day")
+            SchoolBreakRange(
+                startDate: "2025-08-11",
+                endDate: "2025-08-12",
+                label: "Institute / In-Service"
+            ),
+            SchoolBreakRange(
+                startDate: "2025-09-01",
+                endDate: "2025-09-01",
+                label: "Labor Day"
+            ),
+            SchoolBreakRange(
+                startDate: "2025-10-02",
+                endDate: "2025-10-02",
+                label: "Non-Attendance Day"
+            ),
+            SchoolBreakRange(
+                startDate: "2025-10-13",
+                endDate: "2025-10-13",
+                label: "Institute Day"
+            ),
+            SchoolBreakRange(
+                startDate: "2025-11-26",
+                endDate: "2025-11-28",
+                label: "Thanksgiving Break"
+            ),
+            SchoolBreakRange(
+                startDate: "2025-12-19",
+                endDate: "2025-12-19",
+                label: "Final Exams"
+            ),
+            SchoolBreakRange(
+                startDate: "2025-12-22",
+                endDate: "2026-01-02",
+                label: "Winter Break"
+            ),
+            SchoolBreakRange(
+                startDate: "2026-01-05",
+                endDate: "2026-01-06",
+                label: "Institute / In-Service"
+            ),
+            SchoolBreakRange(
+                startDate: "2026-01-19",
+                endDate: "2026-01-19",
+                label: "Martin Luther King Jr. Day"
+            ),
+            SchoolBreakRange(
+                startDate: "2026-02-16",
+                endDate: "2026-02-16",
+                label: "Presidents' Day"
+            ),
+            SchoolBreakRange(
+                startDate: "2026-03-23",
+                endDate: "2026-03-27",
+                label: "Spring Break"
+            ),
+            SchoolBreakRange(
+                startDate: "2026-04-03",
+                endDate: "2026-04-03",
+                label: "Non-Attendance Day"
+            ),
+            SchoolBreakRange(
+                startDate: "2026-05-25",
+                endDate: "2026-05-25",
+                label: "Memorial Day"
+            ),
         ],
         specialDays: Self.defaultSpecialDays,
         lastUpdated: nil
@@ -89,7 +147,8 @@ struct SchoolScheduleConfig: Codable, Equatable {
     init(
         rotationStartDate: String,
         breakRanges: [SchoolBreakRange],
-        specialDays: [SchoolScheduleSpecialDayOverride] = SchoolScheduleConfig.defaultSpecialDays,
+        specialDays: [SchoolScheduleSpecialDayOverride] = SchoolScheduleConfig
+            .defaultSpecialDays,
         lastUpdated: Double?
     ) {
         self.rotationStartDate = rotationStartDate
@@ -107,10 +166,23 @@ struct SchoolScheduleConfig: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        rotationStartDate = try container.decode(String.self, forKey: .rotationStartDate)
-        breakRanges = try container.decode([SchoolBreakRange].self, forKey: .breakRanges)
-        specialDays = try container.decodeIfPresent([SchoolScheduleSpecialDayOverride].self, forKey: .specialDays) ?? Self.defaultSpecialDays
-        lastUpdated = try container.decodeIfPresent(Double.self, forKey: .lastUpdated)
+        rotationStartDate = try container.decode(
+            String.self,
+            forKey: .rotationStartDate
+        )
+        breakRanges = try container.decode(
+            [SchoolBreakRange].self,
+            forKey: .breakRanges
+        )
+        specialDays =
+            try container.decodeIfPresent(
+                [SchoolScheduleSpecialDayOverride].self,
+                forKey: .specialDays
+            ) ?? Self.defaultSpecialDays
+        lastUpdated = try container.decodeIfPresent(
+            Double.self,
+            forKey: .lastUpdated
+        )
     }
 
     func encode(to encoder: Encoder) throws {
@@ -190,7 +262,9 @@ private let schoolSchedulePrettyRangeFormatter: DateFormatter = {
 }()
 
 func schoolScheduleDateString(from date: Date) -> String {
-    schoolScheduleDateFormatter.string(from: Calendar.current.startOfDay(for: date))
+    schoolScheduleDateFormatter.string(
+        from: Calendar.current.startOfDay(for: date)
+    )
 }
 
 func schoolScheduleDate(from string: String) -> Date? {
@@ -199,7 +273,8 @@ func schoolScheduleDate(from string: String) -> Date? {
 
 func schoolScheduleDayRangeString(_ range: SchoolBreakRange) -> String {
     guard let start = schoolScheduleDate(from: range.startDate),
-          let end = schoolScheduleDate(from: range.endDate) else {
+        let end = schoolScheduleDate(from: range.endDate)
+    else {
         return range.label ?? "No School"
     }
 
@@ -207,7 +282,8 @@ func schoolScheduleDayRangeString(_ range: SchoolBreakRange) -> String {
         return schoolSchedulePrettyDateFormatter.string(from: start)
     }
 
-    return "\(schoolSchedulePrettyRangeFormatter.string(from: start)) - \(schoolSchedulePrettyDateFormatter.string(from: end))"
+    return
+        "\(schoolSchedulePrettyRangeFormatter.string(from: start)) - \(schoolSchedulePrettyDateFormatter.string(from: end))"
 }
 
 @MainActor
@@ -236,10 +312,17 @@ final class SchoolScheduleStore: ObservableObject {
         listenForFirebaseUpdates()
     }
 
-    func save(_ draft: SchoolScheduleConfig, completion: @escaping (Bool) -> Void = { _ in }) {
+    func save(
+        _ draft: SchoolScheduleConfig,
+        completion: @escaping (Bool) -> Void = { _ in }
+    ) {
         guard isSuperAdminEmail(Auth.auth().currentUser?.email) else {
             lastError = "Only admins can edit the school schedule."
-            dropper(title: "Admin Only", subtitle: "Only super admins can edit this schedule.", icon: UIImage(systemName: "lock.fill"))
+            dropper(
+                title: "Admin Only",
+                subtitle: "Only super admins can edit this schedule.",
+                icon: UIImage(systemName: "lock.fill")
+            )
             completion(false)
             return
         }
@@ -251,10 +334,17 @@ final class SchoolScheduleStore: ObservableObject {
 
         do {
             let data = try JSONEncoder().encode(scheduleToSave)
-            guard let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            guard
+                let dictionary = try JSONSerialization.jsonObject(with: data)
+                    as? [String: Any]
+            else {
                 isSaving = false
                 lastError = "Unable to encode school schedule."
-                dropper(title: "Save Failed", subtitle: "Could not encode the schedule.", icon: UIImage(systemName: "exclamationmark.triangle"))
+                dropper(
+                    title: "Save Failed",
+                    subtitle: "Could not encode the schedule.",
+                    icon: UIImage(systemName: "exclamationmark.triangle")
+                )
                 completion(false)
                 return
             }
@@ -270,7 +360,13 @@ final class SchoolScheduleStore: ObservableObject {
 
                     if let error {
                         self.lastError = error.localizedDescription
-                        dropper(title: "Save Failed", subtitle: error.localizedDescription, icon: UIImage(systemName: "exclamationmark.triangle"))
+                        dropper(
+                            title: "Save Failed",
+                            subtitle: error.localizedDescription,
+                            icon: UIImage(
+                                systemName: "exclamationmark.triangle"
+                            )
+                        )
                         completion(false)
                         return
                     }
@@ -278,14 +374,22 @@ final class SchoolScheduleStore: ObservableObject {
                     self.config = scheduleToSave
                     self.cache.save(scheduleToSave)
                     self.lastError = nil
-                    dropper(title: "School Schedule Saved!", subtitle: "", icon: UIImage(systemName: "checkmark"))
+                    dropper(
+                        title: "School Schedule Saved!",
+                        subtitle: "",
+                        icon: UIImage(systemName: "checkmark")
+                    )
                     completion(true)
                 }
             }
         } catch {
             isSaving = false
             lastError = error.localizedDescription
-            dropper(title: "Save Failed", subtitle: error.localizedDescription, icon: UIImage(systemName: "exclamationmark.triangle"))
+            dropper(
+                title: "Save Failed",
+                subtitle: error.localizedDescription,
+                icon: UIImage(systemName: "exclamationmark.triangle")
+            )
             completion(false)
         }
     }
@@ -295,7 +399,8 @@ final class SchoolScheduleStore: ObservableObject {
         didStartFirebaseListener = true
 
         let latestCachedTimestamp = config.lastUpdated ?? -0.001
-        let scheduleQuery = scheduleReference
+        let scheduleQuery =
+            scheduleReference
             .queryOrdered(byChild: "lastUpdated")
             .queryStarting(atValue: latestCachedTimestamp + 0.001)
 
@@ -317,14 +422,18 @@ final class SchoolScheduleStore: ObservableObject {
 
     private func applyScheduleSnapshot(_ snapshot: DataSnapshot) {
         guard snapshot.key == "schoolSchedule",
-              let value = snapshot.value as? [String: Any] else {
+            let value = snapshot.value as? [String: Any]
+        else {
             return
         }
 
         DispatchQueue.main.async {
             do {
                 let data = try JSONSerialization.data(withJSONObject: value)
-                let decoded = try JSONDecoder().decode(SchoolScheduleConfig.self, from: data)
+                let decoded = try JSONDecoder().decode(
+                    SchoolScheduleConfig.self,
+                    from: data
+                )
                 let decodedLastUpdated = decoded.lastUpdated ?? 0
                 let currentLastUpdated = self.config.lastUpdated ?? 0
 
@@ -356,7 +465,8 @@ final class SchoolScheduleStore: ObservableObject {
             return .special(specialDay)
         }
 
-        guard let anchor = schoolScheduleDate(from: config.rotationStartDate) else {
+        guard let anchor = schoolScheduleDate(from: config.rotationStartDate)
+        else {
             return .school(.a)
         }
 
@@ -369,11 +479,20 @@ final class SchoolScheduleStore: ObservableObject {
     func badge(for date: Date) -> SchoolDayBadge {
         switch dayState(for: date) {
         case .weekend:
-            return SchoolDayBadge(text: "Weekend", color: SchoolSchedulePalette.weekend)
+            return SchoolDayBadge(
+                text: "Weekend",
+                color: SchoolSchedulePalette.weekend
+            )
         case .breakDay:
-            return SchoolDayBadge(text: "Break", color: SchoolSchedulePalette.breakRed)
+            return SchoolDayBadge(
+                text: "Break",
+                color: SchoolSchedulePalette.breakRed
+            )
         case .special(let specialDay):
-            return SchoolDayBadge(text: specialDay.kind.badgeText, color: specialDay.kind.accentColor)
+            return SchoolDayBadge(
+                text: specialDay.kind.badgeText,
+                color: specialDay.kind.accentColor
+            )
         case .school(let side):
             return SchoolDayBadge(text: side.badgeText, color: side.accentColor)
         }
@@ -385,7 +504,10 @@ final class SchoolScheduleStore: ObservableObject {
             return SchoolScheduleDaySummary(
                 title: "Weekend",
                 subtitle: "No classes",
-                badge: SchoolDayBadge(text: "Weekend", color: SchoolSchedulePalette.weekend),
+                badge: SchoolDayBadge(
+                    text: "Weekend",
+                    color: SchoolSchedulePalette.weekend
+                ),
                 detail: nil,
                 events: [
                     SchoolScheduleEvent(
@@ -406,7 +528,10 @@ final class SchoolScheduleStore: ObservableObject {
             return SchoolScheduleDaySummary(
                 title: range.label ?? "No School",
                 subtitle: "Break day",
-                badge: SchoolDayBadge(text: "Break", color: SchoolSchedulePalette.breakRed),
+                badge: SchoolDayBadge(
+                    text: "Break",
+                    color: SchoolSchedulePalette.breakRed
+                ),
                 detail: schoolScheduleDayRangeString(range),
                 events: [
                     SchoolScheduleEvent(
@@ -427,7 +552,10 @@ final class SchoolScheduleStore: ObservableObject {
             return SchoolScheduleDaySummary(
                 title: specialDay.kind.displayName,
                 subtitle: specialDay.label ?? "Special bell schedule",
-                badge: SchoolDayBadge(text: specialDay.kind.badgeText, color: specialDay.kind.accentColor),
+                badge: SchoolDayBadge(
+                    text: specialDay.kind.badgeText,
+                    color: specialDay.kind.accentColor
+                ),
                 detail: specialDay.note ?? specialDay.kind.detail,
                 events: specialEvents(for: date, specialDay: specialDay)
             )
@@ -437,7 +565,10 @@ final class SchoolScheduleStore: ObservableObject {
             return SchoolScheduleDaySummary(
                 title: side.displayName,
                 subtitle: side == .a ? "Navy schedule" : "Columbia schedule",
-                badge: SchoolDayBadge(text: side.badgeText, color: side.accentColor),
+                badge: SchoolDayBadge(
+                    text: side.badgeText,
+                    color: side.accentColor
+                ),
                 detail: side == .a
                     ? "Zero hour runs Monday, Tuesday, Wednesday, and Friday."
                     : "Period 5-8 follows the Columbia B-day rotation.",
@@ -450,13 +581,16 @@ final class SchoolScheduleStore: ObservableObject {
         summary(for: date).events.filter { !$0.isAllDay }
     }
 
-    private func schoolEvents(for date: Date, side: SchoolScheduleRotationSide) -> [SchoolScheduleEvent] {
+    private func schoolEvents(for date: Date, side: SchoolScheduleRotationSide)
+        -> [SchoolScheduleEvent]
+    {
         var events: [SchoolScheduleEvent] = []
 
         if shouldShowZeroHour(for: date) {
             events.append(
                 SchoolScheduleEvent(
-                    id: "zero-hour-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
+                    id:
+                        "zero-hour-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
                     kind: .zeroHour,
                     title: "Zero Hour",
                     timeLabel: "7:20 - 8:15 AM",
@@ -471,7 +605,8 @@ final class SchoolScheduleStore: ObservableObject {
 
         events.append(
             SchoolScheduleEvent(
-                id: "block-1-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
+                id:
+                    "block-1-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
                 kind: .period,
                 title: side == .a ? "Period 1" : "Period 5",
                 timeLabel: "8:20 - 9:45 AM",
@@ -485,7 +620,8 @@ final class SchoolScheduleStore: ObservableObject {
 
         events.append(
             SchoolScheduleEvent(
-                id: "block-2-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
+                id:
+                    "block-2-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
                 kind: .period,
                 title: side == .a ? "Period 2" : "Period 6",
                 timeLabel: "9:50 - 11:20 AM",
@@ -499,16 +635,17 @@ final class SchoolScheduleStore: ObservableObject {
 
         events.append(
             SchoolScheduleEvent(
-                id: "block-3-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
+                id:
+                    "block-3-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
                 kind: .period,
                 title: side == .a ? "Period 3" : "Period 7",
                 timeLabel: "11:25 AM - 1:40 PM",
                 detail: """
-                Embedded 45 min lunch.
-                Lunch A: 11:25-12:10, class 12:15-1:40.
-                Lunch B: class 11:25-12:10, lunch 12:10-12:55, class 1:00-1:40.
-                Lunch C: class 11:25-12:50, lunch 12:55-1:40.
-                """,
+                    Embedded 45 min lunch.
+                    Lunch A: 11:25-12:10, class 12:15-1:40.
+                    Lunch B: class 11:25-12:10, lunch 12:10-12:55, class 1:00-1:40.
+                    Lunch C: class 11:25-12:50, lunch 12:55-1:40.
+                    """,
                 startDate: schoolDate(on: date, hour: 11, minute: 25),
                 endDate: schoolDate(on: date, hour: 13, minute: 40),
                 accentColor: side.accentColor,
@@ -518,7 +655,8 @@ final class SchoolScheduleStore: ObservableObject {
 
         events.append(
             SchoolScheduleEvent(
-                id: "block-4-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
+                id:
+                    "block-4-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
                 kind: .period,
                 title: side == .a ? "Period 4" : "Period 8",
                 timeLabel: "1:45 - 3:10 PM",
@@ -532,7 +670,8 @@ final class SchoolScheduleStore: ObservableObject {
 
         events.append(
             SchoolScheduleEvent(
-                id: "student-support-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
+                id:
+                    "student-support-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
                 kind: .support,
                 title: "Student Support",
                 timeLabel: "3:10 - 3:20 PM",
@@ -547,7 +686,10 @@ final class SchoolScheduleStore: ObservableObject {
         return events
     }
 
-    private func specialEvents(for date: Date, specialDay: SchoolScheduleSpecialDayOverride) -> [SchoolScheduleEvent] {
+    private func specialEvents(
+        for date: Date,
+        specialDay: SchoolScheduleSpecialDayOverride
+    ) -> [SchoolScheduleEvent] {
         switch specialDay.kind {
         case .straight8:
             return straight8Events(for: date)
@@ -560,7 +702,8 @@ final class SchoolScheduleStore: ObservableObject {
         if shouldShowZeroHour(for: date) {
             events.append(
                 SchoolScheduleEvent(
-                    id: "straight8-zero-hour-\(schoolScheduleDateString(from: date))",
+                    id:
+                        "straight8-zero-hour-\(schoolScheduleDateString(from: date))",
                     kind: .zeroHour,
                     title: "Zero Hour",
                     timeLabel: "7:20 - 8:15 AM",
@@ -636,9 +779,9 @@ final class SchoolScheduleStore: ObservableObject {
                 title: "Lunch / Period 5",
                 timeLabel: "11:25 AM - 12:55 PM",
                 detail: """
-                A lunch: lunch 11:25-12:10, then Period 5 from 12:15-12:55.
-                B lunch: Period 5 from 11:25-12:05, then lunch 12:10-12:55.
-                """,
+                    A lunch: lunch 11:25-12:10, then Period 5 from 12:15-12:55.
+                    B lunch: Period 5 from 11:25-12:05, then lunch 12:10-12:55.
+                    """,
                 startDate: schoolDate(on: date, hour: 11, minute: 25),
                 endDate: schoolDate(on: date, hour: 12, minute: 55),
                 accentColor: SchoolSchedulePalette.columbia,
@@ -703,7 +846,13 @@ final class SchoolScheduleStore: ObservableObject {
         var offset = 0
 
         while cursor != targetDay {
-            guard let next = calendar.date(byAdding: .day, value: step, to: cursor) else { break }
+            guard
+                let next = calendar.date(
+                    byAdding: .day,
+                    value: step,
+                    to: cursor
+                )
+            else { break }
             cursor = next
 
             if isCountedSchoolDay(cursor) {
@@ -715,7 +864,9 @@ final class SchoolScheduleStore: ObservableObject {
     }
 
     private func isCountedSchoolDay(_ date: Date) -> Bool {
-        !Calendar.current.isDateInWeekend(date) && breakRange(containing: date) == nil && specialDay(containing: date) == nil
+        !Calendar.current.isDateInWeekend(date)
+            && breakRange(containing: date) == nil
+            && specialDay(containing: date) == nil
     }
 
     private func breakRange(containing date: Date) -> SchoolBreakRange? {
@@ -723,7 +874,8 @@ final class SchoolScheduleStore: ObservableObject {
 
         return config.breakRanges.first { range in
             guard let start = schoolScheduleDate(from: range.startDate),
-                  let end = schoolScheduleDate(from: range.endDate) else {
+                let end = schoolScheduleDate(from: range.endDate)
+            else {
                 return false
             }
 
@@ -733,7 +885,9 @@ final class SchoolScheduleStore: ObservableObject {
         }
     }
 
-    private func specialDay(containing date: Date) -> SchoolScheduleSpecialDayOverride? {
+    private func specialDay(containing date: Date)
+        -> SchoolScheduleSpecialDayOverride?
+    {
         let dayString = schoolScheduleDateString(from: date)
         return config.specialDays.first { $0.date == dayString }
     }

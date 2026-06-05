@@ -1,14 +1,14 @@
+import CUIExpandableButton
+import Drops
+import FirebaseAuth
 import FirebaseCore
 import FirebaseDatabaseInternal
-import FirebaseAuth
+import FirebaseFirestore
 import GoogleSignIn
 import GoogleSignInSwift
-import SwiftUI
-import Drops
-import SwiftUIX
-import CUIExpandableButton
-import FirebaseFirestore
 import SDWebImageSwiftUI
+import SwiftUI
+import SwiftUIX
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
@@ -32,15 +32,15 @@ struct ContentView: View {
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @ObservedObject var keyboardResponder = KeyboardResponder()
     @AppStorage("darkMode") var darkMode = false
-    @AppStorage("cachedClubIDs") var cachedClubIDs: String = "" // comma-separated chatIDs
-    
+    @AppStorage("cachedClubIDs") var cachedClubIDs: String = ""  // comma-separated chatIDs
+
     @State var pendingChatID: String? = nil
     @State var pendingThreadName: String? = nil
     @State var pendingMessageID: String? = nil
-    
-    @State var tabsCache : UserTabPreferences?
+
+    @State var tabsCache: UserTabPreferences?
     @State var tabChooserPageOpen = false
-    
+
     var body: some View {
         VStack {
             VStack {
@@ -49,16 +49,22 @@ struct ContentView: View {
                         Text("PHS Connect")
                             .font(.title)
                             .fontWeight(.bold)
-                        
+
                         VStack {
-                            
+
                             Text("Sign In")
                                 .font(.title)
                                 .fontWeight(.semibold)
-                            
+
                             VStack {
-                                
-                                GoogleSignInButton(viewModel: GoogleSignInButtonViewModel(scheme: .dark, style: .wide, state: .normal)) {
+
+                                GoogleSignInButton(
+                                    viewModel: GoogleSignInButtonViewModel(
+                                        scheme: .dark,
+                                        style: .wide,
+                                        state: .normal
+                                    )
+                                ) {
                                     Task {
                                         do {
                                             try await viewModel.signInGoogle()
@@ -72,25 +78,25 @@ struct ContentView: View {
                                 }
                                 .padding()
                                 .padding(.horizontal)
-                                .frame(width: screenWidth/3)
-                                
+                                .frame(width: screenWidth / 3)
+
                                 HStack {
                                     Rectangle()
                                         .fill(Color.gray.opacity(0.3))
                                         .frame(height: 1)
-                                    
+
                                     Text("or")
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
                                         .padding(.horizontal, 10)
-                                    
+
                                     Rectangle()
                                         .fill(Color.gray.opacity(0.3))
                                         .frame(height: 1)
                                 }
                                 .padding(.horizontal)
-                                .frame(width: screenWidth/4)
-                                
+                                .frame(width: screenWidth / 4)
+
                                 Button {
                                     viewModel.signInAsGuest()
                                     showSignInView = false
@@ -105,52 +111,106 @@ struct ContentView: View {
                                 .cornerRadius(10)
                                 .padding(.horizontal)
                             }
-                            
+
                         }
                     }
                 } else {
                     ZStack {
-                        if advSearchShown { // add indexing is in TabStructs.swift
+                        if advSearchShown {  // add indexing is in TabStructs.swift
                             ZStack {
-                                SearchClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                    .opacity(selectedTab == AppTab.search.index ? 1 : 0)
-                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
+                                SearchClubView(
+                                    clubs: $clubs,
+                                    userInfo: $userInfo,
+                                    viewModel: viewModel
+                                )
+                                .opacity(
+                                    selectedTab == AppTab.search.index ? 1 : 0
+                                )
+                                .animation(
+                                    .easeInOut(duration: 0.25),
+                                    value: selectedTab
+                                )
 
                                 if userInfo != nil {
-                                    ClubView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel)
-                                        .opacity(selectedTab == AppTab.clubs.index ? 1 : 0)
-                                        .animation(.easeInOut(duration: 0.25), value: selectedTab)
+                                    ClubView(
+                                        clubs: $clubs,
+                                        userInfo: $userInfo,
+                                        viewModel: viewModel
+                                    )
+                                    .opacity(
+                                        selectedTab == AppTab.clubs.index
+                                            ? 1 : 0
+                                    )
+                                    .animation(
+                                        .easeInOut(duration: 0.25),
+                                        value: selectedTab
+                                    )
 
                                     ChatView(clubs: $clubs, userInfo: $userInfo)
                                         .opacity(selectedTab == 6 ? 1 : 0)
-                                        .offset(x: selectedTab == AppTab.chat.index ? 0 : 40)
-                                        .animation(.spring(response: 0.28, dampingFraction: 0.9), value: selectedTab)
-                                    
-                                    CalendarView(clubs: $clubs, userInfo: $userInfo, viewModel: viewModel, schoolScheduleStore: schoolScheduleStore)
-                                        .opacity(selectedTab == AppTab.calendar.index ? 1 : 0)
-                                        .animation(.easeInOut(duration: 0.25), value: selectedTab)
+                                        .offset(
+                                            x: selectedTab == AppTab.chat.index
+                                                ? 0 : 40
+                                        )
+                                        .animation(
+                                            .spring(
+                                                response: 0.28,
+                                                dampingFraction: 0.9
+                                            ),
+                                            value: selectedTab
+                                        )
+
+                                    CalendarView(
+                                        clubs: $clubs,
+                                        userInfo: $userInfo,
+                                        viewModel: viewModel,
+                                        schoolScheduleStore: schoolScheduleStore
+                                    )
+                                    .opacity(
+                                        selectedTab == AppTab.calendar.index
+                                            ? 1 : 0
+                                    )
+                                    .animation(
+                                        .easeInOut(duration: 0.25),
+                                        value: selectedTab
+                                    )
 
                                 }
-                                
-                                SettingsView(viewModel: viewModel, userInfo: $userInfo, showSignInView: $showSignInView)
-                                    .padding()
-                                    .opacity(selectedTab == AppTab.settings.index ? 1 : 0)
-                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
-                                
+
+                                SettingsView(
+                                    viewModel: viewModel,
+                                    userInfo: $userInfo,
+                                    showSignInView: $showSignInView
+                                )
+                                .padding()
+                                .opacity(
+                                    selectedTab == AppTab.settings.index ? 1 : 0
+                                )
+                                .animation(
+                                    .easeInOut(duration: 0.25),
+                                    value: selectedTab
+                                )
+
                                 DeckView()
-                                    .opacity(selectedTab == AppTab.flashcards.index ? 1 : 0)
-                                    .animation(.easeInOut(duration: 0.25), value: selectedTab)
+                                    .opacity(
+                                        selectedTab == AppTab.flashcards.index
+                                            ? 1 : 0
+                                    )
+                                    .animation(
+                                        .easeInOut(duration: 0.25),
+                                        value: selectedTab
+                                    )
                             }
                             .transition(.opacity)
                             .ignoresSafeArea(edges: .all)
                             .background {
                                 RandomShapesBackground()
                             }
-                            
+
                         } else {
                             ProgressView()
                         }
-                        
+
                         FloatingTabBar(
                             tabsCache: tabsCache,
                             isGuestUser: viewModel.isGuestUser,
@@ -191,12 +251,14 @@ struct ContentView: View {
                         advSearchShown = true
                         calendarScrollPoint = 12
                         if !viewModel.isGuestUser && selectedTab == 0 {
-                            selectedTab = 1 // home
-                        } else if  selectedTab == 0 {
-                            selectedTab = 3 // settings
+                            selectedTab = 1  // home
+                        } else if selectedTab == 0 {
+                            selectedTab = 3  // settings
                         }
-                        
-                        if let pending = NotificationOpenRouter.shared.consumePending() {
+
+                        if let pending = NotificationOpenRouter.shared
+                            .consumePending()
+                        {
                             pendingChatID = pending.chatID
                             pendingThreadName = pending.threadName
                             pendingMessageID = pending.messageID
@@ -204,7 +266,7 @@ struct ContentView: View {
                                 selectedTab = 6
                             }
                         }
-                        
+
                         //                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
                         //
                         //                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary, ONLY USE ONCE AND THEN DELETE THIS
@@ -217,66 +279,80 @@ struct ContentView: View {
                         //                                }
                         //                            }
                         //                        }
-                        
+
                     }
-                    .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenChatFromNotification"))) { notif in // receives the notification you just clicked
+                    .onReceive(
+                        NotificationCenter.default.publisher(
+                            for: Notification.Name("OpenChatFromNotification")
+                        )
+                    ) { notif in  // receives the notification you just clicked
                         let info = notif.userInfo
                         let chatID = info?["chatID"] as? String
-                        let threadName = info?["threadName"] as? String ?? "general"
+                        let threadName =
+                            info?["threadName"] as? String ?? "general"
                         let messageID = info?["messageID"] as? String
 
                         pendingChatID = chatID
                         pendingThreadName = threadName
                         pendingMessageID = messageID
-                        
+
                         guard showSignInView == false else { return }
-                        
+
                         advSearchShown = true
                         DispatchQueue.main.async {
                             selectedTab = 6
                         }
                     }
-                    .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RequestPendingChatID"))) { _ in
+                    .onReceive(
+                        NotificationCenter.default.publisher(
+                            for: Notification.Name("RequestPendingChatID")
+                        )
+                    ) { _ in
                         if let pending = pendingChatID {
                             NotificationCenter.default.post(
                                 name: Notification.Name("SendPendingChatID"),
                                 object: nil,
                                 userInfo: [
                                     "chatID": pending,
-                                    "threadName": pendingThreadName ?? "general",
-                                    "messageID" : pendingMessageID ?? ""
+                                    "threadName": pendingThreadName
+                                        ?? "general",
+                                    "messageID": pendingMessageID ?? "",
                                 ]
                             )
                         }
                     }
-//                    .refreshable {
-//                        if !viewModel.isGuestUser {
-//                            if let UserID = viewModel.uid {
-//                                fetchUser(for: UserID) { user in
-//                                    if let user = user {
-//                                        userInfo = user
-//                                    } else {
-//                                        print("Failed to fetch user")
-//                                        showSignInView = true
-//                                    }
-//                                }
-//                                
-//                            }
-//                        }
-//                        
-//                        calendarScrollPoint = 6
-//                        scale = 0.7
-//                        advSearchShown = !advSearchShown
-//                        
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//                            advSearchShown = !advSearchShown
-//                        }
-//                        dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
-//                    }
+                    //                    .refreshable {
+                    //                        if !viewModel.isGuestUser {
+                    //                            if let UserID = viewModel.uid {
+                    //                                fetchUser(for: UserID) { user in
+                    //                                    if let user = user {
+                    //                                        userInfo = user
+                    //                                    } else {
+                    //                                        print("Failed to fetch user")
+                    //                                        showSignInView = true
+                    //                                    }
+                    //                                }
+                    //
+                    //                            }
+                    //                        }
+                    //
+                    //                        calendarScrollPoint = 6
+                    //                        scale = 0.7
+                    //                        advSearchShown = !advSearchShown
+                    //
+                    //                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    //                            advSearchShown = !advSearchShown
+                    //                        }
+                    //                        dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
+                    //                    }
                 }
             }
             .onChange(of: showSignInView) {
-                dropper(title: showSignInView ? "Logged Out" : "Logged In", subtitle: "", icon: UIImage(systemName: "person"))
+                dropper(
+                    title: showSignInView ? "Logged Out" : "Logged In",
+                    subtitle: "",
+                    icon: UIImage(systemName: "person")
+                )
             }
             .onAppear {
                 if viewModel.userEmail != nil {
@@ -284,20 +360,28 @@ struct ContentView: View {
                 } else {
                     print("NO")
                 }
-                
+
                 let cache = TabsCache()
                 tabsCache = cache.load()
-                
-                if (tabsCache == nil) {
-                    tabsCache = UserTabPreferences(order: [.search, .clubs, .chat, .flashcards, .settings], hidden: [])
+
+                if tabsCache == nil {
+                    tabsCache = UserTabPreferences(
+                        order: [
+                            .search, .clubs, .chat, .flashcards, .settings,
+                        ],
+                        hidden: []
+                    )
                 }
-                
+
             }
-            
+
         }
         .onChange(of: tabsCache) {
             let cache = TabsCache()
-            cache.save(tabPrefrences: tabsCache ?? UserTabPreferences(order: [], hidden: Set()))
+            cache.save(
+                tabPrefrences: tabsCache
+                    ?? UserTabPreferences(order: [], hidden: Set())
+            )
         }
         //    .scrollDismissesKeyboard(.immediately)
         .scrollDismissesKeyboard(.interactively)
@@ -320,58 +404,70 @@ struct ContentView: View {
             }
             advSearchShown = true
             searchText = ""
-            
+
             for clubId in cachedClubIDs.split(separator: ",") {
-                let cache = ClubCache(clubID: String(clubId).replacingOccurrences(of: " ", with: ""))
+                let cache = ClubCache(
+                    clubID: String(clubId).replacingOccurrences(
+                        of: " ",
+                        with: ""
+                    )
+                )
                 if let loadedClub = cache.load() {
                     clubs.append(loadedClub)
                 }
             }
-            
+
             setupClubsListener()
-            
-            
+
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
-    
-    func setupClubsListener() { // definitly work on making this a lot lot lot less often for especially changing clubs
+
+    func setupClubsListener() {  // definitly work on making this a lot lot lot less often for especially changing clubs
         let databaseRef = Database.database().reference().child("clubs")
-        
-        let latestCachedTimestamp = clubs.compactMap { $0.lastUpdated }.max() ?? -0.001
-                
-        databaseRef.queryOrdered(byChild: "lastUpdated").queryStarting(atValue: latestCachedTimestamp + 0.001).observe(.childAdded) { snapshot in
+
+        let latestCachedTimestamp =
+            clubs.compactMap { $0.lastUpdated }.max() ?? -0.001
+
+        databaseRef.queryOrdered(byChild: "lastUpdated").queryStarting(
+            atValue: latestCachedTimestamp + 0.001
+        ).observe(.childAdded) { snapshot in
             if let club = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
-                    if let index = clubs.firstIndex(where: { $0.clubID == club.clubID }) {
+                    if let index = clubs.firstIndex(where: {
+                        $0.clubID == club.clubID
+                    }) {
                         clubs[index] = club
                     } else {
                         clubs.append(club)
                     }
-                    
+
                     let cache = ClubCache(clubID: club.clubID)
                     cache.save(club: club)
                     print(club.clubID + "added")
                     if !cachedClubIDs.contains(club.clubID + ",") {
                         cachedClubIDs.append(club.clubID + ",")
                     }
-                    
+
                 }
             }
         }
-        
-        databaseRef.queryOrdered(byChild: "lastUpdated").observe(.childChanged) { snapshot in
+
+        databaseRef.queryOrdered(byChild: "lastUpdated").observe(.childChanged)
+        { snapshot in
             if let club = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
-                    if let index = clubs.firstIndex(where: { $0.clubID == club.clubID }) {
+                    if let index = clubs.firstIndex(where: {
+                        $0.clubID == club.clubID
+                    }) {
                         clubs[index] = club
                     } else {
                         clubs.append(club)
                     }
-                    
+
                     let cache = ClubCache(clubID: club.clubID)
                     cache.save(club: club)
-                    
+
                     print(club.clubID + "changed")
                     if !cachedClubIDs.contains(club.clubID + ",") {
                         cachedClubIDs.append(club.clubID + ",")
@@ -379,12 +475,15 @@ struct ContentView: View {
                 }
             }
         }
-        
+
         databaseRef.observe(.childRemoved) { snapshot in
             if let removedClub = decodeClub(from: snapshot) {
                 DispatchQueue.main.async {
                     clubs.removeAll(where: { $0.clubID == removedClub.clubID })
-                    cachedClubIDs = cachedClubIDs.replacingOccurrences(of: removedClub.clubID + ",", with: "")
+                    cachedClubIDs = cachedClubIDs.replacingOccurrences(
+                        of: removedClub.clubID + ",",
+                        with: ""
+                    )
                     print(removedClub.clubID + "removed")
 
                     let cache = ClubCache(clubID: removedClub.clubID)
@@ -393,14 +492,17 @@ struct ContentView: View {
             }
         }
     }
-    
+
     func decodeClub(from snapshot: DataSnapshot) -> Club? {
-        guard let clubData = try? JSONSerialization.data(withJSONObject: snapshot.value ?? [:]),
-              let club = try? JSONDecoder().decode(Club.self, from: clubData) else {
+        guard
+            let clubData = try? JSONSerialization.data(
+                withJSONObject: snapshot.value ?? [:]
+            ),
+            let club = try? JSONDecoder().decode(Club.self, from: clubData)
+        else {
             return nil
         }
         return club
     }
-    
-    
+
 }

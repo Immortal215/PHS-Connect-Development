@@ -6,22 +6,29 @@ struct EditDeck: View {
     @Binding var isEditing: Bool
     @Binding var deck: Deck
     @State var cardsCopy = ""
-    
+
     var body: some View {
         VStack(spacing: 12) {
             TextField("Title", text: $deck.title)
                 .multilineTextAlignment(.center)
                 .font(.title)
-            
+
             HStack {
                 Text("Due date:")
-                
-                Slider(value: Binding(get: {Double(deck.targetDays)}, set: {deck.targetDays = Int($0)}), in: 2...60, step: 1)
-                
+
+                Slider(
+                    value: Binding(
+                        get: { Double(deck.targetDays) },
+                        set: { deck.targetDays = Int($0) }
+                    ),
+                    in: 2...60,
+                    step: 1
+                )
+
                 Text("\(deck.targetDays) days")
             }
             .padding(.horizontal, 80)
-            
+
             HStack(spacing: 16) {
                 Button {
                     let newCard = Card(
@@ -37,7 +44,7 @@ struct EditDeck: View {
                 } label: {
                     Text("+ Add Card")
                 }
-                
+
                 Button {
                     cardsCopy = ""
                     for card in deck.cards {
@@ -47,15 +54,20 @@ struct EditDeck: View {
                 } label: {
                     Text("Copy all cards")
                 }
-                
+
                 Button {
-                    guard let cardsPaste = UIPasteboard.general.string else {return}
-                    let rawCards = cardsPaste.components(separatedBy: "/,/").map{String($0)}
+                    guard let cardsPaste = UIPasteboard.general.string else {
+                        return
+                    }
+                    let rawCards = cardsPaste.components(separatedBy: "/,/").map
+                    { String($0) }
                     for raw in rawCards {
                         var trimmed = raw.trimmingPrefix("/")
-                        if trimmed.hasSuffix("/,") {trimmed = trimmed.dropLast(2)}
+                        if trimmed.hasSuffix("/,") {
+                            trimmed = trimmed.dropLast(2)
+                        }
                         let parts = trimmed.components(separatedBy: "/:/")
-                        guard parts.count == 2 else {continue}
+                        guard parts.count == 2 else { continue }
                         let newCard = Card(
                             id: UUID(),
                             front: parts[0],
@@ -68,25 +80,27 @@ struct EditDeck: View {
                         deck.cards.append(newCard)
                     }
                 } label: {
-                    Text("Paste new cards from clipboard in the following format (term/:/definition/,/term/:/definition/,/term/:/definition...)")
+                    Text(
+                        "Paste new cards from clipboard in the following format (term/:/definition/,/term/:/definition/,/term/:/definition...)"
+                    )
                 }
             }
             .padding()
-            
+
             Button {
                 if deck.cards.isEmpty {
                     deck.selected = false
                 }
-                if let index = decks.firstIndex(where: {$0.id == deck.id}) {
+                if let index = decks.firstIndex(where: { $0.id == deck.id }) {
                     decks[index] = deck
                 }
                 isEditing = false
-                
+
                 save(deck)
             } label: {
                 Text("Save Deck")
             }
-            
+
             ScrollView {
                 LazyVStack {
                     ForEach($deck.cards) { $card in
@@ -94,14 +108,14 @@ struct EditDeck: View {
                             VStack {
                                 TextField("Front", text: $card.front)
                                     .foregroundStyle(.primary)
-                                
+
                                 TextField("Back", text: $card.back)
                                     .foregroundStyle(.primary.opacity(0.8))
                             }
                             .textFieldStyle(.roundedBorder)
-                            
+
                             Button {
-                                deck.cards.removeAll(where: {$0 == card})
+                                deck.cards.removeAll(where: { $0 == card })
                             } label: {
                                 Image(systemName: "trash")
                             }
@@ -119,7 +133,7 @@ struct EditDeck: View {
         }
         .padding(.top, 40)
     }
-    
+
     func save(_ deck: Deck) {
         DeckCache(deckID: deck.id.uuidString).save(deck)
     }

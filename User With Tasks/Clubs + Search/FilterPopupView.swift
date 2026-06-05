@@ -1,5 +1,5 @@
-import SwiftUI
 import PopupView
+import SwiftUI
 
 struct FilterPopupView: View {
     @Binding var isPopupVisible: Bool
@@ -7,24 +7,26 @@ struct FilterPopupView: View {
     @State var rotationAngle = 0
     @AppStorage("darkMode") var darkMode = false
     var onSubmit: () -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Filter Options")
                 .font(.headline)
                 .foregroundStyle(.primary)
-            
+
             Button(action: {
                 isAscending.toggle()
                 withAnimation(.spring()) {
-                    rotationAngle += 180 
+                    rotationAngle += 180
                 }
             }) {
                 HStack {
-                    Text("Alphabetical: \(isAscending ? "Ascending" : "Descending")")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    
+                    Text(
+                        "Alphabetical: \(isAscending ? "Ascending" : "Descending")"
+                    )
+                    .font(.headline)
+                    .foregroundColor(.white)
+
                     Image(systemName: "arrow.up.arrow.down")
                         .rotationEffect(.degrees(rotationAngle))
                         .foregroundColor(.white)
@@ -38,8 +40,7 @@ struct FilterPopupView: View {
                 )
             }
             .buttonStyle(PlainButtonStyle())
-            
-            
+
             Button(action: {
                 isPopupVisible = false
                 onSubmit()

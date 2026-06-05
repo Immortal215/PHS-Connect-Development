@@ -7,18 +7,21 @@ struct CalendarView: View {
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     var screenWidth = UIScreen.main.bounds.width
     var screenHeight = UIScreen.main.bounds.height
-    
+
     @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @State var offset: CGSize = .zero
-    
+
     var body: some View {
-        let meetingIndex = CalendarMeetingIndex(clubs: clubs, userEmail: viewModel.userEmail)
-        
+        let meetingIndex = CalendarMeetingIndex(
+            clubs: clubs,
+            userEmail: viewModel.userEmail
+        )
+
         VStack {
-            WeekCalendarView( // double check the below
+            WeekCalendarView(  // double check the below
                 meetingIndex: meetingIndex,
                 selectedDate: $selectedDate,
                 viewModel: viewModel,
@@ -26,10 +29,12 @@ struct CalendarView: View {
                 clubs: $clubs
             )
             Divider()
-            
+
             FlowingScheduleView(
                 meetings: meetingIndex.visibleMeetings(on: selectedDate),
-                schoolEvents: schoolScheduleStore.timelineEvents(for: selectedDate),
+                schoolEvents: schoolScheduleStore.timelineEvents(
+                    for: selectedDate
+                ),
                 schoolScheduleStore: schoolScheduleStore,
                 screenHeight: screenHeight,
                 scale: $scale,
@@ -38,8 +43,8 @@ struct CalendarView: View {
                 selectedDate: $selectedDate,
                 userInfo: $userInfo
             )
-                .padding(.top, -8)
-            
+            .padding(.top, -8)
+
         }
         .onAppear {
             selectedDate = dateFromString(storedDate)

@@ -64,23 +64,23 @@ struct TabChooserSheet: View {
                 Section("Enabled") {
                     ForEach(visibleTabs, id: \.self) { tab in
                         HStack(alignment: .bottom) {
-                            
+
                             Image(systemName: tab.systemImage)
-                            
+
                             Text(tab.name)
-                            
-                            if(tab == .settings) {
+
+                            if tab == .settings {
                                 Text("Cannot be removed!")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
 
                             Spacer()
-                            
+
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
-                            
-                            if (tab == .clubs || tab == .settings)  {
+
+                            if tab == .clubs || tab == .settings {
                                 Image(systemName: "lock")
                                     .foregroundStyle(.blue)
                             }

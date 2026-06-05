@@ -1,9 +1,9 @@
-import SwiftUI
 import Drops
+import SwiftUI
 
 func dropper(title: String, subtitle: String, icon: UIImage?) {
     Drops.hideAll()
-    
+
     let drop = Drop(
         title: title,
         subtitle: subtitle,
@@ -18,4 +18,3 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
     )
     Drops.show(drop)
 }
-
