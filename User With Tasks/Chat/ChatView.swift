@@ -15,6 +15,12 @@ import Pow
 import UniformTypeIdentifiers
 import UIKit
 
+struct ChatThreadSidebarInfo {
+    var threads: [String] = []
+    var lastReadMessageIDsByThread: [String: String] = [:]
+    var lastMessageIDsByThread: [String: String] = [:]
+}
+
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
@@ -59,6 +65,9 @@ struct ChatView: View {
     @State var chatsEnabled = true
     @State var globalChatsRef: DatabaseReference?
     @State var globalChatsHandle: DatabaseHandle?
+    @State var cachedTopChats: [Chat] = []
+    @State var cachedUnreadChatIDs: Set<String> = []
+    @State var cachedThreadSidebarInfoByChatID: [String: ChatThreadSidebarInfo] = [:]
     private let loadingOverlayHoldTime = 0.12
     @Namespace var namespace
     @Environment(\.scenePhase) var scenePhase
@@ -95,32 +104,18 @@ struct ChatView: View {
                 } else {
                     chats.append(newValue)
                 }
+                refreshChatSidebarCache()
             }
         )
     }
     
-    var topChats: [Chat] {
-        guard let currentUserID = userInfo?.userID else { return chats }
-        
-        return chats.sorted { lhs, rhs in
-            let lhsLastSent = lhs.messages?
-                .filter { $0.sender == currentUserID }
-                .map { $0.lastUpdated ?? $0.date }
-                .max() ?? 0
-            
-            let rhsLastSent = rhs.messages?
-                .filter { $0.sender == currentUserID }
-                .map { $0.lastUpdated ?? $0.date }
-                .max() ?? 0
-            
-            if lhsLastSent == rhsLastSent {
-                let lhsLatestAny = lhs.messages?.map { $0.lastUpdated ?? $0.date }.max() ?? 0
-                let rhsLatestAny = rhs.messages?.map { $0.lastUpdated ?? $0.date }.max() ?? 0
-                return lhsLatestAny > rhsLatestAny
-            }
-            
-            return lhsLastSent > rhsLastSent
+    var chatSidebarSignature: String {
+        chats.map { chat in
+            let lastMessage = chat.messages?.last
+            let lastTime = lastMessage?.lastUpdated ?? lastMessage?.date ?? 0
+            return "\(chat.chatID):\(chat.messages?.count ?? 0):\(lastMessage?.messageID ?? ""):\(lastTime)"
         }
+        .joined(separator: "|")
     }
     
     var body: some View {
@@ -149,15 +144,13 @@ struct ChatView: View {
                             }
                         
                         ScrollView {
-                            let unreadChats = unreadChatIDs()
-                            
                             VStack(spacing: 8) {
                                 ForEach(clubsLeaderIn, id: \.clubID) { club in
                                     createChatSection(for: club)
                                 }
                                 
-                                ForEach(topChats, id: \.chatID) { chat in
-                                    chatRow(for: chat, unread: unreadChats.contains(chat.chatID))
+                                ForEach(cachedTopChats, id: \.chatID) { chat in
+                                    chatRow(for: chat, unread: cachedUnreadChatIDs.contains(chat.chatID))
                                 }
                                 
                                 Spacer()
@@ -307,12 +300,10 @@ struct ChatView: View {
                                                 .padding(.top, 16)
                                                 .padding(.bottom, 8)
                                             
-                                            let threads = Array(Set(selected.messages?.map { $0.threadName ?? "general" } ?? ["general"]))
-                                                .sorted { $0 < $1 }
-                                            let threadLastRead = lastReadMessageIDsByThread(chatID: selected.chatID)
-                                            let threadLastMessageID = selected.messages?.reduce(into: [String: String]()) { result, message in
-                                                result[message.threadName ?? "general"] = message.messageID
-                                            } ?? [:]
+                                            let threadInfo = cachedThreadSidebarInfoByChatID[selected.chatID] ?? ChatThreadSidebarInfo(threads: ["general"])
+                                            let threads = threadInfo.threads
+                                            let threadLastRead = threadInfo.lastReadMessageIDsByThread
+                                            let threadLastMessageID = threadInfo.lastMessageIDsByThread
                                             
                                             if isLeaderInSelectedClub {
                                                 if newThreadName == "" {
@@ -609,6 +600,7 @@ struct ChatView: View {
         .onAppear {
             NotificationCenter.default.post(name: Notification.Name("RequestPendingChatID"), object: nil)
             bubbleBuffer = !bubbles
+            refreshChatSidebarCache()
             startGlobalChatsListener()
         }
         .onDisappear {
@@ -628,6 +620,15 @@ struct ChatView: View {
             DispatchQueue.main.async {
                 attemptOpenChatFromNotification()
             }
+        }
+        .onChange(of: chatSidebarSignature) {
+            refreshChatSidebarCache()
+        }
+        .onChange(of: lastReadMessages) {
+            refreshChatSidebarCache()
+        }
+        .onChange(of: userInfo?.userID) {
+            refreshChatSidebarCache()
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
@@ -734,6 +735,7 @@ struct ChatView: View {
             .onTapGesture {
                 let newChat = Chat(chatID: "Loading...", clubID: club.clubID)
                 chats.append(newChat)
+                refreshChatSidebarCache()
                 createClubGroupChat(clubId: club.clubID, messageTo: nil) { chat in
                     if let chatIndex = chats.firstIndex(where: { $0.chatID == newChat.chatID }) {
                         sendMessage(chatID: chat.chatID, message: Chat.ChatMessage(
@@ -745,6 +747,7 @@ struct ChatView: View {
                         ))
                         
                         chats[chatIndex] = chat
+                        refreshChatSidebarCache()
                         
                         selectedChatID = chat.chatID
                         selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
@@ -809,14 +812,8 @@ struct ChatView: View {
         }
     }
     
-    func unreadChatIDs() -> Set<String> {
-        var unreadSet = Set<String>()
-        let lastMessageIDsByChatAndThread = chats.reduce(into: [String: [String: String]]()) { result, chat in
-            result[chat.chatID] = chat.messages?.reduce(into: [String: String]()) { threadMap, message in
-                threadMap[message.threadName ?? "general"] = message.messageID
-            } ?? [:]
-        }
-        
+    func parsedLastReadMessagesByChat() -> [String: [String: String]] {
+        var result: [String: [String: String]] = [:]
         for i in lastReadMessages.split(separator: ",") {
             let parts = i.split(separator: ":")
             guard parts.count == 2 else { continue }
@@ -828,32 +825,69 @@ struct ChatView: View {
             let thread = String(left[1])
             let messageID = String(parts[1])
             
-            guard let lastMessageInThread = lastMessageIDsByChatAndThread[chatID]?[thread] else { continue }
-            
-            if messageID != lastMessageInThread {
-                unreadSet.insert(chatID)
-            }
-        }
-        
-        return unreadSet
-    }
-    
-    func lastReadMessageIDsByThread(chatID: String) -> [String: String] {
-        var result: [String: String] = [:]
-        
-        for i in lastReadMessages.split(separator: ",") {
-            let parts = i.split(separator: ":")
-            guard parts.count == 2 else { continue }
-            
-            let left = parts[0].split(separator: ".")
-            guard left.count == 2 else { continue }
-            
-            if String(left[0]) == chatID {
-                result[String(left[1])] = String(parts[1])
-            }
+            result[chatID, default: [:]][thread] = messageID
         }
         
         return result
+    }
+    
+    func refreshChatSidebarCache(chatsOverride: [Chat]? = nil) {
+        let sourceChats = chatsOverride ?? chats
+        let lastReadByChat = parsedLastReadMessagesByChat()
+        var unreadSet = Set<String>()
+        var threadInfoByChatID: [String: ChatThreadSidebarInfo] = [:]
+        
+        for chat in sourceChats {
+            let messages = chat.messages ?? []
+            let messageThreadNames = messages.map { $0.threadName ?? "general" }
+            let threadNames = Array(Set(messageThreadNames.isEmpty ? ["general"] : messageThreadNames))
+                .sorted { $0 < $1 }
+            let lastMessageIDsByThread = messages.reduce(into: [String: String]()) { result, message in
+                result[message.threadName ?? "general"] = message.messageID
+            }
+            let lastReadByThread = lastReadByChat[chat.chatID] ?? [:]
+            
+            for (thread, messageID) in lastReadByThread {
+                guard let lastMessageInThread = lastMessageIDsByThread[thread] else { continue }
+                if messageID != lastMessageInThread {
+                    unreadSet.insert(chat.chatID)
+                }
+            }
+            
+            threadInfoByChatID[chat.chatID] = ChatThreadSidebarInfo(
+                threads: threadNames,
+                lastReadMessageIDsByThread: lastReadByThread,
+                lastMessageIDsByThread: lastMessageIDsByThread
+            )
+        }
+        
+        cachedTopChats = sortedTopChats(from: sourceChats)
+        cachedUnreadChatIDs = unreadSet
+        cachedThreadSidebarInfoByChatID = threadInfoByChatID
+    }
+    
+    func sortedTopChats(from sourceChats: [Chat]) -> [Chat] {
+        guard let currentUserID = userInfo?.userID else { return sourceChats }
+        
+        return sourceChats.sorted { lhs, rhs in
+            let lhsLastSent = lhs.messages?
+                .filter { $0.sender == currentUserID }
+                .map { $0.lastUpdated ?? $0.date }
+                .max() ?? 0
+            
+            let rhsLastSent = rhs.messages?
+                .filter { $0.sender == currentUserID }
+                .map { $0.lastUpdated ?? $0.date }
+                .max() ?? 0
+            
+            if lhsLastSent == rhsLastSent {
+                let lhsLatestAny = lhs.messages?.map { $0.lastUpdated ?? $0.date }.max() ?? 0
+                let rhsLatestAny = rhs.messages?.map { $0.lastUpdated ?? $0.date }.max() ?? 0
+                return lhsLatestAny > rhsLatestAny
+            }
+            
+            return lhsLastSent > rhsLastSent
+        }
     }
     
     func loadChats(showLoader: Bool = true) {
@@ -888,6 +922,7 @@ struct ChatView: View {
             
             DispatchQueue.main.async {
                 chats = loadedChats
+                refreshChatSidebarCache(chatsOverride: loadedChats)
                 
                 // chatIds to fetch
                 var chatIDsToFetch: [String] = []
@@ -921,6 +956,7 @@ struct ChatView: View {
                                 cachedChatIDs.append(chat.chatID + ",")
                             }
                         }
+                        refreshChatSidebarCache()
                     }
                     
                     isInitialChatLoading = false
@@ -954,6 +990,7 @@ struct ChatView: View {
                         withAnimation(.smooth) {
                             chats[chatIndex].messages = chatMessages
                         }
+                        refreshChatSidebarCache()
                         saveChatToCacheAsync(chats[chatIndex])
                     }
                 }
@@ -976,6 +1013,7 @@ struct ChatView: View {
                     withAnimation(.smooth) {
                         chats[chatIndex].messages = chatMessages
                     }
+                    refreshChatSidebarCache()
                     
                     saveChatToCacheAsync(chats[chatIndex])
                 }
@@ -989,6 +1027,7 @@ struct ChatView: View {
                 withAnimation(.smooth) {
                     chats[chatIndex].messages?.removeAll(where: { $0.messageID == removedMessage.messageID })
                 }
+                refreshChatSidebarCache()
                 saveChatToCacheAsync(chats[chatIndex])
             }
         }
@@ -1089,6 +1128,8 @@ struct ChatView: View {
         } else {
             lastReadMessages.append(key + ":" + lastMessageInThread + ",")
         }
+        
+        refreshChatSidebarCache()
     }
     
     func updateNotifStyle(chatID : String, style: Personal.ChatNotifStyle) {

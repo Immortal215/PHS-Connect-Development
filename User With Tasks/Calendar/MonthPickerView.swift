@@ -5,6 +5,7 @@ struct MonthPickerView: View {
     @Binding var selectedDate: Date
     @State var currentYear: Int
     @Binding var clubs: [Club]
+    var meetingIndex: CalendarMeetingIndex
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     @AppStorage("calendarTubeView") var isTubeView = true
     @AppStorage("darkMode") var darkMode = false
@@ -63,7 +64,7 @@ struct MonthPickerView: View {
                                                                     let schoolBadge = schoolScheduleStore.badge(for: date)
                                                                     SchoolDayBadgeView(text: schoolBadge.text, color: schoolBadge.color)
                                                                     
-                                                                    let clubIDCounts = meetings(for: date)
+                                                                    let clubIDCounts = meetingIndex.monthCounts(on: date)
                                                                     
                                                                     if !clubIDCounts.isEmpty {
                                                                         HStack {
@@ -205,23 +206,4 @@ struct MonthPickerView: View {
         Calendar.current.isDate(date, inSameDayAs: selectedDate)
     }
 
-    func meetings(for date: Date) -> [(clubID: String, count: Int)] {
-        var meetingsForDate: [Club.MeetingTime] = []
-        
-        for club in clubs.filter({ isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }) {
-            let clubMeetings = club.meetingTimes?.filter { meeting in
-                Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
-            } ?? []
-            meetingsForDate.append(contentsOf: clubMeetings)
-        }
-        
-        return meetingsForDate
-            .reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
-                if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
-                    result[index].count += 1
-                } else {
-                    result.append((meeting.clubID, 1))
-                }
-            }
-    }
 }

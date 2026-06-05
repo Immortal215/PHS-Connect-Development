@@ -102,8 +102,7 @@ struct FlowingScheduleView: View {
                                     .frame(width: totalWidth, height: 1)
                                     
                                     ForEach(columnAssignments, id: \.meeting) { meetingColumn in
-                                        let allMeets = meetings.filter { isSameDay(dateFromString($0.startTime), selectedDate) }
-                                        let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: allMeets)
+                                        let hasOverlap = hasOverlap(meeting: meetingColumn.meeting, otherMeetings: meetings)
                                         
                                         let columnWidth = hasOverlap ? totalWidth / CGFloat(maxColumns) : totalWidth
                                         let xOffset = hasOverlap ? CGFloat(meetingColumn.column + 1) * columnWidth : totalWidth
@@ -268,7 +267,6 @@ struct FlowingScheduleView: View {
                 .onChange(of: selectedDate) {
                     let timelineStarts = meetings
                         .map { dateFromString($0.startTime) }
-                        .filter { Calendar.current.isDate($0, inSameDayAs: selectedDate) }
                     let schoolStarts = schoolEvents
                         .compactMap { $0.startDate }
                         .filter { Calendar.current.isDate($0, inSameDayAs: selectedDate) }
@@ -368,7 +366,6 @@ struct FlowingScheduleView: View {
     
     func calculateColumnAssignments() -> [MeetingColumn] {
         let sortedMeetings = meetings
-            .filter { isSameDay(dateFromString($0.startTime), selectedDate) }
             .sorted { dateFromString($0.startTime) < dateFromString($1.startTime) }
         
         var columnAssignments: [MeetingColumn] = []

@@ -15,16 +15,11 @@ struct CalendarView: View {
     @State var offset: CGSize = .zero
     
     var body: some View {
+        let meetingIndex = CalendarMeetingIndex(clubs: clubs, userEmail: viewModel.userEmail)
+        
         VStack {
             WeekCalendarView( // double check the below
-                meetingTimes: clubs
-                    .filter { isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }
-                    .flatMap { club in
-                        club.meetingTimes?.filter { meeting in
-                            meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)
-                            
-                        } ?? []
-                },
+                meetingIndex: meetingIndex,
                 selectedDate: $selectedDate,
                 viewModel: viewModel,
                 schoolScheduleStore: schoolScheduleStore,
@@ -33,7 +28,7 @@ struct CalendarView: View {
             Divider()
             
             FlowingScheduleView(
-                meetings: meetings(for: selectedDate),
+                meetings: meetingIndex.visibleMeetings(on: selectedDate),
                 schoolEvents: schoolScheduleStore.timelineEvents(for: selectedDate),
                 schoolScheduleStore: schoolScheduleStore,
                 screenHeight: screenHeight,
@@ -52,17 +47,5 @@ struct CalendarView: View {
         .onChange(of: selectedDate) {
             storedDate = stringFromDate(selectedDate)
         }
-    }
-    
-    func meetings(for date: Date) -> [Club.MeetingTime] {
-        clubs
-            .filter { isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: viewModel.userEmail) }
-            .flatMap { club in
-                club.meetingTimes?.filter { meeting in
-                    (meeting.visibleByArray?.isEmpty ?? true || meeting.visibleByArray?.contains(viewModel.userEmail ?? "") == true || isClubLeaderOrSuperAdmin(club: club, userEmail: viewModel.userEmail)) &&
-                    Calendar.current.isDate(dateFromString(meeting.startTime), inSameDayAs: date)
-                } ?? []
-            }
-        
     }
 }

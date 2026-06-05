@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WeekCalendarView: View {
-    var meetingTimes: [Club.MeetingTime]
+    var meetingIndex: CalendarMeetingIndex
     @Binding var selectedDate: Date
     var viewModel: AuthenticationViewModel
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
@@ -53,6 +53,7 @@ struct WeekCalendarView: View {
                         selectedDate: $selectedDate,
                         currentYear: Calendar.current.component(.year, from: selectedDate),
                         clubs: $clubs,
+                        meetingIndex: meetingIndex,
                         schoolScheduleStore: schoolScheduleStore,
                         viewModel: viewModel
                     )
@@ -79,7 +80,7 @@ struct WeekCalendarView: View {
                             .padding(.vertical, 3)
                             .background(schoolBadge.color, in: Capsule(style: .continuous))
                         
-                        let clubIDCounts = meetings(for: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
+                        let clubIDCounts = meetingIndex.visibleMeetings(on: date).reduce(into: [(clubID: String, count: Int)]()) { result, meeting in
                             if let index = result.firstIndex(where: { $0.clubID == meeting.clubID }) {
                                 result[index].count += 1
                             } else {
@@ -202,10 +203,6 @@ struct WeekCalendarView: View {
         guard let weekInterval = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return [] }
         let startOfWeek = weekInterval.start
         return (0..<7).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: startOfWeek) }
-    }
-    
-    func meetings(for date: Date) -> [Club.MeetingTime] {
-        meetingTimes.filter { Calendar.current.isDate(dateFromString($0.startTime), inSameDayAs: date) }
     }
     
     func navigateWeek(by value: Int) {

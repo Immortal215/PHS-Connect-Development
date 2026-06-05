@@ -210,22 +210,6 @@ func schoolScheduleDayRangeString(_ range: SchoolBreakRange) -> String {
     return "\(schoolSchedulePrettyRangeFormatter.string(from: start)) - \(schoolSchedulePrettyDateFormatter.string(from: end))"
 }
 
-func schoolScheduleTimestamp(from value: Any?) -> Double {
-    if let number = value as? NSNumber {
-        return number.doubleValue
-    }
-
-    if let double = value as? Double {
-        return double
-    }
-
-    if let int = value as? Int {
-        return Double(int)
-    }
-
-    return 0
-}
-
 @MainActor
 final class SchoolScheduleStore: ObservableObject {
     @Published private(set) var config: SchoolScheduleConfig = .default2025_2026
@@ -310,53 +294,51 @@ final class SchoolScheduleStore: ObservableObject {
         guard !didStartFirebaseListener else { return }
         didStartFirebaseListener = true
 
-        scheduleReference.child("lastUpdated").observe(.value) { [weak self] snapshot in
-            guard let self else { return }
+        let latestCachedTimestamp = config.lastUpdated ?? -0.001
+        let scheduleQuery = scheduleReference
+            .queryOrdered(byChild: "lastUpdated")
+            .queryStarting(atValue: latestCachedTimestamp + 0.001)
 
-            let remoteLastUpdated = schoolScheduleTimestamp(from: snapshot.value)
-
-            DispatchQueue.main.async {
-                let localLastUpdated = self.config.lastUpdated ?? 0
-                guard remoteLastUpdated > localLastUpdated else { return }
-                self.fetchRemoteSchedule(expectedLastUpdated: remoteLastUpdated)
-            }
+        scheduleQuery.observe(.childAdded) { [weak self] snapshot in
+            self?.applyScheduleSnapshot(snapshot)
         }
-    }
 
-    private func fetchRemoteSchedule(expectedLastUpdated: Double) {
-        scheduleReference.observeSingleEvent(of: .value) { [weak self] snapshot in
-            guard let self else { return }
-
-            DispatchQueue.main.async {
-                guard let value = snapshot.value as? [String: Any] else {
-                    return
-                }
-
-                do {
-                    let data = try JSONSerialization.data(withJSONObject: value)
-                    let decoded = try JSONDecoder().decode(SchoolScheduleConfig.self, from: data)
-                    let decodedLastUpdated = decoded.lastUpdated ?? 0
-                    let currentLastUpdated = self.config.lastUpdated ?? 0
-
-                    guard decodedLastUpdated >= expectedLastUpdated,
-                          decodedLastUpdated >= currentLastUpdated else {
-                        return
-                    }
-
-                    self.config = decoded
-                    self.cache.save(decoded)
-                    self.lastError = nil
-                } catch {
-                    self.lastError = error.localizedDescription
-                }
+        scheduleReference
+            .queryOrdered(byChild: "lastUpdated")
+            .observe(.childChanged) { [weak self] snapshot in
+                self?.applyScheduleSnapshot(snapshot)
             }
-        }
     }
 
     private var scheduleReference: DatabaseReference {
         Database.database().reference()
             .child("global")
-            .child("schoolSchedule")
+    }
+
+    private func applyScheduleSnapshot(_ snapshot: DataSnapshot) {
+        guard snapshot.key == "schoolSchedule",
+              let value = snapshot.value as? [String: Any] else {
+            return
+        }
+
+        DispatchQueue.main.async {
+            do {
+                let data = try JSONSerialization.data(withJSONObject: value)
+                let decoded = try JSONDecoder().decode(SchoolScheduleConfig.self, from: data)
+                let decodedLastUpdated = decoded.lastUpdated ?? 0
+                let currentLastUpdated = self.config.lastUpdated ?? 0
+
+                guard decodedLastUpdated >= currentLastUpdated else {
+                    return
+                }
+
+                self.config = decoded
+                self.cache.save(decoded)
+                self.lastError = nil
+            } catch {
+                self.lastError = error.localizedDescription
+            }
+        }
     }
 
     func dayState(for date: Date) -> SchoolScheduleDayState {
