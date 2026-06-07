@@ -40,6 +40,8 @@ struct ContentView: View {
 
     @State var tabsCache: UserTabPreferences?
     @State var tabChooserPageOpen = false
+    @StateObject private var chatTabHost = PersistentTabHostStore()
+    @StateObject private var calendarTabHost = PersistentTabHostStore()
 
     var body: some View {
         VStack {
@@ -146,34 +148,30 @@ struct ContentView: View {
                                         value: selectedTab
                                     )
 
-                                    ChatView(clubs: $clubs, userInfo: $userInfo)
-                                        .opacity(selectedTab == 6 ? 1 : 0)
-                                        .offset(
-                                            x: selectedTab == AppTab.chat.index
-                                                ? 0 : 40
+                                    if selectedTab == AppTab.chat.index {
+                                        PersistentTabHost(
+                                            store: chatTabHost,
+                                            rootView: AnyView(
+                                                ChatView(clubs: $clubs, userInfo: $userInfo)
+                                            )
                                         )
-                                        .animation(
-                                            .spring(
-                                                response: 0.28,
-                                                dampingFraction: 0.9
-                                            ),
-                                            value: selectedTab
-                                        )
+                                        .transition(.opacity)
+                                    }
 
-                                    CalendarView(
-                                        clubs: $clubs,
-                                        userInfo: $userInfo,
-                                        viewModel: viewModel,
-                                        schoolScheduleStore: schoolScheduleStore
-                                    )
-                                    .opacity(
-                                        selectedTab == AppTab.calendar.index
-                                            ? 1 : 0
-                                    )
-                                    .animation(
-                                        .easeInOut(duration: 0.25),
-                                        value: selectedTab
-                                    )
+                                    if selectedTab == AppTab.calendar.index {
+                                        PersistentTabHost(
+                                            store: calendarTabHost,
+                                            rootView: AnyView(
+                                                CalendarView(
+                                                    clubs: $clubs,
+                                                    userInfo: $userInfo,
+                                                    viewModel: viewModel,
+                                                    schoolScheduleStore: schoolScheduleStore
+                                                )
+                                            )
+                                        )
+                                        .transition(.opacity)
+                                    }
 
                                 }
 

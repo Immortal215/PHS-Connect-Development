@@ -310,11 +310,11 @@ struct ClubCard: View {
                 GlassBackground(color: clubColor)
             )
 
-            if let notificationCount = club.announcements?.filter {
+            if let notificationCount = club.announcements?.filter({
                 $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil
                     && dateFromString($0.value.date)
                         > Date().addingTimeInterval(-604800)
-            }.count,
+            }).count,
                 notificationCount > 0
                     && isClubMemberLeaderOrSuperAdmin(
                         club: club,

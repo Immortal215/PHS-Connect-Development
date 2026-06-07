@@ -21,8 +21,13 @@ struct MessageScrollView: View {
     @State var selectedEmoji: Emoji? = nil
     @State var selectedEmojiMessage: Chat.ChatMessage?
     @State var clubsLeaderIn: [Club]
+    let currentThreadName: String
+    let threadMessages: [Chat.ChatMessage]
+    let messageLookup: [String: Chat.ChatMessage]
+    let messageVersion: Int
     @State var loadingUsers: Set<String> = []
     @State var expandedURLPreviewMessageID: String? = nil
+    @State private var lastVisibleMessageID: String?
 
     @Binding var openMessageIDFromNotification: String?
 
@@ -33,31 +38,13 @@ struct MessageScrollView: View {
         return chats.first(where: { $0.chatID == selectedChatID })
     }
 
-    var currentThreadMessages: [Chat.ChatMessage] {
-        guard let selected = selectedChat else { return [] }
-        let currentThread =
-            (selectedThread[selected.chatID] ?? nil) ?? "general"
-        return (selected.messages ?? []).filter {
-            ($0.threadName ?? "general") == currentThread
-        }
-    }
-
-    var currentMessageLookup: [String: Chat.ChatMessage] {
-        Dictionary(
-            uniqueKeysWithValues: currentThreadMessages.map {
-                ($0.messageID, $0)
-            }
-        )
-    }
-
     var body: some View {
         ScrollViewReader { proxy in
             ZStack {
                 ScrollView {
                     LazyVStack(spacing: bubbles ? nil : 0) {  // not 0 by default!
                         if selectedChat != nil {
-                            let messages = currentThreadMessages
-                            let messageLookup = currentMessageLookup
+                            let messages = threadMessages
 
                             Group {
                                 ForEach(
@@ -94,6 +81,7 @@ struct MessageScrollView: View {
                     }
                 }
                 .onAppear {
+                    lastVisibleMessageID = threadMessages.last?.messageID
                     proxy.scrollTo(
                         openMessageIDFromNotification ?? "",
                         anchor: .top
@@ -102,21 +90,24 @@ struct MessageScrollView: View {
 
                 }
                 .defaultScrollAnchor(.bottom)
-                .onChange(
-                    of: selectedChat?.messages?.last?.messageID,
-                    initial: false
-                ) { oldID, newID in
+                .onChange(of: messageVersion) {
+                    let oldLastMessageID = lastVisibleMessageID
+                    let newLastMessageID = threadMessages.last?.messageID
+                    lastVisibleMessageID = newLastMessageID
+                    
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                        if oldID != newID {
+                        if oldLastMessageID != newLastMessageID {
                             scrollToBottom(proxy: proxy)
                         }
                     }
                 }
                 .onChange(of: selectedChat?.chatID) {
                     expandedURLPreviewMessageID = nil
+                    lastVisibleMessageID = threadMessages.last?.messageID
                     scrollToBottom(proxy: proxy)
                 }
                 .onChange(of: selectedThread) {
+                    lastVisibleMessageID = threadMessages.last?.messageID
                     scrollToBottom(proxy: proxy)
                 }
                 .onChange(of: selectedEmoji) {

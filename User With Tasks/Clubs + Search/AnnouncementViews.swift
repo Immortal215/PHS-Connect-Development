@@ -486,15 +486,17 @@ struct AnnouncementsView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.blue)
 
-                                if announcements.filter {
+                                let unseenRecentCount = announcements.filter {
                                     $0.value.peopleSeen?.contains(
                                         viewModel.userEmail ?? ""
                                     ) == nil
                                         && dateFromString($0.value.date)
                                             > Date().addingTimeInterval(-604800)
-                                }.count > 0 {
+                                }.count
+                                
+                                if unseenRecentCount > 0 {
                                     Text(
-                                        "\(announcements.filter{ $0.value.peopleSeen?.contains(viewModel.userEmail ?? "") == nil && dateFromString($0.value.date) > Date().addingTimeInterval(-604800) }.count)"
+                                        "\(unseenRecentCount)"
                                     )
                                     .font(.caption)
                                     .foregroundColor(.white)
