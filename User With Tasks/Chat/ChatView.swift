@@ -21,6 +21,12 @@ struct ChatThreadSidebarInfo {
     var lastMessageIDsByThread: [String: String] = [:]
 }
 
+struct ThreadMessageIndex {
+    var messages: [Chat.ChatMessage] = []
+    var lookup: [String: Chat.ChatMessage] = [:]
+    var version = 0
+}
+
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
@@ -69,13 +75,9 @@ struct ChatView: View {
     @State var cachedUnreadChatIDs: Set<String> = []
     @State var cachedThreadSidebarInfoByChatID:
         [String: ChatThreadSidebarInfo] = [:]
-    @State private var threadMessagesByChatID:
-        [String: [String: [Chat.ChatMessage]]] = [:]
-    @State private var messageLookupByChatID:
-        [String: [String: [String: Chat.ChatMessage]]] = [:]
-    @State private var threadMessageVersions:
-        [String: [String: Int]] = [:]
-    private let loadingOverlayHoldTime = 0.12
+    @State var messageIndexByChatID:
+        [String: [String: ThreadMessageIndex]] = [:]
+    let loadingOverlayHoldTime = 0.12
     @Namespace var namespace
     @Environment(\.scenePhase) var scenePhase
     let cacheWriteQueue = DispatchQueue(
@@ -96,11 +98,11 @@ struct ChatView: View {
     var loadingLogoURL: String? {
         selectedClub?.clubPhoto ?? clubs.first?.clubPhoto
     }
-    
+
     var userIsInNoClubs: Bool {
         let email = normalizedEmail(userInfo?.userEmail)
         guard !email.isEmpty else { return false }
-        
+
         return !clubs.contains {
             $0.members.contains(email) || $0.leaders.contains(email)
         }
@@ -1053,7 +1055,7 @@ struct ChatView: View {
                             Text("No chat selected")
                                 .font(.largeTitle)
                                 .foregroundStyle(.secondary)
-                            
+
                             if userIsInNoClubs {
                                 Button("Join Clubs!") {
                                     selectedTab = AppTab.search.index
@@ -1063,7 +1065,7 @@ struct ChatView: View {
                                 .buttonStyle(.borderedProminent)
                                 .controlSize(.extraLarge)
                             }
-                            
+
                             Spacer()
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1195,15 +1197,9 @@ struct ChatView: View {
             {
                 let currentThread =
                     (selectedThread[selected.chatID] ?? nil) ?? "general"
-                let threadMessages =
-                    threadMessagesByChatID[selected.chatID]?[currentThread]
-                    ?? []
-                let messageLookup =
-                    messageLookupByChatID[selected.chatID]?[currentThread]
-                    ?? [:]
-                let messageVersion =
-                    threadMessageVersions[selected.chatID]?[currentThread]
-                    ?? 0
+                let messageIndex =
+                    messageIndexByChatID[selected.chatID]?[currentThread]
+                    ?? ThreadMessageIndex()
 
                 MessageScrollView(
                     selectedChatID: $selectedChatID,
@@ -1222,9 +1218,9 @@ struct ChatView: View {
                     clubColor: .constant(colorFromClub(club: selectedClub)),
                     clubsLeaderIn: clubsLeaderIn,
                     currentThreadName: currentThread,
-                    threadMessages: threadMessages,
-                    messageLookup: messageLookup,
-                    messageVersion: messageVersion,
+                    threadMessages: messageIndex.messages,
+                    messageLookup: messageIndex.lookup,
+                    messageVersion: messageIndex.version,
                     openMessageIDFromNotification:
                         $openMessageIDFromNotification
                 )
@@ -1682,41 +1678,47 @@ struct ChatView: View {
             messages.append(message)
         }
     }
-    
+
     func rebuildThreadMessageIndexes(for chats: [Chat]) {
         for chat in chats {
             rebuildThreadMessageIndex(for: chat)
         }
     }
-    
+
     func rebuildThreadMessageIndex(for chat: Chat) {
-        var messagesByThread: [String: [Chat.ChatMessage]] = [:]
-        var lookupByThread: [String: [String: Chat.ChatMessage]] = [:]
-        var versionsByThread = threadMessageVersions[chat.chatID] ?? [:]
-        
+        var indexByThread: [String: ThreadMessageIndex] = [:]
+
         for message in chat.messages ?? [] {
             let thread = message.threadName ?? "general"
-            messagesByThread[thread, default: []].append(message)
-            lookupByThread[thread, default: [:]][message.messageID] = message
+            var index = indexByThread[thread] ?? ThreadMessageIndex()
+            index.messages.append(message)
+            index.lookup[message.messageID] = message
+            indexByThread[thread] = index
         }
-        
-        let previousMessagesByThread = threadMessagesByChatID[chat.chatID] ?? [:]
-        let allThreads = Set(previousMessagesByThread.keys)
-            .union(messagesByThread.keys)
-        
+
+        let previousIndexByThread = messageIndexByChatID[chat.chatID] ?? [:]
+        let allThreads = Set(previousIndexByThread.keys)
+            .union(indexByThread.keys)
+
         for thread in allThreads {
-            if messageSignature(previousMessagesByThread[thread] ?? [])
-                != messageSignature(messagesByThread[thread] ?? [])
+            var index = indexByThread[thread] ?? ThreadMessageIndex()
+            let previousIndex = previousIndexByThread[thread]
+            let previousMessages = previousIndex?.messages ?? []
+
+            if messageSignature(previousMessages)
+                != messageSignature(index.messages)
             {
-                versionsByThread[thread, default: 0] += 1
+                index.version = (previousIndex?.version ?? 0) + 1
+            } else {
+                index.version = previousIndex?.version ?? 0
             }
+
+            indexByThread[thread] = index
         }
-        
-        threadMessagesByChatID[chat.chatID] = messagesByThread
-        messageLookupByChatID[chat.chatID] = lookupByThread
-        threadMessageVersions[chat.chatID] = versionsByThread
+
+        messageIndexByChatID[chat.chatID] = indexByThread
     }
-    
+
     func messageSignature(_ messages: [Chat.ChatMessage]) -> String {
         messages.map {
             "\($0.messageID):\($0.lastUpdated ?? $0.date)"
