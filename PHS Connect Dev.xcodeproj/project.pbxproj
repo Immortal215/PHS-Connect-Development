@@ -14,6 +14,7 @@
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
 		7165EA672E9D8A8300EBD5B0 /* ElegantEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */; };
 		7165EA6A2E9F3BDC00EBD5B0 /* CommonSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA692E9F3BDC00EBD5B0 /* CommonSwiftUI */; };
+		71A947682FD5A3D800FC564D /* User-with-Tasks-Info.plist in Sources */ = {isa = PBXBuildFile; fileRef = 71A947672FD5A3C700FC564D /* User-with-Tasks-Info.plist */; };
 		71D450672F0D8287001EF534 /* RichText in Frameworks */ = {isa = PBXBuildFile; productRef = 71D450662F0D8287001EF534 /* RichText */; };
 		71E53B922D93494500128C6E /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 71E53B912D93494500128C6E /* SDWebImageSwiftUI */; };
 		71F2C6C72E4BE29F0026072E /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = 71F2C6C62E4BE29F0026072E /* Flow */; };
@@ -47,6 +48,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		71A947672FD5A3C700FC564D /* User-with-Tasks-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "User-with-Tasks-Info.plist"; sourceTree = "<group>"; };
 		71CF7D092EDBEE600095754A /* PHS Connect Dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "PHS Connect Dev.entitlements"; sourceTree = "<group>"; };
 		B861A8472CB811A0006AF254 /* PHS Connect Dev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PHS Connect Dev.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -110,6 +112,7 @@
 		B861A83E2CB811A0006AF254 = {
 			isa = PBXGroup;
 			children = (
+				71A947672FD5A3C700FC564D /* User-with-Tasks-Info.plist */,
 				71CF7D092EDBEE600095754A /* PHS Connect Dev.entitlements */,
 				B861A8492CB811A0006AF254 /* User With Tasks */,
 				B861A8482CB811A0006AF254 /* Products */,
@@ -254,6 +257,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				71A947682FD5A3D800FC564D /* User-with-Tasks-Info.plist in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

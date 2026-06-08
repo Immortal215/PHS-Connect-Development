@@ -27,6 +27,36 @@ struct ThreadMessageIndex {
     var version = 0
 }
 
+enum ChatLoadingState: Equatable {
+    case hidden
+    case loadingChats
+    case preparingChats
+    case refreshingChats
+    case openingChat
+    case switchingThread
+
+    var isVisible: Bool {
+        self != .hidden
+    }
+
+    var message: String {
+        switch self {
+        case .hidden:
+            ""
+        case .loadingChats:
+            "Loading chats..."
+        case .preparingChats:
+            "Preparing chats..."
+        case .refreshingChats:
+            "Refreshing chats..."
+        case .openingChat:
+            "Opening chat..."
+        case .switchingThread:
+            "Switching thread..."
+        }
+    }
+}
+
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
@@ -63,10 +93,7 @@ struct ChatView: View {
 
     @State var menuExpanded = false
     @State var settings = false
-    @State var isInitialChatLoading = true
-    @State var isResumingChat = false
-    @State var isThreadSwitching = false
-    @State var loadingMessage = "Loading chats..."
+    @State var chatLoadingState: ChatLoadingState = .loadingChats
     @State var lastResumeRefresh = Date.distantPast
     @State var chatsEnabled = true
     @State var globalChatsRef: DatabaseReference?
@@ -75,8 +102,7 @@ struct ChatView: View {
     @State var cachedUnreadChatIDs: Set<String> = []
     @State var cachedThreadSidebarInfoByChatID:
         [String: ChatThreadSidebarInfo] = [:]
-    @State var messageIndexByChatID:
-        [String: [String: ThreadMessageIndex]] = [:]
+    @State var messageIndexByChatID: [String: [String: ThreadMessageIndex]] = [:]
     let loadingOverlayHoldTime = 0.12
     @Namespace var namespace
     @Environment(\.scenePhase) var scenePhase
@@ -89,10 +115,6 @@ struct ChatView: View {
         return clubs.filter {
             isClubLeaderOrSuperAdmin(club: $0, userEmail: userInfo?.userEmail)
         }
-    }
-
-    var showLoadingOverlay: Bool {
-        isInitialChatLoading || isResumingChat || isThreadSwitching
     }
 
     var loadingLogoURL: String? {
@@ -294,8 +316,7 @@ struct ChatView: View {
                         GlassBackground()
                     }
                     .onAppear {
-                        isInitialChatLoading = true
-                        loadingMessage = "Loading chats..."
+                        chatLoadingState = .loadingChats
                         loadChats(showLoader: true)
                     }
                     .padding(.leading)
@@ -717,9 +738,8 @@ struct ChatView: View {
                                                                     of: thread
                                                                 )
                                                         else { return }
-                                                        isThreadSwitching = true
-                                                        loadingMessage =
-                                                            "Switching thread..."
+                                                        chatLoadingState =
+                                                            .switchingThread
                                                         selectedThread[
                                                             selected.chatID
                                                         ] =
@@ -735,8 +755,12 @@ struct ChatView: View {
                                                                 deadline: .now()
                                                                     + loadingOverlayHoldTime
                                                             ) {
-                                                                isThreadSwitching =
-                                                                    false
+                                                                if chatLoadingState
+                                                                    == .switchingThread
+                                                                {
+                                                                    chatLoadingState =
+                                                                        .hidden
+                                                                }
                                                             }
 
                                                     }
@@ -757,9 +781,8 @@ struct ChatView: View {
                                                                     of: thread
                                                                 )
                                                         else { return }
-                                                        isThreadSwitching = true
-                                                        loadingMessage =
-                                                            "Switching thread..."
+                                                        chatLoadingState =
+                                                            .switchingThread
                                                         selectedThread[
                                                             selected.chatID
                                                         ] =
@@ -774,8 +797,12 @@ struct ChatView: View {
                                                                 deadline: .now()
                                                                     + loadingOverlayHoldTime
                                                             ) {
-                                                                isThreadSwitching =
-                                                                    false
+                                                                if chatLoadingState
+                                                                    == .switchingThread
+                                                                {
+                                                                    chatLoadingState =
+                                                                        .hidden
+                                                                }
                                                             }
 
                                                     }
@@ -793,10 +820,8 @@ struct ChatView: View {
                                                     Button(action: {
                                                         DispatchQueue.main.async
                                                         {
-                                                            isThreadSwitching =
-                                                                true
-                                                            loadingMessage =
-                                                                "Switching thread..."
+                                                            chatLoadingState =
+                                                                .switchingThread
                                                             selectedThread[
                                                                 selected.chatID
                                                             ] = thread
@@ -809,8 +834,12 @@ struct ChatView: View {
                                                                         .now()
                                                                         + loadingOverlayHoldTime
                                                                 ) {
-                                                                    isThreadSwitching =
-                                                                        false
+                                                                    if chatLoadingState
+                                                                        == .switchingThread
+                                                                    {
+                                                                        chatLoadingState =
+                                                                            .hidden
+                                                                    }
                                                                 }
                                                         }
                                                     }) {
@@ -1096,7 +1125,9 @@ struct ChatView: View {
                             DispatchQueue.main.asyncAfter(
                                 deadline: .now() + loadingOverlayHoldTime
                             ) {
-                                isThreadSwitching = false
+                                if chatLoadingState == .openingChat {
+                                    chatLoadingState = .hidden
+                                }
                             }
                         }
                     }
@@ -1153,28 +1184,33 @@ struct ChatView: View {
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
-                if isInitialChatLoading { return }
+                if chatLoadingState == .loadingChats
+                    || chatLoadingState == .preparingChats
+                {
+                    return
+                }
                 let timeSinceLastRefresh = Date().timeIntervalSince(
                     lastResumeRefresh
                 )
                 if timeSinceLastRefresh > 4 {
                     lastResumeRefresh = Date()
-                    isResumingChat = true
-                    loadingMessage = "Refreshing chats..."
+                    chatLoadingState = .refreshingChats
                     loadChats(showLoader: false)
                     DispatchQueue.main.asyncAfter(
                         deadline: .now() + loadingOverlayHoldTime
                     ) {
-                        isResumingChat = false
+                        if chatLoadingState == .refreshingChats {
+                            chatLoadingState = .hidden
+                        }
                     }
                 }
             }
         }
         .overlay {
-            if showLoadingOverlay {
+            if chatLoadingState.isVisible {
                 ChatLoadingOverlay(
                     logoURL: loadingLogoURL,
-                    message: loadingMessage
+                    message: chatLoadingState.message
                 )
                 .transition(.opacity)
                 .allowsHitTesting(false)
@@ -1354,12 +1390,13 @@ struct ChatView: View {
                             selectedClub = clubs.first(where: {
                                 $0.clubID == chat.clubID
                             })
-                            isThreadSwitching = true
-                            loadingMessage = "Opening chat..."
+                            chatLoadingState = .openingChat
                             DispatchQueue.main.asyncAfter(
                                 deadline: .now() + loadingOverlayHoldTime
                             ) {
-                                isThreadSwitching = false
+                                if chatLoadingState == .openingChat {
+                                    chatLoadingState = .hidden
+                                }
                             }
 
                             settings = false
@@ -1461,11 +1498,11 @@ struct ChatView: View {
 
     func loadChats(showLoader: Bool = true) {
         if showLoader {
-            isInitialChatLoading = true
+            chatLoadingState = .loadingChats
         }
 
         guard let email = userInfo?.userEmail else {
-            isInitialChatLoading = false
+            chatLoadingState = .hidden
             return
         }
 
@@ -1477,6 +1514,10 @@ struct ChatView: View {
         let cachedChatIDsSnapshot = Set(
             cachedChatIDs.split(separator: ",").map(String.init)
         )
+        let previousMessageIndexByChatID = messageIndexByChatID
+        if showLoader {
+            chatLoadingState = .preparingChats
+        }
 
         DispatchQueue.global(qos: .userInitiated).async {
             // load cached chats off main thread
@@ -1492,9 +1533,14 @@ struct ChatView: View {
                 }
             }
 
+            let loadedMessageIndexByChatID = buildThreadMessageIndexes(
+                for: loadedChats,
+                previousIndexes: previousMessageIndexByChatID
+            )
+
             DispatchQueue.main.async {
                 chats = loadedChats
-                rebuildThreadMessageIndexes(for: loadedChats)
+                messageIndexByChatID = loadedMessageIndexByChatID
                 refreshChatSidebarCache(chatsOverride: loadedChats)
 
                 // chatIds to fetch
@@ -1507,7 +1553,7 @@ struct ChatView: View {
                 }
 
                 if chatIDsToFetch.isEmpty {
-                    isInitialChatLoading = false
+                    chatLoadingState = .hidden
                     attemptOpenChatFromNotification()
                     return
                 }
@@ -1537,7 +1583,7 @@ struct ChatView: View {
                         refreshChatSidebarCache()
                     }
 
-                    isInitialChatLoading = false
+                    chatLoadingState = .hidden
                     attemptOpenChatFromNotification()
                 }
             }
@@ -1680,12 +1726,39 @@ struct ChatView: View {
     }
 
     func rebuildThreadMessageIndexes(for chats: [Chat]) {
-        for chat in chats {
-            rebuildThreadMessageIndex(for: chat)
-        }
+        messageIndexByChatID = buildThreadMessageIndexes(
+            for: chats,
+            previousIndexes: messageIndexByChatID
+        )
     }
 
     func rebuildThreadMessageIndex(for chat: Chat) {
+        messageIndexByChatID[chat.chatID] = buildThreadMessageIndex(
+            for: chat,
+            previousIndexByThread: messageIndexByChatID[chat.chatID] ?? [:]
+        )
+    }
+
+    func buildThreadMessageIndexes(
+        for chats: [Chat],
+        previousIndexes: [String: [String: ThreadMessageIndex]]
+    ) -> [String: [String: ThreadMessageIndex]] {
+        var indexes: [String: [String: ThreadMessageIndex]] = [:]
+
+        for chat in chats {
+            indexes[chat.chatID] = buildThreadMessageIndex(
+                for: chat,
+                previousIndexByThread: previousIndexes[chat.chatID] ?? [:]
+            )
+        }
+
+        return indexes
+    }
+
+    func buildThreadMessageIndex(
+        for chat: Chat,
+        previousIndexByThread: [String: ThreadMessageIndex]
+    ) -> [String: ThreadMessageIndex] {
         var indexByThread: [String: ThreadMessageIndex] = [:]
 
         for message in chat.messages ?? [] {
@@ -1696,7 +1769,6 @@ struct ChatView: View {
             indexByThread[thread] = index
         }
 
-        let previousIndexByThread = messageIndexByChatID[chat.chatID] ?? [:]
         let allThreads = Set(previousIndexByThread.keys)
             .union(indexByThread.keys)
 
@@ -1716,7 +1788,7 @@ struct ChatView: View {
             indexByThread[thread] = index
         }
 
-        messageIndexByChatID[chat.chatID] = indexByThread
+        return indexByThread
     }
 
     func messageSignature(_ messages: [Chat.ChatMessage]) -> String {
