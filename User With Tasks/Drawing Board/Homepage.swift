@@ -3,8 +3,8 @@ import Pow
 import SwiftUI
 
 struct Homepage: View {
-    @State var screenWidth = UIScreen.main.bounds.width
-    @State var screenHeight = UIScreen.main.bounds.height
+    @State var screenWidth = appScreenBounds.width
+    @State var screenHeight = appScreenBounds.height
 
     @AppStorage("completed") var completed = 0
 
@@ -583,7 +583,7 @@ struct Homepage: View {
                                                         .blur(radius: 0.5)
                                                     )
                                                     .frame(width: 0, height: 0)
-                                                    .animation(.snappy())
+                                                    .implicitAnimation(.snappy())
                                                     .onHover { hovering in
                                                         if hovering {
                                                             selectDelete[
@@ -670,144 +670,6 @@ struct Homepage: View {
                                                     }
 
                                                 VStack {
-                                                    let gradientTitle =
-                                                        LinearGradient(
-                                                            stops: [
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                subjectColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        0.0
-                                                                ),
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                titleColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        0.5
-                                                                ),
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                descriptionColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        1.0
-                                                                ),
-                                                            ],
-                                                            startPoint:
-                                                                .topLeading,
-                                                            endPoint:
-                                                                .bottomTrailing
-                                                        )
-
-                                                    let gradientSubject =
-                                                        LinearGradient(
-                                                            stops: [
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                titleColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        0.0
-                                                                ),
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                subjectColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        0.5
-                                                                ),
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                descriptionColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        1.0
-                                                                ),
-                                                            ],
-                                                            startPoint:
-                                                                .topLeading,
-                                                            endPoint:
-                                                                .bottomTrailing
-                                                        )
-
-                                                    let gradientDescription =
-                                                        LinearGradient(
-                                                            stops: [
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                subjectColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        0.0
-                                                                ),
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                descriptionColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        0.5
-                                                                ),
-                                                                .init(
-                                                                    color:
-                                                                        Color(
-                                                                            hexadecimal:
-                                                                                titleColor
-                                                                        )
-                                                                        .opacity(
-                                                                            0.95
-                                                                        ),
-                                                                    location:
-                                                                        1.0
-                                                                ),
-                                                            ],
-                                                            startPoint:
-                                                                .topLeading,
-                                                            endPoint:
-                                                                .bottomTrailing
-                                                        )
-
                                                     HStack {
                                                         Text(
                                                             names[index]
@@ -1013,7 +875,7 @@ struct Homepage: View {
                                 }
 
                             }
-                            .animation(.bouncy(duration: 1))
+                            .implicitAnimation(.bouncy(duration: 1))
                         }
 
                         if recentDeletedOpen {
@@ -1084,7 +946,7 @@ struct Homepage: View {
 
                         }
 
-                        .animation(.snappy(duration: 0.3, extraBounce: 0.3))
+                        .implicitAnimation(.snappy(duration: 0.3, extraBounce: 0.3))
 
                         VStack {
                             ScrollView {
@@ -1118,7 +980,7 @@ struct Homepage: View {
                                             .stroke(lineWidth: 10)
                                             .opacity(0.3)
                                             .foregroundColor(.gray)
-                                            .animation(.linear(duration: 1))
+                                            .implicitAnimation(.linear(duration: 1))
                                             .frame(width: 100, height: 100)
 
                                             RoundedRectangle(
@@ -1148,7 +1010,7 @@ struct Homepage: View {
                                             .rotationEffect(
                                                 Angle(degrees: -90.0)
                                             )
-                                            .animation(.linear(duration: 1))
+                                            .implicitAnimation(.linear(duration: 1))
                                             .foregroundStyle(
                                                 breakText ? .green : .pink
                                             )
@@ -1174,7 +1036,7 @@ struct Homepage: View {
                                                 Text("Start")
                                                     .font(.callout)
                                                     .foregroundStyle(.black)
-                                                    .animation(
+                                                    .implicitAnimation(
                                                         .bouncy(
                                                             duration: 1,
                                                             extraBounce: 0.1
@@ -1197,7 +1059,7 @@ struct Homepage: View {
                                                 Text("Stop")
                                                     .font(.callout)
                                                     .foregroundStyle(.black)
-                                                    .animation(
+                                                    .implicitAnimation(
                                                         .bouncy(
                                                             duration: 1,
                                                             extraBounce: 0.1
@@ -1564,7 +1426,7 @@ struct Homepage: View {
                 }
 
             }
-            .animation(
+            .implicitAnimation(
                 .interactiveSpring(
                     response: 0.5,
                     dampingFraction: 0.8,
@@ -1611,7 +1473,7 @@ struct Homepage: View {
                 && bigDic[currentTab]?["description"] != [String()]
             {
 
-                var sortedIndices = dueDates.indices.sorted(by: {
+                let sortedIndices = dueDates.indices.sorted(by: {
                     dueDates[$0] < dueDates[$1]
                 })
 
@@ -1695,7 +1557,7 @@ struct Homepage: View {
                 && bigDic[currentTab]?["description"] != [String()]
             {
 
-                var sortedIndices = dueDates.indices.sorted(by: {
+                let sortedIndices = dueDates.indices.sorted(by: {
                     dueDates[$0] < dueDates[$1]
                 })
 
@@ -1773,7 +1635,7 @@ struct Homepage: View {
                     && bigDic[currentTab]?["description"] != [String()]
                 {
 
-                    var sortedIndices = dueDates.indices.sorted(by: {
+                    let sortedIndices = dueDates.indices.sorted(by: {
                         dueDates[$0] < dueDates[$1]
                     })
 

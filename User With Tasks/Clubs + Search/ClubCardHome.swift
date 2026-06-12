@@ -7,7 +7,6 @@ import Pow
 import SDWebImageSwiftUI
 import Shimmer
 import SwiftUI
-import SwiftUIX
 
 struct ClubCardHome: View {
     @State var club: Club
@@ -61,7 +60,11 @@ struct ClubCardHome: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 25)
                                 .foregroundStyle(.gray)
-                                .shimmering(active: true, duration: 2.4)
+                                .shimmering(
+                                    active: true,
+                                    animation: .easeInOut(duration: 2.4)
+                                        .repeatForever(autoreverses: false)
+                                )
                         }
                         .frame(width: screenWidth / 4, height: screenWidth / 4)
                     }
@@ -137,7 +140,7 @@ struct ClubCardHome: View {
         .onAppearOnce {
             notificationCount = unseenNotificationCount(for: club)
         }
-        .animation(.easeInOut)
+        .implicitAnimation(.easeInOut)
     }
 
     // Counts unseen announcements for this club in the last 7 days for the current user

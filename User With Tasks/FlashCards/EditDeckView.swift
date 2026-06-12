@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUIX
 
 struct EditDeck: View {
     @Binding var decks: [Deck]

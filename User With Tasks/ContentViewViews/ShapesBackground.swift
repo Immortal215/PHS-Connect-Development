@@ -1,5 +1,54 @@
 import SwiftUI
-import SwiftUIX
+
+struct RoundedRhombus: Shape {
+    var cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let top = CGPoint(x: rect.midX, y: rect.minY)
+        let right = CGPoint(x: rect.maxX, y: rect.midY)
+        let bottom = CGPoint(x: rect.midX, y: rect.maxY)
+        let left = CGPoint(x: rect.minX, y: rect.midY)
+        let radius = min(cornerRadius, min(rect.width, rect.height) / 4)
+
+        func point(from start: CGPoint, to end: CGPoint, distance: CGFloat) -> CGPoint {
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let length = max(sqrt((dx * dx) + (dy * dy)), 0.001)
+            let ratio = min(distance / length, 0.5)
+
+            return CGPoint(
+                x: start.x + (dx * ratio),
+                y: start.y + (dy * ratio)
+            )
+        }
+
+        var path = Path()
+        path.move(to: point(from: top, to: right, distance: radius))
+        path.addLine(to: point(from: right, to: top, distance: radius))
+        path.addQuadCurve(
+            to: point(from: right, to: bottom, distance: radius),
+            control: right
+        )
+        path.addLine(to: point(from: bottom, to: right, distance: radius))
+        path.addQuadCurve(
+            to: point(from: bottom, to: left, distance: radius),
+            control: bottom
+        )
+        path.addLine(to: point(from: left, to: bottom, distance: radius))
+        path.addQuadCurve(
+            to: point(from: left, to: top, distance: radius),
+            control: left
+        )
+        path.addLine(to: point(from: top, to: left, distance: radius))
+        path.addQuadCurve(
+            to: point(from: top, to: right, distance: radius),
+            control: top
+        )
+        path.closeSubpath()
+
+        return path
+    }
+}
 
 struct RandomShapesBackground: View {
     var body: some View {

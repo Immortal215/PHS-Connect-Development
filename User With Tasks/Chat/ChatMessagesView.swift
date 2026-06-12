@@ -1,7 +1,6 @@
 import ElegantEmojiPicker
 import SDWebImageSwiftUI
 import SwiftUI
-import SwiftUIX
 
 struct MessageScrollView: View {
     @Binding var selectedChatID: String?
@@ -13,8 +12,8 @@ struct MessageScrollView: View {
     @Binding var replyingMessageID: String?
     var focusSendBar: () -> Void
     @Binding var bubbles: Bool
-    var screenWidth = UIScreen.main.bounds.width
-    var screenHeight = UIScreen.main.bounds.height
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
     @Binding var clubColor: Color
     @State var nonBubbleMenuMessage: Chat.ChatMessage? = nil
     @State var isEmojiPickerPresented = false

@@ -7,7 +7,6 @@ import Pow
 import SDWebImageSwiftUI
 import Shimmer
 import SwiftUI
-import SwiftUIX
 
 struct ClubCard: View {
     @State var club: Club
@@ -61,7 +60,11 @@ struct ClubCard: View {
                     placeholder: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 25)
-                                .shimmering(active: true, duration: 2.4)
+                                .shimmering(
+                                    active: true,
+                                    animation: .easeInOut(duration: 2.4)
+                                        .repeatForever(autoreverses: false)
+                                )
                         }
                     }
                 )
@@ -98,7 +101,7 @@ struct ClubCard: View {
                             .reduce(Text("")) { partialResult, genreText in
                                 partialResult == Text("")
                                     ? genreText
-                                    : partialResult + Text(", ") + genreText
+                                    : Text("\(partialResult), \(genreText)")
                             }
                             .lineLimit(2)
                             .font(.caption)
@@ -188,7 +191,7 @@ struct ClubCard: View {
                                             ? "Apply" : "Connect")
                         ) {
                             if let email = viewModel.userEmail {
-                                if let requestNeeded = club.requestNeeded {  // if you need to request to join
+                                if club.requestNeeded != nil {  // if you need to request to join
                                     if !club.members.contains(email)
                                         && !club.leaders.contains(email)
                                         && !(club.pendingMemberRequests?
@@ -344,7 +347,7 @@ struct ClubCard: View {
             minHeight: screenHeight / 5,
             maxHeight: screenHeight / 5
         )
-        .animation(.snappy)
+        .implicitAnimation(.snappy)
     }
 
     func refreshUserInfo() {

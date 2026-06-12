@@ -3,7 +3,6 @@ import FirebaseStorage
 import PhotosUI
 import SDWebImageSwiftUI
 import SwiftUI
-import SwiftUIX
 import UIKit
 import UniformTypeIdentifiers
 
@@ -54,7 +53,7 @@ extension ChatComposer {
 
     var composerLifecycleView: some View {
         composerDropPasteView
-            .onChange(of: editingMessageID) { _ in
+            .onChange(of: editingMessageID) { _, _ in
                 if let editingID = editingMessageID,
                     let selected = selectedChat,
                     let message = selected.messages?.first(where: {
@@ -64,33 +63,33 @@ extension ChatComposer {
                     draftText = message.message
                 }
             }
-            .onChange(of: replyingMessageID) { _ in
+            .onChange(of: replyingMessageID) { _, _ in
                 if replyingMessageID != nil && editingMessageID == nil {
                     draftText = ""
                 }
             }
-            .onChange(of: selectedChat?.chatID) { _ in
+            .onChange(of: selectedChat?.chatID) { _, _ in
                 resetDraft(deletePendingUploads: true)
                 editingMessageID = nil
                 replyingMessageID = nil
             }
-            .onChange(of: selectedPhotoItem) { item in
+            .onChange(of: selectedPhotoItem) { _, item in
                 guard let item else { return }
                 Task {
                     await prepareImageFromPhotoPicker(item)
                 }
             }
-            .onChange(of: focusRequestID) { _ in
+            .onChange(of: focusRequestID) { _, _ in
                 DispatchQueue.main.async {
                     focusedOnSendBar = true
                 }
             }
-            .onChange(of: dismissRequestID) { _ in
+            .onChange(of: dismissRequestID) { _, _ in
                 if focusedOnSendBar {
                     focusedOnSendBar = false
                 }
             }
-            .onChange(of: focusedOnSendBar) { newValue in
+            .onChange(of: focusedOnSendBar) { _, newValue in
                 withAnimation(.easeOut(duration: 0.16)) {
                     isComposerFocusedUI = newValue
                 }
@@ -501,6 +500,11 @@ extension ChatComposer {
                     }
             case .empty:
                 Color.clear
+                    .onAppear {
+                        attachmentLoaded = false
+                    }
+            @unknown default:
+                ProgressView()
                     .onAppear {
                         attachmentLoaded = false
                     }

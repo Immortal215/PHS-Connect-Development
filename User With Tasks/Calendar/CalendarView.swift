@@ -5,8 +5,8 @@ struct CalendarView: View {
     @Binding var userInfo: Personal?
     var viewModel: AuthenticationViewModel
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
-    var screenWidth = UIScreen.main.bounds.width
-    var screenHeight = UIScreen.main.bounds.height
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
 
     @AppStorage("storedDate") var storedDate: String = ""
     @State var selectedDate = Date()

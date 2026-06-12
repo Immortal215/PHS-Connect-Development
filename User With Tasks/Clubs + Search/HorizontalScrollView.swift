@@ -43,10 +43,5 @@ struct HorizontalScrollView<Content: View>: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIScrollView, context: Context) {
-        if let hostingController = uiView.subviews.first
-            as? UIHostingController<Content>
-        {
-            hostingController.rootView = content
-        }
     }
 }

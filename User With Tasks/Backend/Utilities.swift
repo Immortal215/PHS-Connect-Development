@@ -11,8 +11,7 @@ final class Utilities {
         -> UIViewController?
     {
 
-        let controller =
-            controller ?? UIApplication.shared.keyWindow?.rootViewController
+        let controller = controller ?? appKeyWindow?.rootViewController
 
         if let navigationController = controller as? UINavigationController {
             return topViewController(

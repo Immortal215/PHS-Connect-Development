@@ -1,4 +1,28 @@
 import SwiftUI
+import UIKit
+
+var appKeyWindow: UIWindow? {
+    UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .flatMap(\.windows)
+        .first { $0.isKeyWindow }
+}
+
+var appScreenBounds: CGRect {
+    appKeyWindow?.windowScene?.screen.bounds
+        ?? UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.screen.bounds }
+            .first
+        ?? CGRect(x: 0, y: 0, width: 1024, height: 768)
+}
+
+extension View {
+    func implicitAnimation(_ animation: Animation?) -> some View {
+        transaction { transaction in
+            transaction.animation = animation
+        }
+    }
+}
 
 let superAdminEmails: Set<String> = [
     "sharul.shah2008@gmail.com",

@@ -7,14 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3D17D1952CE7965A001EC760 /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1942CE7965A001EC760 /* SwiftUIX */; };
 		3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1972CE796A5001EC760 /* CUIExpandableButton */; };
 		713417852D812CFB0006A149 /* ChangelogKit in Frameworks */ = {isa = PBXBuildFile; productRef = 713417842D812CFB0006A149 /* ChangelogKit */; };
 		7136E9522D19E6A200C1A286 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 7136E9512D19E6A200C1A286 /* PopupView */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
 		7165EA672E9D8A8300EBD5B0 /* ElegantEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */; };
 		7165EA6A2E9F3BDC00EBD5B0 /* CommonSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA692E9F3BDC00EBD5B0 /* CommonSwiftUI */; };
-		71A947682FD5A3D800FC564D /* User-with-Tasks-Info.plist in Sources */ = {isa = PBXBuildFile; fileRef = 71A947672FD5A3C700FC564D /* User-with-Tasks-Info.plist */; };
 		71D450672F0D8287001EF534 /* RichText in Frameworks */ = {isa = PBXBuildFile; productRef = 71D450662F0D8287001EF534 /* RichText */; };
 		71E53B922D93494500128C6E /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 71E53B912D93494500128C6E /* SDWebImageSwiftUI */; };
 		71F2C6C72E4BE29F0026072E /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = 71F2C6C62E4BE29F0026072E /* Flow */; };
@@ -85,7 +83,6 @@
 				B861A8722CB81714006AF254 /* FirebaseFirestore in Frameworks */,
 				B861A8802CB81714006AF254 /* FirebaseMessaging in Frameworks */,
 				B861A87C2CB81714006AF254 /* FirebaseInstallations in Frameworks */,
-				3D17D1952CE7965A001EC760 /* SwiftUIX in Frameworks */,
 				B861A8782CB81714006AF254 /* FirebaseFunctionsCombine-Community in Frameworks */,
 				B8A6DF642CC14F600014B5F8 /* GoogleSignIn in Frameworks */,
 				B861A8642CB81714006AF254 /* FirebaseAppDistribution-Beta in Frameworks */,
@@ -174,7 +171,6 @@
 				B8A6DF652CC14F600014B5F8 /* GoogleSignInSwift */,
 				B8BEC61F2CCBE5DA00991A38 /* Drops */,
 				716022FC2CDB0DEB00E2887B /* Pow */,
-				3D17D1942CE7965A001EC760 /* SwiftUIX */,
 				3D17D1972CE796A5001EC760 /* CUIExpandableButton */,
 				7136E9512D19E6A200C1A286 /* PopupView */,
 				713417842D812CFB0006A149 /* ChangelogKit */,
@@ -200,7 +196,7 @@
 					New,
 				);
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					B861A8462CB811A0006AF254 = {
 						CreatedOnToolsVersion = 16.0;
@@ -221,7 +217,6 @@
 				B8A6DF622CC14F600014B5F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B8BEC61E2CCBE5DA00991A38 /* XCRemoteSwiftPackageReference "Drops" */,
 				716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */,
-				3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
 				3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */,
 				7136E9502D19E6A200C1A286 /* XCRemoteSwiftPackageReference "PopupView" */,
 				713417832D812CFB0006A149 /* XCRemoteSwiftPackageReference "ChangelogKit" */,
@@ -257,7 +252,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				71A947682FD5A3D800FC564D /* User-with-Tasks-Info.plist in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,6 +293,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = RST9Z3DY2L;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -322,6 +317,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -362,6 +358,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = RST9Z3DY2L;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -378,6 +375,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -393,17 +391,16 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = RST9Z3DY2L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -427,17 +424,16 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"User with Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = RST9Z3DY2L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "User-with-Tasks-Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -475,14 +471,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SwiftUIX/SwiftUIX.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.2.3;
-			};
-		};
 		3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/robhasacamera/CUIExpandableButton.git";
@@ -590,11 +578,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		3D17D1942CE7965A001EC760 /* SwiftUIX */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3D17D1932CE7965A001EC760 /* XCRemoteSwiftPackageReference "SwiftUIX" */;
-			productName = SwiftUIX;
-		};
 		3D17D1972CE796A5001EC760 /* CUIExpandableButton */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3D17D1962CE796A5001EC760 /* XCRemoteSwiftPackageReference "CUIExpandableButton" */;

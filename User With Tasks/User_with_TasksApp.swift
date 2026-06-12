@@ -34,7 +34,11 @@ class AppDelegate: NSObject, UIApplicationDelegate,
 
         UIApplication.shared.registerForRemoteNotifications()
 
-        if let notification = launchOptions?[.remoteNotification]
+        let remoteNotificationKey = UIApplication.LaunchOptionsKey(
+            rawValue: "UIApplicationLaunchOptionsRemoteNotificationKey"
+        )
+
+        if let notification = launchOptions?[remoteNotificationKey]
             as? [AnyHashable: Any]
         {
             print("LaunchOptions remoteNotification:", notification)

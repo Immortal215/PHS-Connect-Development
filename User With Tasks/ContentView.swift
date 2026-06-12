@@ -8,14 +8,13 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SDWebImageSwiftUI
 import SwiftUI
-import SwiftUIX
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
     @AppStorage("selectedTab") var selectedTab = 3
-    @State var screenWidth = UIScreen.main.bounds.width
-    @State var screenHeight = UIScreen.main.bounds.height
+    @State var screenWidth = appScreenBounds.width
+    @State var screenHeight = appScreenBounds.height
     @StateObject var networkMonitor = NetworkMonitor()
     @State var expanded = false
     @State var advSearchShown = false
@@ -47,75 +46,26 @@ struct ContentView: View {
         VStack {
             VStack {
                 if showSignInView {
-                    VStack(alignment: .center) {
-                        Text("PHS Connect")
-                            .font(.title)
-                            .fontWeight(.bold)
-
-                        VStack {
-
-                            Text("Sign In")
-                                .font(.title)
-                                .fontWeight(.semibold)
-
-                            VStack {
-
-                                GoogleSignInButton(
-                                    viewModel: GoogleSignInButtonViewModel(
-                                        scheme: .dark,
-                                        style: .wide,
-                                        state: .normal
-                                    )
-                                ) {
-                                    Task {
-                                        do {
-                                            try await viewModel.signInGoogle()
-                                            withAnimation(.smooth) {
-                                                showSignInView = false
-                                            }
-                                        } catch {
-                                            print(error)
-                                        }
+                    SignInLandingView(
+                        signInGoogle: {
+                            Task {
+                                do {
+                                    try await viewModel.signInGoogle()
+                                    withAnimation(.smooth) {
+                                        showSignInView = false
                                     }
+                                } catch {
+                                    print(error)
                                 }
-                                .padding()
-                                .padding(.horizontal)
-                                .frame(width: screenWidth / 3)
-
-                                HStack {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(height: 1)
-
-                                    Text("or")
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-                                        .padding(.horizontal, 10)
-
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(height: 1)
-                                }
-                                .padding(.horizontal)
-                                .frame(width: screenWidth / 4)
-
-                                Button {
-                                    viewModel.signInAsGuest()
-                                    showSignInView = false
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "person.fill")
-                                        Text("Continue as Guest")
-                                    }
-                                }
-                                .padding()
-                                .background(.gray.opacity(0.2))
-                                .cornerRadius(10)
-                                .padding(.horizontal)
                             }
-
+                        },
+                        signInGuest: {
+                            viewModel.signInAsGuest()
+                            showSignInView = false
                         }
-                    }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
                 } else {
                     ZStack {
                         if advSearchShown {  // add indexing is in TabStructs.swift
@@ -152,7 +102,10 @@ struct ContentView: View {
                                         PersistentTabHost(
                                             store: chatTabHost,
                                             rootView: AnyView(
-                                                ChatView(clubs: $clubs, userInfo: $userInfo)
+                                                ChatView(
+                                                    clubs: $clubs,
+                                                    userInfo: $userInfo
+                                                )
                                             )
                                         )
                                         .transition(.opacity)
@@ -166,7 +119,8 @@ struct ContentView: View {
                                                     clubs: $clubs,
                                                     userInfo: $userInfo,
                                                     viewModel: viewModel,
-                                                    schoolScheduleStore: schoolScheduleStore
+                                                    schoolScheduleStore:
+                                                        schoolScheduleStore
                                                 )
                                             )
                                         )

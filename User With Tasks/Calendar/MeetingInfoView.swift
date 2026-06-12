@@ -1,9 +1,8 @@
 import SwiftUI
-import SwiftUIX
 
 struct MeetingInfoView: View {
-    let screenWidth = UIScreen.main.bounds.width
-    let screenHeight = UIScreen.main.bounds.height
+    let screenWidth = appScreenBounds.width
+    let screenHeight = appScreenBounds.height
     @State var meeting: Club.MeetingTime
     @State var clubs: [Club]
     @State var openSettings = false
@@ -22,7 +21,7 @@ struct MeetingInfoView: View {
     @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
-        var club = clubs.first(where: { $0.clubID == meeting.clubID })!
+        let club = clubs.first(where: { $0.clubID == meeting.clubID })!
         var clubColor: Color {
             Color(
                 hexadecimal: club.clubColor
@@ -294,7 +293,7 @@ struct MeetingInfoView: View {
                             userInfo: $userInfo
                         )
                         .presentationDragIndicator(.visible)
-                        .frame(width: UIScreen.main.bounds.width / 1.05)
+                        .frame(width: appScreenBounds.width / 1.05)
                         .foregroundColor(nil)
                         .presentationBackground {
                             GlassBackground(color: clubColor)
@@ -309,7 +308,7 @@ struct MeetingInfoView: View {
         }
         .saturation(darkMode ? 1.3 : 1.0)
         .brightness(darkMode ? 0.3 : 0.0)
-        .animation(.smooth)
+        .implicitAnimation(.smooth)
         .sheet(isPresented: $openSettings) {
             AddMeetingView(
                 viewCloser: {

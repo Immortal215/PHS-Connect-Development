@@ -8,12 +8,11 @@ import PopupView
 import Pow
 import SDWebImageSwiftUI
 import SwiftUI
-import SwiftUIX
 
 struct ClubInfoView: View {
     @State var club: Club
-    var screenWidth = UIScreen.main.bounds.width
-    var screenHeight = UIScreen.main.bounds.height
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var createClubToggler = false
@@ -57,8 +56,7 @@ struct ClubInfoView: View {
                 let sortedAnnouncements = announcements.sorted {
                     let date1 = dateFromString($0.value.date)
                     let date2 = dateFromString($1.value.date)
-                    return (date1 ?? Date.distantPast)
-                        > (date2 ?? Date.distantPast)
+                    return date1 > date2
                 }
 
                 if let latestAnnouncementDate = sortedAnnouncements.first?.value
@@ -126,7 +124,12 @@ struct ClubInfoView: View {
                                         RoundedRectangle(cornerRadius: 25)
                                             .shimmering(
                                                 active: true,
-                                                duration: 2.4
+                                                animation: .easeInOut(
+                                                    duration: 2.4
+                                                )
+                                                .repeatForever(
+                                                    autoreverses: false
+                                                )
                                             )
                                     }
                                 }
@@ -244,10 +247,10 @@ struct ClubInfoView: View {
                                     )
                                     .padding(.vertical)
                                     .frame(
-                                        width: UIScreen.main.bounds.width / 1.1
+                                        width: appScreenBounds.width / 1.1
                                     )
                                     .foregroundStyle(.black)
-                                    .offset(x: UIScreen.main.bounds.width / 1.1)
+                                    .offset(x: appScreenBounds.width / 1.1)
                                 } else {
                                     MeetingView(
                                         meeting: closestMeeting,
@@ -261,10 +264,10 @@ struct ClubInfoView: View {
                                     )
                                     .padding(.vertical)
                                     .frame(
-                                        width: UIScreen.main.bounds.width / 1.1
+                                        width: appScreenBounds.width / 1.1
                                     )
                                     .foregroundStyle(.black)
-                                    .offset(x: UIScreen.main.bounds.width / 1.1)
+                                    .offset(x: appScreenBounds.width / 1.1)
                                 }
                             }
 
@@ -275,7 +278,7 @@ struct ClubInfoView: View {
                         Text("Members (\(club.members.count))")
                             .font(.headline)
 
-                        var mem = club.members.sorted {
+                        let mem = club.members.sorted {
                             $0.localizedCaseInsensitiveCompare($1)
                                 == .orderedAscending
                         }.joined(separator: ", ")
@@ -343,8 +346,7 @@ struct ClubInfoView: View {
                                 let sortedAnnouncements = announcements.sorted {
                                     let date1 = dateFromString($0.value.date)
                                     let date2 = dateFromString($1.value.date)
-                                    return (date1 ?? Date.distantPast)
-                                        > (date2 ?? Date.distantPast)
+                                    return date1 > date2
                                 }
 
                                 if let latestAnnouncementDate =
@@ -497,7 +499,7 @@ struct ClubInfoView: View {
             .popup(isPresented: $showMap) {
                 ZStack {
                     Map(position: $cameraPosition, interactionModes: []) {
-                        if let coords = club.locationInSchoolCoordinates {
+                        if club.locationInSchoolCoordinates != nil {
 
                         } else if !mapEditorMode {
 

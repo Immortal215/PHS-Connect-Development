@@ -30,7 +30,7 @@ struct MultiGenrePickerView: View {
                         }
                     }
                 }
-                .animation(.smooth)
+                .implicitAnimation(.smooth)
             }
 
             ForEach(genres.keys.sorted().reversed(), id: \.self) { section in

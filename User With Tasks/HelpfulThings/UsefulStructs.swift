@@ -2,7 +2,6 @@ import CommonSwiftUI
 import Pow
 import Shimmer
 import SwiftUI
-import SwiftUIX
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3
@@ -83,7 +82,11 @@ struct CodeSnippetView: View {
                         clicked = false
                     }
                 }
-                .shimmering(active: clicked, duration: 2.4)
+                .shimmering(
+                    active: clicked,
+                    animation: .easeInOut(duration: 2.4)
+                        .repeatForever(autoreverses: false)
+                )
 
             Button(action: {
                 UIPasteboard.general.string = replaceSchoologyExtras(code)
@@ -116,7 +119,7 @@ struct CodeSnippetView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.smooth)
+        .implicitAnimation(.smooth)
 
     }
 }

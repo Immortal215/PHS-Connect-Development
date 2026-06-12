@@ -11,7 +11,6 @@ import PhotosUI
 import Pow
 import SDWebImageSwiftUI
 import SwiftUI
-import SwiftUIX
 import UIKit
 import UniformTypeIdentifiers
 
@@ -60,8 +59,8 @@ enum ChatLoadingState: Equatable {
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
-    var screenWidth = UIScreen.main.bounds.width
-    var screenHeight = UIScreen.main.bounds.height
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("Animations+") var animationsPlus = false
     @AppStorage("selectedTab") var selectedTab = 3
@@ -171,9 +170,6 @@ struct ChatView: View {
 
         GeometryReader { geometry in
             let safeArea = geometry.safeAreaInsets
-            let availableWidth =
-                screenWidth - safeArea.leading - safeArea.trailing
-            let availableHeight = screenHeight - safeArea.top - safeArea.bottom
 
             NavigationStack {
                 HStack(spacing: 0) {
@@ -190,7 +186,7 @@ struct ChatView: View {
                         )
                         .frame(width: 60)
                         .padding(.top, safeArea.top + 8)
-                        .onChange(of: bubbleBuffer) { newValue in
+                        .onChange(of: bubbleBuffer) { _, newValue in
                             debounceCancellable?.cancel()
 
                             debounceCancellable = Just(newValue)
@@ -1111,7 +1107,7 @@ struct ChatView: View {
                     }
                     .ignoresSafeArea(.keyboard)
                 }
-                .onChange(of: selectedChatID) { selChatID in
+                .onChange(of: selectedChatID) { _, selChatID in
                     DispatchQueue.main.async {
                         if let chatListener = selChatID {
                             if !listeningChats.contains(chatListener) {
@@ -1168,7 +1164,7 @@ struct ChatView: View {
                 }
             }
         }
-        .onChange(of: openChatIDFromNotification) { _ in
+        .onChange(of: openChatIDFromNotification) { _, _ in
             DispatchQueue.main.async {
                 attemptOpenChatFromNotification()
             }
@@ -1182,7 +1178,7 @@ struct ChatView: View {
         .onChange(of: userInfo?.userID) {
             refreshChatSidebarCache()
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 if chatLoadingState == .loadingChats
                     || chatLoadingState == .preparingChats

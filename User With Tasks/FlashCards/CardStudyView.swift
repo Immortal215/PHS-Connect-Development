@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUIX
 
 struct CardStudyView: View {
     let card: Card

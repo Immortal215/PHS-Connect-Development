@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUIX
 
 struct StudyView: View {
     @State var allDecks: [Deck]

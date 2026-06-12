@@ -36,7 +36,7 @@ struct NumberView: View {
                     ),
                     value: scale
                 )
-                .onChange(of: completed) { newValue in
+                .onChange(of: completed) { _, newValue in
                     // trigger scale effect on number change
                     withAnimation {
                         scale = 1.5
@@ -78,7 +78,7 @@ struct RollingDigitView: View {
                 .opacity(isRolling ? 0 : 1)
             // .shadow(color: .gray, radius: 5)
         }
-        .onChange(of: currentDigit) { newValue in
+        .onChange(of: currentDigit) { _, newValue in
             rollToNextDigit(newValue)
         }
         .foregroundStyle(.black)

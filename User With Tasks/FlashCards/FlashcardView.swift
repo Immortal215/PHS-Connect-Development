@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUIX
 
 struct FlashcardView: View {
     var deck: Deck
@@ -28,7 +27,7 @@ struct FlashcardView: View {
                     .padding()
             }
         }
-        .frame(maxWidth: UIScreen.main.bounds.width / 1.1)
+        .frame(maxWidth: appScreenBounds.width / 1.1)
         .frame(height: 600)
         .background {
             ZStack {
@@ -76,7 +75,7 @@ struct FlashcardView: View {
                         .padding()
                     }
                 }
-                .frame(maxWidth: UIScreen.main.bounds.width / 1.1)
+                .frame(maxWidth: appScreenBounds.width / 1.1)
                 .frame(height: 600)
                 .background {
                     ZStack {

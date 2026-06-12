@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUIX
 
 struct FloatingTabBar: View {
     let tabsCache: UserTabPreferences?

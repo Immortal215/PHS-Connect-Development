@@ -6,13 +6,12 @@ import GoogleSignInSwift
 import PopupView
 import Pow
 import SwiftUI
-import SwiftUIX
 
 struct ClubView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
-    var screenWidth = UIScreen.main.bounds.width
-    var screenHeight = UIScreen.main.bounds.height
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
     @State var advSearchShown = true
@@ -79,7 +78,7 @@ struct ClubView: View {
                 ProgressView()
             }
         }
-        .animation(.smooth)
+        .implicitAnimation(.smooth)
         .onAppearOnce {
             notificationCount = unreadCount(from: clubs)
 

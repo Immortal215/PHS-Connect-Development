@@ -4,8 +4,8 @@ import SwiftUI
 import UserNotifications
 
 struct Pomo: View {
-    @State var screenWidth = UIScreen.main.bounds.width
-    @State var screenHeight = UIScreen.main.bounds.height
+    @State var screenWidth = appScreenBounds.width
+    @State var screenHeight = appScreenBounds.height
     @AppStorage("pomotimer") var pomoTime = 1500
     @AppStorage("breakTime") var breakTime = 300
     @AppStorage("breaks") var breaks = 4
@@ -146,7 +146,7 @@ struct Pomo: View {
                                                     .custom("", fixedSize: 50)
                                                 )
                                                 .foregroundStyle(.white)
-                                                .animation(
+                                                .implicitAnimation(
                                                     .bouncy(
                                                         duration: 1,
                                                         extraBounce: 0.1
@@ -206,7 +206,7 @@ struct Pomo: View {
                                 .stroke(lineWidth: 25)
                                 .opacity(0.3)
                                 .foregroundColor(.gray)
-                                .animation(.linear(duration: 1))
+                                .implicitAnimation(.linear(duration: 1))
 
                                 RoundedRectangle(
                                     cornerRadius: CGFloat(cornerRadius)
@@ -229,7 +229,7 @@ struct Pomo: View {
                                     )
                                 )
                                 .rotationEffect(Angle(degrees: -90.0))
-                                .animation(.linear(duration: 1))
+                                .implicitAnimation(.linear(duration: 1))
                                 .foregroundStyle(breakText ? .green : .pink)
                                 .opacity(0.3)
 
@@ -311,7 +311,7 @@ struct Pomo: View {
                                                     .custom("", fixedSize: 25)
                                                 )
                                                 .foregroundStyle(.white)
-                                                .animation(
+                                                .implicitAnimation(
                                                     .bouncy(
                                                         duration: 1,
                                                         extraBounce: 0.1
@@ -356,7 +356,7 @@ struct Pomo: View {
                                                 ? 0 : -10
                                         )
                                 }
-                                .animation(
+                                .implicitAnimation(
                                     .spring(
                                         duration: 1,
                                         bounce: 0.3,
@@ -392,7 +392,7 @@ struct Pomo: View {
                     }
                     .frame(width: screenWidth / 2)
                 }
-                .animation(.snappy(duration: 0.3, extraBounce: 0.3))
+                .implicitAnimation(.snappy(duration: 0.3, extraBounce: 0.3))
             }
 
         }

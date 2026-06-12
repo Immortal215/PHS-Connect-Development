@@ -5,7 +5,6 @@ import GoogleSignIn
 import GoogleSignInSwift
 import Pow
 import SwiftUI
-import SwiftUIX
 
 struct HomePageScrollers: View {
     @State var filteredClubs: [Club]
@@ -13,8 +12,8 @@ struct HomePageScrollers: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
     @State var viewModel: AuthenticationViewModel
-    @State var screenHeight = UIScreen.main.bounds.height
-    @State var screenWidth = UIScreen.main.bounds.width
+    @State var screenHeight = appScreenBounds.height
+    @State var screenWidth = appScreenBounds.width
     @Binding var userInfo: Personal?
     @State var scrollerOf: String
     @AppStorage("selectedTab") var selectedTab = 3
@@ -64,7 +63,7 @@ struct HomePageScrollers: View {
                                     )
                                     .presentationDragIndicator(.visible)
                                     .frame(
-                                        width: UIScreen.main.bounds.width / 1.05
+                                        width: appScreenBounds.width / 1.05
                                     )
                                     .presentationBackground {
                                         GlassBackground(

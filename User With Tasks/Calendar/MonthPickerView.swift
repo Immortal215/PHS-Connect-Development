@@ -348,9 +348,7 @@ struct MonthPickerView: View {
                                                                 .frame(
                                                                     height:
                                                                         isTubeView
-                                                                        ? UIScreen
-                                                                            .main
-                                                                            .bounds
+                                                                        ? appScreenBounds
                                                                             .height
                                                                             / 4
                                                                         : nil
@@ -361,8 +359,7 @@ struct MonthPickerView: View {
                                                                 }
                                                             }
                                                             .frame(
-                                                                width: UIScreen
-                                                                    .main.bounds
+                                                                width: appScreenBounds
                                                                     .width
                                                                     / 1.05 / 7
                                                                     - 16
@@ -405,7 +402,7 @@ struct MonthPickerView: View {
                             selection: $selectedDate,
                             displayedComponents: [.date]
                         )
-                        .onChange(of: selectedDate) { newDate in
+                        .onChange(of: selectedDate) { _, newDate in
                             currentYear = Calendar.current.component(
                                 .year,
                                 from: newDate
@@ -426,7 +423,7 @@ struct MonthPickerView: View {
                 }
             }
         }
-        .animation(.smooth)
+        .implicitAnimation(.smooth)
     }
 
     func loadMeetings() {

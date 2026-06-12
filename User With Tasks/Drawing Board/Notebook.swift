@@ -2,8 +2,8 @@ import Pow
 import SwiftUI
 
 struct Notebook: View {
-    @State var screenWidth = UIScreen.main.bounds.width
-    @State var screenHeight = UIScreen.main.bounds.height
+    @State var screenWidth = appScreenBounds.width
+    @State var screenHeight = appScreenBounds.height
 
     @AppStorage("completed") var completed = 0
 
@@ -107,7 +107,7 @@ struct Notebook: View {
                                     )
                                     .frame(width: loadedData ? 150 : 0)
                             }
-                            .animation(.snappy(duration: 1, extraBounce: 0.1))
+                            .implicitAnimation(.snappy(duration: 1, extraBounce: 0.1))
 
                             // make assignment
                             .sheet(isPresented: $showAlert) {
@@ -542,7 +542,7 @@ struct Notebook: View {
                                 .frame(width: loadedData ? 150 : 0)
                                 .scaleEffect(deleted ? 1.4 : 1.0)
                             }
-                            .animation(.bouncy(duration: 1, extraBounce: 0.1))
+                            .implicitAnimation(.bouncy(duration: 1, extraBounce: 0.1))
 
                         }
                     }
@@ -630,7 +630,7 @@ struct Notebook: View {
                                                     ? .red : .blue
                                             )
 
-                                            .animation(.snappy())
+                                            .implicitAnimation(.snappy())
                                             // only works on mac
                                             .onHover { hovering in
                                                 if hovering {
@@ -1698,15 +1698,15 @@ struct Notebook: View {
 
                                 }
                                 .strikethrough(selectDelete[index])
-                                .animation(.bouncy(duration: 1))
+                                .implicitAnimation(.bouncy(duration: 1))
 
                             }
                             .foregroundStyle(.blue)
                             .padding(10)
 
                         }
-                        //     .animation(.interactiveSpring(response: 0.5, dampingFraction: 0.8, blendDuration: 1.0))
-                        .animation(.bouncy(duration: 1))
+                        //     .implicitAnimation(.interactiveSpring(response: 0.5, dampingFraction: 0.8, blendDuration: 1.0))
+                        .implicitAnimation(.bouncy(duration: 1))
                         .offset(y: -25)
                         .defaultScrollAnchor(
                             infoArray.count > 2 ? .bottom : .top

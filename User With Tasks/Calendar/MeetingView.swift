@@ -8,7 +8,7 @@ struct MeetingView: View {
     var preview: Bool? = false
     @State var clubs: [Club]
     var numOfOverlapping: Int? = 1
-    var screenWidth = UIScreen.main.bounds.width
+    var screenWidth = appScreenBounds.width
     var hasOverlap: Bool? = false
     @AppStorage("darkMode") var darkMode = false
 

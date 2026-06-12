@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUIX
 
 struct SmartStudyView: View {
     @Binding var deck: Deck

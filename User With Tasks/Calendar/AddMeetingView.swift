@@ -2,7 +2,6 @@ import FirebaseCore
 import FirebaseDatabase
 import PopupView
 import SwiftUI
-import SwiftUIX
 
 struct AddMeetingView: View {
     @State var title = ""
@@ -160,7 +159,7 @@ struct AddMeetingView: View {
                         text: $description,
                         selectedRange: $selectedRange
                     )
-                    .frame(height: UIScreen.main.bounds.height / 4)
+                    .frame(height: appScreenBounds.height / 4)
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
                     .overlay(
@@ -358,7 +357,7 @@ struct AddMeetingView: View {
                         }
                     }
                     .padding()
-                    .frame(height: UIScreen.main.bounds.height / 4)
+                    .frame(height: appScreenBounds.height / 4)
                 }
 
                 Text("Preview:")
@@ -381,9 +380,9 @@ struct AddMeetingView: View {
                                 clubs: leaderClubs
                             )
                             .padding()
-                            .frame(width: UIScreen.main.bounds.width / 1.1)
+                            .frame(width: appScreenBounds.width / 1.1)
                             .foregroundStyle(.primary)
-                            .offset(x: UIScreen.main.bounds.width / 1.1)
+                            .offset(x: appScreenBounds.width / 1.1)
                         } else {
                             MeetingView(
                                 meeting: meetingTimeForInfo,
@@ -394,9 +393,9 @@ struct AddMeetingView: View {
                                 clubs: leaderClubs
                             )
                             .padding()
-                            .frame(width: UIScreen.main.bounds.width / 1.1)
+                            .frame(width: appScreenBounds.width / 1.1)
                             .foregroundStyle(.primary)
-                            .offset(x: UIScreen.main.bounds.width / 1.1)
+                            .offset(x: appScreenBounds.width / 1.1)
                         }
                     }
                     .padding(.top, CGFloat(endMinutes - startMinutes))
@@ -620,7 +619,7 @@ struct AddMeetingView: View {
 
         let selectedText = description[textRange]
         if selectedText != "" {
-            var linkr = ensureURL(from: link)
+            let linkr = ensureURL(from: link)
             let modifiedText =
                 "[\(selectedText.trimmingCharacters(in: .whitespaces))](\(linkr))"
 

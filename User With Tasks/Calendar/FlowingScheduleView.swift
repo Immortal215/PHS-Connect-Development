@@ -1,6 +1,5 @@
 import PopupView
 import SwiftUI
-import SwiftUIX
 
 struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]
@@ -35,7 +34,7 @@ struct FlowingScheduleView: View {
                     GeometryReader { geometry in
                         Color.clear
                             .onChange(of: geometry.frame(in: .global).minY) {
-                                minY in
+                                _, minY in
 
                                 if minY > screenHeight * 0.22 {
                                     proxy.scrollTo(0, anchor: .bottom)  // needed so it doesnt crash for some reason when scrolling to top
@@ -94,7 +93,7 @@ struct FlowingScheduleView: View {
                                             (columnAssignments.map { $0.column }
                                                 .max() ?? 0) + 1
                                         let totalWidth =
-                                            UIScreen.main.bounds.width / 1.1
+                                            appScreenBounds.width / 1.1
                                         let schoolEventWidth = totalWidth
 
                                         ForEach(schoolTimelineEvents, id: \.id)
@@ -393,7 +392,7 @@ struct FlowingScheduleView: View {
 
                                     }
                                 }
-                                .frame(width: UIScreen.main.bounds.width / 1.1)
+                                .frame(width: appScreenBounds.width / 1.1)
                             }
                         }
                     }

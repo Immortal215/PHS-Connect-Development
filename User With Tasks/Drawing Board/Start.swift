@@ -36,7 +36,7 @@ struct Start: View {
                                 .frame(width: 200, height: 200)
                                 .rotationEffect(.degrees(starter ? 0.0 : 15.0))
                                 .scaleEffect(starter ? 1.3 : 1.0)
-                                .animation(
+                                .implicitAnimation(
                                     starter
                                         ? .easeIn(duration: 0)
                                         : .bouncy(duration: 1, extraBounce: 0.3)
@@ -67,7 +67,7 @@ struct Start: View {
 
                             .offset(x: 0, y: starter ? -100 : 0)
 
-                            .animation(.bouncy(duration: 1, extraBounce: 0.1))
+                            .implicitAnimation(.bouncy(duration: 1, extraBounce: 0.1))
                             .overlay(
                                 Text("Start Planning")
                                     .font(.custom("", fixedSize: 50))
@@ -78,7 +78,7 @@ struct Start: View {
                                         alignment: .center
                                     )
                                     .offset(x: 0, y: starter ? -100 : 0)
-                                    .animation(
+                                    .implicitAnimation(
                                         .bouncy(duration: 1, extraBounce: 0.1)
                                     )
                             )

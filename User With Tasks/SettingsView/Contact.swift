@@ -72,8 +72,8 @@ struct FeatureReportButton: View {
         Device Information:
         • Model: \(UIDevice.current.model)
         • iOS Version: \(UIDevice.current.systemVersion)
-        • Device Width: \(UIScreen.main.bounds.width)
-        • Device Height: \(UIScreen.main.bounds.height)
+        • Device Width: \(appScreenBounds.width)
+        • Device Height: \(appScreenBounds.height)
         • User UID : \(uid)
         • App Version : \(changeLogViewModel.currentVersion.version)
 

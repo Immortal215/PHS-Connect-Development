@@ -8,13 +8,12 @@ import PopupView
 import Pow
 import Shimmer
 import SwiftUI
-import SwiftUIX
 
 struct SearchClubView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
-    var screenWidth = UIScreen.main.bounds.width
-    var screenHeight = UIScreen.main.bounds.height
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
     @AppStorage("shownInfo") var shownInfo = -1
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
@@ -45,7 +44,7 @@ struct SearchClubView: View {
                             .bold()
                             .padding()
                             .foregroundColor(.primary)
-                            .animation(.smooth)
+                            .implicitAnimation(.smooth)
 
                         if loadingClubs {
                             ProgressView()
@@ -402,7 +401,7 @@ struct SearchClubView: View {
                                                         ?? 1.0
                                                 )
                                             )
-                                            .animation(.smooth)
+                                            .implicitAnimation(.smooth)
                                             .opacity(0)
                                             // .position(x: screenWidth/2, y: -positionOfClub(clubID: chosenClub.clubID))
                                         }
@@ -421,7 +420,7 @@ struct SearchClubView: View {
                                             )
                                             .presentationDragIndicator(.visible)
                                             .frame(
-                                                width: UIScreen.main.bounds
+                                                width: appScreenBounds
                                                     .width / 1.05
                                             )
                                             .presentationBackground {

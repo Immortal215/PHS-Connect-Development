@@ -115,6 +115,6 @@ struct TabBarButtonDrawing: View {
             }
         }
         .shadow(color: .gray, radius: 5)
-        .animation(.bouncy(duration: 1, extraBounce: 0.3))
+        .implicitAnimation(.bouncy(duration: 1, extraBounce: 0.3))
     }
 }

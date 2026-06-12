@@ -5,7 +5,6 @@ import GoogleSignIn
 import GoogleSignInSwift
 import Pow
 import SwiftUI
-import SwiftUIX
 
 struct AddAnnouncementSheet: View {
     @State var clubName: String
@@ -64,7 +63,7 @@ struct AddAnnouncementSheet: View {
                     .onChange(of: announcementBody) {
                         setAnnouncementToValues()
                     }
-                    .frame(height: UIScreen.main.bounds.height / 4)
+                    .frame(height: appScreenBounds.height / 4)
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
                     .overlay(
@@ -346,7 +345,7 @@ struct AddAnnouncementSheet: View {
 
         let selectedText = announcementBody[textRange]
         if selectedText != "" {
-            var linkr = ensureURL(from: link)
+            let linkr = ensureURL(from: link)
             let modifiedText =
                 "[\(selectedText.trimmingCharacters(in: .whitespaces))](\(linkr))"
 
@@ -575,7 +574,7 @@ struct AllAnnouncementsView: View {
                 }
                 .frame(
                     width: isTheHomeScreenClubView
-                        ? UIScreen.main.bounds.width / 3 : nil
+                        ? appScreenBounds.width / 3 : nil
                 )
                 .padding(.horizontal, isTheHomeScreenClubView ? 0 : 16)
                 .sheet(item: $selectedAnnouncement) { selected in
@@ -725,7 +724,7 @@ struct SingleAnnouncementView: View {
                     userInfo: $userInfo
                 )
                 .presentationDragIndicator(.visible)
-                .frame(width: UIScreen.main.bounds.width / 1.05)
+                .frame(width: appScreenBounds.width / 1.05)
                 .foregroundColor(nil)
                 .presentationBackground {
                     GlassBackground()

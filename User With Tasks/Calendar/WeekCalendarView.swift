@@ -60,7 +60,7 @@ struct WeekCalendarView: View {
                         schoolScheduleStore: schoolScheduleStore,
                         viewModel: viewModel
                     )
-                    .frame(width: UIScreen.main.bounds.width / 1.05)
+                    .frame(width: appScreenBounds.width / 1.05)
                     .cornerRadius(25)
                 }
 

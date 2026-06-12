@@ -1,5 +1,5 @@
 {
-  "originHash" : "168f259060dbe4f37a2930b81ffd60dcbdc485bfea3979aa5c141b332eab18a9",
+  "originHash" : "02f34b0e77c935c5c78c64b1a969d470b45af84fa1e7f725452f68e644d817b0",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -88,7 +88,7 @@
       "location" : "https://github.com/Finalet/Elegant-Emoji-Picker.git",
       "state" : {
         "branch" : "main",
-        "revision" : "31605313f26a5997495aba6906b1c5bf8bf7b124"
+        "revision" : "ceff7ebc438b32faef65db16dab7d8ac3c7e7c2e"
       }
     },
     {
@@ -222,8 +222,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/promises.git",
       "state" : {
-        "revision" : "540318ecedd63d883069ae7f1ed811a2df00b6ac",
-        "version" : "2.4.0"
+        "revision" : "f4a19a3c313dc2616c70bb49d29a799fb16be837",
+        "version" : "2.4.1"
       }
     },
     {
@@ -258,8 +258,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
-        "revision" : "81558271e243f8f47dfe8e9fdd55f3c2b5413f68",
-        "version" : "1.37.0"
+        "revision" : "f6506eaa86ed2e01cb0ae14a75035b7fdbf0918f",
+        "version" : "1.38.0"
       }
     },
     {
@@ -287,15 +287,6 @@
       "state" : {
         "revision" : "0226e21f9bf355d40e07e5f5e1c33679d50e167f",
         "version" : "1.5.1"
-      }
-    },
-    {
-      "identity" : "swiftuix",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SwiftUIX/SwiftUIX.git",
-      "state" : {
-        "revision" : "1a320308dd3b630e12ab1e4f13e1897e65a5414d",
-        "version" : "0.3.0"
       }
     }
   ],

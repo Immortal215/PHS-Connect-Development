@@ -26,7 +26,7 @@ struct SettingsView: View {
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
     @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen =
         "0.1.0 Alpha"
-    var screenHeight = UIScreen.main.bounds.height
+    var screenHeight = appScreenBounds.height
     @State var isNewChangeLogShown = false
     @State var recentVersionForChangelogLibrary: Changelog = Changelog.init(
         version: "0.1.0 Alpha",
@@ -172,7 +172,7 @@ struct SettingsView: View {
                             colors: [.gray, .green],
                             images: ["lightbulb.slash", "sun.dust"]
                         )
-                        .onChange(of: autoBuffer) { newValue in
+                        .onChange(of: autoBuffer) { _, newValue in
                             debounceCancellable?.cancel()
 
                             debounceCancellable = Just(newValue)
@@ -199,7 +199,7 @@ struct SettingsView: View {
                             ],
                             images: ["moon.fill", "sun.max.fill"]
                         )
-                        .onChange(of: darkModeBuffer) { newValue in  // need all this stuff to make sure that when dark mode is changing (with a lil lag) it does not impede the switching animation which would look like lag
+                        .onChange(of: darkModeBuffer) { _, newValue in  // need all this stuff to make sure that when dark mode is changing (with a lil lag) it does not impede the switching animation which would look like lag
                             debounceCancellable?.cancel()
 
                             debounceCancellable = Just(newValue)
@@ -220,7 +220,7 @@ struct SettingsView: View {
                         colors: [.blue, .orange],
                         images: ["star.fill", "star.slash.fill"]
                     )
-                    .onChange(of: animationsPlusBuffer) { newValue in  // to make the animation smoother when toggling
+                    .onChange(of: animationsPlusBuffer) { _, newValue in  // to make the animation smoother when toggling
                         animationsPlus = animationsPlusBuffer
                     }
                     Text(

@@ -5,7 +5,6 @@ import GoogleSignIn
 import GoogleSignInSwift
 import Pow
 import SwiftUI
-import SwiftUIX
 
 struct CreateClubView: View {
     @State var clubTitle = ""
@@ -116,7 +115,7 @@ struct CreateClubView: View {
                         if schoology.replacingOccurrences(of: "-", with: "")
                             .count > 12
                         {
-                            var cutSchool = schoology.replacingOccurrences(
+                            let cutSchool = schoology.replacingOccurrences(
                                 of: "-",
                                 with: ""
                             )
@@ -234,8 +233,8 @@ struct CreateClubView: View {
                                 .stroke(.gray, lineWidth: 1)
                         )
                         .frame(
-                            minHeight: UIScreen.main.bounds.height / 8,
-                            maxHeight: UIScreen.main.bounds.height / 4
+                            minHeight: appScreenBounds.height / 8,
+                            maxHeight: appScreenBounds.height / 4
                         )
                         .fixedSize(horizontal: false, vertical: true)
                 } label: {

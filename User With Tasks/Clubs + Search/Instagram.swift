@@ -13,8 +13,10 @@ struct InstagramSafariView: UIViewControllerRepresentable {
             url: url,
             configuration: config
         )
-        safariViewController.preferredBarTintColor = UIColor.systemBackground
-        safariViewController.preferredControlTintColor = UIColor.systemBlue
+        if #unavailable(iOS 26.0) {
+            safariViewController.preferredBarTintColor = UIColor.systemBackground
+            safariViewController.preferredControlTintColor = UIColor.systemBlue
+        }
         safariViewController.dismissButtonStyle = .close
 
         return safariViewController

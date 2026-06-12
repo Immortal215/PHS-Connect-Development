@@ -3,8 +3,8 @@ import SwiftUI
 
 struct Settinger: View {
 
-    @State var screenWidth = UIScreen.main.bounds.width
-    @State var screenHeight = UIScreen.main.bounds.height
+    @State var screenWidth = appScreenBounds.width
+    @State var screenHeight = appScreenBounds.height
 
     @AppStorage("duedatesetter") var dueDateSetter = "Two Days"
     @State var dueDaters: [String] = [
@@ -318,7 +318,7 @@ struct Settinger: View {
                                     .stroke(lineWidth: 10)
                                     .opacity(0.3)
                                     .foregroundColor(.gray)
-                                    .animation(.linear(duration: 1))
+                                    .implicitAnimation(.linear(duration: 1))
 
                                     RoundedRectangle(
                                         cornerRadius: CGFloat(cornerRadius / 3)
@@ -332,7 +332,7 @@ struct Settinger: View {
                                         )
                                     )
                                     .rotationEffect(Angle(degrees: -90.0))
-                                    .animation(.linear(duration: 1))
+                                    .implicitAnimation(.linear(duration: 1))
                                     .opacity(0.3)
 
                                     Text("Tap Me!\n\(cornerRadius)")

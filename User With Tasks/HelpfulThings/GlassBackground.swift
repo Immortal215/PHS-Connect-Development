@@ -31,7 +31,7 @@ struct GlassBackground: View {
     }
 }
 
-struct AnyShape: Shape {
+struct AnyShape: Shape, @unchecked Sendable {
     let _path: (CGRect) -> Path
 
     init<S: Shape>(_ shape: S) {

@@ -61,7 +61,7 @@ struct SchoolScheduleTimelineEventView: View {
     let event: SchoolScheduleEvent
     let scale: Double
     let hourHeight: CGFloat
-    var screenWidth = UIScreen.main.bounds.width
+    var screenWidth = appScreenBounds.width
     @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
