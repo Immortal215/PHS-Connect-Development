@@ -124,7 +124,7 @@ struct RandomShapesBackground: View {
 }
 
 extension RandomShapesBackground {
-    fileprivate struct CircleSpec {
+    struct CircleSpec {
         let x: CGFloat
         let y: CGFloat
         let size: CGFloat
@@ -132,7 +132,7 @@ extension RandomShapesBackground {
         let blur: CGFloat
     }
 
-    fileprivate struct ShapeSpec {
+    struct ShapeSpec {
         let x: CGFloat
         let y: CGFloat
         let width: CGFloat
@@ -143,7 +143,7 @@ extension RandomShapesBackground {
         let cornerRadius: CGFloat
     }
 
-    fileprivate var circleSpecs: [CircleSpec] {
+    var circleSpecs: [CircleSpec] {
         [
             .init(x: 0.08, y: 0.14, size: 120, opacity: 0.09, blur: 8),
             .init(x: 0.86, y: 0.10, size: 140, opacity: 0.08, blur: 10),
@@ -157,7 +157,7 @@ extension RandomShapesBackground {
         ]
     }
 
-    fileprivate var rectSpecs: [ShapeSpec] {
+    var rectSpecs: [ShapeSpec] {
         [
             .init(
                 x: 0.26,
@@ -212,7 +212,7 @@ extension RandomShapesBackground {
         ]
     }
 
-    fileprivate var rhombusSpecs: [ShapeSpec] {
+    var rhombusSpecs: [ShapeSpec] {
         [
             .init(
                 x: 0.13,

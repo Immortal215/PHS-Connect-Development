@@ -1,8 +1,8 @@
 import Foundation
 
 struct CalendarMeetingIndex {
-    private let visibleMeetingsByDay: [String: [Club.MeetingTime]]
-    private let monthMeetingCountsByDay:
+    let visibleMeetingsByDay: [String: [Club.MeetingTime]]
+    let monthMeetingCountsByDay:
         [String: [(clubID: String, count: Int)]]
 
     init(clubs: [Club], userEmail: String?) {

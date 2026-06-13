@@ -643,8 +643,9 @@ struct NonBubbleMessageView: View {
         }
 
         loadingUsers.insert(userID)
-        fetchUser(for: userID) { user in
-            DispatchQueue.main.async {
+        Task {
+            let user = await fetchUser(for: userID)
+            await MainActor.run {
                 users[userID] = user
                 loadingUsers.remove(userID)
             }
@@ -735,7 +736,9 @@ struct NonBubbleMessageView: View {
         chats[chatIndex].messages?[messageIndex].flagged = flagged
 
         if let updatedMessage = chats[chatIndex].messages?[messageIndex] {
-            sendMessage(chatID: selectedChatID, message: updatedMessage)
+            Task {
+                await sendMessage(chatID: selectedChatID, message: updatedMessage)
+            }
         }
     }
 
@@ -761,7 +764,9 @@ struct NonBubbleMessageView: View {
         }
 
         newMessage.reactions = reactions
-        sendMessage(chatID: chatID, message: newMessage)
+        Task {
+            await sendMessage(chatID: chatID, message: newMessage)
+        }
     }
 
     func sortedReactionPairs(for message: Chat.ChatMessage) -> [(

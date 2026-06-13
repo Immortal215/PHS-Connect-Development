@@ -221,15 +221,18 @@ struct SchoolScheduleBreakDraft: Identifiable {
 }
 
 struct SchoolScheduleEditorView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var rotationStartDate: Date
-    @State private var breakDrafts: [SchoolScheduleBreakDraft]
-    private let specialDays: [SchoolScheduleSpecialDayOverride]
-    @State private var isSaving = false
+    @Environment(\.dismiss) var dismiss
+    @State var rotationStartDate: Date
+    @State var breakDrafts: [SchoolScheduleBreakDraft]
+    let specialDays: [SchoolScheduleSpecialDayOverride]
+    @State var isSaving = false
     
-    let onSave: (SchoolScheduleConfig, @escaping (Bool) -> Void) -> Void
+    let onSave: (SchoolScheduleConfig) async -> Bool
     
-    init(config: SchoolScheduleConfig, onSave: @escaping (SchoolScheduleConfig, @escaping (Bool) -> Void) -> Void) {
+    init(
+        config: SchoolScheduleConfig,
+        onSave: @escaping (SchoolScheduleConfig) async -> Bool
+    ) {
         let startDate = schoolScheduleDate(from: config.rotationStartDate) ?? Date()
         _rotationStartDate = State(initialValue: startDate)
         _breakDrafts = State(
@@ -348,7 +351,7 @@ struct SchoolScheduleEditorView: View {
         }
     }
     
-    private func save() {
+    func save() {
         isSaving = true
         
         let breakRanges = breakDrafts.map { draft -> SchoolBreakRange in
@@ -369,8 +372,9 @@ struct SchoolScheduleEditorView: View {
             lastUpdated: nil
         )
         
-        onSave(updatedConfig) { success in
-            DispatchQueue.main.async {
+        Task {
+            let success = await onSave(updatedConfig)
+            await MainActor.run {
                 isSaving = false
                 if success {
                     dismiss()

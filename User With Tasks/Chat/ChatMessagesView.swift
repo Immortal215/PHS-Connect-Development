@@ -26,11 +26,11 @@ struct MessageScrollView: View {
     let messageVersion: Int
     @State var loadingUsers: Set<String> = []
     @State var expandedURLPreviewMessageID: String? = nil
-    @State private var lastVisibleMessageID: String?
+    @State var lastVisibleMessageID: String?
 
     @Binding var openMessageIDFromNotification: String?
 
-    @Environment(\.openURL) private var openURL
+    @Environment(\.openURL) var openURL
 
     var selectedChat: Chat? {
         guard let selectedChatID else { return nil }
@@ -134,7 +134,9 @@ struct MessageScrollView: View {
 
                     newMessage.reactions = reactions
 
-                    sendMessage(chatID: chatID, message: newMessage)
+                    Task {
+                        await sendMessage(chatID: chatID, message: newMessage)
+                    }
 
                     selectedEmoji = nil
                     isEmojiPickerPresented = false
@@ -1550,12 +1552,14 @@ struct MessageScrollView: View {
                                                                                         messageIndex
                                                                                     ]
                                                                                 {
-                                                                                    sendMessage(
-                                                                                        chatID:
-                                                                                            selectedChatID,
-                                                                                        message:
-                                                                                            updatedMessage
-                                                                                    )
+                                                                                    Task {
+                                                                                        await sendMessage(
+                                                                                            chatID:
+                                                                                                selectedChatID,
+                                                                                            message:
+                                                                                                updatedMessage
+                                                                                        )
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
@@ -1641,12 +1645,14 @@ struct MessageScrollView: View {
                                                                                         messageIndex
                                                                                     ]
                                                                                 {
-                                                                                    sendMessage(
-                                                                                        chatID:
-                                                                                            selectedChatID,
-                                                                                        message:
-                                                                                            updatedMessage
-                                                                                    )
+                                                                                    Task {
+                                                                                        await sendMessage(
+                                                                                            chatID:
+                                                                                                selectedChatID,
+                                                                                            message:
+                                                                                                updatedMessage
+                                                                                        )
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
@@ -1869,7 +1875,9 @@ struct MessageScrollView: View {
                         }
 
                         newMessage.reactions = reactions
-                        sendMessage(chatID: chatID, message: newMessage)
+                        Task {
+                            await sendMessage(chatID: chatID, message: newMessage)
+                        }
                     }
                 }
 
@@ -1937,8 +1945,9 @@ struct MessageScrollView: View {
         }
 
         loadingUsers.insert(userID)
-        fetchUser(for: userID) { user in
-            DispatchQueue.main.async {
+        Task {
+            let user = await fetchUser(for: userID)
+            await MainActor.run {
                 users[userID] = user
                 loadingUsers.remove(userID)
             }
@@ -1950,5 +1959,7 @@ struct MessageScrollView: View {
 func deleteMessage(chatID: String, message: Chat.ChatMessage) {
     var deletedMessage = message
     deletedMessage.message = "[Deleted Message]"
-    sendMessage(chatID: chatID, message: deletedMessage)
+    Task {
+        await sendMessage(chatID: chatID, message: deletedMessage)
+    }
 }

@@ -39,8 +39,8 @@ struct ContentView: View {
 
     @State var tabsCache: UserTabPreferences?
     @State var tabChooserPageOpen = false
-    @StateObject private var chatTabHost = PersistentTabHostStore()
-    @StateObject private var calendarTabHost = PersistentTabHostStore()
+    @StateObject var chatTabHost = PersistentTabHostStore()
+    @StateObject var calendarTabHost = PersistentTabHostStore()
 
     var body: some View {
         VStack {
@@ -187,14 +187,15 @@ struct ContentView: View {
                         schoolScheduleStore.loadIfNeeded()
 
                         if let UserID = viewModel.uid, !viewModel.isGuestUser {
-                            fetchUser(for: UserID) { fetchedUser in
+                            Task {
+                                let fetchedUser = await fetchUser(for: UserID)
                                 if let user = fetchedUser {
-                                    DispatchQueue.main.async {
+                                    await MainActor.run {
                                         userInfo = user
                                     }
                                 } else {
                                     print("Failed to fetch user")
-                                    DispatchQueue.main.async {
+                                    await MainActor.run {
                                         showSignInView = true
                                     }
                                 }

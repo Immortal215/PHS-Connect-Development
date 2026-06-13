@@ -465,7 +465,6 @@ func scheduleTimeBasedNotification(
                 },
                 position: .top,
                 duration: 10.0,
-                accessibility: "Alert: Title, Subtitle"
             )
             Drops.show(drop)
 

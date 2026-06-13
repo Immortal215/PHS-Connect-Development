@@ -353,8 +353,11 @@ struct ClubCard: View {
     func refreshUserInfo() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             if let userID = viewModel.uid {
-                fetchUser(for: userID) { user in
-                    userInfo = user
+                Task {
+                    let user = await fetchUser(for: userID)
+                    await MainActor.run {
+                        userInfo = user
+                    }
                 }
             }
         }

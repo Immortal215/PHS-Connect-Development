@@ -14,7 +14,6 @@ func dropper(title: String, subtitle: String, icon: UIImage?) {
         },
         position: .top,
         duration: 3.0,
-        accessibility: "Alert: Title, Subtitle"
     )
     Drops.show(drop)
 }

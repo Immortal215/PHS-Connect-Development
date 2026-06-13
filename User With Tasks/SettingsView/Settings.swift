@@ -433,17 +433,29 @@ struct SettingsView: View {
     func setGlobalChatsEnabled(_ enabled: Bool) {
         guard isSuperAdmin else { return }
         isSavingGlobalChatsSetting = true
-        globalChatsRef?.setValue(enabled) { error, _ in
-            DispatchQueue.main.async {
-                isSavingGlobalChatsSetting = false
-                if let error {
+        guard let globalChatsRef else {
+            isSavingGlobalChatsSetting = false
+            return
+        }
+
+        Task {
+            do {
+                try await setFirebaseValue(enabled, at: globalChatsRef)
+                await MainActor.run {
+                    isSavingGlobalChatsSetting = false
+                }
+            } catch {
+                await MainActor.run {
+                    isSavingGlobalChatsSetting = false
                     print(
                         "Failed to update /global/chatsEnabled: \(error.localizedDescription)"
                     )
-                    globalChatsRef?.observeSingleEvent(of: .value) { snapshot in
-                        globalChatsEnabled =
-                            boolFromGlobalSetting(snapshot.value) ?? true
-                    }
+                }
+
+                let snapshot = await observeSingleValue(at: globalChatsRef)
+                await MainActor.run {
+                    globalChatsEnabled =
+                        boolFromGlobalSetting(snapshot.value) ?? true
                 }
             }
         }

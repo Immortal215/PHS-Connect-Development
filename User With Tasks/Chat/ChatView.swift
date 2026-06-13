@@ -595,30 +595,32 @@ struct ChatView: View {
                                                                     )
                                                                 {
 
-                                                                    sendMessage(
-                                                                        chatID:
-                                                                            selected
-                                                                            .chatID,
-                                                                        message:
-                                                                            Chat
-                                                                            .ChatMessage(
-                                                                                messageID:
-                                                                                    String(),
-                                                                                message:
-                                                                                    "New Thread \(trimmed) Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
-                                                                                sender:
-                                                                                    userInfo?
-                                                                                    .userID
-                                                                                    ?? "",
-                                                                                date:
-                                                                                    Date()
-                                                                                    .timeIntervalSince1970,
-                                                                                threadName:
-                                                                                    trimmed,
-                                                                                systemGenerated:
-                                                                                    true
-                                                                            )
-                                                                    )
+                                                                    Task {
+                                                                        await sendMessage(
+                                                                            chatID:
+                                                                                selected
+                                                                                .chatID,
+                                                                            message:
+                                                                                Chat
+                                                                                .ChatMessage(
+                                                                                    messageID:
+                                                                                        String(),
+                                                                                    message:
+                                                                                        "New Thread \(trimmed) Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                                                                                    sender:
+                                                                                        userInfo?
+                                                                                        .userID
+                                                                                        ?? "",
+                                                                                    date:
+                                                                                        Date()
+                                                                                        .timeIntervalSince1970,
+                                                                                    threadName:
+                                                                                        trimmed,
+                                                                                    systemGenerated:
+                                                                                        true
+                                                                                )
+                                                                        )
+                                                                    }
 
                                                                     DispatchQueue
                                                                         .main
@@ -1303,38 +1305,45 @@ struct ChatView: View {
                 chats.append(newChat)
                 rebuildThreadMessageIndex(for: newChat)
                 refreshChatSidebarCache()
-                createClubGroupChat(clubId: club.clubID, messageTo: nil) {
-                    chat in
-                    if let chatIndex = chats.firstIndex(where: {
-                        $0.chatID == newChat.chatID
-                    }) {
-                        sendMessage(
-                            chatID: chat.chatID,
-                            message: Chat.ChatMessage(
-                                messageID: String(),
-                                message:
-                                    "New Group Chat Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
-                                sender: userInfo?.userID ?? "",
-                                date: Date().timeIntervalSince1970,
-                                systemGenerated: true
-                            )
-                        )
+                Task {
+                    let chat = await createClubGroupChat(
+                        clubId: club.clubID,
+                        messageTo: nil
+                    )
+                    await MainActor.run {
+                        if let chatIndex = chats.firstIndex(where: {
+                            $0.chatID == newChat.chatID
+                        }) {
+                            Task {
+                                await sendMessage(
+                                    chatID: chat.chatID,
+                                    message: Chat.ChatMessage(
+                                        messageID: String(),
+                                        message:
+                                            "New Group Chat Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                                        sender: userInfo?.userID ?? "",
+                                        date: Date().timeIntervalSince1970,
+                                        systemGenerated: true
+                                    )
+                                )
+                            }
 
-                        chats[chatIndex] = chat
-                        rebuildThreadMessageIndex(for: chat)
-                        refreshChatSidebarCache()
+                            chats[chatIndex] = chat
+                            rebuildThreadMessageIndex(for: chat)
+                            refreshChatSidebarCache()
 
-                        selectedChatID = chat.chatID
-                        selectedClub = clubs.first(where: {
-                            $0.clubID == chat.clubID
-                        })
+                            selectedChatID = chat.chatID
+                            selectedClub = clubs.first(where: {
+                                $0.clubID == chat.clubID
+                            })
 
-                        cachedChatIDs.append(chat.chatID + ",")
+                            cachedChatIDs.append(chat.chatID + ",")
 
-                        settings = false
+                            settings = false
 
-                        DispatchQueue.main.async {
-                            updateUnreadIndicator()
+                            DispatchQueue.main.async {
+                                updateUnreadIndicator()
+                            }
                         }
                     }
                 }
@@ -1554,33 +1563,41 @@ struct ChatView: View {
                     return
                 }
 
-                // fehch metadata for uncached chatIDs
-                fetchChatsMetaData(chatIds: chatIDsToFetch) { fetchedChats in
-                    if let fetched = fetchedChats {
-                        for chat in fetched {
-                            // update local list of chats
-                            if let index = chats.firstIndex(where: {
-                                $0.chatID == chat.chatID
-                            }) {
-                                chats[index] = chat
-                            } else {
-                                chats.append(chat)
-                            }
-                            rebuildThreadMessageIndex(for: chat)
+                // fetch metadata for uncached chatIDs
+                Task {
+                    let fetchedChats = await fetchChatsMetaData(
+                        chatIds: chatIDsToFetch
+                    )
 
-                            // save to ChatCache
-                            saveChatToCacheAsync(chat)
+                    await MainActor.run {
+                        guard !Task.isCancelled else { return }
 
-                            // update AppStorage cache
-                            if !cachedChatIDs.contains(chat.chatID) {
-                                cachedChatIDs.append(chat.chatID + ",")
+                        if let fetched = fetchedChats {
+                            for chat in fetched {
+                                // update local list of chats
+                                if let index = chats.firstIndex(where: {
+                                    $0.chatID == chat.chatID
+                                }) {
+                                    chats[index] = chat
+                                } else {
+                                    chats.append(chat)
+                                }
+                                rebuildThreadMessageIndex(for: chat)
+
+                                // save to ChatCache
+                                saveChatToCacheAsync(chat)
+
+                                // update AppStorage cache
+                                if !cachedChatIDs.contains(chat.chatID) {
+                                    cachedChatIDs.append(chat.chatID + ",")
+                                }
                             }
+                            refreshChatSidebarCache()
                         }
-                        refreshChatSidebarCache()
-                    }
 
-                    chatLoadingState = .hidden
-                    attemptOpenChatFromNotification()
+                        chatLoadingState = .hidden
+                        attemptOpenChatFromNotification()
+                    }
                 }
             }
         }
@@ -1884,9 +1901,10 @@ struct ChatView: View {
                 mutedThreadsByChat: user.mutedThreadsByChat
             )
 
-            DispatchQueue.main.async {
-                fetchUser(for: user.userID) { u in
-                    userInfo = u
+            Task {
+                let updatedUser = await fetchUser(for: user.userID)
+                await MainActor.run {
+                    userInfo = updatedUser
                 }
             }
         }
@@ -1912,9 +1930,10 @@ struct ChatView: View {
                 mutedThreadsByChat: user.mutedThreadsByChat
             )
 
-            DispatchQueue.main.async {
-                fetchUser(for: user.userID) { u in
-                    userInfo = u
+            Task {
+                let updatedUser = await fetchUser(for: user.userID)
+                await MainActor.run {
+                    userInfo = updatedUser
                 }
             }
         }
@@ -2193,10 +2212,12 @@ struct ChatComposer: View {
                     if let editedMessage = chats[chatIndex].messages?[
                         messageIndex
                     ] {
-                        sendMessage(
-                            chatID: selected.chatID,
-                            message: editedMessage
-                        )
+                        Task {
+                            await sendMessage(
+                                chatID: selected.chatID,
+                                message: editedMessage
+                            )
+                        }
                     }
                 }
             }
@@ -2214,7 +2235,12 @@ struct ChatComposer: View {
                         replyTo: replyingMessageID,
                         attachmentURL: attachmentURL
                     )
-                    sendMessage(chatID: selected.chatID, message: attachment)
+                    Task {
+                        await sendMessage(
+                            chatID: selected.chatID,
+                            message: attachment
+                        )
+                    }
                 }
             }
 
@@ -2228,7 +2254,12 @@ struct ChatComposer: View {
                         ? nil : currentThread,
                     replyTo: replyingMessageID
                 )
-                sendMessage(chatID: selected.chatID, message: newMessage)
+                Task {
+                    await sendMessage(
+                        chatID: selected.chatID,
+                        message: newMessage
+                    )
+                }
             }
         }
 

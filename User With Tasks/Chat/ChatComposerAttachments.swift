@@ -732,30 +732,17 @@ extension ChatComposer {
         metadata.contentType = "image/jpeg"
         metadata.cacheControl = "public,max-age=31536000,immutable"  // so the caching will keep it for a year at least
 
-        reference.putData(pendingUpload.data, metadata: metadata) { _, error in
-            if let error {
-                DispatchQueue.main.async {
+        Task {
+            do {
+                try await putChatUploadData(
+                    pendingUpload.data,
+                    metadata: metadata,
+                    at: reference
+                )
+                let url = try await chatDownloadURL(for: reference)
+
+                await MainActor.run {
                     isUploadingAttachment = false
-                    uploadError = error.localizedDescription
-                }
-                return
-            }
-
-            reference.downloadURL { url, error in
-                DispatchQueue.main.async {
-                    isUploadingAttachment = false
-
-                    if let error {
-                        uploadError = error.localizedDescription
-                        deleteUploadedAttachment(at: storagePath)
-                        return
-                    }
-
-                    guard let url else {
-                        uploadError = "Could not create image link."
-                        deleteUploadedAttachment(at: storagePath)
-                        return
-                    }
 
                     guard selectedChat?.chatID == uploadChatID else {
                         deleteUploadedAttachment(at: storagePath)
@@ -769,21 +756,78 @@ extension ChatComposer {
                     self.pendingUpload = nil
                     attachmentPresented = false
                 }
+            } catch {
+                await MainActor.run {
+                    isUploadingAttachment = false
+                    uploadError = error.localizedDescription
+                    deleteUploadedAttachment(at: storagePath)
+                }
             }
         }
     }
 
     func deleteUploadedAttachment(at storagePath: String) {
-        Storage.storage().reference().child(storagePath).delete { error in
-            if let error {
+        Task {
+            do {
+                try await deleteChatStorageReference(
+                    Storage.storage().reference().child(storagePath)
+                )
+            } catch {
                 print("Failed to delete pending chat attachment: \(error)")
+            }
+        }
+    }
+
+    func putChatUploadData(
+        _ data: Data,
+        metadata: StorageMetadata,
+        at reference: StorageReference
+    ) async throws {
+        try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<Void, Error>) in
+            reference.putData(data, metadata: metadata) { _, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    func chatDownloadURL(for reference: StorageReference) async throws -> URL {
+        try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<URL, Error>) in
+            reference.downloadURL { url, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if let url {
+                    continuation.resume(returning: url)
+                } else {
+                    continuation.resume(
+                        throwing: URLError(.badServerResponse)
+                    )
+                }
+            }
+        }
+    }
+
+    func deleteChatStorageReference(_ reference: StorageReference) async throws {
+        try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<Void, Error>) in
+            reference.delete { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
             }
         }
     }
 }
 
 extension UIImage {
-    fileprivate func chatCompressedJPEGData(
+    func chatCompressedJPEGData(
         maxDimension: CGFloat = 1600,
         initialQuality: CGFloat = 0.72
     ) -> Data? {
@@ -804,7 +848,7 @@ extension UIImage {
         return data
     }
 
-    fileprivate func normalizedForChatUpload() -> UIImage {
+    func normalizedForChatUpload() -> UIImage {
         guard imageOrientation != .up else { return self }
 
         let format = UIGraphicsImageRendererFormat.default()
@@ -818,7 +862,7 @@ extension UIImage {
         }
     }
 
-    fileprivate func resizedForChatUpload(maxDimension: CGFloat) -> UIImage {
+    func resizedForChatUpload(maxDimension: CGFloat) -> UIImage {
         let largestDimension = max(size.width, size.height)
         guard largestDimension > maxDimension else {
             return renderedForJPEGUpload(size: size)
@@ -832,7 +876,7 @@ extension UIImage {
         return renderedForJPEGUpload(size: targetSize)
     }
 
-    fileprivate func renderedForJPEGUpload(size targetSize: CGSize) -> UIImage {
+    func renderedForJPEGUpload(size targetSize: CGSize) -> UIImage {
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
         format.opaque = true

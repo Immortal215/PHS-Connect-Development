@@ -4,7 +4,7 @@ import SwiftUI
 final class KeyboardResponder: ObservableObject {
     @Published var currentHeight: CGFloat = 0
 
-    private var cancellables = Set<AnyCancellable>()
+    var cancellables = Set<AnyCancellable>()
 
     init() {
         let keyboardWillShow = NotificationCenter.default.publisher(

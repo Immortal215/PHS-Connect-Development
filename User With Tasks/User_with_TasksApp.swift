@@ -65,10 +65,17 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         print("FCM token:", fcmToken)
 
         if let uid = Auth.auth().currentUser?.uid {
-            Database.database()
+            let tokenReference = Database.database()
                 .reference()
                 .child("users").child(uid).child("fcmToken")
-                .setValue(fcmToken)
+
+            Task {
+                do {
+                    try await setFirebaseValue(fcmToken, at: tokenReference)
+                } catch {
+                    print("Failed to save FCM token: \(error)")
+                }
+            }
         }
     }
 

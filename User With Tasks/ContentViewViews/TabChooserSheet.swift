@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TabChooserSheet: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) var dismiss
 
     @Binding var tabsCache: UserTabPreferences?
     let isGuestUser: Bool

@@ -5,8 +5,8 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-private enum SharedDateFormatter {
-    private static let meetingDateTimeKey =
+enum SharedDateFormatter {
+    static let meetingDateTimeKey =
         "PHSConnect.meetingDateTimeFormatter"
 
     static var meetingDateTime: DateFormatter {

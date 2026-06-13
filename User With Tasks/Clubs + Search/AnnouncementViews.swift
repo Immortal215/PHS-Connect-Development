@@ -464,10 +464,14 @@ struct AnnouncementsView: View {
                         } else {
                             Text("")
                                 .onAppear {
-                                    getClubNameByID(clubID: announcement.clubID)
-                                    { name in
-                                        clubNames[announcement.clubID] =
-                                            name ?? "Unknown Club"
+                                    Task {
+                                        let name = await getClubNameByID(
+                                            clubID: announcement.clubID
+                                        )
+                                        await MainActor.run {
+                                            clubNames[announcement.clubID] =
+                                                name ?? "Unknown Club"
+                                        }
                                     }
                                 }
                         }
@@ -623,9 +627,14 @@ struct AllAnnouncementsView: View {
             } else {
                 Text("")
                     .onAppear {
-                        getClubNameByID(clubID: announcement.clubID) { name in
-                            clubNames[announcement.clubID] =
-                                name ?? "Unknown Club"
+                        Task {
+                            let name = await getClubNameByID(
+                                clubID: announcement.clubID
+                            )
+                            await MainActor.run {
+                                clubNames[announcement.clubID] =
+                                    name ?? "Unknown Club"
+                            }
                         }
                     }
             }

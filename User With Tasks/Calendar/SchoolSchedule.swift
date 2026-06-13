@@ -157,7 +157,7 @@ struct SchoolScheduleConfig: Codable, Equatable {
         self.lastUpdated = lastUpdated
     }
 
-    private enum CodingKeys: String, CodingKey {
+    enum CodingKeys: String, CodingKey {
         case rotationStartDate
         case breakRanges
         case specialDays
@@ -234,7 +234,7 @@ struct SchoolScheduleDaySummary {
     let events: [SchoolScheduleEvent]
 }
 
-private let schoolScheduleDateFormatter: DateFormatter = {
+let schoolScheduleDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.calendar = Calendar.current
     formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -243,7 +243,7 @@ private let schoolScheduleDateFormatter: DateFormatter = {
     return formatter
 }()
 
-private let schoolSchedulePrettyDateFormatter: DateFormatter = {
+let schoolSchedulePrettyDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.calendar = Calendar.current
     formatter.locale = .current
@@ -252,7 +252,7 @@ private let schoolSchedulePrettyDateFormatter: DateFormatter = {
     return formatter
 }()
 
-private let schoolSchedulePrettyRangeFormatter: DateFormatter = {
+let schoolSchedulePrettyRangeFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.calendar = Calendar.current
     formatter.locale = .current
@@ -292,9 +292,9 @@ final class SchoolScheduleStore: ObservableObject {
     @Published private(set) var isSaving = false
     @Published var lastError: String?
 
-    private let cache = SchoolScheduleCache()
-    private var didRequestLoad = false
-    private var didStartFirebaseListener = false
+    let cache = SchoolScheduleCache()
+    var didRequestLoad = false
+    var didStartFirebaseListener = false
 
     func loadIfNeeded() {
         guard !didRequestLoad else { return }
@@ -312,10 +312,7 @@ final class SchoolScheduleStore: ObservableObject {
         listenForFirebaseUpdates()
     }
 
-    func save(
-        _ draft: SchoolScheduleConfig,
-        completion: @escaping (Bool) -> Void = { _ in }
-    ) {
+    func save(_ draft: SchoolScheduleConfig) async -> Bool {
         guard isSuperAdminEmail(Auth.auth().currentUser?.email) else {
             lastError = "Only admins can edit the school schedule."
             dropper(
@@ -323,8 +320,7 @@ final class SchoolScheduleStore: ObservableObject {
                 subtitle: "Only super admins can edit this schedule.",
                 icon: UIImage(systemName: "lock.fill")
             )
-            completion(false)
-            return
+            return false
         }
 
         isSaving = true
@@ -345,43 +341,24 @@ final class SchoolScheduleStore: ObservableObject {
                     subtitle: "Could not encode the schedule.",
                     icon: UIImage(systemName: "exclamationmark.triangle")
                 )
-                completion(false)
-                return
+                return false
             }
 
             let reference = Database.database().reference()
                 .child("global")
                 .child("schoolSchedule")
 
-            reference.setValue(dictionary) { [weak self] error, _ in
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    self.isSaving = false
-
-                    if let error {
-                        self.lastError = error.localizedDescription
-                        dropper(
-                            title: "Save Failed",
-                            subtitle: error.localizedDescription,
-                            icon: UIImage(
-                                systemName: "exclamationmark.triangle"
-                            )
-                        )
-                        completion(false)
-                        return
-                    }
-
-                    self.config = scheduleToSave
-                    self.cache.save(scheduleToSave)
-                    self.lastError = nil
-                    dropper(
-                        title: "School Schedule Saved!",
-                        subtitle: "",
-                        icon: UIImage(systemName: "checkmark")
-                    )
-                    completion(true)
-                }
-            }
+            try await setFirebaseValue(dictionary, at: reference)
+            isSaving = false
+            config = scheduleToSave
+            cache.save(scheduleToSave)
+            lastError = nil
+            dropper(
+                title: "School Schedule Saved!",
+                subtitle: "",
+                icon: UIImage(systemName: "checkmark")
+            )
+            return true
         } catch {
             isSaving = false
             lastError = error.localizedDescription
@@ -390,11 +367,11 @@ final class SchoolScheduleStore: ObservableObject {
                 subtitle: error.localizedDescription,
                 icon: UIImage(systemName: "exclamationmark.triangle")
             )
-            completion(false)
+            return false
         }
     }
 
-    private func listenForFirebaseUpdates() {
+    func listenForFirebaseUpdates() {
         guard !didStartFirebaseListener else { return }
         didStartFirebaseListener = true
 
@@ -415,12 +392,12 @@ final class SchoolScheduleStore: ObservableObject {
             }
     }
 
-    private var scheduleReference: DatabaseReference {
+    var scheduleReference: DatabaseReference {
         Database.database().reference()
             .child("global")
     }
 
-    private func applyScheduleSnapshot(_ snapshot: DataSnapshot) {
+    func applyScheduleSnapshot(_ snapshot: DataSnapshot) {
         guard snapshot.key == "schoolSchedule",
             let value = snapshot.value as? [String: Any]
         else {
@@ -581,7 +558,7 @@ final class SchoolScheduleStore: ObservableObject {
         summary(for: date).events.filter { !$0.isAllDay }
     }
 
-    private func schoolEvents(for date: Date, side: SchoolScheduleRotationSide)
+    func schoolEvents(for date: Date, side: SchoolScheduleRotationSide)
         -> [SchoolScheduleEvent]
     {
         var events: [SchoolScheduleEvent] = []
@@ -686,7 +663,7 @@ final class SchoolScheduleStore: ObservableObject {
         return events
     }
 
-    private func specialEvents(
+    func specialEvents(
         for date: Date,
         specialDay: SchoolScheduleSpecialDayOverride
     ) -> [SchoolScheduleEvent] {
@@ -696,7 +673,7 @@ final class SchoolScheduleStore: ObservableObject {
         }
     }
 
-    private func straight8Events(for date: Date) -> [SchoolScheduleEvent] {
+    func straight8Events(for date: Date) -> [SchoolScheduleEvent] {
         var events: [SchoolScheduleEvent] = []
 
         if shouldShowZeroHour(for: date) {
@@ -834,7 +811,7 @@ final class SchoolScheduleStore: ObservableObject {
         return events
     }
 
-    private func schoolDayOffset(from anchor: Date, to target: Date) -> Int {
+    func schoolDayOffset(from anchor: Date, to target: Date) -> Int {
         let calendar = Calendar.current
         let anchorDay = calendar.startOfDay(for: anchor)
         let targetDay = calendar.startOfDay(for: target)
@@ -863,13 +840,13 @@ final class SchoolScheduleStore: ObservableObject {
         return offset
     }
 
-    private func isCountedSchoolDay(_ date: Date) -> Bool {
+    func isCountedSchoolDay(_ date: Date) -> Bool {
         !Calendar.current.isDateInWeekend(date)
             && breakRange(containing: date) == nil
             && specialDay(containing: date) == nil
     }
 
-    private func breakRange(containing date: Date) -> SchoolBreakRange? {
+    func breakRange(containing date: Date) -> SchoolBreakRange? {
         let day = Calendar.current.startOfDay(for: date)
 
         return config.breakRanges.first { range in
@@ -885,19 +862,19 @@ final class SchoolScheduleStore: ObservableObject {
         }
     }
 
-    private func specialDay(containing date: Date)
+    func specialDay(containing date: Date)
         -> SchoolScheduleSpecialDayOverride?
     {
         let dayString = schoolScheduleDateString(from: date)
         return config.specialDays.first { $0.date == dayString }
     }
 
-    private func shouldShowZeroHour(for date: Date) -> Bool {
+    func shouldShowZeroHour(for date: Date) -> Bool {
         let weekday = Calendar.current.component(.weekday, from: date)
         return [2, 3, 4, 6].contains(weekday)
     }
 
-    private func schoolDate(on date: Date, hour: Int, minute: Int) -> Date {
+    func schoolDate(on date: Date, hour: Int, minute: Int) -> Date {
         Calendar.current.date(
             bySettingHour: hour,
             minute: minute,

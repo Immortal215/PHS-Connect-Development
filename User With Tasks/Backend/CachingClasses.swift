@@ -1,7 +1,7 @@
 import SwiftUI
 
 class ChatCache {
-    private let cacheURL: URL
+    let cacheURL: URL
 
     init(chatID: String) {
         // each chat gets its own file

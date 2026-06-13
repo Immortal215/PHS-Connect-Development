@@ -38,7 +38,8 @@ final class AuthenticationViewModel: ObservableObject {
         let reference = Database.database().reference()
         let userReference = reference.child("users").child(userID)
 
-        userReference.observeSingleEvent(of: .value) { snapshot in
+        Task {
+            let snapshot = await observeSingleValue(at: userReference)
             if !snapshot.exists()
                 || ((snapshot.value as? [String: Any])?["userImage"] == nil)
             {
@@ -59,12 +60,11 @@ final class AuthenticationViewModel: ObservableObject {
                     if let json = try JSONSerialization.jsonObject(with: data)
                         as? [String: Any]
                     {
-                        userReference.setValue(json) { error, _ in
-                            if let error = error {
-                                print("Error creating user node: \(error)")
-                            } else {
-                                print("User node created successfully")
-                            }
+                        do {
+                            try await setFirebaseValue(json, at: userReference)
+                            print("User node created successfully")
+                        } catch {
+                            print("Error creating user node: \(error)")
                         }
                     }
                 } catch {

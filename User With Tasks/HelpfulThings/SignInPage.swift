@@ -4,7 +4,6 @@ import SwiftUI
 struct SignInLandingView: View {
     var signInGoogle: () -> Void
     var signInGuest: () -> Void
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State var animateBubbles = false
     @State var revealContent = false
 
@@ -18,7 +17,6 @@ struct SignInLandingView: View {
                     .ignoresSafeArea()
 
                 SignInFloatingBubbleLayer(isFloating: animateBubbles)
-                    .opacity(reduceMotion ? 0.45 : 1)
 
                 if isWide {
                     HStack(spacing: 0) {
@@ -42,11 +40,8 @@ struct SignInLandingView: View {
                         height: geometry.size.height
                     )
                     .opacity(revealContent ? 1 : 0)
-                    .offset(y: revealContent || reduceMotion ? 0 : 18)
-                    .animation(
-                        reduceMotion ? nil : .smooth(duration: 0.7),
-                        value: revealContent
-                    )
+                    .offset(y: revealContent ? 0 : 18)
+                    .animation(.smooth(duration: 0.7), value: revealContent)
                 } else {
                     ScrollView(showsIndicators: false) {
                         Group {
@@ -68,11 +63,8 @@ struct SignInLandingView: View {
                             )
                         }
                         .opacity(revealContent ? 1 : 0)
-                        .offset(y: revealContent || reduceMotion ? 0 : 18)
-                        .animation(
-                            reduceMotion ? nil : .smooth(duration: 0.7),
-                            value: revealContent
-                        )
+                        .offset(y: revealContent ? 0 : 18)
+                        .animation(.smooth(duration: 0.7), value: revealContent)
                     }
                 }
             }
@@ -80,9 +72,7 @@ struct SignInLandingView: View {
             .ignoresSafeArea()
             .onAppear {
                 revealContent = true
-                if !reduceMotion {
-                    animateBubbles = true
-                }
+                animateBubbles = true
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -404,9 +394,6 @@ struct SignInPreviewTabBar: View {
                     SignInPreviewTabButton(
                         image: menuExpanded ? "xmark" : "line.3.horizontal",
                         isSelected: false,
-                        accessibilityTitle: menuExpanded
-                            ? "Hide preview tabs"
-                            : "Show preview tabs"
                     ) {
                         withAnimation(.smooth) {
                             menuExpanded.toggle()
@@ -418,7 +405,6 @@ struct SignInPreviewTabBar: View {
                         SignInPreviewTabButton(
                             image: "magnifyingglass",
                             isSelected: selectedStep == 0,
-                            accessibilityTitle: "Preview search tab"
                         ) {
                             withAnimation(.smooth) {
                                 selectedStep = 0
@@ -429,7 +415,6 @@ struct SignInPreviewTabBar: View {
                         SignInPreviewTabButton(
                             image: "rectangle.3.group.bubble",
                             isSelected: selectedStep == 1,
-                            accessibilityTitle: "Preview clubs tab"
                         ) {
                             withAnimation(.smooth) {
                                 selectedStep = 1
@@ -440,7 +425,6 @@ struct SignInPreviewTabBar: View {
                         SignInPreviewTabButton(
                             image: "bubble.left.and.bubble.right",
                             isSelected: selectedStep == 2,
-                            accessibilityTitle: "Preview chat and updates tab"
                         ) {
                             withAnimation(.smooth) {
                                 selectedStep = 2
@@ -460,7 +444,6 @@ struct SignInPreviewTabBar: View {
 struct SignInPreviewTabButton: View {
     var image: String
     var isSelected: Bool
-    var accessibilityTitle: String
     var action: () -> Void
 
     var body: some View {
@@ -473,7 +456,6 @@ struct SignInPreviewTabButton: View {
                 .foregroundColor(isSelected ? .blue : .primary)
                 .brightness(0.1)
         }
-        .accessibilityLabel(accessibilityTitle)
         .apply {
             if #available(iOS 26, *) {
                 $0.buttonStyle(.glass)
@@ -654,7 +636,6 @@ struct SignInPreviewStepCard<Content: View>: View {
     var title: String
     var subtitle: String
     @ViewBuilder var content: Content
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State var isVisible = false
 
     var body: some View {
@@ -724,12 +705,9 @@ struct SignInPreviewStepCard<Content: View>: View {
                 .stroke(Color.blue.opacity(0.18), lineWidth: 1)
         }
         .shadow(color: Color.blue.opacity(0.08), radius: 12, x: 0, y: 8)
-        .scaleEffect(isVisible || reduceMotion ? 1 : 0.96)
+        .scaleEffect(isVisible ? 1 : 0.96)
         .opacity(isVisible ? 1 : 0)
-        .animation(
-            reduceMotion ? nil : .smooth(duration: 0.45),
-            value: isVisible
-        )
+        .animation(.smooth(duration: 0.45), value: isVisible)
         .onAppear {
             isVisible = true
         }
