@@ -22,8 +22,9 @@ struct Club: Codable, Equatable, Hashable {
     var chatIDs: [String]?  // chatID's for caching stuff
     var lastUpdated: Double?  // timestamp from 1970 and ALWAYS UPDATE THIS WHENEVER UPDATING A FUNCTION
     var leadersUIDs: [String]?  // add implementation later
-    var membersUIDs: [String]?
-
+    var membersUIDs: [String]? // add implementation later
+    var photos: [String]? // (Store in firebase storage!) 
+    
     struct Announcements: Codable, Equatable, Hashable {  // move this out / use the schoology integration cause this uses too much data
         var date: String
         var title: String
