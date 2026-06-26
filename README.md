@@ -66,7 +66,7 @@
 - **Custom Chat View :**
   - Built using SwiftUI to allow students to chat with one another in their own clubs. 
     
-- **Lots more! :**
+- **Lots more!**
 
 ### 2. **Backend**
 
@@ -79,8 +79,8 @@
 
 ### Prerequisites
 
-- Xcode 14 or later
-- Swift 5.7 or later
+- Xcode 26 or later
+- Swift 6 
 - Firebase SDK
 - Google Sign-In configuration
 
