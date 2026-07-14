@@ -1,5 +1,16 @@
 import SwiftUI
 
+let sundayFirstWeekdaySymbols = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+func calendarStartingOnSunday() -> Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.locale = Locale.current
+    calendar.timeZone = Calendar.current.timeZone
+    calendar.firstWeekday = 1
+    calendar.minimumDaysInFirstWeek = 1
+    return calendar
+}
+
 func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
     let calendar = Calendar.current
     return calendar.isDate(date1, inSameDayAs: date2)

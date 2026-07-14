@@ -162,7 +162,12 @@ struct SchoolScheduleSectionView: View {
                 Spacer(minLength: 12)
                 
                 VStack(alignment: .trailing, spacing: 10) {
-                    SchoolDayBadgeView(text: summary.badge.text, color: summary.badge.color)
+                    if let badge = summary.badge {
+                        SchoolDayBadgeView(
+                            text: badge.text,
+                            color: badge.color
+                        )
+                    }
                     
                     if isAdmin, let onEditTap {
                         Button(action: onEditTap) {
@@ -205,181 +210,6 @@ struct SchoolScheduleSectionView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(SchoolSchedulePalette.navy.opacity(darkMode ? 0.45 : 0.18), lineWidth: 1)
-        }
-    }
-}
-
-struct SchoolScheduleBreakDraft: Identifiable {
-    let id = UUID()
-    var startDate: Date
-    var endDate: Date
-    var label: String
-    
-    static func empty() -> SchoolScheduleBreakDraft {
-        SchoolScheduleBreakDraft(startDate: Date(), endDate: Date(), label: "New Break")
-    }
-}
-
-struct SchoolScheduleEditorView: View {
-    @Environment(\.dismiss) var dismiss
-    @State var rotationStartDate: Date
-    @State var breakDrafts: [SchoolScheduleBreakDraft]
-    let specialDays: [SchoolScheduleSpecialDayOverride]
-    @State var isSaving = false
-    
-    let onSave: (SchoolScheduleConfig) async -> Bool
-    
-    init(
-        config: SchoolScheduleConfig,
-        onSave: @escaping (SchoolScheduleConfig) async -> Bool
-    ) {
-        let startDate = schoolScheduleDate(from: config.rotationStartDate) ?? Date()
-        _rotationStartDate = State(initialValue: startDate)
-        _breakDrafts = State(
-            initialValue: config.breakRanges.map { range in
-                SchoolScheduleBreakDraft(
-                    startDate: schoolScheduleDate(from: range.startDate) ?? Date(),
-                    endDate: schoolScheduleDate(from: range.endDate) ?? Date(),
-                    label: range.label ?? "Break"
-                )
-            }
-        )
-        self.specialDays = config.specialDays
-        self.onSave = onSave
-    }
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    DatePicker(
-                        "Rotation Start Day",
-                        selection: $rotationStartDate,
-                        displayedComponents: [.date]
-                    )
-                    
-                    Text("The first A day of the cycle. The app automatically flips A/B on school days and skips any break ranges below.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("Rotation")
-                }
-                
-                Section {
-                    ForEach(specialDays.sorted(by: { $0.date < $1.date })) { specialDay in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(specialDay.kind.displayName)
-                                .font(.headline)
-                            
-                            if let label = specialDay.label, !label.isEmpty {
-                                Text(label)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                            
-                            Text(schoolScheduleDate(from: specialDay.date)?.formatted(date: .abbreviated, time: .omitted) ?? specialDay.date)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                } header: {
-                    Text("Automatic Straight 8 Days")
-                } footer: {
-                    Text("These special semester-start days stay as Straight 8 and do not count toward the A/B rotation.")
-                }
-                
-                Section {
-                    ForEach(breakDrafts.indices, id: \.self) { index in
-                        let draftID = breakDrafts[index].id
-                        
-                        VStack(alignment: .leading, spacing: 12) {
-                            DatePicker("Start", selection: $breakDrafts[index].startDate, displayedComponents: [.date])
-                            DatePicker("End", selection: $breakDrafts[index].endDate, displayedComponents: [.date])
-                            
-                            TextField("Label", text: $breakDrafts[index].label)
-                                .textInputAutocapitalization(.words)
-                            
-                            Button(role: .destructive) {
-                                breakDrafts.removeAll { $0.id == draftID }
-                            } label: {
-                                Label("Remove Break", systemImage: "trash")
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    
-                    Button {
-                        breakDrafts.append(.empty())
-                    } label: {
-                        Label("Add Break", systemImage: "plus")
-                    }
-                } header: {
-                    Text("Breaks")
-                } footer: {
-                    Text("Use one row per break or no-school stretch. Single-day breaks are fine.")
-                }
-                
-                Section {
-                    Text("Only admins can save this global schedule.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("School Schedule")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        save()
-                    } label: {
-                        if isSaving {
-                            ProgressView()
-                        } else {
-                            Text("Save")
-                        }
-                    }
-                    .disabled(isSaving)
-                }
-            }
-        }
-    }
-    
-    func save() {
-        isSaving = true
-        
-        let breakRanges = breakDrafts.map { draft -> SchoolBreakRange in
-            let start = Calendar.current.startOfDay(for: min(draft.startDate, draft.endDate))
-            let end = Calendar.current.startOfDay(for: max(draft.startDate, draft.endDate))
-            
-            return SchoolBreakRange(
-                startDate: schoolScheduleDateString(from: start),
-                endDate: schoolScheduleDateString(from: end),
-                label: draft.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : draft.label
-            )
-        }
-        
-        let updatedConfig = SchoolScheduleConfig(
-            rotationStartDate: schoolScheduleDateString(from: rotationStartDate),
-            breakRanges: breakRanges,
-            specialDays: specialDays,
-            lastUpdated: nil
-        )
-        
-        Task {
-            let success = await onSave(updatedConfig)
-            await MainActor.run {
-                isSaving = false
-                if success {
-                    dismiss()
-                }
-            }
         }
     }
 }

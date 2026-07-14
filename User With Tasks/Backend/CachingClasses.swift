@@ -100,8 +100,29 @@ final class DeckCache {
     }
 }
 
-final class SchoolScheduleCache {
+enum SchoolScheduleCachedDayState: String, Codable {
+    case unavailable
+    case weekend
+    case breakDay
+    case special
+    case aDay
+    case bDay
+}
+
+struct SchoolScheduleCalculationCacheData: Codable {
+    static let currentSchemaVersion = 2
+
+    var schemaVersion: Int
+    var config: SchoolScheduleConfig
+    var dayStatesByDate: [String: SchoolScheduleCachedDayState]
+    var rotationOffsetsByDate: [String: Int]
+    var earliestIndexedRotationDate: String?
+    var latestIndexedRotationDate: String?
+}
+
+final class SchoolScheduleCache: @unchecked Sendable {
     public let cacheURL: URL
+    let calculationCacheURL: URL
 
     init() {
         let dir = FileManager.default.urls(
@@ -109,6 +130,9 @@ final class SchoolScheduleCache {
             in: .userDomainMask
         ).first!
         self.cacheURL = dir.appendingPathComponent("school_schedule_data.json")
+        self.calculationCacheURL = dir.appendingPathComponent(
+            "school_schedule_calculations.json"
+        )
     }
 
     func load() -> SchoolScheduleConfig? {
@@ -122,7 +146,28 @@ final class SchoolScheduleCache {
         }
     }
 
+    func loadCalculations() -> SchoolScheduleCalculationCacheData? {
+        guard let data = try? Data(contentsOf: calculationCacheURL) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(
+            SchoolScheduleCalculationCacheData.self,
+            from: data
+        )
+    }
+
+    func saveCalculations(_ calculations: SchoolScheduleCalculationCacheData) {
+        if let data = try? JSONEncoder().encode(calculations) {
+            try? data.write(to: calculationCacheURL, options: .atomic)
+        }
+    }
+
+    func deleteCalculations() {
+        try? FileManager.default.removeItem(at: calculationCacheURL)
+    }
+
     func delete() {
         try? FileManager.default.removeItem(at: cacheURL)
+        deleteCalculations()
     }
 }

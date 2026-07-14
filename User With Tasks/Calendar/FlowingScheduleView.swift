@@ -20,6 +20,7 @@ struct FlowingScheduleView: View {
     @Binding var userInfo: Personal?
     @State var showSchoolScheduleSheet = false
     @State var showSchoolScheduleEditor = false
+    @State var openEditorAfterScheduleDismissal = false
 
     var body: some View {
         NavigationStack {
@@ -143,7 +144,14 @@ struct FlowingScheduleView: View {
                 }
             }
         }
-        .sheet(isPresented: $showSchoolScheduleSheet) {
+        .sheet(
+            isPresented: $showSchoolScheduleSheet,
+            onDismiss: {
+                guard openEditorAfterScheduleDismissal else { return }
+                openEditorAfterScheduleDismissal = false
+                showSchoolScheduleEditor = true
+            }
+        ) {
             NavigationStack {
                 ScrollView {
                     SchoolScheduleSectionView(
@@ -151,7 +159,8 @@ struct FlowingScheduleView: View {
                         selectedDate: selectedDate,
                         isAdmin: viewModel?.isSuperAdmin == true,
                         onEditTap: {
-                            showSchoolScheduleEditor = true
+                            openEditorAfterScheduleDismissal = true
+                            showSchoolScheduleSheet = false
                         }
                     )
                     .padding()

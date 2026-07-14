@@ -85,15 +85,19 @@ struct WeekCalendarView: View {
                                         : nil
                             )
 
-                        Text(schoolBadge.text)
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .background(
-                                schoolBadge.color,
-                                in: Capsule(style: .continuous)
-                            )
+                        if let schoolBadge {
+                            Text(schoolBadge.text)
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(
+                                    schoolBadge.color,
+                                    in: Capsule(style: .continuous)
+                                )
+                        } else {
+                            Color.clear.frame(height: 22)
+                        }
 
                         let clubIDCounts = meetingIndex.visibleMeetings(
                             on: date
@@ -254,21 +258,23 @@ struct WeekCalendarView: View {
     }
 
     func getDaysInWeek(for date: Date) -> [Date] {
+        let calendar = calendarStartingOnSunday()
         guard
-            let weekInterval = Calendar.current.dateInterval(
+            let weekInterval = calendar.dateInterval(
                 of: .weekOfYear,
                 for: date
             )
         else { return [] }
         let startOfWeek = weekInterval.start
         return (0..<7).compactMap {
-            Calendar.current.date(byAdding: .day, value: $0, to: startOfWeek)
+            calendar.date(byAdding: .day, value: $0, to: startOfWeek)
         }
     }
 
     func navigateWeek(by value: Int) {
+        let calendar = calendarStartingOnSunday()
         guard
-            let newWeek = Calendar.current.date(
+            let newWeek = calendar.date(
                 byAdding: .weekOfYear,
                 value: value,
                 to: currentWeek
@@ -289,16 +295,22 @@ struct WeekCalendarView: View {
     }
 
     func weekRange(for date: Date) -> String {
+        let calendar = calendarStartingOnSunday()
         guard
-            let weekInterval = Calendar.current.dateInterval(
+            let weekInterval = calendar.dateInterval(
                 of: .weekOfYear,
                 for: date
+            ),
+            let saturday = calendar.date(
+                byAdding: .day,
+                value: -1,
+                to: weekInterval.end
             )
         else { return "" }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
         return
-            "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: weekInterval.end)), \(String(Calendar.current.component(.year, from: weekInterval.start)))"
+            "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: saturday)), \(String(calendar.component(.year, from: weekInterval.start)))"
     }
 
     func isSelected(_ date: Date) -> Bool {

@@ -9,24 +9,16 @@ struct MonthPickerView: View {
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     @AppStorage("calendarTubeView") var isTubeView = true
     @AppStorage("darkMode") var darkMode = false
-    @State var isLoading = true
     var viewModel: AuthenticationViewModel
 
     var body: some View {
         NavigationView {
             VStack {
-                if isLoading {
-                    ProgressView("Loading Meetings...")
-                        .padding()
-                        .onAppear {
-                            loadMeetings()
-                        }
-                } else {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack {
+                            LazyVStack {
                                 ForEach(0..<12, id: \.self) { monthOffset in
-                                    let monthDate = Calendar.current.date(
+                                    let monthDate = calendarStartingOnSunday().date(
                                         from: DateComponents(
                                             year: currentYear,
                                             month: monthOffset + 1
@@ -39,14 +31,33 @@ struct MonthPickerView: View {
                                             .padding(.top)
                                         Divider()
 
+                                        HStack(spacing: 10) {
+                                            ForEach(
+                                                sundayFirstWeekdaySymbols,
+                                                id: \.self
+                                            ) { weekday in
+                                                Text(weekday)
+                                                    .font(.caption.bold())
+                                                    .foregroundStyle(.secondary)
+                                                    .frame(width: monthDayWidth)
+                                            }
+
+                                            Spacer()
+                                        }
+
                                         VStack(alignment: .center, spacing: 10)
                                         {
                                             let days = daysInMonth(
                                                 for: monthDate
                                             )
+                                            let leadingDays = leadingBlankDays(
+                                                for: monthDate
+                                            )
+                                            let gridCellCount = leadingDays
+                                                + days.count
                                             let rows =
-                                                days.count / 7
-                                                + (days.count % 7 == 0 ? 0 : 1)
+                                                gridCellCount / 7
+                                                + (gridCellCount % 7 == 0 ? 0 : 1)
 
                                             ForEach(0..<rows, id: \.self) {
                                                 row in
@@ -55,9 +66,13 @@ struct MonthPickerView: View {
                                                         col in
                                                         let index =
                                                             row * 7 + col
-                                                        if index < days.count {
+                                                        let dayIndex =
+                                                            index - leadingDays
+                                                        if dayIndex >= 0
+                                                            && dayIndex < days.count
+                                                        {
                                                             let day = days[
-                                                                index
+                                                                dayIndex
                                                             ]
                                                             let date = dayDate(
                                                                 for: day,
@@ -78,16 +93,6 @@ struct MonthPickerView: View {
                                                                     alignment:
                                                                         .center
                                                                 ) {
-                                                                    Text(
-                                                                        dayOfWeek(
-                                                                            for:
-                                                                                date
-                                                                        )
-                                                                    )
-                                                                    .font(
-                                                                        .caption
-                                                                    )
-
                                                                     Text(
                                                                         "\(day)"
                                                                     )
@@ -135,14 +140,23 @@ struct MonthPickerView: View {
                                                                             for:
                                                                                 date
                                                                         )
-                                                                    SchoolDayBadgeView(
-                                                                        text:
-                                                                            schoolBadge
-                                                                            .text,
-                                                                        color:
-                                                                            schoolBadge
-                                                                            .color
-                                                                    )
+                                                                    if let schoolBadge {
+                                                                        SchoolDayBadgeView(
+                                                                            text:
+                                                                                schoolBadge
+                                                                                .text,
+                                                                            color:
+                                                                                schoolBadge
+                                                                                .color
+                                                                        )
+                                                                    } else {
+                                                                        Color
+                                                                            .clear
+                                                                            .frame(
+                                                                                height:
+                                                                                    27
+                                                                            )
+                                                                    }
 
                                                                     let clubIDCounts =
                                                                         meetingIndex
@@ -359,11 +373,14 @@ struct MonthPickerView: View {
                                                                 }
                                                             }
                                                             .frame(
-                                                                width: appScreenBounds
-                                                                    .width
-                                                                    / 1.05 / 7
-                                                                    - 16
+                                                                width: monthDayWidth
                                                             )
+                                                        } else {
+                                                            Color.clear
+                                                                .frame(
+                                                                    width:
+                                                                        monthDayWidth
+                                                                )
                                                         }
                                                     }
 
@@ -376,6 +393,7 @@ struct MonthPickerView: View {
                                     .id(monthOffset)
                                 }
                             }
+                            .geometryGroup()
                             .onAppear {
                                 proxy.scrollTo(
                                     Calendar.current.component(
@@ -387,7 +405,6 @@ struct MonthPickerView: View {
                             }
                         }
                     }
-                }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -411,7 +428,6 @@ struct MonthPickerView: View {
 
                         Button(action: {
                             isTubeView.toggle()
-                            loadMeetings()
                         }) {
                             Image(
                                 systemName: isTubeView
@@ -426,35 +442,36 @@ struct MonthPickerView: View {
         .implicitAnimation(.smooth)
     }
 
-    func loadMeetings() {
-        isLoading = true
-        DispatchQueue.global(qos: .userInitiated).async {
-            sleep(1)
-            DispatchQueue.main.async {
-                isLoading = false
-            }
-        }
-    }
-
     func daysInMonth(for date: Date) -> [Int] {
+        let calendar = calendarStartingOnSunday()
         guard
-            let range = Calendar.current.range(of: .day, in: .month, for: date)
+            let range = calendar.range(of: .day, in: .month, for: date)
         else { return [] }
         return Array(range)
     }
 
+    func leadingBlankDays(for monthDate: Date) -> Int {
+        let calendar = calendarStartingOnSunday()
+        guard
+            let firstDay = calendar.date(
+                from: calendar.dateComponents([.year, .month], from: monthDate)
+            )
+        else { return 0 }
+        return calendar.component(.weekday, from: firstDay) - 1
+    }
+
     func dayDate(for day: Int, monthDate: Date) -> Date {
-        Calendar.current.date(
+        let calendar = calendarStartingOnSunday()
+        return calendar.date(
             byAdding: .day,
             value: day - 1,
-            to: Calendar.current.date(
-                from: Calendar.current.dateComponents(
-                    [.year, .month],
-                    from: monthDate
-                )
+            to: calendar.date(
+                from: calendar.dateComponents([.year, .month], from: monthDate)
             )!
         )!
     }
+
+    var monthDayWidth: CGFloat { appScreenBounds.width / 1.05 / 7 - 16 }
 
     func monthName(for date: Date) -> String {
         let formatter = DateFormatter()

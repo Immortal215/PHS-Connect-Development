@@ -22,12 +22,36 @@ enum SchoolScheduleRotationSide: String, Codable, Equatable {
 
 enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
     case straight8 = "straight8"
+    case finalExamDay1 = "finalExamDay1"
+    case finalExamDay2 = "finalExamDay2"
+    case finalExamDay3 = "finalExamDay3"
 
-    var displayName: String { "Straight 8" }
-    var badgeText: String { "8" }
+    var displayName: String {
+        switch self {
+        case .straight8: "Straight 8"
+        case .finalExamDay1: "Final Exams Day 1"
+        case .finalExamDay2: "Final Exams Day 2"
+        case .finalExamDay3: "Final Exams Day 3"
+        }
+    }
+
+    var badgeText: String {
+        switch self {
+        case .straight8: "8"
+        case .finalExamDay1: "F1"
+        case .finalExamDay2: "F2"
+        case .finalExamDay3: "F3"
+        }
+    }
+
     var accentColor: Color { SchoolSchedulePalette.navy }
     var detail: String {
-        "A/B lunch is based on your 5th period teacher's last name."
+        switch self {
+        case .straight8:
+            "A/B lunch is based on your 5th period teacher's last name."
+        case .finalExamDay1, .finalExamDay2, .finalExamDay3:
+            "Final exam schedule. Zero hour and the regular A/B schedule do not run."
+        }
     }
 }
 
@@ -51,28 +75,22 @@ struct SchoolBreakRange: Codable, Equatable, Hashable, Identifiable {
 }
 
 struct SchoolScheduleConfig: Codable, Equatable {
+    var semester1StartDate: String
+    var semester1EndDate: String
+    var semester2StartDate: String
+    var semester2EndDate: String
+    var nextSchoolYearStartDate: String
     var rotationStartDate: String
     var breakRanges: [SchoolBreakRange]
     var specialDays: [SchoolScheduleSpecialDayOverride]
     var lastUpdated: Double?
 
-    static let defaultSpecialDays: [SchoolScheduleSpecialDayOverride] = [
-        SchoolScheduleSpecialDayOverride(
-            date: "2025-08-13",
-            kind: .straight8,
-            label: "First Day of Semester 1",
-            note: "A/B lunch is based on your 5th period teacher's last name."
-        ),
-        SchoolScheduleSpecialDayOverride(
-            date: "2026-01-07",
-            kind: .straight8,
-            label: "First Day of Semester 2",
-            note: "A/B lunch is based on your 5th period teacher's last name."
-        ),
-    ]
-
     static let default2025_2026 = SchoolScheduleConfig(
-        rotationStartDate: "2025-08-14",
+        semester1StartDate: "2025-08-13",
+        semester1EndDate: "2025-12-19",
+        semester2StartDate: "2026-01-07",
+        semester2EndDate: "2026-05-29",
+        nextSchoolYearStartDate: "2026-08-12",
         breakRanges: [
             SchoolBreakRange(
                 startDate: "2025-08-11",
@@ -100,21 +118,6 @@ struct SchoolScheduleConfig: Codable, Equatable {
                 label: "Thanksgiving Break"
             ),
             SchoolBreakRange(
-                startDate: "2025-12-19",
-                endDate: "2025-12-19",
-                label: "Final Exams"
-            ),
-            SchoolBreakRange(
-                startDate: "2025-12-22",
-                endDate: "2026-01-02",
-                label: "Winter Break"
-            ),
-            SchoolBreakRange(
-                startDate: "2026-01-05",
-                endDate: "2026-01-06",
-                label: "Institute / In-Service"
-            ),
-            SchoolBreakRange(
                 startDate: "2026-01-19",
                 endDate: "2026-01-19",
                 label: "Martin Luther King Jr. Day"
@@ -140,24 +143,43 @@ struct SchoolScheduleConfig: Codable, Equatable {
                 label: "Memorial Day"
             ),
         ],
-        specialDays: Self.defaultSpecialDays,
         lastUpdated: nil
     )
 
     init(
-        rotationStartDate: String,
+        semester1StartDate: String,
+        semester1EndDate: String,
+        semester2StartDate: String,
+        semester2EndDate: String,
+        nextSchoolYearStartDate: String,
         breakRanges: [SchoolBreakRange],
-        specialDays: [SchoolScheduleSpecialDayOverride] = SchoolScheduleConfig
-            .defaultSpecialDays,
         lastUpdated: Double?
     ) {
-        self.rotationStartDate = rotationStartDate
+        self.semester1StartDate = semester1StartDate
+        self.semester1EndDate = semester1EndDate
+        self.semester2StartDate = semester2StartDate
+        self.semester2EndDate = semester2EndDate
+        self.nextSchoolYearStartDate = nextSchoolYearStartDate
         self.breakRanges = breakRanges
-        self.specialDays = specialDays
+        self.rotationStartDate = Self.firstRotationDate(
+            after: semester1StartDate,
+            excluding: breakRanges
+        )
+        self.specialDays = Self.automaticSpecialDays(
+            semester1StartDate: semester1StartDate,
+            semester1EndDate: semester1EndDate,
+            semester2StartDate: semester2StartDate,
+            semester2EndDate: semester2EndDate
+        )
         self.lastUpdated = lastUpdated
     }
 
     enum CodingKeys: String, CodingKey {
+        case semester1StartDate
+        case semester1EndDate
+        case semester2StartDate
+        case semester2EndDate
+        case nextSchoolYearStartDate
         case rotationStartDate
         case breakRanges
         case specialDays
@@ -166,19 +188,52 @@ struct SchoolScheduleConfig: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        rotationStartDate = try container.decode(
-            String.self,
-            forKey: .rotationStartDate
-        )
-        breakRanges = try container.decode(
+        let storedSpecialDays = try container.decodeIfPresent(
+            [SchoolScheduleSpecialDayOverride].self,
+            forKey: .specialDays
+        ) ?? []
+        let straight8Dates = storedSpecialDays
+            .filter { $0.kind == .straight8 }
+            .map(\.date)
+            .sorted()
+
+        let storedBreakRanges = try container.decode(
             [SchoolBreakRange].self,
             forKey: .breakRanges
         )
-        specialDays =
-            try container.decodeIfPresent(
-                [SchoolScheduleSpecialDayOverride].self,
-                forKey: .specialDays
-            ) ?? Self.defaultSpecialDays
+        breakRanges = storedBreakRanges.filter {
+            !Self.isAutomaticallyManagedBreakRange($0)
+        }
+        semester1StartDate = try container.decodeIfPresent(
+            String.self,
+            forKey: .semester1StartDate
+        ) ?? straight8Dates.first ?? "2025-08-13"
+        semester1EndDate = try container.decodeIfPresent(
+            String.self,
+            forKey: .semester1EndDate
+        ) ?? "2025-12-19"
+        semester2StartDate = try container.decodeIfPresent(
+            String.self,
+            forKey: .semester2StartDate
+        ) ?? straight8Dates.dropFirst().first ?? "2026-01-07"
+        semester2EndDate = try container.decodeIfPresent(
+            String.self,
+            forKey: .semester2EndDate
+        ) ?? "2026-05-29"
+        nextSchoolYearStartDate = try container.decodeIfPresent(
+            String.self,
+            forKey: .nextSchoolYearStartDate
+        ) ?? "2026-08-12"
+        rotationStartDate = Self.firstRotationDate(
+            after: semester1StartDate,
+            excluding: breakRanges
+        )
+        specialDays = Self.automaticSpecialDays(
+            semester1StartDate: semester1StartDate,
+            semester1EndDate: semester1EndDate,
+            semester2StartDate: semester2StartDate,
+            semester2EndDate: semester2EndDate
+        )
         lastUpdated = try container.decodeIfPresent(
             Double.self,
             forKey: .lastUpdated
@@ -187,14 +242,29 @@ struct SchoolScheduleConfig: Codable, Equatable {
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(
+            semester1StartDate,
+            forKey: .semester1StartDate
+        )
+        try container.encode(semester1EndDate, forKey: .semester1EndDate)
+        try container.encode(
+            semester2StartDate,
+            forKey: .semester2StartDate
+        )
+        try container.encode(semester2EndDate, forKey: .semester2EndDate)
+        try container.encode(
+            nextSchoolYearStartDate,
+            forKey: .nextSchoolYearStartDate
+        )
         try container.encode(rotationStartDate, forKey: .rotationStartDate)
-        try container.encode(breakRanges, forKey: .breakRanges)
+        try container.encode(allBreakRanges, forKey: .breakRanges)
         try container.encode(specialDays, forKey: .specialDays)
         try container.encodeIfPresent(lastUpdated, forKey: .lastUpdated)
     }
 }
 
 enum SchoolScheduleDayState: Equatable {
+    case unavailable
     case weekend
     case breakDay(SchoolBreakRange)
     case special(SchoolScheduleSpecialDayOverride)
@@ -229,7 +299,7 @@ struct SchoolDayBadge {
 struct SchoolScheduleDaySummary {
     let title: String
     let subtitle: String?
-    let badge: SchoolDayBadge
+    let badge: SchoolDayBadge?
     let detail: String?
     let events: [SchoolScheduleEvent]
 }
@@ -289,12 +359,40 @@ func schoolScheduleDayRangeString(_ range: SchoolBreakRange) -> String {
 @MainActor
 final class SchoolScheduleStore: ObservableObject {
     @Published private(set) var config: SchoolScheduleConfig = .default2025_2026
+    {
+        didSet {
+            guard oldValue != config else { return }
+
+            let persistedCalculations = loadPersistedScheduleCalculations()
+            let persistedConfigMatches =
+                !didBuildDerivedScheduleIndex
+                && persistedCalculations?.schemaVersion
+                    == SchoolScheduleCalculationCacheData.currentSchemaVersion
+                && persistedCalculations?.config == config
+            guard !persistedConfigMatches else { return }
+
+            resetDerivedScheduleIndex()
+        }
+    }
     @Published private(set) var isSaving = false
     @Published var lastError: String?
 
     let cache = SchoolScheduleCache()
     var didRequestLoad = false
     var didStartFirebaseListener = false
+    var didBuildDerivedScheduleIndex = false
+    var dayStateByDate: [String: SchoolScheduleDayState] = [:]
+    var rotationOffsetByDate: [String: Int] = [:]
+    var indexedBreakRanges:
+        [(range: SchoolBreakRange, start: Date, end: Date)] = []
+    var indexedSpecialDays: [String: SchoolScheduleSpecialDayOverride] = [:]
+    var earliestIndexedRotationDate: Date?
+    var latestIndexedRotationDate: Date?
+    var calculationCacheSaveTask: Task<Void, Never>?
+    let calculationCacheQueue = DispatchQueue(
+        label: "school.schedule.calculation.cache",
+        qos: .utility
+    )
 
     func loadIfNeeded() {
         guard !didRequestLoad else { return }
@@ -429,32 +527,43 @@ final class SchoolScheduleStore: ObservableObject {
 
     func dayState(for date: Date) -> SchoolScheduleDayState {
         let day = Calendar.current.startOfDay(for: date)
+        guard containsActiveScheduleDate(day) else { return .unavailable }
+
+        prepareDerivedScheduleIndexIfNeeded()
+        let dayKey = schoolScheduleDateString(from: day)
+
+        if let cachedState = dayStateByDate[dayKey] {
+            return cachedState
+        }
+
+        let state: SchoolScheduleDayState
 
         if Calendar.current.isDateInWeekend(day) {
-            return .weekend
+            state = .weekend
+        } else if let specialDay = specialDay(containing: day) {
+            state = .special(specialDay)
+        } else if let breakRange = breakRange(containing: day) {
+            state = .breakDay(breakRange)
+        } else if let anchor = schoolScheduleDate(
+            from: config.rotationStartDate
+        ) {
+            let schoolOffset = schoolDayOffset(from: anchor, to: day)
+            let isStartSide = abs(schoolOffset).isMultiple(of: 2)
+            let side: SchoolScheduleRotationSide = isStartSide ? .a : .b
+            state = .school(side)
+        } else {
+            state = .school(.a)
         }
 
-        if let breakRange = breakRange(containing: day) {
-            return .breakDay(breakRange)
-        }
-
-        if let specialDay = specialDay(containing: day) {
-            return .special(specialDay)
-        }
-
-        guard let anchor = schoolScheduleDate(from: config.rotationStartDate)
-        else {
-            return .school(.a)
-        }
-
-        let schoolOffset = schoolDayOffset(from: anchor, to: day)
-        let isStartSide = abs(schoolOffset).isMultiple(of: 2)
-        let side: SchoolScheduleRotationSide = isStartSide ? .a : .b
-        return .school(side)
+        dayStateByDate[dayKey] = state
+        scheduleDerivedScheduleIndexSave()
+        return state
     }
 
-    func badge(for date: Date) -> SchoolDayBadge {
+    func badge(for date: Date) -> SchoolDayBadge? {
         switch dayState(for: date) {
+        case .unavailable:
+            return nil
         case .weekend:
             return SchoolDayBadge(
                 text: "Weekend",
@@ -477,6 +586,14 @@ final class SchoolScheduleStore: ObservableObject {
 
     func summary(for date: Date) -> SchoolScheduleDaySummary {
         switch dayState(for: date) {
+        case .unavailable:
+            return SchoolScheduleDaySummary(
+                title: "No School Schedule",
+                subtitle: "No schedule is stored for this school year.",
+                badge: nil,
+                detail: nil,
+                events: []
+            )
         case .weekend:
             return SchoolScheduleDaySummary(
                 title: "Weekend",
@@ -556,6 +673,21 @@ final class SchoolScheduleStore: ObservableObject {
 
     func timelineEvents(for date: Date) -> [SchoolScheduleEvent] {
         summary(for: date).events.filter { !$0.isAllDay }
+    }
+
+    func containsActiveScheduleDate(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        guard let startDate = schoolScheduleDate(
+            from: config.semester1StartDate
+        ),
+            let nextStartDate = schoolScheduleDate(
+                from: config.nextSchoolYearStartDate
+            )
+        else { return false }
+
+        let day = calendar.startOfDay(for: date)
+        return day >= calendar.startOfDay(for: startDate)
+            && day < calendar.startOfDay(for: nextStartDate)
     }
 
     func schoolEvents(for date: Date, side: SchoolScheduleRotationSide)
@@ -670,6 +802,12 @@ final class SchoolScheduleStore: ObservableObject {
         switch specialDay.kind {
         case .straight8:
             return straight8Events(for: date)
+        case .finalExamDay1:
+            return finalExamEvents(for: date, day: 1)
+        case .finalExamDay2:
+            return finalExamEvents(for: date, day: 2)
+        case .finalExamDay3:
+            return finalExamEvents(for: date, day: 3)
         }
     }
 
@@ -816,11 +954,31 @@ final class SchoolScheduleStore: ObservableObject {
         let anchorDay = calendar.startOfDay(for: anchor)
         let targetDay = calendar.startOfDay(for: target)
 
+        prepareDerivedScheduleIndexIfNeeded()
+
+        let targetKey = schoolScheduleDateString(from: targetDay)
+        if let cachedOffset = rotationOffsetByDate[targetKey] {
+            return cachedOffset
+        }
+
         guard anchorDay != targetDay else { return 0 }
 
         let step = targetDay > anchorDay ? 1 : -1
-        var cursor = anchorDay
-        var offset = 0
+        let cachedBoundary =
+            step > 0
+            ? latestIndexedRotationDate : earliestIndexedRotationDate
+        var cursor = cachedBoundary ?? anchorDay
+        var offset =
+            rotationOffsetByDate[
+                schoolScheduleDateString(from: cursor)
+            ] ?? 0
+
+        if (step > 0 && cursor > targetDay)
+            || (step < 0 && cursor < targetDay)
+        {
+            cursor = anchorDay
+            offset = 0
+        }
 
         while cursor != targetDay {
             guard
@@ -835,7 +993,24 @@ final class SchoolScheduleStore: ObservableObject {
             if isCountedSchoolDay(cursor) {
                 offset += step
             }
+
+            rotationOffsetByDate[schoolScheduleDateString(from: cursor)] =
+                offset
         }
+
+        if step > 0 {
+            latestIndexedRotationDate = max(
+                latestIndexedRotationDate ?? anchorDay,
+                cursor
+            )
+        } else {
+            earliestIndexedRotationDate = min(
+                earliestIndexedRotationDate ?? anchorDay,
+                cursor
+            )
+        }
+
+        scheduleDerivedScheduleIndexSave()
 
         return offset
     }
@@ -848,25 +1023,218 @@ final class SchoolScheduleStore: ObservableObject {
 
     func breakRange(containing date: Date) -> SchoolBreakRange? {
         let day = Calendar.current.startOfDay(for: date)
+        prepareDerivedScheduleIndexIfNeeded()
 
-        return config.breakRanges.first { range in
-            guard let start = schoolScheduleDate(from: range.startDate),
-                let end = schoolScheduleDate(from: range.endDate)
-            else {
-                return false
-            }
-
-            let normalizedStart = Calendar.current.startOfDay(for: start)
-            let normalizedEnd = Calendar.current.startOfDay(for: end)
-            return day >= normalizedStart && day <= normalizedEnd
-        }
+        return indexedBreakRanges.first {
+            day >= $0.start && day <= $0.end
+        }?.range
     }
 
     func specialDay(containing date: Date)
         -> SchoolScheduleSpecialDayOverride?
     {
+        prepareDerivedScheduleIndexIfNeeded()
         let dayString = schoolScheduleDateString(from: date)
-        return config.specialDays.first { $0.date == dayString }
+        return indexedSpecialDays[dayString]
+    }
+
+    func prepareDerivedScheduleIndexIfNeeded() {
+        guard !didBuildDerivedScheduleIndex else { return }
+
+        let calendar = Calendar.current
+        indexedBreakRanges = config.allBreakRanges.compactMap { range in
+            guard let start = schoolScheduleDate(from: range.startDate),
+                let end = schoolScheduleDate(from: range.endDate)
+            else {
+                return nil
+            }
+
+            return (
+                range,
+                calendar.startOfDay(for: start),
+                calendar.startOfDay(for: end)
+            )
+        }
+
+        for specialDay in config.specialDays {
+            indexedSpecialDays[specialDay.date] = specialDay
+        }
+
+        if let anchor = schoolScheduleDate(from: config.rotationStartDate) {
+            let anchorDay = calendar.startOfDay(for: anchor)
+            rotationOffsetByDate[schoolScheduleDateString(from: anchorDay)] = 0
+            earliestIndexedRotationDate = anchorDay
+            latestIndexedRotationDate = anchorDay
+        }
+
+        if let calculations = loadPersistedScheduleCalculations() {
+            if calculations.schemaVersion
+                == SchoolScheduleCalculationCacheData.currentSchemaVersion
+                && calculations.config == config
+            {
+                restoreDerivedScheduleIndex(from: calculations)
+            } else {
+                deletePersistedScheduleCalculations()
+            }
+        }
+
+        didBuildDerivedScheduleIndex = true
+    }
+
+    func restoreDerivedScheduleIndex(
+        from calculations: SchoolScheduleCalculationCacheData
+    ) {
+        let calendar = Calendar.current
+
+        if let anchor = schoolScheduleDate(from: config.rotationStartDate) {
+            let anchorDay = calendar.startOfDay(for: anchor)
+            let anchorKey = schoolScheduleDateString(from: anchorDay)
+            let earliestDate = calculations.earliestIndexedRotationDate.flatMap(
+                schoolScheduleDate(from:)
+            )
+            let latestDate = calculations.latestIndexedRotationDate.flatMap(
+                schoolScheduleDate(from:)
+            )
+
+            if calculations.rotationOffsetsByDate[anchorKey] == 0,
+                let earliestDate,
+                let latestDate,
+                earliestDate <= anchorDay,
+                latestDate >= anchorDay,
+                calculations.rotationOffsetsByDate[
+                    schoolScheduleDateString(from: earliestDate)
+                ] != nil,
+                calculations.rotationOffsetsByDate[
+                    schoolScheduleDateString(from: latestDate)
+                ] != nil
+            {
+                rotationOffsetByDate = calculations.rotationOffsetsByDate
+                earliestIndexedRotationDate = calendar.startOfDay(
+                    for: earliestDate
+                )
+                latestIndexedRotationDate = calendar.startOfDay(for: latestDate)
+            }
+        }
+
+        for (dateString, cachedState) in calculations.dayStatesByDate {
+            if let state = restoredDayState(
+                cachedState,
+                dateString: dateString
+            ) {
+                dayStateByDate[dateString] = state
+            }
+        }
+    }
+
+    func restoredDayState(
+        _ cachedState: SchoolScheduleCachedDayState,
+        dateString: String
+    ) -> SchoolScheduleDayState? {
+        switch cachedState {
+        case .unavailable:
+            return .unavailable
+        case .weekend:
+            return .weekend
+        case .breakDay:
+            guard let date = schoolScheduleDate(from: dateString),
+                let range = indexedBreakRanges.first(where: {
+                    date >= $0.start && date <= $0.end
+                })?.range
+            else {
+                return nil
+            }
+            return .breakDay(range)
+        case .special:
+            guard let specialDay = indexedSpecialDays[dateString] else {
+                return nil
+            }
+            return .special(specialDay)
+        case .aDay:
+            return .school(.a)
+        case .bDay:
+            return .school(.b)
+        }
+    }
+
+    func cachedDayState(
+        from state: SchoolScheduleDayState
+    ) -> SchoolScheduleCachedDayState {
+        switch state {
+        case .unavailable:
+            return .unavailable
+        case .weekend:
+            return .weekend
+        case .breakDay:
+            return .breakDay
+        case .special:
+            return .special
+        case .school(.a):
+            return .aDay
+        case .school(.b):
+            return .bDay
+        }
+    }
+
+    func scheduleDerivedScheduleIndexSave() {
+        guard didBuildDerivedScheduleIndex else { return }
+
+        calculationCacheSaveTask?.cancel()
+        calculationCacheSaveTask = Task { [weak self] in
+            do {
+                try await Task<Never, Never>.sleep(nanoseconds: 300_000_000)
+            } catch {
+                return
+            }
+
+            guard let self, !Task.isCancelled else { return }
+            persistDerivedScheduleIndex()
+        }
+    }
+
+    func persistDerivedScheduleIndex() {
+        let calculations = SchoolScheduleCalculationCacheData(
+            schemaVersion:
+                SchoolScheduleCalculationCacheData.currentSchemaVersion,
+            config: config,
+            dayStatesByDate: dayStateByDate.mapValues(cachedDayState(from:)),
+            rotationOffsetsByDate: rotationOffsetByDate,
+            earliestIndexedRotationDate: earliestIndexedRotationDate.map(
+                schoolScheduleDateString(from:)
+            ),
+            latestIndexedRotationDate: latestIndexedRotationDate.map(
+                schoolScheduleDateString(from:)
+            )
+        )
+        calculationCacheQueue.async { [cache] in
+            cache.saveCalculations(calculations)
+        }
+    }
+
+    func loadPersistedScheduleCalculations()
+        -> SchoolScheduleCalculationCacheData?
+    {
+        calculationCacheQueue.sync {
+            cache.loadCalculations()
+        }
+    }
+
+    func deletePersistedScheduleCalculations() {
+        calculationCacheQueue.sync {
+            cache.deleteCalculations()
+        }
+    }
+
+    func resetDerivedScheduleIndex() {
+        calculationCacheSaveTask?.cancel()
+        calculationCacheSaveTask = nil
+        didBuildDerivedScheduleIndex = false
+        dayStateByDate.removeAll(keepingCapacity: true)
+        rotationOffsetByDate.removeAll(keepingCapacity: true)
+        indexedBreakRanges.removeAll(keepingCapacity: true)
+        indexedSpecialDays.removeAll(keepingCapacity: true)
+        earliestIndexedRotationDate = nil
+        latestIndexedRotationDate = nil
+        deletePersistedScheduleCalculations()
     }
 
     func shouldShowZeroHour(for date: Date) -> Bool {
