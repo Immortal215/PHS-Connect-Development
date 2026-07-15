@@ -1,6 +1,7 @@
 import ElegantEmojiPicker
 import SDWebImageSwiftUI
 import SwiftUI
+import SwiftUIX
 
 struct NonBubbleMessageView: View {
     var message: Chat.ChatMessage

@@ -1,5 +1,6 @@
 import PopupView
 import SwiftUI
+import SwiftUIX
 
 struct FlowingScheduleView: View {
     var meetings: [Club.MeetingTime]

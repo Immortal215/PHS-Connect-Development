@@ -6,6 +6,7 @@ import GoogleSignInSwift
 import PopupView
 import Pow
 import SwiftUI
+import SwiftUIX
 
 struct ClubView: View {
     @Binding var clubs: [Club]

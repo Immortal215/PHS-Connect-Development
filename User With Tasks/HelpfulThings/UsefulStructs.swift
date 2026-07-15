@@ -2,6 +2,7 @@ import CommonSwiftUI
 import Pow
 import Shimmer
 import SwiftUI
+import SwiftUIX
 
 struct TabBarButton: View {
     @AppStorage("selectedTab") var selectedTab = 3

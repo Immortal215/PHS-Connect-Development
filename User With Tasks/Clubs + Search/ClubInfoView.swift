@@ -8,6 +8,7 @@ import PopupView
 import Pow
 import SDWebImageSwiftUI
 import SwiftUI
+import SwiftUIX
 
 struct ClubInfoView: View {
     @State var club: Club

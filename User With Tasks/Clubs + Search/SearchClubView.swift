@@ -8,6 +8,7 @@ import PopupView
 import Pow
 import Shimmer
 import SwiftUI
+import SwiftUIX
 
 struct SearchClubView: View {
     @Binding var clubs: [Club]

@@ -8,6 +8,7 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SDWebImageSwiftUI
 import SwiftUI
+import SwiftUIX
 
 struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()

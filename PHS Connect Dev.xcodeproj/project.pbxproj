@@ -10,6 +10,7 @@
 		3D17D1982CE796A5001EC760 /* CUIExpandableButton in Frameworks */ = {isa = PBXBuildFile; productRef = 3D17D1972CE796A5001EC760 /* CUIExpandableButton */; };
 		713417852D812CFB0006A149 /* ChangelogKit in Frameworks */ = {isa = PBXBuildFile; productRef = 713417842D812CFB0006A149 /* ChangelogKit */; };
 		7136E9522D19E6A200C1A286 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 7136E9512D19E6A200C1A286 /* PopupView */; };
+		71436DB03007002B00D7A332 /* SwiftUIX in Frameworks */ = {isa = PBXBuildFile; productRef = 71436DAF3007002B00D7A332 /* SwiftUIX */; };
 		716022FD2CDB0DEB00E2887B /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 716022FC2CDB0DEB00E2887B /* Pow */; };
 		7165EA672E9D8A8300EBD5B0 /* ElegantEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */; };
 		7165EA6A2E9F3BDC00EBD5B0 /* CommonSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7165EA692E9F3BDC00EBD5B0 /* CommonSwiftUI */; };
@@ -85,6 +86,7 @@
 				B861A87C2CB81714006AF254 /* FirebaseInstallations in Frameworks */,
 				B861A8782CB81714006AF254 /* FirebaseFunctionsCombine-Community in Frameworks */,
 				B8A6DF642CC14F600014B5F8 /* GoogleSignIn in Frameworks */,
+				71436DB03007002B00D7A332 /* SwiftUIX in Frameworks */,
 				B861A8642CB81714006AF254 /* FirebaseAppDistribution-Beta in Frameworks */,
 				7136E9522D19E6A200C1A286 /* PopupView in Frameworks */,
 				71F3F0502D89CBE200CA1AF4 /* Shimmer in Frameworks */,
@@ -180,6 +182,7 @@
 				7165EA662E9D8A8300EBD5B0 /* ElegantEmojiPicker */,
 				7165EA692E9F3BDC00EBD5B0 /* CommonSwiftUI */,
 				71D450662F0D8287001EF534 /* RichText */,
+				71436DAF3007002B00D7A332 /* SwiftUIX */,
 			);
 			productName = "User with Tasks";
 			productReference = B861A8472CB811A0006AF254 /* PHS Connect Dev.app */;
@@ -226,6 +229,7 @@
 				7165EA652E9D8A8300EBD5B0 /* XCRemoteSwiftPackageReference "Elegant-Emoji-Picker" */,
 				7165EA682E9F3BDC00EBD5B0 /* XCRemoteSwiftPackageReference "Common_SwiftUI" */,
 				71D450652F0D8287001EF534 /* XCRemoteSwiftPackageReference "RichText" */,
+				71436DAE3007002B00D7A332 /* XCRemoteSwiftPackageReference "SwiftUIX" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B861A8482CB811A0006AF254 /* Products */;
@@ -495,6 +499,14 @@
 				minimumVersion = 3.1.4;
 			};
 		};
+		71436DAE3007002B00D7A332 /* XCRemoteSwiftPackageReference "SwiftUIX" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftUIX/SwiftUIX";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.1;
+			};
+		};
 		716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/EmergeTools/Pow.git";
@@ -592,6 +604,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7136E9502D19E6A200C1A286 /* XCRemoteSwiftPackageReference "PopupView" */;
 			productName = PopupView;
+		};
+		71436DAF3007002B00D7A332 /* SwiftUIX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 71436DAE3007002B00D7A332 /* XCRemoteSwiftPackageReference "SwiftUIX" */;
+			productName = SwiftUIX;
 		};
 		716022FC2CDB0DEB00E2887B /* Pow */ = {
 			isa = XCSwiftPackageProductDependency;

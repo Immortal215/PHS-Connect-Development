@@ -1,5 +1,5 @@
 {
-  "originHash" : "02f34b0e77c935c5c78c64b1a969d470b45af84fa1e7f725452f68e644d817b0",
+  "originHash" : "70580eaa00ce4b455c09d3f0dc939c01b52f40ba79c64a2f741a0a81d21ffc4a",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -287,6 +287,15 @@
       "state" : {
         "revision" : "0226e21f9bf355d40e07e5f5e1c33679d50e167f",
         "version" : "1.5.1"
+      }
+    },
+    {
+      "identity" : "swiftuix",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SwiftUIX/SwiftUIX",
+      "state" : {
+        "revision" : "e1754664a6105529b7978489164720185317c29e",
+        "version" : "0.3.1"
       }
     }
   ],

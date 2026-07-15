@@ -1,6 +1,7 @@
 import ElegantEmojiPicker
 import SDWebImageSwiftUI
 import SwiftUI
+import SwiftUIX
 
 struct MessageScrollView: View {
     @Binding var selectedChatID: String?

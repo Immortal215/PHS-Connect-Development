@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftUIX
 
 struct MeetingInfoView: View {
     let screenWidth = appScreenBounds.width

@@ -5,6 +5,7 @@ import GoogleSignIn
 import GoogleSignInSwift
 import Pow
 import SwiftUI
+import SwiftUIX
 
 struct HomePageScrollers: View {
     @State var filteredClubs: [Club]

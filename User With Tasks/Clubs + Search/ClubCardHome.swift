@@ -7,6 +7,7 @@ import Pow
 import SDWebImageSwiftUI
 import Shimmer
 import SwiftUI
+import SwiftUIX
 
 struct ClubCardHome: View {
     @State var club: Club

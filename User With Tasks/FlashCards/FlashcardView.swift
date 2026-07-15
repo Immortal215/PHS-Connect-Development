@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftUIX
 
 struct FlashcardView: View {
     var deck: Deck
