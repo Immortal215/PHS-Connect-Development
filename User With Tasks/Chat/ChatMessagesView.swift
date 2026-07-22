@@ -20,6 +20,8 @@ struct MessageScrollView: View {
     @State var isEmojiPickerPresented = false
     @State var selectedEmoji: Emoji? = nil
     @State var selectedEmojiMessage: Chat.ChatMessage?
+    @Binding var isReactionListPresented: Bool
+    @Binding var selectedReactionListMessage: Chat.ChatMessage?
     @State var clubsLeaderIn: [Club]
     let currentThreadName: String
     let threadMessages: [Chat.ChatMessage]
@@ -1758,6 +1760,8 @@ struct MessageScrollView: View {
                     isEmojiPickerPresented: $isEmojiPickerPresented,
                     selectedEmoji: $selectedEmoji,
                     selectedEmojiMessage: $selectedEmojiMessage,
+                    isReactionListPresented: $isReactionListPresented,
+                    selectedReactionListMessage: $selectedReactionListMessage,
                     loadingUsers: $loadingUsers,
                     expandedURLPreviewMessageID: $expandedURLPreviewMessageID,
                     clubsLeaderIn: clubsLeaderIn,

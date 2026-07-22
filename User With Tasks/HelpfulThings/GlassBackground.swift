@@ -3,7 +3,7 @@ import SwiftUI
 struct GlassBackground: View {
     var color: Color?
     var shape: AnyShape = AnyShape(
-        RoundedRectangle(cornerRadius: 25, style: .continuous)
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
     )  // must pass in a shape with AnyShape() around it!!!
     @AppStorage("darkMode") var darkMode = false
 

@@ -90,6 +90,9 @@ struct ChatView: View {
     @State var openChatIDFromNotification: String? = nil
     @State var openThreadNameFromNotification: String? = nil
     @State var openMessageIDFromNotification: String? = nil
+    
+    @State var isReactionListPresented: Bool = false
+    @State var selectedReactionListMessage: Chat.ChatMessage?
 
     @State var menuExpanded = false
     @State var settings = false
@@ -1251,6 +1254,8 @@ struct ChatView: View {
                     },
                     bubbles: $bubbles,
                     clubColor: .constant(colorFromClub(club: selectedClub)),
+                    isReactionListPresented: $isReactionListPresented,
+                    selectedReactionListMessage: $selectedReactionListMessage,
                     clubsLeaderIn: clubsLeaderIn,
                     currentThreadName: currentThread,
                     threadMessages: messageIndex.messages,
@@ -1284,6 +1289,17 @@ struct ChatView: View {
                 )
             }
             .padding(.trailing)
+            
+            if isReactionListPresented {
+                ReactionListView(
+                    selectedChatID: $selectedChatID,
+                    selectedThread: $selectedThread,
+                    isPresented: $isReactionListPresented,
+                    selectedMessage: $selectedReactionListMessage,
+                    userInfo: $userInfo,
+                    users: $users
+                )
+            }
         }
     }
 
@@ -2268,4 +2284,106 @@ struct ChatComposer: View {
         onDidSend()
     }
 
+}
+struct ReactionListView: View {
+    @Binding var selectedChatID: String?
+    @Binding var selectedThread: [String: String?]
+    @Binding var isPresented: Bool
+    @Binding var selectedMessage: Chat.ChatMessage?
+    
+    @Binding var userInfo: Personal?
+    @Binding var users: [String: Personal]
+    
+    var screenWidth = appScreenBounds.width
+    var screenHeight = appScreenBounds.height
+    
+    var body: some View {
+        if let message = selectedMessage {
+            VStack {
+                Spacer()
+                
+                ZStack {
+                    VStack {
+                        HStack {
+                            WebImage(
+                                url: URL(string: (message.sender == userInfo?.userID ? userInfo?.userImage : users[message.sender]?.userImage) ?? ""),
+                                content: { image in
+                                    image
+                                        .resizable()
+                                        .frame(width: 36, height: 36)
+                                        .clipShape(Circle())
+                                },
+                                placeholder: {
+                                    GlassBackground()
+                                        .frame(width: 36, height: 36)
+                                }
+                            )
+                            
+                            Text((message.attachmentURL == nil ? "" : "[Attachment]") + message.message)
+                                .font(.title)
+                        }
+                        .padding(.top)
+                        
+                        ScrollView {
+                            VStack {
+                                let sorted = (message.reactions ?? [:]).sorted(by: { $0.key < $1.key })
+                                ForEach(sorted, id: \.key) { pair in
+                                    HStack {
+                                        Text(pair.key + " - ")
+                                            .font(.title)
+                                        
+                                        ForEach(pair.value, id: \.self) { value in
+                                            WebImage(
+                                                url: URL(string: (value == userInfo?.userID ? userInfo?.userImage : users[value]?.userImage) ?? ""),
+                                                content: { image in
+                                                    image
+                                                        .resizable()
+                                                        .frame(width: 30, height: 30)
+                                                        .clipShape(Circle())
+                                                },
+                                                placeholder: {
+                                                    GlassBackground()
+                                                        .frame(width: 30, height: 30)
+                                                }
+                                            )
+                                            
+                                            Text((value == userInfo?.userID ? userInfo?.userName.capitalized : users[value]?.userName.capitalized) ?? "Loading...")
+                                                .font(.title3)
+                                                .padding(.trailing)
+                                        }
+                                        
+                                        Spacer()
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                        }
+                    }
+                    
+                    HStack {
+                        Spacer()
+                        
+                        VStack {
+                            Button {
+                                isPresented = false
+                            } label: {
+                                Image(systemName: "xmark.circle")
+                                    .font(.system(size: 30))
+                            }
+                            .padding()
+                            .buttonStyle(.glass)
+                            
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(height: 0.4*screenHeight)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
+                .backgroundStyle(.tertiary.opacity(0.3))
+                .clipped()
+                .padding(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 24))
+            }
+        }
+    }
 }

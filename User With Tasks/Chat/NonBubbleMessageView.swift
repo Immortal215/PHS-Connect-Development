@@ -29,6 +29,8 @@ struct NonBubbleMessageView: View {
     @Binding var isEmojiPickerPresented: Bool
     @Binding var selectedEmoji: Emoji?
     @Binding var selectedEmojiMessage: Chat.ChatMessage?
+    @Binding var isReactionListPresented: Bool
+    @Binding var selectedReactionListMessage: Chat.ChatMessage?
     @Binding var loadingUsers: Set<String>
     @Binding var expandedURLPreviewMessageID: String?
     @State var clubsLeaderIn: [Club]
@@ -275,13 +277,19 @@ struct NonBubbleMessageView: View {
                 nonBubbleMenuMessage = message
             }
         }
-        .overlay {
-            messageMenuOverlay
-        }
         .emojiPicker(
             isPresented: $isEmojiPickerPresented,
             selectedEmoji: $selectedEmoji
         )
+        .apply {
+            if isMenuVisibleForMessage {
+                $0.overlay {
+                    messageMenuOverlay
+                }
+            } else {
+                $0
+            }
+        }
     }
 
     var mainMessageRow: some View {
@@ -435,26 +443,24 @@ struct NonBubbleMessageView: View {
 
     @ViewBuilder
     var messageMenuOverlay: some View {
-        if isMenuVisibleForMessage {
-            HStack {
-                Spacer()
+        HStack {
+            Spacer()
 
-                ZStack {
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(Color.secondarySystemBackground)
+            ZStack {
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(Color.secondarySystemBackground)
 
-                    messageMenuContent
-                }
-                .padding(.vertical, 14)
-                .padding(.horizontal, 18)
-                .shadow(radius: 8)
-                .scaleEffect(nonBubbleMenuMessage == nil ? 0.85 : 1)
-                .animation(
-                    .spring(response: 0.25, dampingFraction: 0.7),
-                    value: nonBubbleMenuMessage == nil
-                )
-                .fixedSize()
+                messageMenuContent
             }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .shadow(radius: 8)
+            .scaleEffect(nonBubbleMenuMessage == nil ? 0.85 : 1)
+            .animation(
+                .spring(response: 0.25, dampingFraction: 0.7),
+                value: nonBubbleMenuMessage == nil
+            )
+            .fixedSize()
         }
     }
 
@@ -553,12 +559,30 @@ struct NonBubbleMessageView: View {
 
         if !sortedReactions.isEmpty {
             HStack(spacing: 4) {
-                ForEach(sortedReactions, id: \.key) { pair in
+                ForEach(Array(sortedReactions.prefix(6)), id: \.key) { pair in
                     reactionChip(
                         emoji: pair.key,
                         reactingUsers: pair.value
                     )
                 }
+                
+                Button {
+                    isReactionListPresented = true
+                    selectedReactionListMessage = message
+                } label: {
+                    if sortedReactions.count > 6 {
+                        Text("...")
+                    } else {
+                        Image(systemName: "line.horizontal.3.circle")
+                            .font(.system(size: 20))
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(Color(.systemGray5))
+                )
 
                 addReactionPill
 
@@ -597,7 +621,7 @@ struct NonBubbleMessageView: View {
             toggleReaction(emoji: emoji)
         }
     }
-
+    
     var addReactionPill: some View {
         Button {
             showEmojiPickerForCurrentMessage()
