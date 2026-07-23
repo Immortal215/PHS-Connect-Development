@@ -488,6 +488,19 @@ struct MessageScrollView: View {
 
                                                 Text("React")
                                             }
+                                            
+                                            if message.reactions != nil {
+                                                Button {
+                                                    isReactionListPresented = true
+                                                    selectedReactionListMessage = message
+                                                } label: {
+                                                    Label(
+                                                        "Reaction Details",
+                                                        systemImage:
+                                                            "info.circle"
+                                                    )
+                                                }
+                                            }
                                         }
                                     } else {
                                         if let url = normalizedURL(
@@ -609,7 +622,6 @@ struct MessageScrollView: View {
                                         } else {
                                             messageText(message.message)
                                                 .foregroundStyle(.white)
-                                                .brightness(1)
                                                 .padding(
                                                     EdgeInsets(
                                                         top: 15,
@@ -764,6 +776,19 @@ struct MessageScrollView: View {
                                                             }
 
                                                             Text("React")
+                                                        }
+                                                        
+                                                        if message.reactions != nil {
+                                                            Button {
+                                                                isReactionListPresented = true
+                                                                selectedReactionListMessage = message
+                                                            } label: {
+                                                                Label(
+                                                                    "Reaction Details",
+                                                                    systemImage:
+                                                                        "info.circle"
+                                                                )
+                                                            }
                                                         }
                                                     } else {
                                                         Label(
@@ -1168,6 +1193,19 @@ struct MessageScrollView: View {
 
                                                     Text("React")
                                                 }
+                                                
+                                                if message.reactions != nil {
+                                                    Button {
+                                                        isReactionListPresented = true
+                                                        selectedReactionListMessage = message
+                                                    } label: {
+                                                        Label(
+                                                            "Reaction Details",
+                                                            systemImage:
+                                                                "info.circle"
+                                                        )
+                                                    }
+                                                }
                                             }
                                             //                                            WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
                                             //                                                switch phase {
@@ -1491,6 +1529,19 @@ struct MessageScrollView: View {
 
                                                                     Text(
                                                                         "React"
+                                                                    )
+                                                                }
+                                                            }
+                                                            
+                                                            if message.reactions != nil {
+                                                                Button {
+                                                                    isReactionListPresented = true
+                                                                    selectedReactionListMessage = message
+                                                                } label: {
+                                                                    Label(
+                                                                        "Reaction Details",
+                                                                        systemImage:
+                                                                            "info.circle"
                                                                     )
                                                                 }
                                                             }
@@ -1833,7 +1884,7 @@ struct MessageScrollView: View {
                     }
                 }
 
-                ForEach(sortedReactions, id: \.key) { emoji, users in
+                ForEach(Array(sortedReactions.prefix(max(1,min(message.message.prefix{$0 != "\n"}.count/5-1,8)))), id: \.key) { emoji, users in
                     HStack(spacing: 4) {
                         Text(emoji)
                         if users.count > 1 {
@@ -1885,6 +1936,25 @@ struct MessageScrollView: View {
                         }
                     }
                 }
+                
+                if sortedReactions.count > max(1,min(message.message.prefix{$0 != "\n"}.count/5-1,8)) {
+                    Button {
+                        isReactionListPresented = true
+                        selectedReactionListMessage = message
+                    } label: {
+                        Text("...")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .apply {
+                                if #available(iOS 26, *) {
+                                    $0.glassEffect()
+                                }
+                            }
+                    )
+                }
 
                 if !swap {
                     Button {
@@ -1894,6 +1964,16 @@ struct MessageScrollView: View {
                         ZStack {
                             Image(systemName: "face.smiling")
                                 .font(.system(size: 20, weight: .medium))
+
+                            Image(systemName: "plus")
+                                .font(.system(size: 8, weight: .medium))
+                                .offset(x: 10, y: -8)
+                                .background {
+                                    Circle()
+                                        .fill(Color.systemGray5)
+                                        .offset(x: 10, y: -8)
+                                        .frame(width: 12, height: 12)
+                                }
                         }
                     }
                     .padding(.horizontal, 8)
