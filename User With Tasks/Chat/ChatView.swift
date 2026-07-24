@@ -464,13 +464,6 @@ struct ChatView: View {
                                                     .lineLimit(1)
                                             }
                                         } else {
-                                            Text("THREADS")
-                                                .font(.caption)
-                                                .fontWeight(.semibold)
-                                                .padding(.horizontal, 16)
-                                                .padding(.top, 16)
-                                                .padding(.bottom, 8)
-
                                             let threadInfo =
                                                 cachedThreadSidebarInfoByChatID[
                                                     selected.chatID
@@ -482,6 +475,43 @@ struct ChatView: View {
                                                 .lastReadMessageIDsByThread
                                             let threadLastMessageID = threadInfo
                                                 .lastMessageIDsByThread
+                                            
+                                            Text("THREADS")
+                                                .font(.caption)
+                                                .fontWeight(.semibold)
+                                                .padding(.horizontal, 16)
+                                                .padding(.top, 16)
+                                                .padding(.bottom, 8)
+                                                .onChange(of: selectedChatID) {
+                                                    if isLeaderInSelectedClub && !threads.contains("announcements") {
+                                                        Task {
+                                                            await sendMessage(
+                                                                chatID:
+                                                                    selected
+                                                                    .chatID,
+                                                                message:
+                                                                    Chat
+                                                                    .ChatMessage(
+                                                                        messageID:
+                                                                            String(),
+                                                                        message:
+                                                                            "Announcements Thread Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                                                                        sender:
+                                                                            userInfo?
+                                                                            .userID
+                                                                            ?? "",
+                                                                        date:
+                                                                            Date()
+                                                                            .timeIntervalSince1970,
+                                                                        threadName:
+                                                                            "announcements",
+                                                                        systemGenerated:
+                                                                            true
+                                                                    )
+                                                            )
+                                                        }
+                                                    }
+                                                }
 
                                             if isLeaderInSelectedClub {
                                                 if newThreadName == "" {
@@ -876,8 +906,7 @@ struct ChatView: View {
                                                                 .system(
                                                                     size: 14,
                                                                     weight:
-                                                                        currentThread
-                                                                        == thread
+                                                                        currentThread == thread || thread == "general" || thread == "announcements"
                                                                         ? .semibold
                                                                         : .regular
                                                                 )
@@ -889,8 +918,9 @@ struct ChatView: View {
                                                                         size:
                                                                             14,
                                                                         weight:
-                                                                            currentThread
-                                                                            == thread
+                                                                            thread == "general" || thread == "announcements"
+                                                                            ? .bold
+                                                                            : currentThread == thread
                                                                             ? .semibold
                                                                             : .regular
                                                                     )
@@ -960,7 +990,7 @@ struct ChatView: View {
                                                         PlainButtonStyle()
                                                     )
                                                     .contextMenu {
-                                                        if thread != "general"
+                                                        if thread != "general" && thread != "announcements"
                                                             && isLeaderInSelectedClub
                                                         {
                                                             Button(
@@ -1028,24 +1058,21 @@ struct ChatView: View {
                                                     {
                                                         Image(
                                                             systemName:
-                                                                userInfo?
-                                                                .mutedThreadsByChat?[
-                                                                    selected
-                                                                        .chatID
-                                                                ]?.contains(
-                                                                    thread
-                                                                ) == true
+                                                                userInfo?.mutedThreadsByChat?[selected.chatID]?.contains(thread) == true && thread != "announcements"
                                                                 ? "bell.slash"
                                                                 : "bell"
                                                         )
+                                                        .font(.system(size: 16, weight: thread == "announcements" ? .heavy : .regular))
                                                         .padding(.trailing)
                                                         .onTapGesture(perform: {
-                                                            toggleMutedThread(
-                                                                chatID: selected
-                                                                    .chatID,
-                                                                threadName:
-                                                                    thread
-                                                            )
+                                                            if thread != "announcements" {
+                                                                toggleMutedThread(
+                                                                    chatID: selected
+                                                                        .chatID,
+                                                                    threadName:
+                                                                        thread
+                                                                )
+                                                            }
                                                             //                                                            if mutedThreads.contains(selected.chatID + "." + thread) {
                                                             //                                                                mutedThreads = mutedThreads.replacingOccurrences(of: selected.chatID + "." + thread + ",", with: "")
                                                             //                                                            } else {
@@ -1285,7 +1312,8 @@ struct ChatView: View {
                         DispatchQueue.main.async {
                             updateUnreadIndicator()
                         }
-                    }
+                    },
+                    clubsLeaderIn: clubsLeaderIn
                 )
             }
             .padding(.trailing)
@@ -2182,6 +2210,7 @@ struct ChatComposer: View {
     @State var isUploadingAttachment = false
     @State var uploadError: String?
     @State var isDropTargeted = false
+    @State var clubsLeaderIn: [Club]
 
     let maxDraftAttachments = 5
 
@@ -2194,7 +2223,11 @@ struct ChatComposer: View {
     }
 
     var canSendMessages: Bool {
-        isSuperAdminEmail(userInfo?.userEmail) || isD214User
+        let isLeaderInSelectedClub: Bool =
+            clubsLeaderIn.contains(where: {
+                $0.clubID == selectedChat?.clubID
+            })
+        return isSuperAdminEmail(userInfo?.userEmail) || (isD214User && (selectedThread[selectedChat?.chatID ?? "general"] != "announcements" || isLeaderInSelectedClub || replyingMessageID != nil))
     }
 
     var canAcceptMoreAttachments: Bool {
