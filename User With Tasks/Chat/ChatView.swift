@@ -1302,6 +1302,7 @@ struct ChatView: View {
                     selectedThread: $selectedThread,
                     chats: $chats,
                     userInfo: $userInfo,
+                    users: $users,
                     editingMessageID: $editingMessageID,
                     replyingMessageID: $replyingMessageID,
                     focusRequestID: composerFocusRequestID,
@@ -2190,6 +2191,7 @@ struct ChatComposer: View {
     @Binding var selectedThread: [String: String?]
     @Binding var chats: [Chat]
     @Binding var userInfo: Personal?
+    @Binding var users: [String: Personal]
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
     var focusRequestID: Int

@@ -200,12 +200,26 @@ extension ChatComposer {
                 })
             {
                 HStack {
-                    Text("Replying to messageID: \(message.messageID)")
+                    Text("Replying to:")
                         .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.8))
-                        .cornerRadius(10)
+                    
+                    WebImage(
+                        url: URL(string: (message.sender == userInfo?.userID ? userInfo?.userImage : users[message.sender]?.userImage) ?? ""),
+                        content: { image in
+                            image
+                                .resizable()
+                                .frame(width: 36, height: 36)
+                                .clipShape(Circle())
+                        },
+                        placeholder: {
+                            GlassBackground()
+                                .frame(width: 36, height: 36)
+                        }
+                    )
+                    
+                    Text((message.attachmentURL == nil ? "" : "[Attachment]") + message.message)
+                        .font(.title)
+                        .lineLimit(1)
 
                     Spacer()
 
@@ -215,9 +229,11 @@ extension ChatComposer {
                         focusedOnSendBar = false
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.white)
                     }
+                    .buttonStyle(.glass)
                 }
+                .padding()
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
                 .padding(.horizontal)
             }
         }
