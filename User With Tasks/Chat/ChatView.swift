@@ -482,36 +482,6 @@ struct ChatView: View {
                                                 .padding(.horizontal, 16)
                                                 .padding(.top, 16)
                                                 .padding(.bottom, 8)
-                                                .onChange(of: selectedChatID) {
-                                                    if isLeaderInSelectedClub && !threads.contains("announcements") {
-                                                        Task {
-                                                            await sendMessage(
-                                                                chatID:
-                                                                    selected
-                                                                    .chatID,
-                                                                message:
-                                                                    Chat
-                                                                    .ChatMessage(
-                                                                        messageID:
-                                                                            String(),
-                                                                        message:
-                                                                            "Announcements Thread Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
-                                                                        sender:
-                                                                            userInfo?
-                                                                            .userID
-                                                                            ?? "",
-                                                                        date:
-                                                                            Date()
-                                                                            .timeIntervalSince1970,
-                                                                        threadName:
-                                                                            "announcements",
-                                                                        systemGenerated:
-                                                                            true
-                                                                    )
-                                                            )
-                                                        }
-                                                    }
-                                                }
 
                                             if isLeaderInSelectedClub {
                                                 if newThreadName == "" {
@@ -1150,6 +1120,7 @@ struct ChatView: View {
                                     selectedThread[chatListener] = "general"
                                 }
                             }
+                            ensureAnnouncementsThreadExists(for: chatListener)
 
                             DispatchQueue.main.asyncAfter(
                                 deadline: .now() + loadingOverlayHoldTime
@@ -1781,6 +1752,33 @@ struct ChatView: View {
             messages.insert(message, at: insertIndex)
         } else {
             messages.append(message)
+        }
+    }
+
+    func ensureAnnouncementsThreadExists(for chatID: String) {
+        guard
+            let chat = chats.first(where: { $0.chatID == chatID }),
+            let club = clubs.first(where: { $0.clubID == chat.clubID }),
+            isClubLeaderOrSuperAdmin(
+                club: club,
+                userEmail: userInfo?.userEmail
+            ),
+            messageIndexByChatID[chatID]?["announcements"] == nil
+        else { return }
+
+        Task {
+            await sendMessage(
+                chatID: chatID,
+                message: Chat.ChatMessage(
+                    messageID: String(),
+                    message:
+                        "Announcements Thread Created by \(userInfo?.userName ?? (userInfo?.userEmail ?? "Anonymous"))",
+                    sender: userInfo?.userID ?? "",
+                    date: Date().timeIntervalSince1970,
+                    threadName: "announcements",
+                    systemGenerated: true
+                )
+            )
         }
     }
 

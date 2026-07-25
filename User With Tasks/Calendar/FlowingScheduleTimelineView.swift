@@ -126,9 +126,12 @@ struct FlowingScheduleTimelineView: View {
     }
 
     func canDrag(_ meeting: Club.MeetingTime) -> Bool {
-        clubs.first { $0.clubID == meeting.clubID }?.leaders.contains(
-            viewModel?.userEmail ?? ""
-        ) == true
+        guard let club = clubs.first(where: { $0.clubID == meeting.clubID })
+        else { return false }
+        return isClubLeaderOrSuperAdmin(
+            club: club,
+            userEmail: viewModel?.userEmail
+        )
     }
 
     func dragGesture(for meeting: Club.MeetingTime) -> some Gesture {

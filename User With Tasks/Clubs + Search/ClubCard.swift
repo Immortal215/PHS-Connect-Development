@@ -192,6 +192,11 @@ struct ClubCard: View {
                                             ? "Apply" : "Connect")
                         ) {
                             if let email = viewModel.userEmail {
+                                guard !isClubLeaderOrSuperAdmin(
+                                    club: club,
+                                    userEmail: email
+                                ) else { return }
+
                                 if club.requestNeeded != nil {  // if you need to request to join
                                     if !club.members.contains(email)
                                         && !club.leaders.contains(email)
