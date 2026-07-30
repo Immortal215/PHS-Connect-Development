@@ -66,7 +66,6 @@ struct ContentView: View {
                         }
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea()
                 } else {
                     ZStack {
                         if advSearchShown {  // add indexing is in TabStructs.swift
@@ -321,9 +320,9 @@ struct ContentView: View {
                 if tabsCache == nil {
                     tabsCache = UserTabPreferences(
                         order: [
-                            .search, .clubs, .chat, .flashcards, .settings,
+                            .search, .clubs, .chat, .calendar, .settings,
                         ],
-                        hidden: []
+                        hidden: [.flashcards]
                     )
                 }
 
