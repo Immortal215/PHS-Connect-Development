@@ -204,9 +204,9 @@ struct ContentView: View {
                         advSearchShown = true
                         calendarScrollPoint = 12
                         if !viewModel.isGuestUser && selectedTab == 0 {
-                            selectedTab = 1  // home
+                            selectedTab = AppTab.search.index
                         } else if selectedTab == 0 {
-                            selectedTab = 3  // settings
+                            selectedTab = AppTab.settings.index
                         }
 
                         if let pending = NotificationOpenRouter.shared
@@ -216,7 +216,7 @@ struct ContentView: View {
                             pendingThreadName = pending.threadName
                             pendingMessageID = pending.messageID
                             DispatchQueue.main.async {
-                                selectedTab = 6
+                                selectedTab = AppTab.chat.index
                             }
                         }
 
@@ -253,7 +253,7 @@ struct ContentView: View {
 
                         advSearchShown = true
                         DispatchQueue.main.async {
-                            selectedTab = 6
+                            selectedTab = AppTab.clubs.index
                         }
                     }
                     .onReceive(

@@ -30,7 +30,6 @@ struct FloatingTabBar: View {
     @Namespace var namespace
 
     var body: some View {
-        if selectedTab != 6 {
             if keyboardHeight > 0 {
                 keyboardBar
             } else {
@@ -47,7 +46,6 @@ struct FloatingTabBar: View {
                 .padding()
             }
         }
-    }
 
     var keyboardBar: some View {
         VStack(alignment: .center, spacing: 16) {
