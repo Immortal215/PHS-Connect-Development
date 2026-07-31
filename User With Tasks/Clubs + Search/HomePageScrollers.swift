@@ -90,7 +90,7 @@ struct HomePageScrollers: View {
                 } else {
                     HStack(alignment: .center) {
                         Button("Join Clubs!") {
-                            selectedTab = 0
+                            selectedTab = AppTab.search.index
                         }
                         .font(.largeTitle)
                         .bold()

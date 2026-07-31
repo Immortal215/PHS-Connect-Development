@@ -203,12 +203,10 @@ struct ContentView: View {
                         }
                         advSearchShown = true
                         calendarScrollPoint = 12
-                        if !viewModel.isGuestUser && selectedTab == 0 {
+                        
+                        if selectedTab == AppTab.settings.index {
                             selectedTab = AppTab.search.index
-                        } else if selectedTab == 0 {
-                            selectedTab = AppTab.settings.index
                         }
-
                         if let pending = NotificationOpenRouter.shared
                             .consumePending()
                         {
@@ -253,7 +251,7 @@ struct ContentView: View {
 
                         advSearchShown = true
                         DispatchQueue.main.async {
-                            selectedTab = AppTab.clubs.index
+                            selectedTab = AppTab.chat.index
                         }
                     }
                     .onReceive(
@@ -320,9 +318,9 @@ struct ContentView: View {
                 if tabsCache == nil {
                     tabsCache = UserTabPreferences(
                         order: [
-                            .search, .clubs, .chat, .calendar, .settings,
+                            .search, .chat, .calendar, .settings,
                         ],
-                        hidden: [.flashcards]
+                        hidden: [.clubs, .flashcards]
                     )
                 }
 

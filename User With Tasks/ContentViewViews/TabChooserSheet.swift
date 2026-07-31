@@ -80,7 +80,7 @@ struct TabChooserSheet: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
 
-                            if tab == .clubs || tab == .settings {
+                            if tab == .settings {
                                 Image(systemName: "lock")
                                     .foregroundStyle(.blue)
                             }
@@ -133,3 +133,4 @@ struct TabChooserSheet: View {
         }
     }
 }
+

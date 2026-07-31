@@ -342,72 +342,72 @@ struct ClubInfoView: View {
                             }
                         }
 
-                        Button {
-                            if let announcements = club.announcements {
-                                let sortedAnnouncements = announcements.sorted {
-                                    let date1 = dateFromString($0.value.date)
-                                    let date2 = dateFromString($1.value.date)
-                                    return date1 > date2
-                                }
-
-                                if let latestAnnouncementDate =
-                                    sortedAnnouncements.first?.value.date,
-                                    Date()
-                                        > dateFromString(latestAnnouncementDate)
-                                {
-                                    showAddAnnouncement.toggle()
-                                } else {
-                                    dropper(
-                                        title:
-                                            "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
-                                        subtitle:
-                                            "One Announcement Per Minute!",
-                                        icon: UIImage(systemName: "timer")
-                                    )
-                                }
-                            } else {
-                                showAddAnnouncement.toggle()
-                            }
-                        } label: {
-                            Text(latestAnnouncementMessage)
-                                .font(.subheadline)
-                                .foregroundStyle(.blue)
-                                .padding(6)
-                                .background(Color.blue.opacity(0.2))
-                                .cornerRadius(8)
-                        }
-                        .sheet(isPresented: $showAddAnnouncement) {
-                            AddAnnouncementSheet(
-                                clubName: club.name,
-                                email: viewModel.userEmail ?? "",
-                                clubID: club.clubID,
-                                onSubmit: {
-                                    oneMinuteAfter = Date().addingTimeInterval(
-                                        60
-                                    )
-                                },
-                                viewModel: viewModel
-                            )
-                            .presentationSizing(.page)
-                            .presentationDragIndicator(.visible)
-                            .background(GlassBackground())
-                        }
-
+//                        Button {
+//                            if let announcements = club.announcements {
+//                                let sortedAnnouncements = announcements.sorted {
+//                                    let date1 = dateFromString($0.value.date)
+//                                    let date2 = dateFromString($1.value.date)
+//                                    return date1 > date2
+//                                }
+//
+//                                if let latestAnnouncementDate =
+//                                    sortedAnnouncements.first?.value.date,
+//                                    Date()
+//                                        > dateFromString(latestAnnouncementDate)
+//                                {
+//                                    showAddAnnouncement.toggle()
+//                                } else {
+//                                    dropper(
+//                                        title:
+//                                            "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
+//                                        subtitle:
+//                                            "One Announcement Per Minute!",
+//                                        icon: UIImage(systemName: "timer")
+//                                    )
+//                                }
+//                            } else {
+//                                showAddAnnouncement.toggle()
+//                            }
+//                        } label: {
+//                            Text(latestAnnouncementMessage)
+//                                .font(.subheadline)
+//                                .foregroundStyle(.blue)
+//                                .padding(6)
+//                                .background(Color.blue.opacity(0.2))
+//                                .cornerRadius(8)
+//                        }
+//                        .sheet(isPresented: $showAddAnnouncement) {
+//                            AddAnnouncementSheet(
+//                                clubName: club.name,
+//                                email: viewModel.userEmail ?? "",
+//                                clubID: club.clubID,
+//                                onSubmit: {
+//                                    oneMinuteAfter = Date().addingTimeInterval(
+//                                        60
+//                                    )
+//                                },
+//                                viewModel: viewModel
+//                            )
+//                            .presentationSizing(.page)
+//                            .presentationDragIndicator(.visible)
+//                            .background(GlassBackground())
+//                        }
+//
                     }
 
-                    if let announcements = club.announcements,
-                        viewModel.isGuestUser == false
-                    {
-                        AnnouncementsView(
-                            announcements: announcements,
-                            viewModel: viewModel,
-                            isClubMember: isClubMemberLeaderOrSuperAdmin(
-                                club: club,
-                                userEmail: viewModel.userEmail
-                            ),
-                            userInfo: $userInfo
-                        )
-                    }
+//                    if let announcements = club.announcements,
+//                        viewModel.isGuestUser == false
+//                    {
+//                        AnnouncementsView(
+//                            announcements: announcements,
+//                            viewModel: viewModel,
+//                            isClubMember: isClubMemberLeaderOrSuperAdmin(
+//                                club: club,
+//                                userEmail: viewModel.userEmail
+//                            ),
+//                            userInfo: $userInfo
+//                        )
+//                    }
 
                     Text("Location")
                         .font(.headline)
@@ -468,7 +468,7 @@ struct ClubInfoView: View {
                                         Button(action: {
                                             tagsExpanded = false
                                             currentSearchingBy = "Genre"
-                                            selectedTab = 0
+                                            selectedTab = AppTab.search.index
                                             sharedGenre = genre
                                             presentationMode.wrappedValue
                                                 .dismiss()
