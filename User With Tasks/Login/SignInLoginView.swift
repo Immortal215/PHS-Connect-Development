@@ -37,6 +37,10 @@ struct SignInLoginView: View {
                         .padding(.horizontal, 24)
                         .opacity(revealContent ? 1 : 0)
                         .offset(y: revealContent ? 0 : 28)
+                        .animation(
+                            reduceMotion ? nil : .smooth(duration: 0.6),
+                            value: revealContent
+                        )
 
                     Spacer()
 
@@ -47,17 +51,8 @@ struct SignInLoginView: View {
                 }
             }
             .onAppear {
-                withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) {
-                    revealContent = true
-                }
-
-                guard !reduceMotion else { return }
-                withAnimation(
-                    .easeInOut(duration: 2.2)
-                        .repeatForever(autoreverses: true)
-                ) {
-                    pulseLogo = true
-                }
+                revealContent = true
+                pulseLogo = !reduceMotion
             }
         }
     }
@@ -69,6 +64,13 @@ struct SignInLoginView: View {
                     .stroke(Color.blue.opacity(0.22), lineWidth: 3)
                     .frame(width: 116, height: 116)
                     .scaleEffect(pulseLogo ? 1.08 : 0.92)
+                    .animation(
+                        reduceMotion
+                            ? nil
+                            : .easeInOut(duration: 2.2)
+                                .repeatForever(autoreverses: true),
+                        value: pulseLogo
+                    )
 
                 GlassBackground(
                     color: .blue,
