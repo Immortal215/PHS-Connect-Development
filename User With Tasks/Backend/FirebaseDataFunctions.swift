@@ -52,6 +52,17 @@ func setFirebaseValue(_ value: Any?, at reference: DatabaseReference) async thro
     }
 }
 
+func setClubChatEnabled(clubID: String, enabled: Bool) async throws {
+    let clubReference = Database.database().reference().child("clubs").child(
+        clubID
+    )
+
+    _ = try await clubReference.updateChildValues([
+        "chatEnabled": enabled,
+        "lastUpdated": Date().timeIntervalSince1970,
+    ])
+}
+
 func personal(from snapshot: DataSnapshot, userID: String) -> Personal? {
     if let value = snapshot.value as? [String: Any] {
         do {

@@ -20,6 +20,7 @@ struct Club: Codable, Equatable, Hashable {
     var clubColor: String?  // color
     var requestNeeded: Bool?
     var chatIDs: [String]?  // chatID's for caching stuff
+    var chatEnabled: Bool?
     var lastUpdated: Double?  // timestamp from 1970 and ALWAYS UPDATE THIS WHENEVER UPDATING A FUNCTION
     var leadersUIDs: [String]?  // add implementation later
     var membersUIDs: [String]? // add implementation later

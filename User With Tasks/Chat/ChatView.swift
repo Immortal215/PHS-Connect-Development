@@ -138,6 +138,14 @@ struct ChatView: View {
         return chats.first(where: { $0.chatID == selectedChatID })
     }
 
+    var selectedClubChatEnabled: Bool {
+        guard let clubID = selectedChat?.clubID,
+            let club = clubs.first(where: { $0.clubID == clubID })
+        else { return true }
+
+        return club.chatEnabled ?? true
+    }
+
     var selectedChatBinding: Binding<Chat?> {
         Binding<Chat?>(
             get: {
@@ -250,6 +258,8 @@ struct ChatView: View {
                         if let club = clubs.first(where: {
                             $0.clubID == selected.clubID
                         }) {
+                            let clubChatEnabled = club.chatEnabled ?? true
+
                             VStack(alignment: .leading, spacing: 0) {
 
                                 HStack {
@@ -300,6 +310,52 @@ struct ChatView: View {
                                                     return "Mentions"
                                                 }
                                             }()
+
+                                            if isLeaderInSelectedClub {
+                                                HStack(spacing: 12) {
+                                                    VStack(
+                                                        alignment: .leading,
+                                                        spacing: 4
+                                                    ) {
+                                                        Text("Club Chat")
+                                                            .font(.headline)
+
+                                                        Text(
+                                                            clubChatEnabled
+                                                                ? "Enabled for everyone"
+                                                                : "Disabled for everyone"
+                                                        )
+                                                        .font(.caption)
+                                                        .foregroundStyle(
+                                                            .secondary
+                                                        )
+                                                    }
+
+                                                    Spacer()
+
+                                                    Toggle(
+                                                        "Club Chat",
+                                                        isOn: Binding(
+                                                            get: {
+                                                                clubChatEnabled
+                                                            },
+                                                            set: { enabled in
+                                                                updateClubChatEnabled(
+                                                                    clubID: club
+                                                                        .clubID,
+                                                                    enabled:
+                                                                        enabled
+                                                                )
+                                                            }
+                                                        )
+                                                    )
+                                                    .labelsHidden()
+                                                }
+                                                .padding()
+
+                                                Divider()
+                                                    .padding(.horizontal)
+                                            }
 
                                             HStack(spacing: 12) {
                                                 VStack(
@@ -977,6 +1033,7 @@ struct ChatView: View {
                                     .padding(.bottom, 8)
                                     .foregroundStyle(Color.systemGray)
                                 }
+                                .allowsHitTesting(settings || clubChatEnabled)
                             }
                             .frame(width: 240)
                             .background {
@@ -989,9 +1046,20 @@ struct ChatView: View {
 
                     // RIGHT COLUMN: Messages - Takes remaining space
                     if selectedChatID != nil {
-                        messageSection
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .allowsHitTesting(chatsEnabled)
+                        ZStack {
+                            messageSection
+                                .frame(
+                                    maxWidth: .infinity,
+                                    maxHeight: .infinity
+                                )
+                                .allowsHitTesting(
+                                    chatsEnabled && selectedClubChatEnabled
+                                )
+
+                            if !selectedClubChatEnabled {
+                                ClubChatDisabledOverlay()
+                            }
+                        }
                     } else {
                         VStack {
                             Spacer()
@@ -1672,8 +1740,10 @@ struct ChatView: View {
 
     func ensureAnnouncementsThreadExists(for chatID: String) {
         guard
+            chatsEnabled,
             let chat = chats.first(where: { $0.chatID == chatID }),
             let club = clubs.first(where: { $0.clubID == chat.clubID }),
+            club.chatEnabled ?? true,
             isClubLeaderOrSuperAdmin(
                 club: club,
                 userEmail: userInfo?.userEmail
@@ -1694,6 +1764,26 @@ struct ChatView: View {
                     systemGenerated: true
                 )
             )
+        }
+    }
+
+    func updateClubChatEnabled(clubID: String, enabled: Bool) {
+        guard let club = clubs.first(where: { $0.clubID == clubID }),
+            isClubLeaderOrSuperAdmin(
+                club: club,
+                userEmail: userInfo?.userEmail
+            )
+        else { return }
+
+        Task {
+            do {
+                try await setClubChatEnabled(
+                    clubID: clubID,
+                    enabled: enabled
+                )
+            } catch {
+                print("Failed to update club chat setting: \(error)")
+            }
         }
     }
 
@@ -2094,6 +2184,31 @@ struct ChatBlockedOverlay: View {
             )
             .shadow(color: Color.black.opacity(0.18), radius: 20, x: 0, y: 12)
             .padding(24)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+struct ClubChatDisabledOverlay: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.48)
+
+            VStack(spacing: 12) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(.white)
+
+                Text("This chat is disabled")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+
+                Text("A club leader can turn it back on in chat settings.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .multilineTextAlignment(.center)
+            .padding(28)
         }
         .contentShape(Rectangle())
     }

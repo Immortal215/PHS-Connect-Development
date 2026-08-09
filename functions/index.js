@@ -39,6 +39,7 @@ exports.sendChatNotification = onValueCreated(
       const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
       const clubData = clubSnap.val();
       if (!clubData) return;
+      if (clubData.chatEnabled === false) return;
 
       const clubMembersEmails = clubData.members || [];
       const clubLeadersEmails = clubData.leaders || [];
@@ -160,8 +161,10 @@ exports.sendReactionNotification = onValueWritten(
 
       let clubName = "Reaction";
       if (clubID) {
-        const clubNameSnap = await admin.database().ref(`/clubs/${clubID}/name`).once("value");
-        clubName = clubNameSnap.val() || "Reaction";
+        const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
+        const clubData = clubSnap.val();
+        if (clubData && clubData.chatEnabled === false) return;
+        clubName = (clubData && clubData.name) || "Reaction";
       }
         const messageSnap = await admin
           .database()
