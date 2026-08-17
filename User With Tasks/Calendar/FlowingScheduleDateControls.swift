@@ -18,16 +18,10 @@ struct FlowingScheduleDateControls: View {
                 .fill(Color.blue)
 
             DatePicker("", selection: $selectedDate, displayedComponents: [.date])
-            .labelsHidden()
-            .colorMultiply(.white)
-            .foregroundStyle(.white)
-            .foregroundColor(.white)
-            .tint(.white)
-            .overlay(alignment: .center) {
-                Text(String(selectedDate.formatted(date: .abbreviated, time: .omitted)))
-                .foregroundStyle(.white)
-                .offset(x: 1)
-            }
+                .datePickerStyle(.automatic)
+                .colorScheme(.dark)
+                .labelsHidden()
+          
         }
         .fixedSize()
     }

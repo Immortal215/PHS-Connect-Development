@@ -107,6 +107,7 @@ struct ChatView: View {
         [String: ChatThreadSidebarInfo] = [:]
     @State var messageIndexByChatID: [String: [String: ThreadMessageIndex]] = [:]
     let loadingOverlayHoldTime = 0.12
+    let joinRequestsThreadKey = "__joinRequests"
     @Namespace var namespace
     @Environment(\.scenePhase) var scenePhase
     let cacheWriteQueue = DispatchQueue(
@@ -446,7 +447,37 @@ struct ChatView: View {
                                                 .lastReadMessageIDsByThread
                                             let threadLastMessageID = threadInfo
                                                 .lastMessageIDsByThread
-                                            
+
+                                            if isLeaderInSelectedClub {
+                                                Text("CLUB MANAGEMENT")
+                                                    .font(.caption)
+                                                    .fontWeight(.semibold)
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.top, 16)
+                                                    .padding(.bottom, 8)
+
+                                                JoinRequestsSidebarButton(
+                                                    isSelected:
+                                                        currentThread
+                                                        == joinRequestsThreadKey,
+                                                    requestCount:
+                                                        club.pendingMemberRequests?
+                                                        .count ?? 0
+                                                ) {
+                                                    selectedThread[
+                                                        selected.chatID
+                                                    ] = joinRequestsThreadKey
+                                                    editingMessageID = nil
+                                                    replyingMessageID = nil
+                                                    isReactionListPresented = false
+                                                    composerDismissRequestID += 1
+                                                }
+                                                .padding(.horizontal, 4)
+
+                                                Divider()
+                                                    .padding(.top, 8)
+                                            }
+
                                             Text("THREADS")
                                                 .font(.caption)
                                                 .fontWeight(.semibold)
@@ -568,6 +599,13 @@ struct ChatView: View {
                                                                     .contains(
                                                                         trimmed
                                                                     )
+                                                                    && trimmed
+                                                                        .caseInsensitiveCompare(
+                                                                            "Join Requests"
+                                                                        )
+                                                                        != .orderedSame
+                                                                    && trimmed
+                                                                        != joinRequestsThreadKey
                                                                 {
 
                                                                     Task {
@@ -1216,63 +1254,106 @@ struct ChatView: View {
             {
                 let currentThread =
                     (selectedThread[selected.chatID] ?? nil) ?? "general"
-                let messageIndex =
-                    messageIndexByChatID[selected.chatID]?[currentThread]
-                    ?? ThreadMessageIndex()
 
-                MessageScrollView(
-                    selectedChatID: $selectedChatID,
-                    selectedThread: $selectedThread,
-                    chats: $chats,
-                    users: $users,
-                    userInfo: $userInfo,
-                    editingMessageID: $editingMessageID,
-                    replyingMessageID: $replyingMessageID,
-                    focusSendBar: {
-                        DispatchQueue.main.async {
-                            composerFocusRequestID += 1
-                        }
-                    },
-                    bubbles: $bubbles,
-                    clubColor: .constant(colorFromClub(club: selectedClub)),
-                    isReactionListPresented: $isReactionListPresented,
-                    selectedReactionListMessage: $selectedReactionListMessage,
-                    clubsLeaderIn: clubsLeaderIn,
-                    currentThreadName: currentThread,
-                    threadMessages: messageIndex.messages,
-                    messageLookup: messageIndex.lookup,
-                    messageVersion: messageIndex.version,
-                    openMessageIDFromNotification:
-                        $openMessageIDFromNotification
-                )
-                .padding(.horizontal, 16)
+                if currentThread == joinRequestsThreadKey {
+                    if let club = clubs.first(where: {
+                        $0.clubID == selected.clubID
+                    }),
+                        isClubLeaderOrSuperAdmin(
+                            club: club,
+                            userEmail: userInfo?.userEmail
+                        )
+                    {
+                        ChatJoinRequestsView(
+                            club: club,
+                            onAccept: { email in
+                                resolveJoinRequest(
+                                    email,
+                                    for: club,
+                                    accepted: true
+                                )
+                            },
+                            onDeny: { email in
+                                resolveJoinRequest(
+                                    email,
+                                    for: club,
+                                    accepted: false
+                                )
+                            }
+                        )
+                    } else {
+                        ContentUnavailableView(
+                            "Leader Access Required",
+                            systemImage: "lock.fill",
+                            description: Text(
+                                "Join requests are only available to club leaders."
+                            )
+                        )
+                    }
+                } else {
+                    let messageIndex =
+                        messageIndexByChatID[selected.chatID]?[currentThread]
+                        ?? ThreadMessageIndex()
+
+                    MessageScrollView(
+                        selectedChatID: $selectedChatID,
+                        selectedThread: $selectedThread,
+                        chats: $chats,
+                        users: $users,
+                        userInfo: $userInfo,
+                        editingMessageID: $editingMessageID,
+                        replyingMessageID: $replyingMessageID,
+                        focusSendBar: {
+                            DispatchQueue.main.async {
+                                composerFocusRequestID += 1
+                            }
+                        },
+                        bubbles: $bubbles,
+                        clubColor: .constant(colorFromClub(club: selectedClub)),
+                        isReactionListPresented: $isReactionListPresented,
+                        selectedReactionListMessage:
+                            $selectedReactionListMessage,
+                        clubsLeaderIn: clubsLeaderIn,
+                        currentThreadName: currentThread,
+                        threadMessages: messageIndex.messages,
+                        messageLookup: messageIndex.lookup,
+                        messageVersion: messageIndex.version,
+                        openMessageIDFromNotification:
+                            $openMessageIDFromNotification
+                    )
+                    .padding(.horizontal, 16)
+                }
 
             }
 
-            VStack {
-                Spacer()
-                ChatComposer(
-                    selectedChat: selectedChatBinding,
-                    selectedThread: $selectedThread,
-                    chats: $chats,
-                    userInfo: $userInfo,
-                    users: $users,
-                    editingMessageID: $editingMessageID,
-                    replyingMessageID: $replyingMessageID,
-                    focusRequestID: composerFocusRequestID,
-                    dismissRequestID: composerDismissRequestID,
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
-                    onDidSend: {
-                        DispatchQueue.main.async {
-                            updateUnreadIndicator()
-                        }
-                    },
-                    clubsLeaderIn: clubsLeaderIn
-                )
+            if let selected = selectedChat,
+                (selectedThread[selected.chatID] ?? nil) != joinRequestsThreadKey
+            {
+                VStack {
+                    Spacer()
+                    ChatComposer(
+                        selectedChat: selectedChatBinding,
+                        selectedThread: $selectedThread,
+                        chats: $chats,
+                        userInfo: $userInfo,
+                        users: $users,
+                        editingMessageID: $editingMessageID,
+                        replyingMessageID: $replyingMessageID,
+                        focusRequestID: composerFocusRequestID,
+                        dismissRequestID: composerDismissRequestID,
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
+                        onDidSend: {
+                            DispatchQueue.main.async {
+                                updateUnreadIndicator()
+                            }
+                        },
+                        clubsLeaderIn: clubsLeaderIn
+                    )
+                }
+                .padding(.trailing)
             }
-            .padding(.trailing)
-            
+
             if isReactionListPresented {
                 ReactionListView(
                     selectedChatID: $selectedChatID,
@@ -1284,6 +1365,35 @@ struct ChatView: View {
                 )
             }
         }
+    }
+
+    func resolveJoinRequest(
+        _ email: String,
+        for club: Club,
+        accepted: Bool
+    ) {
+        guard var updatedClub = clubs.first(where: {
+            $0.clubID == club.clubID
+        }),
+            isClubLeaderOrSuperAdmin(
+                club: updatedClub,
+                userEmail: userInfo?.userEmail
+            ),
+            updatedClub.pendingMemberRequests?.contains(email) == true
+        else { return }
+
+        updatedClub.pendingMemberRequests?.remove(email)
+
+        let memberEmail = normalizedEmail(email)
+        if accepted,
+            !updatedClub.members.contains(where: {
+                normalizedEmail($0) == memberEmail
+            })
+        {
+            updatedClub.members.append(memberEmail)
+        }
+
+        addClub(club: updatedClub)
     }
 
     @ViewBuilder

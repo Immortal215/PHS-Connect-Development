@@ -46,6 +46,9 @@ struct Club: Codable, Equatable, Hashable {
         var location: String?
         var fullDay: Bool?  // need to add code for
         var visibleByArray: [String]?  // array of emails that can see this meeting time, if you choose only leaders, it will add all leaders emails. If you choose only certain people then it will be them + leaders.
+        var seriesID: String?
+        var recurrenceIntervalWeeks: Int?
+        var recurrenceEndDate: String?
     }
 
     mutating func setClubID(_ newID: String) {  // here so people dont just willy nilly change the clubID

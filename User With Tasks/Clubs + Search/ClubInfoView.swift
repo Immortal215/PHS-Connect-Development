@@ -19,6 +19,7 @@ struct ClubInfoView: View {
     @State var createClubToggler = false
     @State var isSearching = false
     @State var showAddAnnouncement = false
+    @State var showAddMeeting = false
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
@@ -52,26 +53,27 @@ struct ClubInfoView: View {
             club: club,
             userEmail: viewModel.userEmail
         )
-        var latestAnnouncementMessage: String {
-            if let announcements = club.announcements {
-                let sortedAnnouncements = announcements.sorted {
-                    let date1 = dateFromString($0.value.date)
-                    let date2 = dateFromString($1.value.date)
-                    return date1 > date2
-                }
-
-                if let latestAnnouncementDate = sortedAnnouncements.first?.value
-                    .date,
-                    Date() > dateFromString(latestAnnouncementDate)
-                {
-                    return "Add Announcement +"
-                } else {
-                    return "Add Announcement + (Waiting)"
-                }
-            } else {
-                return "Add First Announcement +"
-            }
-        }
+        
+//        var latestAnnouncementMessage: String {
+//            if let announcements = club.announcements {
+//                let sortedAnnouncements = announcements.sorted {
+//                    let date1 = dateFromString($0.value.date)
+//                    let date2 = dateFromString($1.value.date)
+//                    return date1 > date2
+//                }
+//
+//                if let latestAnnouncementDate = sortedAnnouncements.first?.value
+//                    .date,
+//                    Date() > dateFromString(latestAnnouncementDate)
+//                {
+//                    return "Add Announcement +"
+//                } else {
+//                    return "Add Announcement + (Waiting)"
+//                }
+//            } else {
+//                return "Add First Announcement +"
+//            }
+//        }
 
         NavigationView {
 
@@ -202,16 +204,51 @@ struct ClubInfoView: View {
                             }
                         }
                     }
-
-                    if let meetingTime = club.normalMeetingTime {
-                        Text("Normal Meeting Time")
+                    
+                    
+                    if clubLeader {
+                        Text("Members (\(club.members.count))")
                             .font(.headline)
 
-                        HStack {
-                            Image(systemName: "arrow.turn.down.right")
+                        let mem = club.members.sorted {
+                            $0.localizedCaseInsensitiveCompare($1)
+                                == .orderedAscending
+                        }.joined(separator: ", ")
 
-                            Text("\(meetingTime)")
+                        CodeSnippetView(
+                            code: mem,
+                            textSmall: club.members.count > 10 ? true : false
+                        )
+                        .padding(.top, -8)
+                        .frame(maxHeight: screenHeight / 6)
+
+                    }
+
+
+
+                    if clubLeader {
+                        Button {
+                            showAddMeeting = true
+                        } label: {
+                            Text("Add Meeting +")
                                 .font(.subheadline)
+                                .foregroundStyle(.blue)
+                                .padding(6)
+                                .background(Color.blue.opacity(0.2))
+                                .cornerRadius(8)
+                        }
+                        .sheet(isPresented: $showAddMeeting) {
+                            AddMeetingView(
+                                viewCloser: {
+                                    showAddMeeting = false
+                                },
+                                leaderClubs: [club],
+                                selectedDate: Date(),
+                                userInfo: $userInfo
+                            )
+                            .presentationDragIndicator(.visible)
+                            .presentationSizing(.page)
+                            .cornerRadius(25)
                         }
                     }
 
@@ -259,7 +296,7 @@ struct ClubInfoView: View {
                                         hourHeight: 60,
                                         meetingInfo: meetingFull,
                                         preview: true,
-                                        clubs: [club],
+                                         clubs: [club],
                                         numOfOverlapping: 1,
                                         hasOverlap: true
                                     )
@@ -275,22 +312,16 @@ struct ClubInfoView: View {
                         }
                     }
 
-                    if clubLeader {
-                        Text("Members (\(club.members.count))")
+                    if let meetingTime = club.normalMeetingTime {
+                        Text("Normal Meeting Time")
                             .font(.headline)
 
-                        let mem = club.members.sorted {
-                            $0.localizedCaseInsensitiveCompare($1)
-                                == .orderedAscending
-                        }.joined(separator: ", ")
+                        HStack {
+                            Image(systemName: "arrow.turn.down.right")
 
-                        CodeSnippetView(
-                            code: mem,
-                            textSmall: club.members.count > 10 ? true : false
-                        )
-                        .padding(.top, -8)
-                        .frame(maxHeight: screenHeight / 6)
-
+                            Text("\(meetingTime)")
+                                .font(.subheadline)
+                        }
                     }
 
                     if clubLeader {

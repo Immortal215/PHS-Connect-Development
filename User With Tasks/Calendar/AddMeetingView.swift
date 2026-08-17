@@ -24,6 +24,10 @@ struct AddMeetingView: View {
     @State var visibleBy: [String] = []
     @State var visibleByWho = "Everyone"
     @State var refresher = false
+    @State var recurrence = MeetingRecurrenceOption.never
+    @State var recurrenceEndDate =
+        Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+    @State var seriesEditScope = MeetingSeriesEditScope.thisAndFuture
     var viewCloser: (() -> Void)?
 
     @State var CreatedMeetingTime: Club.MeetingTime = Club.MeetingTime(
@@ -55,21 +59,45 @@ struct AddMeetingView: View {
                 return
                     (title != "" && endTime > startTime && clubId != ""
                     && isSameDay(endTime, startTime)
-                    && startTime.distance(to: endTime) >= 15)
+                    && startTime.distance(to: endTime) >= 15
+                    && recurrenceEndDateIsValid)
             }
 
             if ableToCreate {
                 Button {
                     if !editScreen! {
                         addInfoToMeetingChild()  // add new info
-                        addMeeting(meeting: CreatedMeetingTime)  // add new meeting
+                        let meetings = meetingsToSave(
+                            from: CreatedMeetingTime
+                        )
+
+                        if meetings.count == 1 {
+                            addMeeting(meeting: meetings[0])
+                        } else {
+                            addMeetings(meetings: meetings)
+                        }
                     } else {
                         addInfoToHelper()
+                        let meetings = meetingsToSave(
+                            from: meetingTimeForInfo
+                        )
 
-                        replaceMeeting(
-                            oldMeeting: CreatedMeetingTime,
-                            newMeeting: meetingTimeForInfo
-                        )  // replace the previous meeting
+                        if editsThisAndFuture {
+                            replaceMeetingAndFuture(
+                                oldMeeting: CreatedMeetingTime,
+                                newMeetings: meetings
+                            )
+                        } else if meetings.count == 1 {
+                            replaceMeeting(
+                                oldMeeting: CreatedMeetingTime,
+                                newMeeting: meetings[0]
+                            )
+                        } else {
+                            replaceMeeting(
+                                oldMeeting: CreatedMeetingTime,
+                                newMeetings: meetings
+                            )
+                        }
                     }
 
                     viewCloser?()
@@ -154,6 +182,42 @@ struct AddMeetingView: View {
 
                 }
                 .padding()
+
+                if editScreen == true && CreatedMeetingTime.seriesID != nil {
+                    LabeledContent("Apply Changes To") {
+                        Picker("Apply Changes To", selection: $seriesEditScope) {
+                            ForEach(MeetingSeriesEditScope.allCases) { scope in
+                                Text(scope.rawValue).tag(scope)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                    .padding()
+                }
+
+                if !editsOnlyThisMeeting {
+                    LabeledContent("Repeat") {
+                        Picker("Repeat", selection: $recurrence) {
+                            ForEach(MeetingRecurrenceOption.allCases) { option in
+                                Text(option.title).tag(option)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                    .padding()
+
+                    if recurrence != .never {
+                        DatePicker(
+                            "Repeat Until",
+                            selection: $recurrenceEndDate,
+                            in: Calendar.current.startOfDay(for: startTime)...,
+                            displayedComponents: .date
+                        )
+                        .padding()
+                    }
+                }
 
                 LabeledContent {
                     MarkdownTextView(
@@ -426,6 +490,23 @@ struct AddMeetingView: View {
                             to: startTime
                         )
                     )
+                    recurrence = MeetingRecurrenceOption(
+                        intervalWeeks: CreatedMeetingTime
+                            .recurrenceIntervalWeeks
+                    )
+                    if let savedRecurrenceEndDate =
+                        CreatedMeetingTime.recurrenceEndDate
+                    {
+                        recurrenceEndDate = dateFromString(
+                            savedRecurrenceEndDate
+                        )
+                    } else {
+                        recurrenceEndDate = Calendar.current.date(
+                            byAdding: .month,
+                            value: 3,
+                            to: startTime
+                        ) ?? startTime
+                    }
 
                     visibleBy = CreatedMeetingTime.visibleByArray ?? []
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -468,12 +549,26 @@ struct AddMeetingView: View {
                     )!
 
                     startTime = getFlooredCurrentTime(startTime)
+                    recurrenceEndDate = Calendar.current.date(
+                        byAdding: .month,
+                        value: 3,
+                        to: startTime
+                    ) ?? startTime
                 }
 
                 //  addInfoToMeetingChild()
                 addInfoToHelper()
             }
             .onChange(of: startTime) {
+                if recurrenceEndDate
+                    < Calendar.current.startOfDay(for: startTime)
+                {
+                    recurrenceEndDate = Calendar.current.date(
+                        byAdding: .month,
+                        value: 3,
+                        to: startTime
+                    ) ?? startTime
+                }
                 addInfoToHelper()
                 startMinutes =
                     Calendar.current.component(.hour, from: startTime) * 60
@@ -524,6 +619,36 @@ struct AddMeetingView: View {
 
         }
 
+    }
+
+    var editsOnlyThisMeeting: Bool {
+        editScreen == true && CreatedMeetingTime.seriesID != nil
+            && seriesEditScope == .thisMeeting
+    }
+
+    var editsThisAndFuture: Bool {
+        editScreen == true && CreatedMeetingTime.seriesID != nil
+            && seriesEditScope == .thisAndFuture
+    }
+
+    var recurrenceEndDateIsValid: Bool {
+        editsOnlyThisMeeting || recurrence == .never
+            || Calendar.current.startOfDay(for: recurrenceEndDate)
+                >= Calendar.current.startOfDay(for: startTime)
+    }
+
+    func meetingsToSave(
+        from meeting: Club.MeetingTime
+    ) -> [Club.MeetingTime] {
+        let selectedRecurrence: MeetingRecurrenceOption =
+            editsOnlyThisMeeting ? .never : recurrence
+
+        return meetingOccurrences(
+            from: meeting,
+            recurrence: selectedRecurrence,
+            through: recurrenceEndDate,
+            seriesID: editsThisAndFuture ? CreatedMeetingTime.seriesID : nil
+        )
     }
 
     func addInfoToMeetingChild() {

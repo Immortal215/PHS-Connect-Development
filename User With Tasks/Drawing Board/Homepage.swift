@@ -219,7 +219,6 @@ struct Homepage: View {
         var datesArray = tabDict["date"] ?? []
         var dueArray = dueDic[chosenTab] ?? []
 
-        // Keep parity with create-item behavior used in Notebook.
         if namesArray == [] || namesArray == [""] {
             namesArray = []
             subjectsArray = []

@@ -258,75 +258,138 @@ func addPersonSeen(announcement: Club.Announcements, memberEmail: String) {
 }
 
 func addMeeting(meeting: Club.MeetingTime) {
-    let reference = Database.database().reference()
-    let clubReference = reference.child("clubs").child(meeting.clubID)
+    saveMeetings(
+        [meeting],
+        replacing: nil,
+        includingFuture: false,
+        successTitle: "Added Meeting Time!"
+    )
+}
 
-    Task {
-        let meetingTimesRef = clubReference.child("meetingTimes")
-        let snapshot = await observeSingleValue(at: meetingTimesRef)
-        var currentMeetings: [[String: Any]] = []
-
-        if let existingMeetings = snapshot.value as? [[String: Any]] {
-            currentMeetings = existingMeetings
-        }
-
-        do {
-            let data = try JSONEncoder().encode(meeting)
-            if let meetingDict = try JSONSerialization.jsonObject(with: data)
-                as? [String: Any]
-            {
-                currentMeetings.append(meetingDict)
-                try await setFirebaseValue(currentMeetings, at: meetingTimesRef)
-                try? await setFirebaseValue(
-                    Date().timeIntervalSince1970,
-                    at: clubReference.child("lastUpdated")
-                )
-                await MainActor.run {
-                    dropper(
-                        title: "Added Meeting Time!",
-                        subtitle: "",
-                        icon: nil
-                    )
-                }
-            }
-        } catch {
-            print("Error encoding meeting data: \(error)")
-        }
-    }
+func addMeetings(meetings: [Club.MeetingTime]) {
+    saveMeetings(
+        meetings,
+        replacing: nil,
+        includingFuture: false,
+        successTitle: "Added Meeting Times!"
+    )
 }
 
 func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime)
 {
-    let reference = Database.database().reference()
+    saveMeetings(
+        [newMeeting],
+        replacing: oldMeeting,
+        includingFuture: false,
+        successTitle: "Added Meeting Time!"
+    )
+}
 
-    let oldClubReference = reference.child("clubs").child(oldMeeting.clubID)
+func replaceMeeting(
+    oldMeeting: Club.MeetingTime,
+    newMeetings: [Club.MeetingTime]
+) {
+    saveMeetings(
+        newMeetings,
+        replacing: oldMeeting,
+        includingFuture: false,
+        successTitle: "Edited Meeting Times!"
+    )
+}
+
+func replaceMeetingAndFuture(
+    oldMeeting: Club.MeetingTime,
+    newMeetings: [Club.MeetingTime]
+) {
+    saveMeetings(
+        newMeetings,
+        replacing: oldMeeting,
+        includingFuture: true,
+        successTitle: "Edited Meeting Times!"
+    )
+}
+
+func saveMeetings(
+    _ newMeetings: [Club.MeetingTime],
+    replacing oldMeeting: Club.MeetingTime?,
+    includingFuture: Bool,
+    successTitle: String
+) {
+    guard let newClubID = newMeetings.first?.clubID else { return }
+
+    let reference = Database.database().reference()
+    let oldClubID = oldMeeting?.clubID ?? newClubID
 
     Task {
-        let meetingTimesRef = oldClubReference.child("meetingTimes")
-        let snapshot = await observeSingleValue(at: meetingTimesRef)
-        guard var currentMeetings = snapshot.value as? [[String: Any]] else {
-            print("No meetings found in the current club.")
-            return
+        let oldMeetingsRef = reference.child("clubs").child(oldClubID).child(
+            "meetingTimes"
+        )
+        var meetingsByClub: [String: [Club.MeetingTime]] = [:]
+
+        if oldClubID == newClubID {
+            let snapshot = await observeSingleValue(at: oldMeetingsRef)
+            meetingsByClub[oldClubID] = meetings(from: snapshot)
+        } else {
+            let newMeetingsRef = reference.child("clubs").child(newClubID)
+                .child("meetingTimes")
+            async let oldSnapshot = observeSingleValue(at: oldMeetingsRef)
+            async let newSnapshot = observeSingleValue(at: newMeetingsRef)
+            let snapshots = await (oldSnapshot, newSnapshot)
+            meetingsByClub[oldClubID] = meetings(from: snapshots.0)
+            meetingsByClub[newClubID] = meetings(from: snapshots.1)
         }
 
-        currentMeetings.removeAll { meetingDict in
-            if let title = meetingDict["title"] as? String,
-                let startTime = meetingDict["startTime"] as? String,
-                let endTime = meetingDict["endTime"] as? String
-            {
-                return title == oldMeeting.title
-                    && startTime == oldMeeting.startTime
-                    && endTime == oldMeeting.endTime
+        if let oldMeeting {
+            meetingsByClub[oldClubID]?.removeAll { meeting in
+                if includingFuture, let seriesID = oldMeeting.seriesID {
+                    return meeting.seriesID == seriesID
+                        && dateFromString(meeting.startTime)
+                            >= dateFromString(oldMeeting.startTime)
+                }
+
+                return meeting.title == oldMeeting.title
+                    && meeting.startTime == oldMeeting.startTime
+                    && meeting.endTime == oldMeeting.endTime
             }
-            return false
         }
+
+        meetingsByClub[newClubID, default: []].append(contentsOf: newMeetings)
 
         do {
-            try await setFirebaseValue(currentMeetings, at: meetingTimesRef)
-            addMeeting(meeting: newMeeting)
+            var updates: [String: Any] = [:]
+            let lastUpdated = Date().timeIntervalSince1970
+
+            for (clubID, clubMeetings) in meetingsByClub {
+                let sortedMeetings = clubMeetings.sorted {
+                    dateFromString($0.startTime) < dateFromString($1.startTime)
+                }
+                let data = try JSONEncoder().encode(sortedMeetings)
+                let meetingValues = try JSONSerialization.jsonObject(with: data)
+
+                updates["clubs/\(clubID)/meetingTimes"] = meetingValues
+                updates["clubs/\(clubID)/lastUpdated"] = lastUpdated
+            }
+
+            _ = try await reference.updateChildValues(updates)
+            await MainActor.run {
+                dropper(title: successTitle, subtitle: "", icon: nil)
+            }
         } catch {
-            print("Error removing old meeting: \(error)")
+            print("Error saving meeting data: \(error)")
         }
+    }
+}
+
+func meetings(from snapshot: DataSnapshot) -> [Club.MeetingTime] {
+    guard JSONSerialization.isValidJSONObject(snapshot.value as Any),
+        let data = try? JSONSerialization.data(withJSONObject: snapshot.value as Any)
+    else { return [] }
+
+    do {
+        return try JSONDecoder().decode([Club.MeetingTime].self, from: data)
+    } catch {
+        print("Error decoding meeting data: \(error)")
+        return []
     }
 }
 
