@@ -21,10 +21,27 @@ struct ChatThreadSidebarInfo {
     var lastMessageIDsByThread: [String: String] = [:]
 }
 
+struct ChatMessageRenderItem: Identifiable {
+    let message: Chat.ChatMessage
+    let previousMessage: Chat.ChatMessage?
+    let nextMessage: Chat.ChatMessage?
+    let calendarTimeIsNotSameByHourNextMessage: Bool
+    let calendarTimeIsNotSameByHourPreviousMessage: Bool
+    let calendarTimeIsNotSameByDayPreviousMessage: Bool
+
+    var id: String { message.messageID }
+}
+
 struct ThreadMessageIndex {
     var messages: [Chat.ChatMessage] = []
     var lookup: [String: Chat.ChatMessage] = [:]
+    var renderItems: [ChatMessageRenderItem] = []
     var version = 0
+}
+
+final class ChatMessageRemovalBatcher: ObservableObject {
+    var messageIDsByChatID: [String: Set<String>] = [:]
+    var workItemsByChatID: [String: DispatchWorkItem] = [:]
 }
 
 enum ChatLoadingState: Equatable {
@@ -106,6 +123,7 @@ struct ChatView: View {
     @State var cachedThreadSidebarInfoByChatID:
         [String: ChatThreadSidebarInfo] = [:]
     @State var messageIndexByChatID: [String: [String: ThreadMessageIndex]] = [:]
+    @StateObject var messageRemovalBatcher = ChatMessageRemovalBatcher()
     let loadingOverlayHoldTime = 0.12
     let joinRequestsThreadKey = "__joinRequests"
     @Namespace var namespace
@@ -1315,7 +1333,7 @@ struct ChatView: View {
                             $selectedReactionListMessage,
                         clubsLeaderIn: clubsLeaderIn,
                         currentThreadName: currentThread,
-                        threadMessages: messageIndex.messages,
+                        messageRenderItems: messageIndex.renderItems,
                         messageLookup: messageIndex.lookup,
                         messageVersion: messageIndex.version,
                         openMessageIDFromNotification:
@@ -1793,19 +1811,10 @@ struct ChatView: View {
             }
 
             DispatchQueue.main.async {
-                guard
-                    let chatIndex = chats.firstIndex(where: {
-                        $0.chatID == chatID
-                    })
-                else { return }
-                withAnimation(.smooth) {
-                    chats[chatIndex].messages?.removeAll(where: {
-                        $0.messageID == removedMessage.messageID
-                    })
-                }
-                rebuildThreadMessageIndex(for: chats[chatIndex])
-                refreshChatSidebarCache()
-                saveChatToCacheAsync(chats[chatIndex])
+                queueMessageRemoval(
+                    removedMessage.messageID,
+                    for: chatID
+                )
             }
         }
 
@@ -1833,6 +1842,43 @@ struct ChatView: View {
             }
         }
 
+    }
+
+    func queueMessageRemoval(_ messageID: String, for chatID: String) {
+        messageRemovalBatcher.messageIDsByChatID[chatID, default: []].insert(
+            messageID
+        )
+        messageRemovalBatcher.workItemsByChatID[chatID]?.cancel()
+
+        let workItem = DispatchWorkItem {
+            flushMessageRemovals(for: chatID)
+        }
+        messageRemovalBatcher.workItemsByChatID[chatID] = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + 0.05,
+            execute: workItem
+        )
+    }
+
+    func flushMessageRemovals(for chatID: String) {
+        messageRemovalBatcher.workItemsByChatID[chatID] = nil
+        guard
+            let messageIDs = messageRemovalBatcher.messageIDsByChatID
+                .removeValue(forKey: chatID),
+            let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
+            var chatMessages = chats[chatIndex].messages
+        else { return }
+
+        let previousCount = chatMessages.count
+        chatMessages.removeAll { messageIDs.contains($0.messageID) }
+        guard chatMessages.count != previousCount else { return }
+
+        withAnimation(.smooth) {
+            chats[chatIndex].messages = chatMessages
+        }
+        rebuildThreadMessageIndex(for: chats[chatIndex])
+        refreshChatSidebarCache()
+        saveChatToCacheAsync(chats[chatIndex])
     }
 
     func insertMessageSorted(
@@ -1949,18 +1995,72 @@ struct ChatView: View {
             let previousIndex = previousIndexByThread[thread]
             let previousMessages = previousIndex?.messages ?? []
 
-            if messageSignature(previousMessages)
+            let messageSignatureChanged = messageSignature(previousMessages)
                 != messageSignature(index.messages)
-            {
+            let messagesChanged = previousMessages != index.messages
+
+            if messageSignatureChanged {
                 index.version = (previousIndex?.version ?? 0) + 1
             } else {
                 index.version = previousIndex?.version ?? 0
+            }
+
+            if messagesChanged {
+                index.renderItems = buildMessageRenderItems(
+                    for: index.messages
+                )
+            } else {
+                index.renderItems = previousIndex?.renderItems
+                    ?? buildMessageRenderItems(for: index.messages)
             }
 
             indexByThread[thread] = index
         }
 
         return indexByThread
+    }
+
+    func buildMessageRenderItems(
+        for messages: [Chat.ChatMessage]
+    ) -> [ChatMessageRenderItem] {
+        let calendar = Calendar.current
+
+        return messages.indices.map { index in
+            let message = messages[index]
+            let previousMessage = index > messages.startIndex
+                ? messages[messages.index(before: index)] : nil
+            let nextIndex = messages.index(after: index)
+            let nextMessage = nextIndex < messages.endIndex
+                ? messages[nextIndex] : nil
+            let messageDate = Date(timeIntervalSince1970: message.date)
+
+            return ChatMessageRenderItem(
+                message: message,
+                previousMessage: previousMessage,
+                nextMessage: nextMessage,
+                calendarTimeIsNotSameByHourNextMessage: !calendar.isDate(
+                    messageDate,
+                    equalTo: nextMessage.map {
+                        Date(timeIntervalSince1970: $0.date)
+                    } ?? Date.distantPast,
+                    toGranularity: .hour
+                ),
+                calendarTimeIsNotSameByHourPreviousMessage: !calendar.isDate(
+                    messageDate,
+                    equalTo: previousMessage.map {
+                        Date(timeIntervalSince1970: $0.date)
+                    } ?? Date.distantPast,
+                    toGranularity: .hour
+                ),
+                calendarTimeIsNotSameByDayPreviousMessage: !calendar.isDate(
+                    messageDate,
+                    equalTo: previousMessage.map {
+                        Date(timeIntervalSince1970: $0.date)
+                    } ?? Date.distantPast,
+                    toGranularity: .day
+                )
+            )
+        }
     }
 
     func messageSignature(_ messages: [Chat.ChatMessage]) -> String {

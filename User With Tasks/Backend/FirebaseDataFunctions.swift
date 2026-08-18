@@ -750,22 +750,22 @@ func removeThread(chatID: String, threadName: String) {
             return
         }
 
+        var updates: [String: Any] = [:]
         for (messageID, messageData) in messagesDict {
             if let messageThread = messageData["threadName"] as? String,
                 messageThread == threadName
             {
-                do {
-                    try await setFirebaseValue(
-                        nil,
-                        at: messagesRef.child(messageID)
-                    )
-                    print(
-                        "Removed message \(messageID) from thread \(threadName)"
-                    )
-                } catch {
-                    print("Error removing message \(messageID): \(error)")
-                }
+                updates[messageID] = NSNull()
             }
+        }
+
+        guard !updates.isEmpty else { return }
+
+        do {
+            _ = try await messagesRef.updateChildValues(updates)
+            print("Removed thread \(threadName) from chat \(chatID)")
+        } catch {
+            print("Error removing thread \(threadName): \(error)")
         }
     }
 }

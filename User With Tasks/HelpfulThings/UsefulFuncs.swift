@@ -116,13 +116,18 @@ extension Color {
     }
 }
 
+let linkDataDetector = try? NSDataDetector(
+    types: NSTextCheckingResult.CheckingType.link.rawValue
+)
+
 func normalizedURL(_ string: String) -> URL? {
     var urlString = string.trimmingCharacters(in: .whitespacesAndNewlines)
-    let detector = try? NSDataDetector(
-        types: NSTextCheckingResult.CheckingType.link.rawValue
-    )
     let range = NSRange(location: 0, length: urlString.utf16.count)
-    let matches = detector?.matches(in: urlString, options: [], range: range)
+    let matches = linkDataDetector?.matches(
+        in: urlString,
+        options: [],
+        range: range
+    )
     if matches?.first?.range.length == range.length {
         if urlString.contains("://") {
             if !urlString.hasPrefix("https://") {

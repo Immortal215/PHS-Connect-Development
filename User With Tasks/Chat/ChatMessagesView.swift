@@ -24,7 +24,7 @@ struct MessageScrollView: View {
     @Binding var selectedReactionListMessage: Chat.ChatMessage?
     @State var clubsLeaderIn: [Club]
     let currentThreadName: String
-    let threadMessages: [Chat.ChatMessage]
+    let messageRenderItems: [ChatMessageRenderItem]
     let messageLookup: [String: Chat.ChatMessage]
     let messageVersion: Int
     @State var loadingUsers: Set<String> = []
@@ -46,27 +46,26 @@ struct MessageScrollView: View {
                 ScrollView {
                     LazyVStack(spacing: bubbles ? nil : 0) {  // not 0 by default!
                         if selectedChat != nil {
-                            let messages = threadMessages
-
                             Group {
-                                ForEach(
-                                    Array(messages.enumerated()),
-                                    id: \.element.messageID
-                                ) { i, message in
-                                    let previousMessage =
-                                        i > 0 ? messages[i - 1] : nil
-                                    let nextMessage =
-                                        i < messages.count - 1
-                                        ? messages[i + 1] : nil
-
+                                ForEach(messageRenderItems) { renderItem in
                                     messageBubble(
-                                        message: message,
-                                        previousMessage: previousMessage,
-                                        nextMessage: nextMessage,
+                                        message: renderItem.message,
+                                        previousMessage:
+                                            renderItem.previousMessage,
+                                        nextMessage: renderItem.nextMessage,
+                                        calendarTimeIsNotSameByHourNextMessage:
+                                            renderItem
+                                            .calendarTimeIsNotSameByHourNextMessage,
+                                        calendarTimeIsNotSameByHourPreviousMessage:
+                                            renderItem
+                                            .calendarTimeIsNotSameByHourPreviousMessage,
+                                        calendarTimeIsNotSameByDayPreviousMessage:
+                                            renderItem
+                                            .calendarTimeIsNotSameByDayPreviousMessage,
                                         messageLookup: messageLookup,
                                         proxy: proxy
                                     )
-                                    .id(message.messageID)
+                                    .id(renderItem.id)
                                 }
 
                                 Color.clear.frame(height: 75)  // purely just so you can scroll through the texts
@@ -83,7 +82,8 @@ struct MessageScrollView: View {
                     }
                 }
                 .onAppear {
-                    lastVisibleMessageID = threadMessages.last?.messageID
+                    lastVisibleMessageID =
+                        messageRenderItems.last?.message.messageID
                     proxy.scrollTo(
                         openMessageIDFromNotification ?? "",
                         anchor: .top
@@ -94,7 +94,8 @@ struct MessageScrollView: View {
                 .defaultScrollAnchor(.bottom)
                 .onChange(of: messageVersion) {
                     let oldLastMessageID = lastVisibleMessageID
-                    let newLastMessageID = threadMessages.last?.messageID
+                    let newLastMessageID =
+                        messageRenderItems.last?.message.messageID
                     lastVisibleMessageID = newLastMessageID
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -105,11 +106,13 @@ struct MessageScrollView: View {
                 }
                 .onChange(of: selectedChat?.chatID) {
                     expandedURLPreviewMessageID = nil
-                    lastVisibleMessageID = threadMessages.last?.messageID
+                    lastVisibleMessageID =
+                        messageRenderItems.last?.message.messageID
                     scrollToBottom(proxy: proxy)
                 }
                 .onChange(of: selectedThread) {
-                    lastVisibleMessageID = threadMessages.last?.messageID
+                    lastVisibleMessageID =
+                        messageRenderItems.last?.message.messageID
                     scrollToBottom(proxy: proxy)
                 }
                 .onChange(of: selectedEmoji) {
@@ -179,34 +182,13 @@ struct MessageScrollView: View {
         message: Chat.ChatMessage,
         previousMessage: Chat.ChatMessage?,
         nextMessage: Chat.ChatMessage?,
+        calendarTimeIsNotSameByHourNextMessage: Bool,
+        calendarTimeIsNotSameByHourPreviousMessage: Bool,
+        calendarTimeIsNotSameByDayPreviousMessage: Bool,
         messageLookup: [String: Chat.ChatMessage],
         proxy: ScrollViewProxy
     ) -> some View {
         let sortedReactions = sortedReactionPairs(for: message)
-        let calendarTimeIsNotSameByHourNextMessage: Bool = !Calendar.current
-            .isDate(
-                Date(timeIntervalSince1970: message.date),
-                equalTo: nextMessage.map {
-                    Date(timeIntervalSince1970: $0.date)
-                } ?? Date.distantPast,
-                toGranularity: .hour
-            )
-        let calendarTimeIsNotSameByHourPreviousMessage: Bool = !Calendar.current
-            .isDate(
-                Date(timeIntervalSince1970: message.date),
-                equalTo: previousMessage.map {
-                    Date(timeIntervalSince1970: $0.date)
-                } ?? Date.distantPast,
-                toGranularity: .hour
-            )
-        let calendarTimeIsNotSameByDayPreviousMessage: Bool = !Calendar.current
-            .isDate(
-                Date(timeIntervalSince1970: message.date),
-                equalTo: previousMessage.map {
-                    Date(timeIntervalSince1970: $0.date)
-                } ?? Date.distantPast,
-                toGranularity: .day
-            )
 
         if message.systemGenerated == nil || message.systemGenerated == false {
             if bubbles {
