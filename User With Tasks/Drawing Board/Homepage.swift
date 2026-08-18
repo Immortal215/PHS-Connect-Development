@@ -3,48 +3,26 @@ import Pow
 import SwiftUI
 
 struct Homepage: View {
+    @EnvironmentObject var drawingBoardStore: DrawingBoardStore
     @State var screenWidth = appScreenBounds.width
     @State var screenHeight = appScreenBounds.height
 
     @AppStorage("completed") var completed = 0
 
     @AppStorage("currentTab") var currentTab = "Basic List"
-    @State var retrieveBigDic: [String: [String: [String]]] =
-        UserDefaults.standard.dictionary(forKey: "DicKey")
-        as? [String: [String: [String]]] ?? [
-            "Basic List": [
-                "subjects": [String()], "names": [String()],
-                "description": [String()], "date": [String()],
-            ]
-        ]
-    @State var bigDic: [String: [String: [String]]] = [
-        "Basic List": [
-            "subjects": [String()], "names": [String()],
-            "description": [String()], "date": [String()],
-        ]
-    ]
+    var bigDic: [String: DrawingBoardList] {
+        get { drawingBoardStore.listsByName }
+        nonmutating set { drawingBoardStore.replaceLists(with: newValue) }
+    }
 
-    @State var retrieveDueDic: [String: [Date]] =
-        UserDefaults.standard.dictionary(forKey: "DueDicKey")
-        as? [String: [Date]] ?? ["Basic List": [Date()]]
-    @State var dueDic: [String: [Date]] = ["Basic List": [Date()]]
-
-    @State var retrieveSubjectsArray: [String] =
-        UserDefaults.standard.array(forKey: "subjects") as? [String] ?? []
     @State var subjects: [String] = []
 
     @State var names: [String] = []
 
-    @State var retrieveInfoArray: [String] =
-        UserDefaults.standard.array(forKey: "description") as? [String] ?? []
     @State var infoArray: [String] = []
 
-    @State var retrieveDateArray: [String] =
-        UserDefaults.standard.array(forKey: "date") as? [String] ?? []
     @State var dates: [String] = []
 
-    @State var retrieveDueArray: [Date] =
-        UserDefaults.standard.array(forKey: "due") as? [Date] ?? []
     @State var dueDates: [Date] = []
 
     @State var daterio: [Date] = [Date()]
@@ -208,60 +186,54 @@ struct Homepage: View {
         let chosenTab =
             bigDic[item.listName] != nil ? item.listName : fallbackTab
 
-        var tabDict =
-            bigDic[chosenTab] ?? [
-                "subjects": [String()], "names": [String()],
-                "description": [String()], "date": [String()],
-            ]
-        var namesArray = tabDict["names"] ?? []
-        var subjectsArray = tabDict["subjects"] ?? []
-        var infosArray = tabDict["description"] ?? []
-        var datesArray = tabDict["date"] ?? []
-        var dueArray = dueDic[chosenTab] ?? []
-
-        if namesArray == [] || namesArray == [""] {
-            namesArray = []
-            subjectsArray = []
-            infosArray = []
-            datesArray = []
-            dueArray = []
-        }
-
-        namesArray.append(item.title)
-        subjectsArray.append(
-            item.subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? " " : item.subject
+        var list = bigDic[chosenTab] ?? DrawingBoardList(name: chosenTab)
+        list.tasks.append(
+            DrawingBoardTask(
+                title: item.title,
+                subject: item.subject.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                ).isEmpty ? nil : item.subject,
+                details: item.description.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                ).isEmpty ? nil : item.description,
+                createdDateText: Date.now.formatted(),
+                dueDate: item.dueDate
+            )
         )
-        infosArray.append(
-            item.description.trimmingCharacters(in: .whitespacesAndNewlines)
-                .isEmpty ? " " : item.description
-        )
-        datesArray.append(Date.now.formatted())
-        dueArray.append(item.dueDate)
-
-        tabDict["names"] = namesArray
-        tabDict["subjects"] = subjectsArray
-        tabDict["description"] = infosArray
-        tabDict["date"] = datesArray
-
-        bigDic[chosenTab] = tabDict
-        dueDic[chosenTab] = dueArray
-
-        UserDefaults.standard.set(bigDic, forKey: "DicKey")
-        UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
+        bigDic[chosenTab] = list
 
         if chosenTab == currentTab {
-            names = namesArray
-            subjects = subjectsArray
-            infoArray = infosArray
-            dates = datesArray
-            dueDates = dueArray
+            names = list.names
+            subjects = list.subjects
+            infoArray = list.taskDescriptions
+            dates = list.createdDateTexts
+            dueDates = list.dueDates
             selectDelete = Array(repeating: false, count: infoArray.count)
             caughtUp = false
         }
 
         recentDeleted.removeAll { $0.id == item.id }
         saveRecentDeleted()
+    }
+
+    func loadCurrentList() {
+        if currentTab == "+erder" || bigDic[currentTab] == nil {
+            currentTab = "Basic List"
+        }
+
+        guard var list = bigDic[currentTab] else { return }
+        list.tasks.sort { $0.dueDate < $1.dueDate }
+        bigDic[currentTab] = list
+
+        names = list.names
+        subjects = list.subjects
+        infoArray = list.taskDescriptions
+        dates = list.createdDateTexts
+        dueDates = list.dueDates
+        selectDelete = Array(repeating: false, count: list.tasks.count)
+        caughtUp = list.tasks.isEmpty
+        error = false
+        loadedData = true
     }
 
     var minutesPomo: String {
@@ -481,7 +453,7 @@ struct Homepage: View {
                         Picker("", selection: $currentTab) {
                             ForEach(Array(bigDic.keys), id: \.self) { i in
                                 if i.lowercased().hasSuffix(" list") {
-                                    Text("\(i) (\(bigDic[i]!["names"]!.count))")
+                                    Text("\(i) (\(bigDic[i]!.tasks.count))")
                                         .tag(i)
                                 }
                             }
@@ -513,8 +485,7 @@ struct Homepage: View {
 
                         // assignments
                         if loadedData
-                            && bigDic[currentTab]?["description"]?.isEmpty
-                                != true
+                            && bigDic[currentTab]?.tasks.isEmpty != true
                             && caughtUp == false && infoArray.count != 0
                         {
 
@@ -628,35 +599,13 @@ struct Homepage: View {
                                                             dueDates.remove(
                                                                 at: index
                                                             )
-
-                                                            bigDic[currentTab]![
-                                                                "names"
-                                                            ]! = names
-                                                            bigDic[currentTab]![
-                                                                "subjects"
-                                                            ]! = subjects
-                                                            bigDic[currentTab]![
-                                                                "description"
-                                                            ]! = infoArray
-                                                            bigDic[currentTab]![
-                                                                "date"
-                                                            ]! = dates
-                                                            dueDic[
-                                                                currentTab
-                                                            ]! = dueDates
-
-                                                            UserDefaults
-                                                                .standard.set(
-                                                                    bigDic,
-                                                                    forKey:
-                                                                        "DicKey"
+                                                            drawingBoardStore
+                                                                .removeTask(
+                                                                    at: index,
+                                                                    from:
+                                                                        currentTab
                                                                 )
-                                                            UserDefaults
-                                                                .standard.set(
-                                                                    dueDic,
-                                                                    forKey:
-                                                                        "DueDicKey"
-                                                                )
+
                                                             completed += 1
 
                                                             if infoArray.isEmpty
@@ -692,9 +641,9 @@ struct Homepage: View {
                                                         )
                                                         .font(.title2.bold())
                                                         .frame(
-                                                            maxWidth: subjects[
+                                                            maxWidth: !subjects[
                                                                 index
-                                                            ] != " "
+                                                            ].isEmpty
                                                                 ? screenWidth
                                                                     / 6
                                                                 : screenWidth
@@ -702,8 +651,8 @@ struct Homepage: View {
                                                             maxHeight: 100
                                                         )
 
-                                                        if subjects[index]
-                                                            != " "
+                                                        if !subjects[index]
+                                                            .isEmpty
                                                         {
                                                             Divider()
                                                                 .frame(
@@ -743,7 +692,8 @@ struct Homepage: View {
                                                         }
                                                     }
 
-                                                    if infoArray[index] != " " {
+                                                    if !infoArray[index].isEmpty
+                                                    {
                                                         Divider()
                                                             .frame(
                                                                 maxWidth:
@@ -754,8 +704,8 @@ struct Homepage: View {
                                                     }
 
                                                     VStack {
-                                                        if infoArray[index]
-                                                            != " "
+                                                        if !infoArray[index]
+                                                            .isEmpty
                                                         {
                                                             ScrollView {
                                                                 Text(
@@ -829,6 +779,7 @@ struct Homepage: View {
                                                         .fixedSize()
                                                     }
                                                 }
+
                                             }
                                         }
                                         .foregroundStyle(
@@ -1441,232 +1392,39 @@ struct Homepage: View {
                 thoughtsOpened = true
             }
 
-            if currentTab == "+erder" {
-                currentTab = "Basic List"
-            }
-
-            retrieveBigDic =
-                UserDefaults.standard.dictionary(forKey: "DicKey")
-                as? [String: [String: [String]]] ?? [:]
-            retrieveDueDic =
-                UserDefaults.standard.dictionary(forKey: "DueDicKey")
-                as? [String: [Date]] ?? [:]
-
-            bigDic =
-                (retrieveBigDic[currentTab]?["subjects"] != nil
-                    ? retrieveBigDic : bigDic)
-            dueDic =
-                (retrieveDueDic[currentTab] != nil ? retrieveDueDic : dueDic)
-
-            names = bigDic[currentTab]!["names"]!
-            subjects = bigDic[currentTab]!["subjects"]!
-            infoArray = bigDic[currentTab]!["description"]!
-            dates = bigDic[currentTab]!["date"]!
-            dueDates = dueDic[currentTab]!
-
-            selectDelete = []
-            selectDelete = Array(repeating: false, count: infoArray.count)
-            DateFormatter().dateFormat = "M/d/yyyy, h:mm a"
-
-            if bigDic[currentTab]?["description"] != []
-                && bigDic[currentTab]?["description"] != [String()]
-            {
-
-                let sortedIndices = dueDates.indices.sorted(by: {
-                    dueDates[$0] < dueDates[$1]
-                })
-
-                // rearrange all arrays based on sorted indices
-                subjects = sortedIndices.map {
-                    bigDic[currentTab]!["subjects"]![$0]
-                }
-                names = sortedIndices.map { bigDic[currentTab]!["names"]![$0] }
-                infoArray = sortedIndices.map {
-                    bigDic[currentTab]!["description"]![$0]
-                }
-                dates = sortedIndices.map { bigDic[currentTab]!["date"]![$0] }
-                dueDates = sortedIndices.map { dueDic[currentTab]![$0] }
-                selectDelete = sortedIndices.map { selectDelete[$0] }
-
-                bigDic[currentTab]!["subjects"] = subjects
-                bigDic[currentTab]!["description"] = infoArray
-                bigDic[currentTab]!["names"] = names
-                bigDic[currentTab]!["date"] = dates
-                dueDic[currentTab]! = dueDates
-                UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
-                caughtUp = false
-
-            } else {
-                caughtUp = true
-
-            }
-
-            error = false
-            loadedData = true
+            loadCurrentList()
 
             if pomoOpened == false {
                 progressTimePomo = pomoTime
                 pomoOpened = true
             }
 
-            progressTimePomo = progressTimePomo
-
             if opened == false {
                 progressTime = 0
                 opened = true
             }
-            progressTime = progressTime
-
         }
         .onChange(of: selectedTab) {
-
             if thoughtText != "" {
                 thoughtsOpened = true
             }
 
-            if currentTab == "+erder" {
-                currentTab = "Basic List"
-            }
-
-            retrieveBigDic =
-                UserDefaults.standard.dictionary(forKey: "DicKey")
-                as? [String: [String: [String]]] ?? [:]
-            retrieveDueDic =
-                UserDefaults.standard.dictionary(forKey: "DueDicKey")
-                as? [String: [Date]] ?? [:]
-
-            bigDic =
-                (retrieveBigDic[currentTab]?["subjects"] != nil
-                    ? retrieveBigDic : bigDic)
-            dueDic =
-                (retrieveDueDic[currentTab] != nil ? retrieveDueDic : dueDic)
-
-            names = bigDic[currentTab]!["names"]!
-            subjects = bigDic[currentTab]!["subjects"]!
-            infoArray = bigDic[currentTab]!["description"]!
-            dates = bigDic[currentTab]!["date"]!
-            dueDates = dueDic[currentTab]!
-
-            selectDelete = []
-            selectDelete = Array(repeating: false, count: infoArray.count)
-            DateFormatter().dateFormat = "M/d/yyyy, h:mm a"
-
-            if bigDic[currentTab]?["description"] != []
-                && bigDic[currentTab]?["description"] != [String()]
-            {
-
-                let sortedIndices = dueDates.indices.sorted(by: {
-                    dueDates[$0] < dueDates[$1]
-                })
-
-                // rearrange all arrays based on sorted indices
-                subjects = sortedIndices.map {
-                    bigDic[currentTab]!["subjects"]![$0]
-                }
-                names = sortedIndices.map { bigDic[currentTab]!["names"]![$0] }
-                infoArray = sortedIndices.map {
-                    bigDic[currentTab]!["description"]![$0]
-                }
-                dates = sortedIndices.map { bigDic[currentTab]!["date"]![$0] }
-                dueDates = sortedIndices.map { dueDic[currentTab]![$0] }
-                selectDelete = sortedIndices.map { selectDelete[$0] }
-
-                bigDic[currentTab]!["subjects"] = subjects
-                bigDic[currentTab]!["description"] = infoArray
-                bigDic[currentTab]!["names"] = names
-                bigDic[currentTab]!["date"] = dates
-                dueDic[currentTab]! = dueDates
-                UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
-                caughtUp = false
-
-            } else {
-                caughtUp = true
-
-            }
-
-            error = false
-            loadedData = true
+            loadCurrentList()
 
             if pomoOpened == false {
                 progressTimePomo = pomoTime
                 pomoOpened = true
             }
 
-            progressTimePomo = progressTimePomo
-
             if opened == false {
                 progressTime = 0
                 opened = true
             }
-            progressTime = progressTime
-
         }
-
         .onChange(of: currentTab) {
             Drops.hideAll()
             if currentTab != "+erder" {
-                retrieveBigDic =
-                    UserDefaults.standard.dictionary(forKey: "DicKey")
-                    as? [String: [String: [String]]] ?? [:]
-                retrieveDueDic =
-                    UserDefaults.standard.dictionary(forKey: "DueDicKey")
-                    as? [String: [Date]] ?? [:]
-
-                bigDic =
-                    (retrieveBigDic[currentTab]?["subjects"] != nil
-                        ? retrieveBigDic : bigDic)
-                dueDic =
-                    (retrieveDueDic[currentTab] != nil
-                        ? retrieveDueDic : dueDic)
-
-                names = bigDic[currentTab]!["names"]!
-                subjects = bigDic[currentTab]!["subjects"]!
-                infoArray = bigDic[currentTab]!["description"]!
-                dates = bigDic[currentTab]!["date"]!
-                dueDates = dueDic[currentTab]!
-
-                selectDelete = Array(repeating: false, count: infoArray.count)
-                DateFormatter().dateFormat = "M/d/yyyy, h:mm a"
-
-                if bigDic[currentTab]?["description"] != []
-                    && bigDic[currentTab]?["description"] != [String()]
-                {
-
-                    let sortedIndices = dueDates.indices.sorted(by: {
-                        dueDates[$0] < dueDates[$1]
-                    })
-
-                    subjects = sortedIndices.map {
-                        bigDic[currentTab]!["subjects"]![$0]
-                    }
-                    names = sortedIndices.map {
-                        bigDic[currentTab]!["names"]![$0]
-                    }
-                    infoArray = sortedIndices.map {
-                        bigDic[currentTab]!["description"]![$0]
-                    }
-                    dates = sortedIndices.map {
-                        bigDic[currentTab]!["date"]![$0]
-                    }
-                    dueDates = sortedIndices.map { dueDic[currentTab]![$0] }
-                    selectDelete = sortedIndices.map { selectDelete[$0] }
-
-                    bigDic[currentTab]!["subjects"] = subjects
-                    bigDic[currentTab]!["description"] = infoArray
-                    bigDic[currentTab]!["names"] = names
-                    bigDic[currentTab]!["date"] = dates
-                    dueDic[currentTab]! = dueDates
-                    UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                    UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
-
-                    caughtUp = false
-                } else {
-                    caughtUp = true
-
-                }
-
+                loadCurrentList()
             }
         }
         .onChange(of: breakText) {

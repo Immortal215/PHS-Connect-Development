@@ -2,6 +2,7 @@ import Pow
 import SwiftUI
 
 struct Notebook: View {
+    @EnvironmentObject var drawingBoardStore: DrawingBoardStore
     @State var screenWidth = appScreenBounds.width
     @State var screenHeight = appScreenBounds.height
 
@@ -10,25 +11,10 @@ struct Notebook: View {
     @AppStorage("selectedTab") var selectedTab = 1
     @AppStorage("currentTab") var currentTab = "Basic List"
 
-    @State var retrieveBigDic: [String: [String: [String]]] =
-        UserDefaults.standard.dictionary(forKey: "DicKey")
-        as? [String: [String: [String]]] ?? [
-            "Basic List": [
-                "subjects": [String()], "names": [String()],
-                "description": [String()], "date": [String()],
-            ]
-        ]
-    @State var bigDic: [String: [String: [String]]] = [
-        "Basic List": [
-            "subjects": [String()], "names": [String()],
-            "description": [String()], "date": [String()],
-        ]
-    ]
-
-    @State var retrieveDueDic: [String: [Date]] =
-        UserDefaults.standard.dictionary(forKey: "DueDicKey")
-        as? [String: [Date]] ?? ["Basic List": [Date()]]
-    @State var dueDic: [String: [Date]] = ["Basic List": []]
+    var bigDic: [String: DrawingBoardList] {
+        get { drawingBoardStore.listsByName }
+        nonmutating set { drawingBoardStore.replaceLists(with: newValue) }
+    }
 
     @State var allSubjects: [String: [String]] = [:]
 
@@ -40,9 +26,9 @@ struct Notebook: View {
 
     @State var dates: [String] = []
 
-    @State var retrieveDueArray: [Date] =
-        UserDefaults.standard.array(forKey: "due") as? [Date] ?? []
     @State var dueDates: [Date] = []
+    @State var subjectExpandedStates: [Bool] = []
+    @State var descriptionExpandedStates: [Bool] = []
     @State var commonSub = ["English", "Math", "Science", "History"]
     @State var createTab = ""
     @State var deleteTabs = ""
@@ -77,6 +63,93 @@ struct Notebook: View {
     @State var assignmentAnimation = false
     @State var pickerOpen = false
     @State var hasAppeared = false
+
+    func saveCurrentTasks() {
+        guard currentTab != "+erder" else { return }
+        drawingBoardStore.replaceTasks(
+            in: currentTab,
+            names: names,
+            subjects: subjects,
+            descriptions: infoArray,
+            createdDateTexts: dates,
+            dueDates: dueDates,
+            subjectExpandedStates: subjectExpandedStates,
+            descriptionExpandedStates: descriptionExpandedStates
+        )
+    }
+
+    func dueDateForNewTask() -> Date {
+        let secondsUntilTime = TimeInterval(
+            calculateSecondsUntil(timeString: dueDater)
+        )
+
+        switch dueDateSetter {
+        case "One Hour": return Date(timeIntervalSinceNow: 3600)
+        case "6 Hours": return Date(timeIntervalSinceNow: 21600)
+        case "Today": return Date(timeIntervalSinceNow: secondsUntilTime)
+        case "One Day":
+            return Date(timeIntervalSinceNow: 86401 + secondsUntilTime)
+        case "Two Days":
+            return Date(timeIntervalSinceNow: 172801 + secondsUntilTime)
+        case "Four Days":
+            return Date(timeIntervalSinceNow: 345601 + secondsUntilTime)
+        case "Five Days":
+            return Date(timeIntervalSinceNow: 432001 + secondsUntilTime)
+        default: return Date()
+        }
+    }
+
+    func loadCurrentList() {
+        if currentTab == "+erder" || bigDic[currentTab] == nil {
+            currentTab = "Basic List"
+        }
+
+        guard var list = bigDic[currentTab] else { return }
+        switch organizedAssignments {
+        case "Due By Descending (Recent to Oldest)":
+            list.tasks.sort { $0.dueDate < $1.dueDate }
+        case "Due By Ascending (Oldest to Recent)":
+            list.tasks.sort { $0.dueDate > $1.dueDate }
+        case "Created By Ascending (Oldest to Recent)":
+            list.tasks.sort { $0.createdDateText < $1.createdDateText }
+        default:
+            list.tasks.sort { $0.createdDateText > $1.createdDateText }
+        }
+        bigDic[currentTab] = list
+
+        names = list.names
+        subjects = list.subjects
+        infoArray = list.taskDescriptions
+        dates = list.createdDateTexts
+        dueDates = list.dueDates
+        subjectExpandedStates = list.subjectExpandedStates
+        descriptionExpandedStates = list.descriptionExpandedStates
+        selectDelete = Array(repeating: false, count: list.tasks.count)
+        caughtUp = list.tasks.isEmpty
+
+        allSubjects = [:]
+        for storedList in drawingBoardStore.lists
+        where storedList.name.lowercased().hasSuffix(" list") {
+            allSubjects[storedList.name] = storedList.subjects.filter {
+                !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+        }
+
+        if selectedTab == 0 {
+            for index in infoArray.indices {
+                if infoArray[index] == "Enter new value" {
+                    infoArray[index] = ""
+                }
+                if subjects[index] == "Enter new value" {
+                    subjects[index] = ""
+                }
+            }
+            saveCurrentTasks()
+        }
+
+        error = false
+        loadedData = true
+    }
 
     var body: some View {
         ZStack {
@@ -277,161 +350,35 @@ struct Notebook: View {
                                     Button {
 
                                         if name != "" {
-                                            var tabDict = bigDic[currentTab]
-                                            var namesArray = tabDict!["names"]!
-                                            var subjectsArray = tabDict![
-                                                "subjects"
-                                            ]!
-                                            var infosArray = tabDict![
-                                                "description"
-                                            ]!
-                                            var datesArray = tabDict!["date"]!
-
-                                            if namesArray == []
-                                                || namesArray == [""]
-                                            {
-
-                                                namesArray = []
-
-                                                subjectsArray = []
-
-                                                infosArray = []
-
-                                                datesArray = []
-
-                                            }
-
-                                            namesArray.append(name)
-                                            tabDict!["names"] = namesArray
-                                            bigDic[currentTab] = tabDict
-                                            names = namesArray
-
-                                            subjectsArray.append(
-                                                subject.trimmingCharacters(
-                                                    in: .whitespaces
-                                                ) == "" ? " " : subject
+                                            let task = DrawingBoardTask(
+                                                title: name,
+                                                subject: subject
+                                                    .trimmingCharacters(
+                                                        in: .whitespaces
+                                                    ).isEmpty ? nil : subject,
+                                                details: description
+                                                    .trimmingCharacters(
+                                                        in: .whitespaces
+                                                    ).isEmpty
+                                                    ? nil : description,
+                                                createdDateText: Date.now
+                                                    .formatted(),
+                                                dueDate: dueDateForNewTask()
                                             )
-                                            tabDict!["subjects"] = subjectsArray
-                                            bigDic[currentTab] = tabDict
-                                            subjects = subjectsArray
-
-                                            infosArray.append(
-                                                description.trimmingCharacters(
-                                                    in: .whitespaces
-                                                ) == "" ? " " : description
+                                            drawingBoardStore.appendTask(
+                                                task,
+                                                to: currentTab
                                             )
-                                            tabDict!["description"] = infosArray
-                                            bigDic[currentTab] = tabDict
-                                            infoArray = infosArray
-
-                                            datesArray.append(
-                                                Date.now.formatted()
-                                            )
-                                            tabDict!["date"] = datesArray
-                                            bigDic[currentTab] = tabDict
-                                            dates = datesArray
-
-                                            UserDefaults.standard.set(
-                                                bigDic,
-                                                forKey: "DicKey"
+                                            names.append(task.title)
+                                            subjects.append(task.subject ?? "")
+                                            infoArray.append(task.details ?? "")
+                                            dates.append(task.createdDateText)
+                                            dueDates.append(task.dueDate)
+                                            subjectExpandedStates.append(true)
+                                            descriptionExpandedStates.append(
+                                                true
                                             )
 
-                                            // im too lazy to make the algorithm for this
-                                            if dueDateSetter == "One Day" {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            86401
-                                                            + TimeInterval(
-                                                                calculateSecondsUntil(
-                                                                    timeString:
-                                                                        dueDater
-                                                                )
-                                                            )
-                                                    )
-                                                )
-                                            } else if dueDateSetter
-                                                == "One Hour"
-                                            {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            3600
-                                                    )
-                                                )
-                                            } else if dueDateSetter == "6 Hours"
-                                            {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            21600
-                                                    )
-                                                )
-                                            } else if dueDateSetter
-                                                == "Two Days"
-                                            {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            172801
-                                                    )
-                                                        + TimeInterval(
-                                                            calculateSecondsUntil(
-                                                                timeString:
-                                                                    dueDater
-                                                            )
-                                                        )
-                                                )
-                                            } else if dueDateSetter
-                                                == "Five Days"
-                                            {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            432001
-                                                            + TimeInterval(
-                                                                calculateSecondsUntil(
-                                                                    timeString:
-                                                                        dueDater
-                                                                )
-                                                            )
-                                                    )
-                                                )
-                                            } else if dueDateSetter == "Today" {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            TimeInterval(
-                                                                calculateSecondsUntil(
-                                                                    timeString:
-                                                                        dueDater
-                                                                )
-                                                            )
-                                                    )
-                                                )
-                                            } else if dueDateSetter
-                                                == "Four Days"
-                                            {
-                                                dueDates.append(
-                                                    Date(
-                                                        timeIntervalSinceNow:
-                                                            345601
-                                                            + TimeInterval(
-                                                                calculateSecondsUntil(
-                                                                    timeString:
-                                                                        dueDater
-                                                                )
-                                                            )
-                                                    )
-                                                )
-                                            }
-
-                                            dueDic[currentTab] = dueDates
-
-                                            UserDefaults.standard.set(
-                                                dueDic,
-                                                forKey: "DueDicKey"
-                                            )
 
                                             selectDelete = Array(
                                                 repeating: false,
@@ -443,13 +390,14 @@ struct Notebook: View {
                                                 if tab.lowercased().hasSuffix(
                                                     " list"
                                                 ) {
-                                                    if let subjects = bigDic[
+                                                    allSubjects[tab] = bigDic[
                                                         tab
-                                                    ]?["subjects"] as? [String]
-                                                    {
-                                                        allSubjects[tab] =
-                                                            subjects
-                                                    }
+                                                    ]?.subjects.filter {
+                                                        !$0.trimmingCharacters(
+                                                            in:
+                                                                .whitespacesAndNewlines
+                                                        ).isEmpty
+                                                    } ?? []
                                                 }
                                             }
 
@@ -507,23 +455,10 @@ struct Notebook: View {
                                     subjects = []
                                     names = []
 
-                                    bigDic[currentTab] = [
-                                        "subjects": [],
-                                        "names": [],
-                                        "description": [],
-                                        "date": [],
-                                    ]
-
-                                    dueDic[currentTab] = []
-
-                                    UserDefaults.standard.set(
-                                        dueDic,
-                                        forKey: "DueDicKey"
-                                    )
-                                    UserDefaults.standard.set(
-                                        bigDic,
-                                        forKey: "DicKey"
-                                    )
+                                    var list = bigDic[currentTab]
+                                        ?? DrawingBoardList(name: currentTab)
+                                    list.tasks = []
+                                    bigDic[currentTab] = list
                                     deleted = false
                                     caughtUp = false
                                 }
@@ -586,7 +521,7 @@ struct Notebook: View {
                     .padding(caughtUp ? 30 : 0)
 
                     if loadedData && currentTab != "+erder"
-                        && bigDic[currentTab]?["description"]?.isEmpty != true
+                        && bigDic[currentTab]?.tasks.isEmpty != true
                         && caughtUp == false
                         && selectDelete.count == infoArray.count
                     {
@@ -669,30 +604,18 @@ struct Notebook: View {
                                                     subjects.remove(at: index)
                                                     dates.remove(at: index)
                                                     dueDates.remove(at: index)
-
-                                                    bigDic[currentTab]![
-                                                        "names"
-                                                    ]! = names
-                                                    bigDic[currentTab]![
-                                                        "subjects"
-                                                    ]! = subjects
-                                                    bigDic[currentTab]![
-                                                        "description"
-                                                    ]! = infoArray
-                                                    bigDic[currentTab]![
-                                                        "date"
-                                                    ]! = dates
-                                                    dueDic[currentTab]! =
-                                                        dueDates
-
-                                                    UserDefaults.standard.set(
-                                                        bigDic,
-                                                        forKey: "DicKey"
+                                                    subjectExpandedStates.remove(
+                                                        at: index
                                                     )
-                                                    UserDefaults.standard.set(
-                                                        dueDic,
-                                                        forKey: "DueDicKey"
-                                                    )
+                                                    descriptionExpandedStates
+                                                        .remove(at: index)
+
+                                                    drawingBoardStore
+                                                        .removeTask(
+                                                            at: index,
+                                                            from: currentTab
+                                                        )
+
 
                                                     completed += 1
                                                     if infoArray.isEmpty {
@@ -736,144 +659,10 @@ struct Notebook: View {
                                                         .onChange(
                                                             of: names[index]
                                                         ) {
-                                                            bigDic[currentTab]![
-                                                                "subjects"
-                                                            ] = subjects
-                                                            bigDic[currentTab]![
-                                                                "description"
-                                                            ] = infoArray
-
-                                                            bigDic[currentTab]![
-                                                                "names"
-                                                            ] = names
-
-                                                            UserDefaults
-                                                                .standard.set(
-                                                                    bigDic,
-                                                                    forKey:
-                                                                        "DicKey"
-                                                                )
-                                                            if infoArray[index]
-                                                                == " "
-                                                            {
-                                                                infoArray[
-                                                                    index
-                                                                ] =
-                                                                    "Enter new value"
-                                                                Timer
-                                                                    .scheduledTimer(
-                                                                        withTimeInterval:
-                                                                            4,
-                                                                        repeats:
-                                                                            false
-                                                                    ) { timer in
-                                                                        if infoArray[
-                                                                            index
-                                                                        ]
-                                                                            == "Enter new value"
-                                                                        {
-                                                                            infoArray[
-                                                                                index
-                                                                            ] =
-                                                                                " "
-                                                                            bigDic[
-                                                                                currentTab
-                                                                            ]![
-                                                                                "description"
-                                                                            ] =
-                                                                                infoArray
-                                                                            UserDefaults
-                                                                                .standard
-                                                                                .set(
-                                                                                    bigDic,
-                                                                                    forKey:
-                                                                                        "DicKey"
-                                                                                )
-
-                                                                        }
-                                                                    }
-                                                            }
-                                                            if subjects[index]
-                                                                == " "
-                                                            {
-                                                                subjects[
-                                                                    index
-                                                                ] =
-                                                                    "Enter new value"
-                                                                Timer
-                                                                    .scheduledTimer(
-                                                                        withTimeInterval:
-                                                                            4,
-                                                                        repeats:
-                                                                            false
-                                                                    ) { timer in
-                                                                        if subjects[
-                                                                            index
-                                                                        ]
-                                                                            == "Enter new value"
-                                                                        {
-                                                                            subjects[
-                                                                                index
-                                                                            ] =
-                                                                                " "
-                                                                            bigDic[
-                                                                                currentTab
-                                                                            ]![
-                                                                                "subjects"
-                                                                            ] =
-                                                                                subjects
-                                                                            UserDefaults
-                                                                                .standard
-                                                                                .set(
-                                                                                    bigDic,
-                                                                                    forKey:
-                                                                                        "DicKey"
-                                                                                )
-                                                                        }
-                                                                    }
-                                                            }
-
-                                                            bigDic[currentTab]![
-                                                                "subjects"
-                                                            ] = subjects
-                                                            bigDic[currentTab]![
-                                                                "description"
-                                                            ] = infoArray
-
-                                                            UserDefaults
-                                                                .standard.set(
-                                                                    bigDic,
-                                                                    forKey:
-                                                                        "DicKey"
-                                                                )
+                                                            saveCurrentTasks()
                                                         }
                                                         .onSubmit {
-                                                            if infoArray[index]
-                                                                == "Enter new value"
-                                                            {
-                                                                infoArray[
-                                                                    index
-                                                                ] = " "
-                                                            }
-                                                            if subjects[index]
-                                                                == "Enter new value"
-                                                            {
-                                                                subjects[
-                                                                    index
-                                                                ] = " "
-                                                            }
-                                                            bigDic[currentTab]![
-                                                                "subjects"
-                                                            ] = subjects
-                                                            bigDic[currentTab]![
-                                                                "description"
-                                                            ] = infoArray
-                                                            UserDefaults
-                                                                .standard.set(
-                                                                    bigDic,
-                                                                    forKey:
-                                                                        "DicKey"
-                                                                )
+                                                            saveCurrentTasks()
                                                         }
                                                         .fontWeight(.heavy)
                                                         .font(.largeTitle)
@@ -881,12 +670,13 @@ struct Notebook: View {
                                                         .padding()
                                                         //    .fixedSize(horizontal: infoArray[index] != " " ? false : true, vertical: false)
                                                         .multilineTextAlignment(
-                                                            infoArray[index]
-                                                                != " "
+                                                            descriptionExpandedStates[
+                                                                index
+                                                            ]
                                                                 ? .leading
-                                                                : subjects[
+                                                                : subjectExpandedStates[
                                                                     index
-                                                                ] != " "
+                                                                ]
                                                                     ? .leading
                                                                     : .center
                                                         )
@@ -894,21 +684,25 @@ struct Notebook: View {
 
                                                     }
                                                     .frame(
-                                                        maxWidth: infoArray[
+                                                        maxWidth:
+                                                            descriptionExpandedStates[
                                                             index
-                                                        ] != " "
+                                                        ]
                                                             ? screenWidth / 3
-                                                            : subjects[index]
-                                                                != " "
+                                                            : subjectExpandedStates[
+                                                                index
+                                                            ]
                                                                 ? screenWidth
                                                                     / 2
                                                                 : screenWidth,
-                                                        alignment: infoArray[
+                                                        alignment:
+                                                            descriptionExpandedStates[
                                                             index
-                                                        ] != " "
+                                                        ]
                                                             ? .leading
-                                                            : subjects[index]
-                                                                != " "
+                                                            : subjectExpandedStates[
+                                                                index
+                                                            ]
                                                                 ? .leading
                                                                 : .center
                                                     )
@@ -918,7 +712,9 @@ struct Notebook: View {
                                                     )
                                                     Spacer()
                                                     // description texteditor
-                                                    if infoArray[index] != " " {
+                                                    if descriptionExpandedStates[
+                                                        index
+                                                    ] {
 
                                                         HStack {
 
@@ -943,7 +739,7 @@ struct Notebook: View {
                                                                     {
                                                                         infoArray[
                                                                             index
-                                                                        ] = " "
+                                                                        ] = ""
                                                                     }
 
                                                                 } label: {
@@ -1011,7 +807,10 @@ struct Notebook: View {
                                                                         index
                                                                     ]
                                                             )
-                                                            .overlay {
+                                                            .overlay(
+                                                                alignment:
+                                                                    .topLeading
+                                                            ) {
                                                                 RoundedRectangle(
                                                                     cornerRadius:
                                                                         8,
@@ -1025,7 +824,31 @@ struct Notebook: View {
                                                                     ),
                                                                     lineWidth: 2
                                                                 )
+                                                                .allowsHitTesting(
+                                                                    false
+                                                                )
 
+                                                                if infoArray[
+                                                                    index
+                                                                ].isEmpty {
+                                                                    Text(
+                                                                        "Add a description here!"
+                                                                    )
+                                                                    .foregroundStyle(
+                                                                        .gray
+                                                                    )
+                                                                    .padding(
+                                                                        .top,
+                                                                        8
+                                                                    )
+                                                                    .padding(
+                                                                        .leading,
+                                                                        5
+                                                                    )
+                                                                    .allowsHitTesting(
+                                                                        false
+                                                                    )
+                                                                }
                                                             }
                                                             //  .multilineTextAlignment(.center)
 
@@ -1041,128 +864,10 @@ struct Notebook: View {
                                                                     index
                                                                 ]
                                                             ) {
-
-                                                                if infoArray[
-                                                                    index
-                                                                ] == "" {
-                                                                    Timer
-                                                                        .scheduledTimer(
-                                                                            withTimeInterval:
-                                                                                4,
-                                                                            repeats:
-                                                                                false
-                                                                        ) {
-                                                                            timer
-                                                                            in
-                                                                            if infoArray[
-                                                                                index
-                                                                            ]
-                                                                                == ""
-                                                                            {
-                                                                                infoArray[
-                                                                                    index
-                                                                                ] =
-                                                                                    " "
-                                                                            }
-                                                                        }
-                                                                }
-                                                                if infoArray[
-                                                                    index
-                                                                ] == " " {
-                                                                    bigDic[
-                                                                        currentTab
-                                                                    ]![
-                                                                        "description"
-                                                                    ] =
-                                                                        infoArray
-                                                                    UserDefaults
-                                                                        .standard
-                                                                        .set(
-                                                                            bigDic,
-                                                                            forKey:
-                                                                                "DicKey"
-                                                                        )
-                                                                }
-                                                                if subjects[
-                                                                    index
-                                                                ] == " " {
-                                                                    subjects[
-                                                                        index
-                                                                    ] =
-                                                                        "Enter new value"
-                                                                    Timer
-                                                                        .scheduledTimer(
-                                                                            withTimeInterval:
-                                                                                4,
-                                                                            repeats:
-                                                                                false
-                                                                        ) {
-                                                                            timer
-                                                                            in
-                                                                            if subjects[
-                                                                                index
-                                                                            ]
-                                                                                == "Enter new value"
-                                                                            {
-                                                                                subjects[
-                                                                                    index
-                                                                                ] =
-                                                                                    " "
-                                                                            }
-                                                                        }
-                                                                }
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]!["subjects"] =
-                                                                    subjects
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]![
-                                                                    "description"
-                                                                ] = infoArray
-                                                                UserDefaults
-                                                                    .standard
-                                                                    .set(
-                                                                        bigDic,
-                                                                        forKey:
-                                                                            "DicKey"
-                                                                    )
+                                                                saveCurrentTasks()
                                                             }
                                                             .onSubmit {
-                                                                if infoArray[
-                                                                    index
-                                                                ]
-                                                                    == "Enter new value"
-                                                                {
-                                                                    infoArray[
-                                                                        index
-                                                                    ] = " "
-                                                                }
-                                                                if subjects[
-                                                                    index
-                                                                ]
-                                                                    == "Enter new value"
-                                                                {
-                                                                    subjects[
-                                                                        index
-                                                                    ] = " "
-                                                                }
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]!["subjects"] =
-                                                                    subjects
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]![
-                                                                    "description"
-                                                                ] = infoArray
-                                                                UserDefaults
-                                                                    .standard
-                                                                    .set(
-                                                                        bigDic,
-                                                                        forKey:
-                                                                            "DicKey"
-                                                                    )
+                                                                saveCurrentTasks()
                                                             }
 
                                                             .font(.title3)
@@ -1173,11 +878,8 @@ struct Notebook: View {
                                                         .padding()
                                                         //  .frame(maxWidth: infoArray[index] != " " ? screenWidth/2 : 0)
                                                         .frame(
-                                                            maxWidth: infoArray[
-                                                                index
-                                                            ] != " "
-                                                                ? screenWidth
-                                                                    / 3 : 0,
+                                                            maxWidth: screenWidth
+                                                                / 3,
                                                             maxHeight:
                                                                 screenHeight / 5
                                                         )
@@ -1189,7 +891,9 @@ struct Notebook: View {
                                                     }
 
                                                     // subject picker and textfield
-                                                    if subjects[index] != " " {
+                                                    if subjectExpandedStates[
+                                                        index
+                                                    ] {
                                                         Spacer(minLength: 0)
                                                         HStack {
                                                             if subjectPicker {
@@ -1383,18 +1087,7 @@ struct Notebook: View {
                                                                             index
                                                                         ]
                                                                 ) {
-                                                                    bigDic[
-                                                                        currentTab
-                                                                    ]![
-                                                                        "subjects"
-                                                                    ] = subjects
-                                                                    UserDefaults
-                                                                        .standard
-                                                                        .set(
-                                                                            bigDic,
-                                                                            forKey:
-                                                                                "DicKey"
-                                                                        )
+                                                                    saveCurrentTasks()
                                                                 }
                                                             }
                                                             TextField(
@@ -1435,157 +1128,11 @@ struct Notebook: View {
                                                                     index
                                                                 ]
                                                             ) {
-
-                                                                if infoArray[
-                                                                    index
-                                                                ] == " " {
-                                                                    infoArray[
-                                                                        index
-                                                                    ] =
-                                                                        "Enter new value"
-                                                                    Timer
-                                                                        .scheduledTimer(
-                                                                            withTimeInterval:
-                                                                                4,
-                                                                            repeats:
-                                                                                false
-                                                                        ) {
-                                                                            timer
-                                                                            in
-                                                                            if infoArray[
-                                                                                index
-                                                                            ]
-                                                                                == "Enter new value"
-                                                                            {
-                                                                                infoArray[
-                                                                                    index
-                                                                                ] =
-                                                                                    " "
-                                                                                bigDic[
-                                                                                    currentTab
-                                                                                ]![
-                                                                                    "description"
-                                                                                ] =
-                                                                                    infoArray
-                                                                                UserDefaults
-                                                                                    .standard
-                                                                                    .set(
-                                                                                        bigDic,
-                                                                                        forKey:
-                                                                                            "DicKey"
-                                                                                    )
-                                                                            }
-                                                                        }
-                                                                }
-                                                                if subjects[
-                                                                    index
-                                                                ] == "" {
-                                                                    Timer
-                                                                        .scheduledTimer(
-                                                                            withTimeInterval:
-                                                                                4,
-                                                                            repeats:
-                                                                                false
-                                                                        ) {
-                                                                            timer
-                                                                            in
-                                                                            if subjects[
-                                                                                index
-                                                                            ]
-                                                                                == ""
-                                                                            {
-                                                                                subjects[
-                                                                                    index
-                                                                                ] =
-                                                                                    " "
-                                                                                bigDic[
-                                                                                    currentTab
-                                                                                ]![
-                                                                                    "subjects"
-                                                                                ] =
-                                                                                    subjects
-                                                                                UserDefaults
-                                                                                    .standard
-                                                                                    .set(
-                                                                                        bigDic,
-                                                                                        forKey:
-                                                                                            "DicKey"
-                                                                                    )
-                                                                            }
-                                                                        }
-                                                                }
-
-                                                                if subjects[
-                                                                    index
-                                                                ] == " " {
-                                                                    bigDic[
-                                                                        currentTab
-                                                                    ]![
-                                                                        "subjects"
-                                                                    ] = subjects
-                                                                    UserDefaults
-                                                                        .standard
-                                                                        .set(
-                                                                            bigDic,
-                                                                            forKey:
-                                                                                "DicKey"
-                                                                        )
-                                                                }
-
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]!["subjects"] =
-                                                                    subjects
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]![
-                                                                    "description"
-                                                                ] = infoArray
-                                                                UserDefaults
-                                                                    .standard
-                                                                    .set(
-                                                                        bigDic,
-                                                                        forKey:
-                                                                            "DicKey"
-                                                                    )
-
+                                                                saveCurrentTasks()
                                                             }
 
                                                             .onSubmit {
-                                                                if infoArray[
-                                                                    index
-                                                                ]
-                                                                    == "Enter new value"
-                                                                {
-                                                                    infoArray[
-                                                                        index
-                                                                    ] = " "
-                                                                }
-                                                                if subjects[
-                                                                    index
-                                                                ]
-                                                                    == "Enter new value"
-                                                                {
-                                                                    subjects[
-                                                                        index
-                                                                    ] = " "
-                                                                }
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]!["subjects"] =
-                                                                    subjects
-                                                                bigDic[
-                                                                    currentTab
-                                                                ]![
-                                                                    "description"
-                                                                ] = infoArray
-                                                                UserDefaults
-                                                                    .standard
-                                                                    .set(
-                                                                        bigDic,
-                                                                        forKey:
-                                                                            "DicKey"
-                                                                    )
+                                                                saveCurrentTasks()
                                                             }
                                                             .font(.title2)
 
@@ -1604,21 +1151,61 @@ struct Notebook: View {
                                                         )
                                                         .padding()
                                                         .frame(
-                                                            maxWidth: subjects[
-                                                                index
-                                                            ] != " "
-                                                                ? (infoArray[
+                                                            maxWidth:
+                                                                descriptionExpandedStates[
                                                                     index
-                                                                ] != " "
-                                                                    ? screenWidth
-                                                                        / 3
-                                                                    : screenWidth
-                                                                        / 2) : 0
+                                                                ]
+                                                                ? screenWidth
+                                                                    / 3
+                                                                : screenWidth
+                                                                    / 2
                                                         )
                                                         .fixedSize(
                                                             horizontal: true,
                                                             vertical: false
                                                         )
+                                                    }
+
+                                                    VStack(spacing: 10) {
+                                                        DrawingBoardFieldToggleButton(
+                                                            systemName:
+                                                                "book.closed",
+                                                            color: Color(
+                                                                hexadecimal:
+                                                                    subjectColor
+                                                            ),
+                                                            isExpanded:
+                                                                subjectExpandedStates[
+                                                                    index
+                                                                ],
+                                                            accessibilityLabel:
+                                                                "Toggle subject"
+                                                        ) {
+                                                            subjectExpandedStates[
+                                                                index
+                                                            ].toggle()
+                                                            saveCurrentTasks()
+                                                        }
+
+                                                        DrawingBoardFieldToggleButton(
+                                                            systemName:
+                                                                "note.text",
+                                                            color: Color(
+                                                                hexadecimal:
+                                                                    descriptionColor
+                                                            ),
+                                                            isExpanded:
+                                                                descriptionExpandedStates[
+                                                                    index
+                                                                ],
+                                                            accessibilityLabel:
+                                                                "Toggle description"
+                                                        ) {
+                                                            descriptionExpandedStates[
+                                                                index
+                                                            ].toggle()
+                                                            saveCurrentTasks()
+                                                        }
                                                     }
                                                     //      .offset(y: -25)
                                                 }
@@ -1648,14 +1235,7 @@ struct Notebook: View {
                                                         }
                                                     )
                                                     .onChange(of: dueDates) {
-                                                        dueDic[currentTab]! =
-                                                            dueDates
-                                                        UserDefaults.standard
-                                                            .set(
-                                                                dueDic,
-                                                                forKey:
-                                                                    "DueDicKey"
-                                                            )
+                                                        saveCurrentTasks()
                                                     }
                                                     .datePickerStyle(.compact)
                                                     .padding()
@@ -1678,20 +1258,13 @@ struct Notebook: View {
 
                                         if infoArray[index] == "Enter new value"
                                         {
-                                            infoArray[index] = " "
+                                            infoArray[index] = ""
                                         }
                                         if subjects[index] == "Enter new value"
                                         {
-                                            subjects[index] = " "
+                                            subjects[index] = ""
                                         }
-                                        bigDic[currentTab]!["subjects"] =
-                                            subjects
-                                        bigDic[currentTab]!["description"] =
-                                            infoArray
-                                        UserDefaults.standard.set(
-                                            bigDic,
-                                            forKey: "DicKey"
-                                        )
+                                        saveCurrentTasks()
 
                                         hasAppeared = true
                                     }
@@ -1738,16 +1311,7 @@ struct Notebook: View {
                                 Button {
                                     if deleteTabs != "Basic List" {
                                         bigDic.removeValue(forKey: deleteTabs)
-                                        dueDic.removeValue(forKey: deleteTabs)
 
-                                        UserDefaults.standard.set(
-                                            bigDic,
-                                            forKey: "DicKey"
-                                        )
-                                        UserDefaults.standard.set(
-                                            dueDic,
-                                            forKey: "DueDicKey"
-                                        )
                                     } else {
                                         deleteWarning = true
                                     }
@@ -1792,43 +1356,18 @@ struct Notebook: View {
                                         if createTab.lowercased().hasSuffix(
                                             " list"
                                         ) {
-                                            bigDic["\(createTab)"] = [
-                                                "subjects": [],
-                                                "names": [],
-                                                "description": [],
-                                                "date": [],
-                                            ]
-
-                                            dueDic["\(createTab)"] = []
-
-                                            UserDefaults.standard.set(
-                                                bigDic,
-                                                forKey: "DicKey"
-                                            )
-                                            UserDefaults.standard.set(
-                                                dueDic,
-                                                forKey: "DueDicKey"
-                                            )
+                                            bigDic["\(createTab)"] =
+                                                DrawingBoardList(
+                                                    name: createTab
+                                                )
 
                                         } else {
                                             if createTab != "" {
-                                                bigDic["\(createTab) List"] = [
-                                                    "subjects": [],
-                                                    "names": [],
-                                                    "description": [],
-                                                    "date": [],
-                                                ]
-
-                                                dueDic["\(createTab) List"] = []
+                                                bigDic["\(createTab) List"] =
+                                                    DrawingBoardList(
+                                                        name: "\(createTab) List"
+                                                    )
                                             }
-                                            UserDefaults.standard.set(
-                                                bigDic,
-                                                forKey: "DicKey"
-                                            )
-                                            UserDefaults.standard.set(
-                                                dueDic,
-                                                forKey: "DueDicKey"
-                                            )
                                         }
                                     }
                                     createTab = ""
@@ -1854,334 +1393,16 @@ struct Notebook: View {
         }
         .onAppear {
             deleted = false
-            if currentTab == "+erder" {
-                currentTab = "Basic List"
-            }
-
-            retrieveBigDic =
-                UserDefaults.standard.dictionary(forKey: "DicKey")
-                as? [String: [String: [String]]] ?? [:]
-
-            bigDic =
-                (retrieveBigDic[currentTab]?["subjects"] != nil
-                    ? retrieveBigDic : bigDic)
-
-            retrieveDueDic =
-                UserDefaults.standard.dictionary(forKey: "DueDicKey")
-                as? [String: [Date]] ?? [:]
-
-            dueDic =
-                (retrieveDueDic[currentTab] != nil ? retrieveDueDic : dueDic)
-            names = bigDic[currentTab]!["names"]!
-            subjects = bigDic[currentTab]!["subjects"]!
-            infoArray = bigDic[currentTab]!["description"]!
-            dates = bigDic[currentTab]!["date"]!
-            dueDates = dueDic[currentTab]!
-
-            for tab in bigDic.keys {
-                allSubjects[tab] = []
-                if tab.lowercased().hasSuffix(" list") {
-                    if let subjects = bigDic[tab]?["subjects"] as? [String] {
-                        allSubjects[tab] = subjects
-                    }
-                }
-            }
-
-            selectDelete = []
-            for _ in 0..<infoArray.count {
-                selectDelete.append(false)
-            }
-            DateFormatter().dateFormat = "M/d/yyyy, h:mm a"
-
-            if bigDic[currentTab]?["description"] != []
-                && bigDic[currentTab]?["description"] != [String()]
-            {
-                var sortedIndices = dates.indices.sorted(by: {
-                    dates[$0] > dates[$1]
-                })
-
-                if organizedAssignments
-                    == "Due By Descending (Recent to Oldest)"
-                {
-                    sortedIndices = dueDates.indices.sorted(by: {
-                        dueDates[$0] < dueDates[$1]
-                    })
-
-                } else if organizedAssignments
-                    == "Due By Ascending (Oldest to Recent)"
-                {
-                    sortedIndices = dueDates.indices.sorted(by: {
-                        dueDates[$0] > dueDates[$1]
-                    })
-
-                } else if organizedAssignments
-                    == "Created By Descending (Recent to Oldest)"
-                {
-                    sortedIndices = dates.indices.sorted(by: {
-                        dates[$0] > dates[$1]
-                    })
-
-                } else if organizedAssignments
-                    == "Created By Ascending (Oldest to Recent)"
-                {
-                    sortedIndices = dates.indices.sorted(by: {
-                        dates[$0] < dates[$1]
-                    })
-                }
-
-                subjects = sortedIndices.map {
-                    bigDic[currentTab]!["subjects"]![$0]
-                }
-                names = sortedIndices.map { bigDic[currentTab]!["names"]![$0] }
-                infoArray = sortedIndices.map {
-                    bigDic[currentTab]!["description"]![$0]
-                }
-                dates = sortedIndices.map { bigDic[currentTab]!["date"]![$0] }
-                dueDates = sortedIndices.map { dueDic[currentTab]![$0] }
-                selectDelete = sortedIndices.map { selectDelete[$0] }
-
-                bigDic[currentTab]!["subjects"] = subjects
-                bigDic[currentTab]!["description"] = infoArray
-                bigDic[currentTab]!["names"] = names
-                bigDic[currentTab]!["date"] = dates
-                dueDic[currentTab]! = dueDates
-                UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
-                caughtUp = false
-            } else {
-                caughtUp = true
-            }
-            error = false
-            loadedData = true
-
-            if selectedTab == 0 {
-                for index in infoArray.indices {
-                    if infoArray[index] == "Enter new value" {
-                        infoArray[index] = " "
-                        bigDic[currentTab]!["description"] = infoArray
-                    }
-                    if subjects[index] == "Enter new value" {
-                        subjects[index] = " "
-                        bigDic[currentTab]!["subjects"] = subjects
-
-                    }
-                    UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                }
-            }
+            loadCurrentList()
         }
         .onChange(of: selectedTab) {
             deleted = false
-            if currentTab == "+erder" {
-                currentTab = "Basic List"
-            }
-
-            retrieveBigDic =
-                UserDefaults.standard.dictionary(forKey: "DicKey")
-                as? [String: [String: [String]]] ?? [:]
-
-            bigDic =
-                (retrieveBigDic[currentTab]?["subjects"] != nil
-                    ? retrieveBigDic : bigDic)
-
-            retrieveDueDic =
-                UserDefaults.standard.dictionary(forKey: "DueDicKey")
-                as? [String: [Date]] ?? [:]
-
-            dueDic =
-                (retrieveDueDic[currentTab] != nil ? retrieveDueDic : dueDic)
-            names = bigDic[currentTab]!["names"]!
-            subjects = bigDic[currentTab]!["subjects"]!
-            infoArray = bigDic[currentTab]!["description"]!
-            dates = bigDic[currentTab]!["date"]!
-            dueDates = dueDic[currentTab]!
-
-            for tab in bigDic.keys {
-                allSubjects[tab] = []
-                if tab.lowercased().hasSuffix(" list") {
-                    if let subjects = bigDic[tab]?["subjects"] as? [String] {
-                        allSubjects[tab] = subjects
-                    }
-                }
-            }
-
-            selectDelete = []
-            for _ in 0..<infoArray.count {
-                selectDelete.append(false)
-            }
-            DateFormatter().dateFormat = "M/d/yyyy, h:mm a"
-
-            if bigDic[currentTab]?["description"] != []
-                && bigDic[currentTab]?["description"] != [String()]
-            {
-                var sortedIndices = dates.indices.sorted(by: {
-                    dates[$0] > dates[$1]
-                })
-
-                if organizedAssignments
-                    == "Due By Descending (Recent to Oldest)"
-                {
-                    sortedIndices = dueDates.indices.sorted(by: {
-                        dueDates[$0] < dueDates[$1]
-                    })
-
-                } else if organizedAssignments
-                    == "Due By Ascending (Oldest to Recent)"
-                {
-                    sortedIndices = dueDates.indices.sorted(by: {
-                        dueDates[$0] > dueDates[$1]
-                    })
-
-                } else if organizedAssignments
-                    == "Created By Descending (Recent to Oldest)"
-                {
-                    sortedIndices = dates.indices.sorted(by: {
-                        dates[$0] > dates[$1]
-                    })
-
-                } else if organizedAssignments
-                    == "Created By Ascending (Oldest to Recent)"
-                {
-                    sortedIndices = dates.indices.sorted(by: {
-                        dates[$0] < dates[$1]
-                    })
-                }
-
-                subjects = sortedIndices.map {
-                    bigDic[currentTab]!["subjects"]![$0]
-                }
-                names = sortedIndices.map { bigDic[currentTab]!["names"]![$0] }
-                infoArray = sortedIndices.map {
-                    bigDic[currentTab]!["description"]![$0]
-                }
-                dates = sortedIndices.map { bigDic[currentTab]!["date"]![$0] }
-                dueDates = sortedIndices.map { dueDic[currentTab]![$0] }
-                selectDelete = sortedIndices.map { selectDelete[$0] }
-
-                bigDic[currentTab]!["subjects"] = subjects
-                bigDic[currentTab]!["description"] = infoArray
-                bigDic[currentTab]!["names"] = names
-                bigDic[currentTab]!["date"] = dates
-                dueDic[currentTab]! = dueDates
-                UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
-                caughtUp = false
-            } else {
-                caughtUp = true
-            }
-            error = false
-            loadedData = true
-
-            if selectedTab == 0 {
-                for index in infoArray.indices {
-                    if infoArray[index] == "Enter new value" {
-                        infoArray[index] = " "
-                        bigDic[currentTab]!["description"] = infoArray
-                    }
-                    if subjects[index] == "Enter new value" {
-                        subjects[index] = " "
-                        bigDic[currentTab]!["subjects"] = subjects
-
-                    }
-                    UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                }
-            }
+            loadCurrentList()
         }
         .onChange(of: currentTab) {
             deleted = false
             if currentTab != "+erder" {
-                retrieveBigDic =
-                    UserDefaults.standard.dictionary(forKey: "DicKey")
-                    as? [String: [String: [String]]] ?? [:]
-                retrieveDueDic =
-                    UserDefaults.standard.dictionary(forKey: "DueDicKey")
-                    as? [String: [Date]] ?? [:]
-
-                bigDic =
-                    (retrieveBigDic[currentTab]?["subjects"] != nil
-                        ? retrieveBigDic : bigDic)
-                dueDic =
-                    (retrieveDueDic[currentTab] != nil
-                        ? retrieveDueDic : dueDic)
-
-                names = bigDic[currentTab]!["names"]!
-                subjects = bigDic[currentTab]!["subjects"]!
-                infoArray = bigDic[currentTab]!["description"]!
-                dates = bigDic[currentTab]!["date"]!
-                dueDates = dueDic[currentTab]!
-
-                selectDelete = []
-                selectDelete = Array(repeating: false, count: infoArray.count)
-
-                DateFormatter().dateFormat = "M/d/yyyy, h:mm a"
-
-                if bigDic[currentTab]?["description"] != []
-                    && bigDic[currentTab]?["description"] != [String()]
-                {
-
-                    var sortedIndices = dates.indices.sorted(by: {
-                        dates[$0] > dates[$1]
-                    })
-
-                    if organizedAssignments
-                        == "Due By Descending (Recent to Oldest)"
-                    {
-                        sortedIndices = dueDates.indices.sorted(by: {
-                            dueDates[$0] < dueDates[$1]
-                        })
-
-                    } else if organizedAssignments
-                        == "Due By Ascending (Oldest to Recent)"
-                    {
-                        sortedIndices = dueDates.indices.sorted(by: {
-                            dueDates[$0] > dueDates[$1]
-                        })
-
-                    } else if organizedAssignments
-                        == "Created By Descending (Recent to Oldest)"
-                    {
-                        sortedIndices = dates.indices.sorted(by: {
-                            dates[$0] > dates[$1]
-                        })
-
-                    } else if organizedAssignments
-                        == "Created By Ascending (Oldest to Recent)"
-                    {
-                        sortedIndices = dates.indices.sorted(by: {
-                            dates[$0] < dates[$1]
-                        })
-                    }
-
-                    subjects = sortedIndices.map {
-                        bigDic[currentTab]!["subjects"]![$0]
-                    }
-                    names = sortedIndices.map {
-                        bigDic[currentTab]!["names"]![$0]
-                    }
-                    infoArray = sortedIndices.map {
-                        bigDic[currentTab]!["description"]![$0]
-                    }
-                    dates = sortedIndices.map {
-                        bigDic[currentTab]!["date"]![$0]
-                    }
-                    dueDates = sortedIndices.map { dueDic[currentTab]![$0] }
-                    selectDelete = sortedIndices.map { selectDelete[$0] }
-
-                    bigDic[currentTab]!["subjects"] = subjects
-                    bigDic[currentTab]!["description"] = infoArray
-                    bigDic[currentTab]!["names"] = names
-                    bigDic[currentTab]!["date"] = dates
-                    dueDic[currentTab]! = dueDates
-                    UserDefaults.standard.set(bigDic, forKey: "DicKey")
-                    UserDefaults.standard.set(dueDic, forKey: "DueDicKey")
-                    caughtUp = false
-
-                } else {
-                    caughtUp = true
-                }
-
-                error = false
-                loadedData = true
-
+                loadCurrentList()
             }
         }
 

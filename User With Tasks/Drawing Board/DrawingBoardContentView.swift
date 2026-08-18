@@ -2,6 +2,7 @@ import Pow
 import SwiftUI
 
 struct ContentViewDrawingBoard: View {
+    @StateObject var drawingBoardStore = DrawingBoardStore()
     @AppStorage("selectedTab") var selectedTab = 1
     @AppStorage("tabStyle") var tabStyle = true
     @AppStorage("pagedStyle") var pagedStyle = false
@@ -11,12 +12,14 @@ struct ContentViewDrawingBoard: View {
         ZStack {
             TabView(selection: $selectedTab) {
                 Homepage()
+                    .environmentObject(drawingBoardStore)
                     .tabItem {
                         Image(systemName: "house.fill")
                     }
                     .tag(0)
 
                 Notebook()
+                    .environmentObject(drawingBoardStore)
                     .tabItem {
                         Image(systemName: "text.book.closed.fill")
                     }
@@ -37,6 +40,7 @@ struct ContentViewDrawingBoard: View {
             .tabViewStyle(
                 .page(indexDisplayMode: pagedStyle ? .always : .never)
             )
+            
             VStack {
                 Spacer()
                 ZStack {
@@ -47,6 +51,8 @@ struct ContentViewDrawingBoard: View {
                             .shadow(color: .blue, radius: 5)
                             .fixedSize(horizontal: false, vertical: true)
                             .opacity(chosenOpacity)
+                            .allowsHitTesting(false)
+
                         HStack {
 
                             TabBarButtonDrawing(
@@ -55,18 +61,21 @@ struct ContentViewDrawingBoard: View {
                                 labelr: "Home"
                             )
                             .padding(.horizontal, 100)
+                            
                             TabBarButtonDrawing(
                                 image: "text.book.closed.fill",
                                 index: 1,
                                 labelr: "Planner"
                             )
                             .padding(.horizontal, 100)
+                            
                             TabBarButtonDrawing(
                                 image: "clock",
                                 index: 2,
                                 labelr: "Timer / Pomo"
                             )
                             .padding(.horizontal, 100)
+                            
                             TabBarButtonDrawing(
                                 image: "gear",
                                 index: 3,
@@ -74,6 +83,8 @@ struct ContentViewDrawingBoard: View {
                             )
                             .padding(.horizontal, 100)
                         }
+                        .allowsHitTesting(true)
+
                     }
                 }
                 .padding()
