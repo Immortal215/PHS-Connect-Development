@@ -309,6 +309,63 @@ func replaceMeetingAndFuture(
     )
 }
 
+func deleteMeeting(
+    _ meetingToDelete: Club.MeetingTime,
+    includingFuture: Bool,
+    completion: @escaping (Bool) -> Void = { _ in }
+) {
+    let reference = Database.database().reference()
+    let meetingsReference = reference.child("clubs")
+        .child(meetingToDelete.clubID)
+        .child("meetingTimes")
+
+    Task {
+        let snapshot = await observeSingleValue(at: meetingsReference)
+        var clubMeetings = meetings(from: snapshot)
+
+        clubMeetings.removeAll { meeting in
+            if includingFuture, let seriesID = meetingToDelete.seriesID {
+                return meeting.seriesID == seriesID
+                    && dateFromString(meeting.startTime)
+                        >= dateFromString(meetingToDelete.startTime)
+            }
+
+            return meeting.title == meetingToDelete.title
+                && meeting.startTime == meetingToDelete.startTime
+                && meeting.endTime == meetingToDelete.endTime
+        }
+
+        do {
+            let sortedMeetings = clubMeetings.sorted {
+                dateFromString($0.startTime) < dateFromString($1.startTime)
+            }
+            let data = try JSONEncoder().encode(sortedMeetings)
+            let meetingValues = try JSONSerialization.jsonObject(with: data)
+            let lastUpdated = Date().timeIntervalSince1970
+
+            _ = try await reference.updateChildValues([
+                "clubs/\(meetingToDelete.clubID)/meetingTimes": meetingValues,
+                "clubs/\(meetingToDelete.clubID)/lastUpdated": lastUpdated,
+            ])
+
+            await MainActor.run {
+                dropper(
+                    title: includingFuture
+                        ? "Deleted Meeting Times!" : "Deleted Meeting Time!",
+                    subtitle: "",
+                    icon: nil
+                )
+                completion(true)
+            }
+        } catch {
+            print("Error deleting meeting data: \(error)")
+            await MainActor.run {
+                completion(false)
+            }
+        }
+    }
+}
+
 func saveMeetings(
     _ newMeetings: [Club.MeetingTime],
     replacing oldMeeting: Club.MeetingTime?,

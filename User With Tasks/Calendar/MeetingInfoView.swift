@@ -19,7 +19,11 @@ struct MeetingInfoView: View {
     @State var attendingMoreThan2 = false
     @State var showInfo = false
     @Binding var userInfo: Personal?
+    var onDelete: (Bool) -> Void = { _ in }
     @AppStorage("darkMode") var darkMode = false
+    @State private var showDeleteConfirmation = false
+    @State private var deletingMeeting = false
+    @State private var showDeleteError = false
 
     var body: some View {
         let club = clubs.first(where: { $0.clubID == meeting.clubID })!
@@ -104,6 +108,22 @@ struct MeetingInfoView: View {
                                         )
                                 }
                                 .padding(.horizontal)
+
+                                Button(role: .destructive) {
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    if deletingMeeting {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                    } else {
+                                        Image(systemName: "trash")
+                                            .imageScale(.large)
+                                            .foregroundStyle(.red)
+                                    }
+                                }
+                                .disabled(deletingMeeting)
+                                .padding(.horizontal)
+                                .accessibilityLabel("Delete meeting")
 
                                 Spacer()
                             }
@@ -323,7 +343,8 @@ struct MeetingInfoView: View {
                     )
                 },
                 editScreen: true,
-                selectedDate: selectedDate!,
+                selectedDate: selectedDate
+                    ?? dateFromString(meeting.startTime),
                 userInfo: $userInfo
             )
             .presentationDragIndicator(.visible)
@@ -334,6 +355,38 @@ struct MeetingInfoView: View {
             }
             .cornerRadius(25)
         }
+        .confirmationDialog(
+            isRepeatingMeeting
+                ? "Delete Repeating Meeting?" : "Delete Meeting?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(
+                isRepeatingMeeting ? "Delete This Meeting" : "Delete Meeting",
+                role: .destructive
+            ) {
+                performDeletion(includingFuture: false)
+            }
+
+            if isRepeatingMeeting {
+                Button("Delete This and Future Meetings", role: .destructive) {
+                    performDeletion(includingFuture: true)
+                }
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(
+                isRepeatingMeeting
+                    ? "Past meetings in this series will not be deleted."
+                    : "This action cannot be undone."
+            )
+        }
+        .alert("Unable to Delete Meeting", isPresented: $showDeleteError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Please check your connection and try again.")
+        }
         .padding()
         .frame(width: screenWidth / 2.5)
         .background(
@@ -343,6 +396,26 @@ struct MeetingInfoView: View {
 
         )
         .cornerRadius(10)
+    }
+
+    private var isRepeatingMeeting: Bool {
+        guard let seriesID = meeting.seriesID else { return false }
+        return !seriesID.isEmpty
+    }
+
+    private func performDeletion(includingFuture: Bool) {
+        guard !deletingMeeting else { return }
+        deletingMeeting = true
+
+        deleteMeeting(meeting, includingFuture: includingFuture) { success in
+            deletingMeeting = false
+
+            if success {
+                onDelete(includingFuture)
+            } else {
+                showDeleteError = true
+            }
+        }
     }
 
 }

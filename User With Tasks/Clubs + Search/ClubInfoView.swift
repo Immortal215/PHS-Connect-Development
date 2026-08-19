@@ -4,6 +4,7 @@ import FirebaseDatabase
 import GoogleSignIn
 import GoogleSignInSwift
 import MapKit
+import MessageUI
 import PopupView
 import Pow
 import SDWebImageSwiftUI
@@ -22,6 +23,11 @@ struct ClubInfoView: View {
     @State var showAddMeeting = false
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
+    @State var showIncompleteClubBanner = false
+    @State var selectedLeaderEmail = ""
+    @State var showLeaderMailComposer = false
+    @State var showLeaderMailError = false
+    @State var leaderMailErrorMessage = ""
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @AppStorage("tagsExpanded") var tagsExpanded = true
     @AppStorage("sharedGenre") var sharedGenre = ""
@@ -197,9 +203,36 @@ struct ClubInfoView: View {
                                     },
                                     id: \.self
                                 ) { leader in
-                                    CodeSnippetView(code: leader)
-                                        .padding(1)
-                                        .padding(.trailing, 8)
+                                    Button {
+                                        composeEmail(to: leader)
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "envelope.fill")
+                                                .font(.caption)
+
+                                            Text(leader)
+                                                .font(.subheadline)
+                                                .lineLimit(1)
+                                        }
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 11)
+                                        .foregroundStyle(.blue)
+                                        .background(
+                                            Color.blue.opacity(0.12),
+                                            in: Capsule()
+                                        )
+                                        .overlay {
+                                            Capsule()
+                                                .stroke(
+                                                    Color.blue.opacity(0.22),
+                                                    lineWidth: 1
+                                                )
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Email \(leader)")
+                                    .padding(1)
+                                    .padding(.trailing, 8)
                                 }
                             }
                         }
@@ -688,7 +721,16 @@ struct ClubInfoView: View {
                     MeetingInfoView(
                         meeting: closestMeeting,
                         clubs: [club],
-                        userInfo: .constant(nil)
+                        viewModel: viewModel,
+                        selectedDate: dateFromString(closestMeeting.startTime),
+                        userInfo: .constant(nil),
+                        onDelete: { includingFuture in
+                            removeDeletedMeeting(
+                                closestMeeting,
+                                includingFuture: includingFuture
+                            )
+                            meetingFull = false
+                        }
                     )
                 }
             } customize: {
@@ -733,7 +775,7 @@ struct ClubInfoView: View {
                             }
                             .sheet(isPresented: $showEditScreen) {
                                 CreateClubView(
-                                    viewCloser: {
+                                    onClose: {
                                         showEditScreen = false
                                         dropper(
                                             title: "Club Edited!",
@@ -742,6 +784,9 @@ struct ClubInfoView: View {
                                                 systemName: "checkmark"
                                             )
                                         )
+                                    },
+                                    onValidationError: {
+                                        showIncompleteClubInformationBanner()
                                     },
                                     CreatedClub: club
                                 )
@@ -824,7 +869,124 @@ struct ClubInfoView: View {
                 }
             }
         }
+        .onAppear {
+            NotificationOpenRouter.shared.clearDeliveredNotifications(
+                forClubID: club.clubID
+            )
+        }
+        .overlay(alignment: .top) {
+            if showIncompleteClubBanner {
+                IncompleteClubInformationBanner()
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(10)
+            }
+        }
+        .sheet(isPresented: $showLeaderMailComposer) {
+            MailView(
+                isShowing: $showLeaderMailComposer,
+                result: { result in
+                    switch result {
+                    case .success(let mailResult):
+                        if mailResult == .failed {
+                            presentLeaderMailError(
+                                "The email could not be sent. Please try again."
+                            )
+                        }
+                    case .failure:
+                        presentLeaderMailError(
+                            "The email could not be sent. Please try again."
+                        )
+                    }
+                },
+                content: MailContent(
+                    subject: "Question about \(club.name)",
+                    recipients: [selectedLeaderEmail],
+                    message: ""
+                )
+            )
+        }
+        .alert("Unable to Open Email", isPresented: $showLeaderMailError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(leaderMailErrorMessage)
+        }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
+    }
+
+    private func removeDeletedMeeting(
+        _ deletedMeeting: Club.MeetingTime,
+        includingFuture: Bool
+    ) {
+        club.meetingTimes?.removeAll { meeting in
+            if includingFuture, let seriesID = deletedMeeting.seriesID {
+                return meeting.seriesID == seriesID
+                    && dateFromString(meeting.startTime)
+                        >= dateFromString(deletedMeeting.startTime)
+            }
+
+            return meeting.title == deletedMeeting.title
+                && meeting.startTime == deletedMeeting.startTime
+                && meeting.endTime == deletedMeeting.endTime
+        }
+    }
+
+    func composeEmail(to leader: String) {
+        let email = leader.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !email.isEmpty else {
+            presentLeaderMailError(
+                "This leader does not have a valid email address."
+            )
+            return
+        }
+
+        selectedLeaderEmail = email
+
+        if MFMailComposeViewController.canSendMail() {
+            showLeaderMailComposer = true
+            return
+        }
+
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = email
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "Question about \(club.name)")
+        ]
+
+        guard let mailURL = components.url else {
+            presentLeaderMailError(
+                "This leader does not have a valid email address."
+            )
+            return
+        }
+
+        UIApplication.shared.open(mailURL, options: [:]) { didOpen in
+            guard !didOpen else { return }
+            DispatchQueue.main.async {
+                presentLeaderMailError(
+                    "No email app is available. Please set up an email account and try again."
+                )
+            }
+        }
+    }
+
+    func presentLeaderMailError(_ message: String) {
+        leaderMailErrorMessage = message
+        showLeaderMailError = true
+    }
+
+    func showIncompleteClubInformationBanner() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+            showIncompleteClubBanner = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showIncompleteClubBanner = false
+            }
+        }
     }
 
     func refreshUserInfo() {

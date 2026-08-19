@@ -30,6 +30,7 @@ struct SearchClubView: View {
     @State var selectedGenres: [String] = []
     @AppStorage("darkMode") var darkMode = false
     @State var loadingClubs = false
+    @State var showIncompleteClubBanner = false
     @State var scales: [String: CGFloat] = [:]
     @State var zindexs: [String: Double] = [:]
     @AppStorage("Animations+") var animationsPlus = false
@@ -118,8 +119,11 @@ struct SearchClubView: View {
                                     }
                                     .sheet(isPresented: $createClubToggler) {
                                         CreateClubView(
-                                            viewCloser: {
+                                            onClose: {
                                                 createClubToggler = false
+                                            },
+                                            onValidationError: {
+                                                showIncompleteClubInformationBanner()
                                             },
                                             clubs: clubs
                                         )
@@ -605,7 +609,28 @@ struct SearchClubView: View {
             }
         }
         .animation(.smooth, value: currentSearchingBy)
+        .overlay(alignment: .top) {
+            if showIncompleteClubBanner {
+                IncompleteClubInformationBanner()
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(10)
+            }
+        }
 
+    }
+
+    func showIncompleteClubInformationBanner() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+            showIncompleteClubBanner = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showIncompleteClubBanner = false
+            }
+        }
     }
 
     func calculateFiltered() -> [Club] {

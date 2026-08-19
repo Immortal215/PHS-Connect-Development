@@ -104,7 +104,8 @@ struct ContentView: View {
                                             rootView: AnyView(
                                                 ChatView(
                                                     clubs: $clubs,
-                                                    userInfo: $userInfo
+                                                    userInfo: $userInfo,
+                                                    viewModel: viewModel
                                                 )
                                             )
                                         )

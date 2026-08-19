@@ -127,7 +127,8 @@ struct FlowingScheduleView: View {
                             clubs: clubs,
                             viewModel: viewModel,
                             selectedDate: selectedDate,
-                            userInfo: $userInfo
+                            userInfo: $userInfo,
+                            onDelete: handleMeetingDeleted
                         )
                     }
                 } customize: {
@@ -205,5 +206,11 @@ struct FlowingScheduleView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             refresher = true
         }
+    }
+
+    func handleMeetingDeleted(_: Bool) {
+        selectedMeeting = nil
+        meetingInfo = false
+        refreshMeetings()
     }
 }

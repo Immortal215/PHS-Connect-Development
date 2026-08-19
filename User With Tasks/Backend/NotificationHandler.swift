@@ -1,4 +1,5 @@
 import Foundation
+import UserNotifications
 
 final class NotificationOpenRouter {
     static let shared = NotificationOpenRouter()
@@ -54,5 +55,26 @@ final class NotificationOpenRouter {
                 "messageID": messageID,
             ]
         )
+    }
+
+    func clearDeliveredNotifications(forClubID clubID: String) {
+        guard !clubID.isEmpty else { return }
+
+        let notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter.getDeliveredNotifications { notifications in
+            let identifiers = notifications.compactMap { notification in
+                let notificationClubID = notification.request.content.userInfo[
+                    "clubID"
+                ] as? String
+
+                return notificationClubID == clubID
+                    ? notification.request.identifier : nil
+            }
+
+            guard !identifiers.isEmpty else { return }
+            notificationCenter.removeDeliveredNotifications(
+                withIdentifiers: identifiers
+            )
+        }
     }
 }

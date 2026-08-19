@@ -77,6 +77,7 @@ enum ChatLoadingState: Equatable {
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
+    var viewModel: AuthenticationViewModel
     var screenWidth = appScreenBounds.width
     var screenHeight = appScreenBounds.height
     @AppStorage("darkMode") var darkMode = false
@@ -113,6 +114,7 @@ struct ChatView: View {
 
     @State var menuExpanded = false
     @State var settings = false
+    @State var showClubInfo = false
     @State var chatLoadingState: ChatLoadingState = .loadingChats
     @State var lastResumeRefresh = Date.distantPast
     @State var chatsEnabled = true
@@ -282,16 +284,32 @@ struct ChatView: View {
                             VStack(alignment: .leading, spacing: 0) {
 
                                 HStack {
-                                    Text(club.name)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                        .padding(.horizontal, 16)
-                                        .padding(.top, safeArea.top + 16)
-                                        .padding(.bottom, 8)
-                                        .frame(
-                                            maxWidth: .infinity,
-                                            alignment: .leading
+                                    Button {
+                                        showClubInfo = true
+                                    } label: {
+                                        Text(club.name)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                            .padding(.horizontal, 16)
+                                            .padding(.top)
+                                            .padding(.bottom, 8)
+                                            .frame(
+                                                maxWidth: .infinity,
+                                                alignment: .leading
+                                            )
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Open \(club.name)")
+                                    .sheet(isPresented: $showClubInfo) {
+                                        ClubInfoView(
+                                            club: club,
+                                            viewModel: viewModel,
+                                            userInfo: $userInfo
                                         )
+                                        .presentationDragIndicator(.visible)
+                                        .presentationSizing(.page)
+                                    }
 
                                     Spacer()
 
@@ -1095,7 +1113,7 @@ struct ChatView: View {
                             .background {
                                 GlassBackground()
                             }
-                            .clipped()
+                           // .clipped()
                             .allowsHitTesting(chatsEnabled)
                         }
                     }

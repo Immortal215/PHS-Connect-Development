@@ -2,43 +2,135 @@ import SwiftUI
 
 struct ChangelogData {
     static let currentVersion = ChangelogEntry(
-        version: "1.1.0 Official Release",
-        date: "02-12-2026",
+        version: "1.2.0 Official Release",
+        date: "08-18-2026",
         changes: [
             Change(
-                title: "Update of Color!",
+                title: "Update of Club Settings!",
                 notes: [
-                    "Color has been added everywhere",
-                    "The ui has been greatly reformed",
+                    "Club settings has a brand new organized design!",
+                    "Settings are split into easy to read sections that can be opened and closed",
+                    "Edit and search through all club members on their own page",
+                    "Incomplete edits are discarded with a warning",
                 ],
-                color: .green,
-                symbol: "paintpalette"
+                color: .blue,
+                symbol: "slider.horizontal.3"
+            ),
+            Change(
+                title: "Update of Meetings!",
+                notes: [
+                    "Create weekly or every 2 week repeating meetings!",
+                    "Edit or delete one meeting or it and all future meetings",
+                    "Add and view meeting times straight from the club page",
+                ],
+                color: .orange,
+                symbol: "calendar.badge.clock"
             ),
             Change(
                 title: "Update of Chats!",
                 notes: [
-                    "Group Chats for every club has been added!",
-                    "Make sure to create feedback forms for any bugs!",
+                    "Club join requests have been moved into chats",
+                    "Announcement threads and improved reactions have been added",
+                    "Click a club name in the chat sidebar to open the club!",
                 ],
                 color: .blue,
                 symbol: "bubble.left.and.bubble.right"
             ),
             Change(
-                title: "Map Editor added",
-                notes: ["Choose the location of your club in Prospect"],
-                color: .blue,
-                symbol: "mappin"
+                title: "Better Club Info!",
+                notes: [
+                    "Click a leader's email to email them straight from the app",
+                    "Opening a club clears its notifications from Notification Center",
+                ],
+                color: .purple,
+                symbol: "person.2"
             ),
             Change(
-                title: "Improved app speed",
-                notes: ["Completed caching"],
+                title: "Update of Drawing Board!",
+                notes: [
+                    "Assignments now save with a much better structure",
+                    "Subjects and descriptions are optional and easier to edit",
+                    "Recently deleted assignments can now be restored",
+                ],
+                color: .green,
+                symbol: "square.and.pencil"
+            ),
+            Change(
+                title: "New School Calendar!",
+                notes: [
+                    "Added day by day class schedules",
+                    "Added finals schedules and semester blocking",
+                ],
+                color: .red,
+                symbol: "calendar"
+            ),
+            Change(
+                title: "Improved app speed!",
+                notes: [
+                    "Chats and the school calendar now load much faster",
+                    "More data is cached to keep everything smooth",
+                ],
                 color: .yellow,
-                symbol: "arrow.2.squarepath"
+                symbol: "bolt"
+            ),
+            Change(
+                title: "Support for more devices!",
+                notes: [
+                    "Improved layouts on iPhone and iPad",
+                    "PHS Connect can now be used on Mac",
+                ],
+                color: .indigo,
+                symbol: "macbook.and.ipad"
+            ),
+            Change(
+                title: "New Login and Intro!",
+                notes: [
+                    "Added a brand new login screen",
+                    "Intro cards make it easier to get started",
+                ],
+                color: .purple,
+                symbol: "person.crop.circle.badge.checkmark"
             ),
         ]
     )
 
     static let history: [ChangelogEntry] = [
+        ChangelogEntry(
+            version: "1.1.0 Official Release",
+            date: "02-12-2026",
+            changes: [
+                Change(
+                    title: "Update of Color!",
+                    notes: [
+                        "Color has been added everywhere",
+                        "The ui has been greatly reformed",
+                    ],
+                    color: .green,
+                    symbol: "paintpalette"
+                ),
+                Change(
+                    title: "Update of Chats!",
+                    notes: [
+                        "Group Chats for every club has been added!",
+                        "Make sure to create feedback forms for any bugs!",
+                    ],
+                    color: .blue,
+                    symbol: "bubble.left.and.bubble.right"
+                ),
+                Change(
+                    title: "Map Editor added",
+                    notes: ["Choose the location of your club in Prospect"],
+                    color: .blue,
+                    symbol: "mappin"
+                ),
+                Change(
+                    title: "Improved app speed",
+                    notes: ["Completed caching"],
+                    color: .yellow,
+                    symbol: "arrow.2.squarepath"
+                ),
+            ]
+        ),
         ChangelogEntry(
             version: "1.0.0 Official Release",
             date: "04-21-2025",

@@ -57,7 +57,7 @@ class TabsCache {
             for: .documentDirectory,
             in: .userDomainMask
         ).first!
-        self.cacheURL = dir.appendingPathComponent("\tab_preferences_data.json")
+        self.cacheURL = dir.appendingPathComponent("\tab_preferences.json")
     }
 
     func load() -> UserTabPreferences? {
