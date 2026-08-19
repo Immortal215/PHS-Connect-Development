@@ -1177,6 +1177,12 @@ struct ChatView: View {
                                     selectedThread[chatListener] = "general"
                                 }
                             }
+                            clearNotificationsForOpenThread(
+                                chatID: chatListener,
+                                threadName:
+                                    (selectedThread[chatListener] ?? nil)
+                                    ?? "general"
+                            )
                             ensureAnnouncementsThreadExists(for: chatListener)
 
                             DispatchQueue.main.asyncAfter(
@@ -1188,6 +1194,14 @@ struct ChatView: View {
                             }
                         }
                     }
+                }
+                .onChange(of: selectedThread) { _, threadsByChat in
+                    guard let chatID = selectedChatID else { return }
+                    clearNotificationsForOpenThread(
+                        chatID: chatID,
+                        threadName:
+                            (threadsByChat[chatID] ?? nil) ?? "general"
+                    )
                 }
             }
             .onTapGesture {
@@ -2127,10 +2141,23 @@ struct ChatView: View {
             selectedChatID = chat.chatID
             selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
             selectedThread[chat.chatID] = thread
-
             openChatIDFromNotification = nil
             openThreadNameFromNotification = nil
         }
+    }
+
+    func clearNotificationsForOpenThread(
+        chatID: String,
+        threadName: String
+    ) {
+        guard let chat = chats.first(where: { $0.chatID == chatID }) else {
+            return
+        }
+
+        NotificationOpenRouter.shared.clearDeliveredNotifications(
+            forClubID: chat.clubID,
+            threadName: threadName
+        )
     }
 
     func updateUnreadIndicator() {

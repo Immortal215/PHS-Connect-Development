@@ -57,8 +57,11 @@ final class NotificationOpenRouter {
         )
     }
 
-    func clearDeliveredNotifications(forClubID clubID: String) {
-        guard !clubID.isEmpty else { return }
+    func clearDeliveredNotifications(
+        forClubID clubID: String,
+        threadName: String
+    ) {
+        guard !clubID.isEmpty, !threadName.isEmpty else { return }
 
         let notificationCenter = UNUserNotificationCenter.current()
         notificationCenter.getDeliveredNotifications { notifications in
@@ -66,8 +69,12 @@ final class NotificationOpenRouter {
                 let notificationClubID = notification.request.content.userInfo[
                     "clubID"
                 ] as? String
+                let notificationThreadName =
+                    notification.request.content.userInfo["threadName"]
+                    as? String ?? "general"
 
                 return notificationClubID == clubID
+                    && notificationThreadName == threadName
                     ? notification.request.identifier : nil
             }
 

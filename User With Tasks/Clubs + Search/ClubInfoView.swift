@@ -869,11 +869,6 @@ struct ClubInfoView: View {
                 }
             }
         }
-        .onAppear {
-            NotificationOpenRouter.shared.clearDeliveredNotifications(
-                forClubID: club.clubID
-            )
-        }
         .overlay(alignment: .top) {
             if showIncompleteClubBanner {
                 IncompleteClubInformationBanner()

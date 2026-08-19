@@ -32,6 +32,7 @@ struct ChangelogData {
                     "Club join requests have been moved into chats",
                     "Announcement threads and improved reactions have been added",
                     "Click a club name in the chat sidebar to open the club!",
+                    "Opening a club clears its notifications from Notification Center",
                 ],
                 color: .blue,
                 symbol: "bubble.left.and.bubble.right"
@@ -39,8 +40,7 @@ struct ChangelogData {
             Change(
                 title: "Better Club Info!",
                 notes: [
-                    "Click a leader's email to email them straight from the app",
-                    "Opening a club clears its notifications from Notification Center",
+                    "Click a leader's email to email them straight from the app"
                 ],
                 color: .purple,
                 symbol: "person.2"
