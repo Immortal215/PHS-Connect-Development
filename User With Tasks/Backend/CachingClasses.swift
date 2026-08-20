@@ -110,7 +110,7 @@ enum SchoolScheduleCachedDayState: String, Codable {
 }
 
 struct SchoolScheduleCalculationCacheData: Codable {
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
 
     var schemaVersion: Int
     var config: SchoolScheduleConfig

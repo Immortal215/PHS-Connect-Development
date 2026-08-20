@@ -22,6 +22,7 @@ enum SchoolScheduleRotationSide: String, Codable, Equatable {
 
 enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
     case straight8 = "straight8"
+    case custom = "custom"
     case finalExamDay1 = "finalExamDay1"
     case finalExamDay2 = "finalExamDay2"
     case finalExamDay3 = "finalExamDay3"
@@ -29,6 +30,7 @@ enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
     var displayName: String {
         switch self {
         case .straight8: "Straight 8"
+        case .custom: "Special Schedule"
         case .finalExamDay1: "Final Exams Day 1"
         case .finalExamDay2: "Final Exams Day 2"
         case .finalExamDay3: "Final Exams Day 3"
@@ -38,6 +40,7 @@ enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
     var badgeText: String {
         switch self {
         case .straight8: "8"
+        case .custom: "Special"
         case .finalExamDay1: "F1"
         case .finalExamDay2: "F2"
         case .finalExamDay3: "F3"
@@ -49,6 +52,8 @@ enum SchoolScheduleSpecialDayKind: String, Codable, Equatable {
         switch self {
         case .straight8:
             "A/B lunch is based on your 5th period teacher's last name."
+        case .custom:
+            "Special bell schedule provided by the school."
         case .finalExamDay1, .finalExamDay2, .finalExamDay3:
             "Final exam schedule. Zero hour and the regular A/B schedule do not run."
         }
@@ -64,6 +69,24 @@ struct SchoolScheduleSpecialDayOverride: Codable, Equatable, Hashable,
     var kind: SchoolScheduleSpecialDayKind
     var label: String?
     var note: String?
+    var badgeText: String? = nil
+    var events: [SchoolScheduleSpecialEvent]? = nil
+}
+
+struct SchoolScheduleSpecialEvent: Codable, Equatable, Hashable,
+    Identifiable
+{
+    var id: String
+    var kind: String
+    var title: String
+    var timeLabel: String
+    var detail: String?
+    var startHour: Int?
+    var startMinute: Int?
+    var endHour: Int?
+    var endMinute: Int?
+    var accentColor: String?
+    var isAllDay: Bool?
 }
 
 struct SchoolBreakRange: Codable, Equatable, Hashable, Identifiable {
@@ -228,12 +251,17 @@ struct SchoolScheduleConfig: Codable, Equatable {
             after: semester1StartDate,
             excluding: breakRanges
         )
+        let customSpecialDays = storedSpecialDays.filter {
+            $0.kind == .custom
+        }
+        let customDates = Set(customSpecialDays.map(\.date))
         specialDays = Self.automaticSpecialDays(
             semester1StartDate: semester1StartDate,
             semester1EndDate: semester1EndDate,
             semester2StartDate: semester2StartDate,
             semester2EndDate: semester2EndDate
-        )
+        ).filter { !customDates.contains($0.date) } + customSpecialDays
+        specialDays.sort { $0.date < $1.date }
         lastUpdated = try container.decodeIfPresent(
             Double.self,
             forKey: .lastUpdated
@@ -527,10 +555,13 @@ final class SchoolScheduleStore: ObservableObject {
 
     func dayState(for date: Date) -> SchoolScheduleDayState {
         let day = Calendar.current.startOfDay(for: date)
-        guard containsActiveScheduleDate(day) else { return .unavailable }
-
         prepareDerivedScheduleIndexIfNeeded()
         let dayKey = schoolScheduleDateString(from: day)
+        let specialDay = specialDay(containing: day)
+
+        guard containsActiveScheduleDate(day) || specialDay != nil else {
+            return .unavailable
+        }
 
         if let cachedState = dayStateByDate[dayKey] {
             return cachedState
@@ -538,10 +569,10 @@ final class SchoolScheduleStore: ObservableObject {
 
         let state: SchoolScheduleDayState
 
-        if Calendar.current.isDateInWeekend(day) {
-            state = .weekend
-        } else if let specialDay = specialDay(containing: day) {
+        if let specialDay {
             state = .special(specialDay)
+        } else if Calendar.current.isDateInWeekend(day) {
+            state = .weekend
         } else if let breakRange = breakRange(containing: day) {
             state = .breakDay(breakRange)
         } else if let anchor = schoolScheduleDate(
@@ -576,7 +607,7 @@ final class SchoolScheduleStore: ObservableObject {
             )
         case .special(let specialDay):
             return SchoolDayBadge(
-                text: specialDay.kind.badgeText,
+                text: specialDay.badgeText ?? specialDay.kind.badgeText,
                 color: specialDay.kind.accentColor
             )
         case .school(let side):
@@ -644,10 +675,14 @@ final class SchoolScheduleStore: ObservableObject {
 
         case .special(let specialDay):
             return SchoolScheduleDaySummary(
-                title: specialDay.kind.displayName,
-                subtitle: specialDay.label ?? "Special bell schedule",
+                title: specialDay.kind == .custom
+                    ? specialDay.label ?? specialDay.kind.displayName
+                    : specialDay.kind.displayName,
+                subtitle: specialDay.kind == .custom
+                    ? "Special bell schedule"
+                    : specialDay.label ?? "Special bell schedule",
                 badge: SchoolDayBadge(
-                    text: specialDay.kind.badgeText,
+                    text: specialDay.badgeText ?? specialDay.kind.badgeText,
                     color: specialDay.kind.accentColor
                 ),
                 detail: specialDay.note ?? specialDay.kind.detail,
@@ -777,21 +812,6 @@ final class SchoolScheduleStore: ObservableObject {
             )
         )
 
-        events.append(
-            SchoolScheduleEvent(
-                id:
-                    "student-support-\(schoolScheduleDateString(from: date))-\(side.rawValue)",
-                kind: .support,
-                title: "Student Support",
-                timeLabel: "3:10 - 3:20 PM",
-                detail: "End-of-day student support block.",
-                startDate: schoolDate(on: date, hour: 15, minute: 10),
-                endDate: schoolDate(on: date, hour: 15, minute: 20),
-                accentColor: SchoolSchedulePalette.breakRed,
-                isAllDay: false
-            )
-        )
-
         return events
     }
 
@@ -802,12 +822,70 @@ final class SchoolScheduleStore: ObservableObject {
         switch specialDay.kind {
         case .straight8:
             return straight8Events(for: date)
+        case .custom:
+            return firebaseSpecialEvents(for: date, specialDay: specialDay)
         case .finalExamDay1:
             return finalExamEvents(for: date, day: 1)
         case .finalExamDay2:
             return finalExamEvents(for: date, day: 2)
         case .finalExamDay3:
             return finalExamEvents(for: date, day: 3)
+        }
+    }
+
+    func firebaseSpecialEvents(
+        for date: Date,
+        specialDay: SchoolScheduleSpecialDayOverride
+    ) -> [SchoolScheduleEvent] {
+        (specialDay.events ?? []).map { event in
+            let kind: SchoolScheduleEvent.Kind
+            let defaultAccentColor: Color
+
+            switch event.kind {
+            case "zeroHour":
+                kind = .zeroHour
+                defaultAccentColor = SchoolSchedulePalette.navy
+            case "support":
+                kind = .support
+                defaultAccentColor = SchoolSchedulePalette.columbia
+            default:
+                kind = .period
+                defaultAccentColor = SchoolSchedulePalette.navy
+            }
+
+            let accentColor: Color
+            switch event.accentColor {
+            case "columbia": accentColor = SchoolSchedulePalette.columbia
+            case "red": accentColor = SchoolSchedulePalette.breakRed
+            case "weekend": accentColor = SchoolSchedulePalette.weekend
+            case "navy": accentColor = SchoolSchedulePalette.navy
+            default: accentColor = defaultAccentColor
+            }
+
+            let isAllDay = event.isAllDay ?? false
+            return SchoolScheduleEvent(
+                id: "firebase-\(specialDay.date)-\(event.id)",
+                kind: kind,
+                title: event.title,
+                timeLabel: event.timeLabel,
+                detail: event.detail,
+                startDate: isAllDay ? nil : event.startHour.flatMap { hour in
+                    schoolDate(
+                        on: date,
+                        hour: hour,
+                        minute: event.startMinute ?? 0
+                    )
+                },
+                endDate: isAllDay ? nil : event.endHour.flatMap { hour in
+                    schoolDate(
+                        on: date,
+                        hour: hour,
+                        minute: event.endMinute ?? 0
+                    )
+                },
+                accentColor: accentColor,
+                isAllDay: isAllDay
+            )
         }
     }
 
