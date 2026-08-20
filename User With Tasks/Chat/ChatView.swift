@@ -97,6 +97,8 @@ struct ChatView: View {
     @AppStorage("bubbles") var bubbles = false
     @State var bubbleBuffer = false
     @State var debounceCancellable: AnyCancellable?
+    @State var membershipRefreshCancellable: AnyCancellable?
+    @State var chatLoadGeneration = 0
     @State var editingMessageID: String? = nil  // tracks which messageID is being edited
     @State var replyingMessageID: String? = nil  // tracks which messageID is being replied to
 
@@ -152,6 +154,24 @@ struct ChatView: View {
         return !clubs.contains {
             $0.members.contains(email) || $0.leaders.contains(email)
         }
+    }
+
+    var chatMembershipSignature: String {
+        guard let email = userInfo?.userEmail else { return "" }
+
+        return clubs.compactMap { club in
+            guard
+                isClubMemberLeaderOrSuperAdmin(
+                    club: club,
+                    userEmail: email
+                )
+            else { return nil }
+
+            let chatIDs = (club.chatIDs ?? []).sorted().joined(separator: ",")
+            return "\(club.clubID):\(chatIDs)"
+        }
+        .sorted()
+        .joined(separator: "|")
     }
 
     var selectedChat: Chat? {
@@ -1222,6 +1242,7 @@ struct ChatView: View {
             startGlobalChatsListener()
         }
         .onDisappear {
+            membershipRefreshCancellable?.cancel()
             stopGlobalChatsListener()
         }
         .onReceive(
@@ -1252,6 +1273,17 @@ struct ChatView: View {
         }
         .onChange(of: userInfo?.userID) {
             refreshChatSidebarCache()
+        }
+        .onChange(of: userInfo?.favoritedClubs) {
+            refreshChatSidebarCache()
+        }
+        .onChange(of: chatMembershipSignature) { _, signature in
+            membershipRefreshCancellable?.cancel()
+            membershipRefreshCancellable = Just(signature)
+                .delay(for: .milliseconds(350), scheduler: DispatchQueue.main)
+                .sink { _ in
+                    loadChats(showLoader: false)
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -1514,9 +1546,10 @@ struct ChatView: View {
     @ViewBuilder
     func chatRow(for chat: Chat, unread: Bool) -> some View {
         if let club = clubs.first(where: { $0.clubID == chat.clubID }),
-            chat.messages?.isEmpty == false
+            chat.chatID != "Loading..."
         {
             let isSelected = selectedChatID == chat.chatID
+            let isPinned = userInfo?.favoritedClubs.contains(club.clubID) ?? false
 
             ZStack {
                 Circle()
@@ -1546,6 +1579,32 @@ struct ChatView: View {
                         .font(.system(size: 24))
                 }
             }
+            .overlay(alignment: .topTrailing) {
+                if isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(4)
+                        .background(.red, in: Circle())
+                        .offset(x: 2, y: -2)
+                        .accessibilityHidden(true)
+                }
+            }
+            .contextMenu {
+                if !viewModel.isGuestUser {
+                    Button {
+                        toggleFavorite(for: club)
+                    } label: {
+                        Label(
+                            isPinned ? "Unpin Club" : "Pin Club",
+                            systemImage: isPinned ? "pin.slash" : "pin"
+                        )
+                    }
+                }
+            }
+            .accessibilityLabel(
+                club.name + (isPinned ? ", pinned" : "")
+            )
             .highPriorityGesture(
                 TapGesture()
                     .onEnded({
@@ -1635,8 +1694,16 @@ struct ChatView: View {
 
     func sortedTopChats(from sourceChats: [Chat]) -> [Chat] {
         guard let currentUserID = userInfo?.userID else { return sourceChats }
+        let favoriteClubIDs = Set(userInfo?.favoritedClubs ?? [])
 
         return sourceChats.sorted { lhs, rhs in
+            let lhsIsPinned = favoriteClubIDs.contains(lhs.clubID)
+            let rhsIsPinned = favoriteClubIDs.contains(rhs.clubID)
+
+            if lhsIsPinned != rhsIsPinned {
+                return lhsIsPinned
+            }
+
             let lhsLastSent =
                 lhs.messages?
                 .filter { $0.sender == currentUserID }
@@ -1662,6 +1729,9 @@ struct ChatView: View {
     }
 
     func loadChats(showLoader: Bool = true) {
+        chatLoadGeneration += 1
+        let loadGeneration = chatLoadGeneration
+
         if showLoader {
             chatLoadingState = .loadingChats
         }
@@ -1704,6 +1774,8 @@ struct ChatView: View {
             )
 
             DispatchQueue.main.async {
+                guard chatLoadGeneration == loadGeneration else { return }
+
                 chats = loadedChats
                 messageIndexByChatID = loadedMessageIndexByChatID
                 refreshChatSidebarCache(chatsOverride: loadedChats)
@@ -1731,6 +1803,7 @@ struct ChatView: View {
 
                     await MainActor.run {
                         guard !Task.isCancelled else { return }
+                        guard chatLoadGeneration == loadGeneration else { return }
 
                         if let fetched = fetchedChats {
                             for chat in fetched {
@@ -1760,6 +1833,29 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+    }
+
+    func toggleFavorite(for club: Club) {
+        guard !viewModel.isGuestUser, var user = userInfo else { return }
+
+        if user.favoritedClubs.contains(club.clubID) {
+            user.favoritedClubs.removeAll { $0 == club.clubID }
+            removeClubFromFavorites(
+                for: user.userID,
+                clubID: club.clubID
+            )
+        } else {
+            user.favoritedClubs.append(club.clubID)
+            addClubToFavorites(
+                for: user.userID,
+                clubID: club.clubID
+            )
+        }
+
+        withAnimation(.smooth) {
+            userInfo = user
+            refreshChatSidebarCache()
         }
     }
 

@@ -422,7 +422,7 @@ struct Homepage: View {
                                 } label: {
                                     Image(
                                         systemName: recentDeletedOpen
-                                            ? "trash.fill" : "trash"
+                                            ? "arrow.up.trash.fill" : "arrow.up.trash"
                                     )
                                     .resizable()
                                     .frame(width: 24, height: 28)

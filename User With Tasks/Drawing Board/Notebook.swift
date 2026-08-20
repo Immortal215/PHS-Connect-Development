@@ -55,7 +55,7 @@ struct Notebook: View {
     @State var showDelete = false
     @State var loadedData = false
     @State var caughtUp = false
-    @State var deleted = false
+    @State var showDeleteAllConfirmation = false
     @State var error = false
     @State var boxesFilled = false
     @State var settings = false
@@ -402,7 +402,6 @@ struct Notebook: View {
                                             }
 
                                             caughtUp = false
-                                            deleted = false
                                             assignmentAnimation = true
                                         } else {
                                             boxesFilled = true
@@ -446,9 +445,24 @@ struct Notebook: View {
                             }
 
                             Button {
-                                deleted.toggle()
-
-                                if deleted == false {
+                                showDeleteAllConfirmation = true
+                            } label: {
+                                Image(systemName: "trash")
+                                    .resizable()
+                                    .frame(
+                                        width: loadedData ? 25 : 0,
+                                        height: loadedData ? 25 : 0,
+                                        alignment: .center
+                                    )
+                                    .foregroundStyle(.red)
+                                    .frame(width: loadedData ? 150 : 0)
+                            }
+                            .alert(
+                                "Delete All Assignments?",
+                                isPresented: $showDeleteAllConfirmation
+                            ) {
+                                Button("Cancel", role: .cancel) {}
+                                Button("Delete All", role: .destructive) {
                                     infoArray = []
                                     dates = []
                                     dueDates = []
@@ -459,25 +473,13 @@ struct Notebook: View {
                                         ?? DrawingBoardList(name: currentTab)
                                     list.tasks = []
                                     bigDic[currentTab] = list
-                                    deleted = false
                                     caughtUp = false
                                 }
-
-                            } label: {
-                                Image(
-                                    systemName: deleted ? "trash.fill" : "trash"
+                            } message: {
+                                Text(
+                                    "Are you sure you want to delete every assignment in this list?"
                                 )
-                                .resizable()
-                                .frame(
-                                    width: loadedData ? 25 : 0,
-                                    height: loadedData ? 25 : 0,
-                                    alignment: .center
-                                )
-                                .foregroundStyle(.red)
-                                .frame(width: loadedData ? 150 : 0)
-                                .scaleEffect(deleted ? 1.4 : 1.0)
                             }
-                            .implicitAnimation(.bouncy(duration: 1, extraBounce: 0.1))
 
                         }
                     }
@@ -1392,15 +1394,12 @@ struct Notebook: View {
 
         }
         .onAppear {
-            deleted = false
             loadCurrentList()
         }
         .onChange(of: selectedTab) {
-            deleted = false
             loadCurrentList()
         }
         .onChange(of: currentTab) {
-            deleted = false
             if currentTab != "+erder" {
                 loadCurrentList()
             }
