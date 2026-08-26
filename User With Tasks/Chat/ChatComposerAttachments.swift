@@ -48,20 +48,39 @@ extension ChatComposer {
             }
             .onDrop(of: [UTType.image.identifier], isTargeted: $isDropTargeted)
         { providers in
-            handleImageProviders(providers)
+            guard !isAnnouncementsThread || isLeaderInSelectedClub else {
+                return false
+            }
+            return handleImageProviders(providers)
         }
     }
 
     var composerLifecycleView: some View {
         composerDropPasteView
-            .onChange(of: editingMessageID) { _, _ in
-                if let editingID = editingMessageID,
+            .onChange(of: editingMessageID) { oldValue, newValue in
+                if let editingID = newValue,
                     let selected = selectedChat,
                     let message = selected.messages?.first(where: {
                         $0.messageID == editingID
                     })
                 {
                     draftText = message.message
+                    includesPoll = message.poll != nil
+                    isAnnouncementComposerExpanded = true
+                    pollOptions = message.poll?.options
+                        .sorted(by: { $0.value.order < $1.value.order })
+                        .map {
+                            ChatPollDraftOption(
+                                id: $0.key,
+                                text: $0.value.text
+                            )
+                        } ?? ChatPollDraftOption.emptyPair
+                } else if let oldValue,
+                    selectedChat?.messages?.first(where: {
+                        $0.messageID == oldValue
+                    })?.threadName == "announcements"
+                {
+                    resetDraft(deletePendingUploads: true)
                 }
             }
             .onChange(of: replyingMessageID) { _, _ in
@@ -102,7 +121,9 @@ extension ChatComposer {
 
     @ViewBuilder
     var attachmentPreviewStrip: some View {
-        if !attachments.isEmpty {
+        if !attachments.isEmpty
+            && (!isAnnouncementsThread || isLeaderInSelectedClub)
+        {
             ScrollView(.horizontal) {
                 HStack {
                     ForEach(Array(attachments.enumerated()), id: \.element.id) {
@@ -240,6 +261,16 @@ extension ChatComposer {
     }
 
     var composerRow: some View {
+        Group {
+            if isAnnouncementsThread {
+                announcementComposer
+            } else {
+                standardComposerRow
+            }
+        }
+    }
+
+    var standardComposerRow: some View {
         HStack {
             Button {
                 openAttachmentSheet()
@@ -600,6 +631,9 @@ extension ChatComposer {
         selectedPhotoItem = nil
         uploadError = nil
         isUploadingAttachment = false
+        includesPoll = false
+        pollOptions = ChatPollDraftOption.emptyPair
+        isAnnouncementComposerExpanded = false
     }
 
     func pasteImageFromClipboard() {

@@ -41,7 +41,10 @@ struct ThreadMessageIndex {
 
 final class ChatMessageRemovalBatcher: ObservableObject {
     var messageIDsByChatID: [String: Set<String>] = [:]
+    var latestDeletionTimestampByChatID: [String: Double] = [:]
     var workItemsByChatID: [String: DispatchWorkItem] = [:]
+    var deletionCursors = ChatDeletionCursorCache().load()
+    let deletionCursorCache = ChatDeletionCursorCache()
 }
 
 enum ChatLoadingState: Equatable {
@@ -328,7 +331,22 @@ struct ChatView: View {
                                             userInfo: $userInfo
                                         )
                                         .presentationDragIndicator(.visible)
-                                        .presentationSizing(.page)
+                                        .frame(
+                                            width: appScreenBounds
+                                                .width / 1.05
+                                        )
+                                        .presentationBackground {
+                                            GlassBackground(
+                                                color: Color(
+                                                    hexadecimal: club
+                                                        .clubColor
+                                                        ?? colorFromClub(
+                                                            club: club
+                                                        ).toHexString()
+                                                )
+                                            )
+                                            .cornerRadius(25)
+                                        }
                                     }
 
                                     Spacer()
@@ -533,6 +551,55 @@ struct ChatView: View {
                                                 Divider()
                                                     .padding(.top, 8)
                                             }
+
+                                            Text("ANNOUNCEMENTS")
+                                                .font(.caption)
+                                                .fontWeight(.semibold)
+                                                .padding(.horizontal, 16)
+                                                .padding(.top, 16)
+                                                .padding(.bottom, 8)
+
+                                            AnnouncementsSidebarButton(
+                                                isSelected:
+                                                    currentThread
+                                                    == "announcements",
+                                                hasUnread:
+                                                    threadLastMessageID[
+                                                        "announcements"
+                                                    ] != nil
+                                                    && threadLastMessageID[
+                                                        "announcements"
+                                                    ]
+                                                        != threadLastRead[
+                                                            "announcements"
+                                                        ]
+                                            ) {
+                                                chatLoadingState =
+                                                    .switchingThread
+                                                selectedThread[
+                                                    selected.chatID
+                                                ] = "announcements"
+                                                editingMessageID = nil
+                                                replyingMessageID = nil
+                                                isReactionListPresented = false
+                                                composerDismissRequestID += 1
+                                                updateUnreadIndicator()
+
+                                                DispatchQueue.main.asyncAfter(
+                                                    deadline: .now()
+                                                        + loadingOverlayHoldTime
+                                                ) {
+                                                    if chatLoadingState
+                                                        == .switchingThread
+                                                    {
+                                                        chatLoadingState = .hidden
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 4)
+
+                                            Divider()
+                                                .padding(.top, 8)
 
                                             Text("THREADS")
                                                 .font(.caption)
@@ -791,7 +858,12 @@ struct ChatView: View {
 
                                             Divider()
 
-                                            ForEach(threads, id: \.self) {
+                                            ForEach(
+                                                threads.filter {
+                                                    $0 != "announcements"
+                                                },
+                                                id: \.self
+                                            ) {
                                                 thread in
                                                 let lastMessageInThread =
                                                     threadLastMessageID[thread]
@@ -1946,6 +2018,24 @@ struct ChatView: View {
             }
         }
 
+        let lastDeletionTimestamp = messageRemovalBatcher.deletionCursors
+            .lastProcessedAtByChatID[chatID] ?? -0.001
+        databaseRef.child("deletedMessages")
+            .queryOrderedByValue()
+            .queryStarting(atValue: lastDeletionTimestamp)
+            .observe(.childAdded) { snapshot in
+                guard let deletedAt = (snapshot.value as? NSNumber)?.doubleValue
+                else { return }
+
+                DispatchQueue.main.async {
+                    queueMessageRemoval(
+                        snapshot.key,
+                        for: chatID,
+                        deletedAt: deletedAt
+                    )
+                }
+            }
+
         // listen only for typingUsers updates
         databaseRef.child("typingUsers").observe(.value) { snapshot in
             if let newTyping = snapshot.value as? [String],
@@ -1972,10 +2062,21 @@ struct ChatView: View {
 
     }
 
-    func queueMessageRemoval(_ messageID: String, for chatID: String) {
+    func queueMessageRemoval(
+        _ messageID: String,
+        for chatID: String,
+        deletedAt: Double? = nil
+    ) {
         messageRemovalBatcher.messageIDsByChatID[chatID, default: []].insert(
             messageID
         )
+        if let deletedAt {
+            messageRemovalBatcher.latestDeletionTimestampByChatID[chatID] = max(
+                messageRemovalBatcher.latestDeletionTimestampByChatID[chatID]
+                    ?? deletedAt,
+                deletedAt
+            )
+        }
         messageRemovalBatcher.workItemsByChatID[chatID]?.cancel()
 
         let workItem = DispatchWorkItem {
@@ -1990,23 +2091,45 @@ struct ChatView: View {
 
     func flushMessageRemovals(for chatID: String) {
         messageRemovalBatcher.workItemsByChatID[chatID] = nil
+        let deletedAt = messageRemovalBatcher.latestDeletionTimestampByChatID
+            .removeValue(forKey: chatID)
+        guard let messageIDs = messageRemovalBatcher.messageIDsByChatID
+            .removeValue(forKey: chatID)
+        else { return }
+
         guard
-            let messageIDs = messageRemovalBatcher.messageIDsByChatID
-                .removeValue(forKey: chatID),
             let chatIndex = chats.firstIndex(where: { $0.chatID == chatID }),
             var chatMessages = chats[chatIndex].messages
-        else { return }
+        else {
+            saveDeletionCursorAsync(chatID: chatID, deletedAt: deletedAt)
+            return
+        }
 
         let previousCount = chatMessages.count
         chatMessages.removeAll { messageIDs.contains($0.messageID) }
-        guard chatMessages.count != previousCount else { return }
-
-        withAnimation(.smooth) {
-            chats[chatIndex].messages = chatMessages
+        if chatMessages.count != previousCount {
+            withAnimation(.smooth) {
+                chats[chatIndex].messages = chatMessages
+            }
+            rebuildThreadMessageIndex(for: chats[chatIndex])
+            refreshChatSidebarCache()
+            saveChatToCacheAsync(chats[chatIndex])
         }
-        rebuildThreadMessageIndex(for: chats[chatIndex])
-        refreshChatSidebarCache()
-        saveChatToCacheAsync(chats[chatIndex])
+        saveDeletionCursorAsync(chatID: chatID, deletedAt: deletedAt)
+    }
+
+    func saveDeletionCursorAsync(chatID: String, deletedAt: Double?) {
+        guard let deletedAt else { return }
+        let currentCursor = messageRemovalBatcher.deletionCursors
+            .lastProcessedAtByChatID[chatID] ?? -0.001
+        guard deletedAt > currentCursor else { return }
+
+        messageRemovalBatcher.deletionCursors.lastProcessedAtByChatID[chatID] =
+            deletedAt
+        let cursors = messageRemovalBatcher.deletionCursors
+        cacheWriteQueue.async {
+            messageRemovalBatcher.deletionCursorCache.save(cursors)
+        }
     }
 
     func insertMessageSorted(
@@ -2592,6 +2715,9 @@ struct ChatComposer: View {
     @State var uploadError: String?
     @State var isDropTargeted = false
     @State var clubsLeaderIn: [Club]
+    @State var includesPoll = false
+    @State var pollOptions = ChatPollDraftOption.emptyPair
+    @State var isAnnouncementComposerExpanded = false
 
     let maxDraftAttachments = 5
 
@@ -2599,16 +2725,26 @@ struct ChatComposer: View {
         draftText.isEmpty && attachments.isEmpty
     }
 
+    var isAnnouncementsThread: Bool {
+        guard let chatID = selectedChat?.chatID else { return false }
+        return (selectedThread[chatID] ?? nil) == "announcements"
+    }
+
+    var isLeaderInSelectedClub: Bool {
+        isSuperAdminEmail(userInfo?.userEmail)
+            || clubsLeaderIn.contains(where: {
+                $0.clubID == selectedChat?.clubID
+            })
+    }
+
     var isD214User: Bool {
         normalizedEmail(userInfo?.userEmail).contains("d214")
     }
 
     var canSendMessages: Bool {
-        let isLeaderInSelectedClub: Bool =
-            clubsLeaderIn.contains(where: {
-                $0.clubID == selectedChat?.clubID
-            })
-        return isSuperAdminEmail(userInfo?.userEmail) || (isD214User && (selectedThread[selectedChat?.chatID ?? "general"] != "announcements" || isLeaderInSelectedClub || replyingMessageID != nil))
+        isSuperAdminEmail(userInfo?.userEmail)
+            || (isD214User
+                && (!isAnnouncementsThread || isLeaderInSelectedClub))
     }
 
     var canAcceptMoreAttachments: Bool {
@@ -2627,7 +2763,8 @@ struct ChatComposer: View {
         focusedOnSendBar = false
 
         guard let selected = selectedChat,
-            !draftText.isEmpty || !attachments.isEmpty
+            (!draftText.isEmpty || !attachments.isEmpty),
+            canSendMessages
         else { return }
         let currentThread =
             (selectedThread[selected.chatID] ?? nil) ?? "general"
@@ -2640,6 +2777,13 @@ struct ChatComposer: View {
                     where: { $0.messageID == editingID })
                 {
                     chats[chatIndex].messages?[messageIndex].message = draftText
+                    if isAnnouncementsThread {
+                        chats[chatIndex].messages?[messageIndex].poll =
+                            announcementPoll(
+                                preserving: chats[chatIndex].messages?[messageIndex]
+                                    .poll?.votes
+                            )
+                    }
                     if let editedMessage = chats[chatIndex].messages?[
                         messageIndex
                     ] {
@@ -2683,7 +2827,8 @@ struct ChatComposer: View {
                     date: Date().timeIntervalSince1970,
                     threadName: currentThread == "general"
                         ? nil : currentThread,
-                    replyTo: replyingMessageID
+                    replyTo: replyingMessageID,
+                    poll: isAnnouncementsThread ? announcementPoll() : nil
                 )
                 Task {
                     await sendMessage(
@@ -2696,6 +2841,26 @@ struct ChatComposer: View {
 
         resetDraft(deletePendingUploads: false)
         onDidSend()
+    }
+
+    func announcementPoll(
+        preserving votes: [String: String]? = nil
+    ) -> Chat.ChatMessage.Poll? {
+        guard includesPoll else { return nil }
+
+        let options = pollOptions.enumerated().reduce(
+            into: [String: Chat.ChatMessage.Poll.Option]()
+        ) { result, item in
+            let text = item.element.text.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            guard !text.isEmpty else { return }
+            result[item.element.id] = .init(text: text, order: item.offset)
+        }
+
+        guard options.count >= 2 else { return nil }
+        let validVotes = votes?.filter { options[$0.value] != nil }
+        return .init(options: options, votes: validVotes)
     }
 
 }

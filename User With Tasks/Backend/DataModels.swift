@@ -67,6 +67,16 @@ struct Chat: Codable, Equatable, Hashable {
     var lastMessage: ChatMessage?
 
     struct ChatMessage: Codable, Equatable, Hashable {
+        struct Poll: Codable, Equatable, Hashable {
+            struct Option: Codable, Equatable, Hashable {
+                var text: String
+                var order: Int
+            }
+
+            var options: [String: Option]
+            var votes: [String: String]?
+        }
+
         private(set) var messageID: String  // messageId
         var message: String  // message (Only string content)
         var sender: String  // userID
@@ -84,6 +94,7 @@ struct Chat: Codable, Equatable, Hashable {
         var flagged: Bool?
 
         var mentions: [String]?  // userIDs mentioned in the text block (by like @ symbols, need to add this functionality)
+        var poll: Poll? = nil
 
         mutating func setMessageID(_ newID: String) {  // here so people dont just willy nilly change the messageID
             messageID = newID

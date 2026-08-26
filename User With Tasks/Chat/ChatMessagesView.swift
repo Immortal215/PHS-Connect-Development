@@ -40,32 +40,93 @@ struct MessageScrollView: View {
         return chats.first(where: { $0.chatID == selectedChatID })
     }
 
+    var announcementRenderItems: [ChatMessageRenderItem] {
+        messageRenderItems.filter {
+            !($0.message.systemGenerated ?? false)
+        }
+    }
+
+    var canManageAnnouncements: Bool {
+        guard let clubID = selectedChat?.clubID else { return false }
+        return isSuperAdminEmail(userInfo?.userEmail)
+            || clubsLeaderIn.contains(where: { $0.clubID == clubID })
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             ZStack {
                 ScrollView {
                     LazyVStack(spacing: bubbles ? nil : 0) {  // not 0 by default!
-                        if selectedChat != nil {
+                        if let selectedChat {
                             Group {
-                                ForEach(messageRenderItems) { renderItem in
-                                    messageBubble(
-                                        message: renderItem.message,
-                                        previousMessage:
-                                            renderItem.previousMessage,
-                                        nextMessage: renderItem.nextMessage,
-                                        calendarTimeIsNotSameByHourNextMessage:
-                                            renderItem
-                                            .calendarTimeIsNotSameByHourNextMessage,
-                                        calendarTimeIsNotSameByHourPreviousMessage:
-                                            renderItem
-                                            .calendarTimeIsNotSameByHourPreviousMessage,
-                                        calendarTimeIsNotSameByDayPreviousMessage:
-                                            renderItem
-                                            .calendarTimeIsNotSameByDayPreviousMessage,
-                                        messageLookup: messageLookup,
-                                        proxy: proxy
-                                    )
-                                    .id(renderItem.id)
+                                if currentThreadName == "announcements" {
+                                    if announcementRenderItems.isEmpty {
+                                        ContentUnavailableView(
+                                            "No Announcements Yet",
+                                            systemImage: "megaphone",
+                                            description: Text(
+                                                canManageAnnouncements
+                                                    ? "Post the first club update below."
+                                                    : "Club updates and polls will appear here."
+                                            )
+                                        )
+                                        .padding(.top, 80)
+                                    }
+
+                                    ForEach(announcementRenderItems) { renderItem in
+                                        AnnouncementMessageCard(
+                                            message: renderItem.message,
+                                            chatID: selectedChat.chatID,
+                                            clubColor: clubColor,
+                                            canManage: canManageAnnouncements,
+                                            userInfo: $userInfo,
+                                            users: $users,
+                                            onEdit: {
+                                                editingMessageID =
+                                                    renderItem.message.messageID
+                                                replyingMessageID = nil
+                                                focusSendBar()
+                                            },
+                                            onReact: {
+                                                selectedEmojiMessage =
+                                                    renderItem.message
+                                                isEmojiPickerPresented = true
+                                            },
+                                            onReactionDetails: {
+                                                selectedReactionListMessage =
+                                                    renderItem.message
+                                                isReactionListPresented = true
+                                            }
+                                        )
+                                        .emojiPicker(
+                                            isPresented: $isEmojiPickerPresented,
+                                            selectedEmoji: $selectedEmoji
+                                        )
+                                        .padding(.horizontal, 4)
+                                        .padding(.vertical, 6)
+                                        .id(renderItem.id)
+                                    }
+                                } else {
+                                    ForEach(messageRenderItems) { renderItem in
+                                        messageBubble(
+                                            message: renderItem.message,
+                                            previousMessage:
+                                                renderItem.previousMessage,
+                                            nextMessage: renderItem.nextMessage,
+                                            calendarTimeIsNotSameByHourNextMessage:
+                                                renderItem
+                                                .calendarTimeIsNotSameByHourNextMessage,
+                                            calendarTimeIsNotSameByHourPreviousMessage:
+                                                renderItem
+                                                .calendarTimeIsNotSameByHourPreviousMessage,
+                                            calendarTimeIsNotSameByDayPreviousMessage:
+                                                renderItem
+                                                .calendarTimeIsNotSameByDayPreviousMessage,
+                                            messageLookup: messageLookup,
+                                            proxy: proxy
+                                        )
+                                        .id(renderItem.id)
+                                    }
                                 }
 
                                 Color.clear.frame(height: 75)  // purely just so you can scroll through the texts
@@ -117,14 +178,12 @@ struct MessageScrollView: View {
                 }
                 .onChange(of: selectedEmoji) {
                     guard let emoji = selectedEmoji,
-                        var newMessage = selectedEmojiMessage,
+                        let message = selectedEmojiMessage,
                         let userID = userInfo?.userID,
                         let chatID = selectedChat?.chatID
                     else { return }
 
-                    var reactions = newMessage.reactions ?? [:]
-
-                    var users = reactions[emoji.emoji] ?? []
+                    var users = message.reactions?[emoji.emoji] ?? []
 
                     if let index = users.firstIndex(of: userID) {
                         users.remove(at: index)
@@ -132,16 +191,13 @@ struct MessageScrollView: View {
                         users.append(userID)
                     }
 
-                    if users.isEmpty {
-                        reactions.removeValue(forKey: emoji.emoji)
-                    } else {
-                        reactions[emoji.emoji] = users
-                    }
-
-                    newMessage.reactions = reactions
-
                     Task {
-                        await sendMessage(chatID: chatID, message: newMessage)
+                        await updateMessageReaction(
+                            chatID: chatID,
+                            messageID: message.messageID,
+                            emoji: emoji.emoji,
+                            userIDs: users
+                        )
                     }
 
                     selectedEmoji = nil
@@ -1896,9 +1952,7 @@ struct MessageScrollView: View {
                             let chatID = selectedChat?.chatID
                         else { return }
 
-                        var newMessage = message
-                        var reactions = newMessage.reactions ?? [:]
-                        var usersForEmoji = reactions[emoji] ?? []
+                        var usersForEmoji = message.reactions?[emoji] ?? []
 
                         if let index = usersForEmoji.firstIndex(of: userID) {
                             usersForEmoji.remove(at: index)
@@ -1906,15 +1960,13 @@ struct MessageScrollView: View {
                             usersForEmoji.append(userID)
                         }
 
-                        if usersForEmoji.isEmpty {
-                            reactions.removeValue(forKey: emoji)
-                        } else {
-                            reactions[emoji] = usersForEmoji
-                        }
-
-                        newMessage.reactions = reactions
                         Task {
-                            await sendMessage(chatID: chatID, message: newMessage)
+                            await updateMessageReaction(
+                                chatID: chatID,
+                                messageID: message.messageID,
+                                emoji: emoji,
+                                userIDs: usersForEmoji
+                            )
                         }
                     }
                 }
@@ -2024,9 +2076,7 @@ struct MessageScrollView: View {
 }
 
 func deleteMessage(chatID: String, message: Chat.ChatMessage) {
-    var deletedMessage = message
-    deletedMessage.message = "[Deleted Message]"
     Task {
-        await sendMessage(chatID: chatID, message: deletedMessage)
+        await removeMessage(chatID: chatID, messageID: message.messageID)
     }
 }

@@ -794,6 +794,89 @@ func sendMessage(
     }
 }
 
+@discardableResult
+func updateMessageReaction(
+    chatID: String,
+    messageID: String,
+    emoji: String,
+    userIDs: [String]
+) async -> Bool {
+    let messageRef = Database.database().reference().child("chats").child(
+        chatID
+    ).child("messages").child(messageID)
+
+    do {
+        _ = try await messageRef.updateChildValues([
+            "reactions/\(emoji)": userIDs.isEmpty ? NSNull() : userIDs,
+            "lastUpdated": Date().timeIntervalSince1970,
+        ])
+        return true
+    } catch {
+        print("Failed to update message reaction: \(error)")
+        return false
+    }
+}
+
+@discardableResult
+func updateMessagePollVote(
+    chatID: String,
+    messageID: String,
+    userID: String,
+    optionID: String?
+) async -> Bool {
+    let messageRef = Database.database().reference().child("chats").child(
+        chatID
+    ).child("messages").child(messageID)
+
+    do {
+        _ = try await messageRef.updateChildValues([
+            "poll/votes/\(userID)": optionID ?? NSNull(),
+            "lastUpdated": Date().timeIntervalSince1970,
+        ])
+        return true
+    } catch {
+        print("Failed to update poll vote: \(error)")
+        return false
+    }
+}
+
+@discardableResult
+func removeMessage(chatID: String, messageID: String) async -> Bool {
+    let chatRef = Database.database().reference().child("chats").child(chatID)
+
+    async let lastMessageIDSnapshot = observeSingleValue(
+        at: chatRef.child("lastMessage").child("messageID")
+    )
+    async let pinnedSnapshot = observeSingleValue(at: chatRef.child("pinned"))
+
+    let (lastMessageID, pinned) = await (
+        lastMessageIDSnapshot.value as? String,
+        pinnedSnapshot.value as? [String]
+    )
+
+    var updates: [String: Any] = [
+        "deletedMessages/\(messageID)": Date().timeIntervalSince1970,
+        "messages/\(messageID)": NSNull(),
+    ]
+
+    if lastMessageID == messageID {
+        updates["lastMessage"] = NSNull()
+    }
+
+    if let pinned, pinned.contains(messageID) {
+        let remainingPinned = pinned.filter { $0 != messageID }
+        updates["pinned"] = remainingPinned.isEmpty ? NSNull() : remainingPinned
+    }
+
+    do {
+        _ = try await chatRef.updateChildValues(updates)
+        return true
+    } catch {
+        print("Failed to remove message: \(error)")
+        return false
+    }
+}
+
 func removeThread(chatID: String, threadName: String) {
     let messagesRef = Database.database().reference().child("chats").child(
         chatID

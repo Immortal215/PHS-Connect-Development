@@ -24,6 +24,35 @@ class ChatCache {
     }
 }
 
+struct ChatDeletionCursors: Codable {
+    var lastProcessedAtByChatID: [String: Double] = [:]
+}
+
+class ChatDeletionCursorCache {
+    let cacheURL: URL
+
+    init() {
+        let dir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
+        cacheURL = dir.appendingPathComponent("chat_deletion_cursors.json")
+    }
+
+    func load() -> ChatDeletionCursors {
+        guard let data = try? Data(contentsOf: cacheURL) else {
+            return ChatDeletionCursors()
+        }
+        return (try? JSONDecoder().decode(ChatDeletionCursors.self, from: data))
+            ?? ChatDeletionCursors()
+    }
+
+    func save(_ cursors: ChatDeletionCursors) {
+        guard let data = try? JSONEncoder().encode(cursors) else { return }
+        try? data.write(to: cacheURL, options: .atomic)
+    }
+}
+
 class ClubCache {
     public let cacheURL: URL
 

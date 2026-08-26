@@ -1,4 +1,18 @@
 import SwiftUI
+
+struct ChatPollDraftOption: Identifiable, Equatable {
+    var id: String
+    var text: String
+
+    init(id: String = UUID().uuidString, text: String = "") {
+        self.id = id
+        self.text = text
+    }
+
+    static var emptyPair: [ChatPollDraftOption] {
+        [ChatPollDraftOption(), ChatPollDraftOption()]
+    }
+}
 import SwiftUIX
 
 struct ReplyLine: Shape {

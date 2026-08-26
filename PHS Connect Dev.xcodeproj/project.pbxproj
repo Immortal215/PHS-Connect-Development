@@ -521,8 +521,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/SwiftUIX/SwiftUIX";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.3.1;
+				branch = master;
+				kind = branch;
 			};
 		};
 		716022FB2CDB0DEB00E2887B /* XCRemoteSwiftPackageReference "Pow" */ = {
