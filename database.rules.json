@@ -106,7 +106,7 @@
             "poll": {
               "votes": {
                 "$user_id": {
-                  ".write": "auth != null && auth.uid === $user_id && root.child('chats').child($chat_id).child('messages').child($message_id).child('threadName').val() === 'announcements' && (!newData.exists() || (newData.isString() && root.child('chats').child($chat_id).child('messages').child($message_id).child('poll').child('options').child(newData.val()).exists()))"
+                  ".write": "auth != null && auth.uid === $user_id && !data.exists() && newData.isString() && root.child('chats').child($chat_id).child('messages').child($message_id).child('threadName').val() === 'announcements' && root.child('chats').child($chat_id).child('messages').child($message_id).child('poll').child('options').child(newData.val()).exists()"
                 }
               }
             },

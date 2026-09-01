@@ -156,27 +156,36 @@ extension ChatComposer {
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
 
-            ForEach($pollOptions) { $option in
-                let optionNumber =
-                    (pollOptions.firstIndex(where: { $0.id == option.id }) ?? 0)
-                    + 1
+            ForEach(Array(pollOptions.enumerated()), id: \.element.id) { item in
+                let optionNumber = item.offset + 1
+                let option = item.element
                 HStack {
                     TextField(
                         "Option \(optionNumber)",
-                        text: $option.text
+                        text: pollOptionTextBinding(option.id)
                     )
                     .textFieldStyle(.roundedBorder)
 
                     if pollOptions.count > 2 {
                         Button {
-                            pollOptions.removeAll { $0.id == option.id }
+                            removePollOption(option.id)
                         } label: {
                             Image(systemName: "minus.circle.fill")
                                 .imageScale(.large)
                                 .foregroundStyle(.red)
+                                .frame(width: 44, height: 44)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Remove option \(optionNumber)")
+                        .overlay {
+                            Rectangle()
+                                .fill(Color.clear.opacity(0))
+                                .highPriorityGesture(
+                                    TapGesture().onEnded {
+                                        removePollOption(option.id)
+                                    }
+                                )
+                        }
                     }
                 }
             }
@@ -193,12 +202,33 @@ extension ChatComposer {
         .allowsHitTesting(true)
     }
 
+    func removePollOption(_ optionID: String) {
+        guard pollOptions.count > 2 else { return }
+        withAnimation(.smooth(duration: 0.15)) {
+            pollOptions.removeAll { $0.id == optionID }
+        }
+    }
+
+    func pollOptionTextBinding(_ optionID: String) -> Binding<String> {
+        Binding(
+            get: {
+                pollOptions.first(where: { $0.id == optionID })?.text ?? ""
+            },
+            set: { text in
+                guard let index = pollOptions.firstIndex(where: {
+                    $0.id == optionID
+                }) else { return }
+                pollOptions[index].text = text
+            }
+        )
+    }
+
     func announcementComposerBackground(cornerRadius: CGFloat) -> some View {
         GlassBackground(
             color: Color.systemBackground,
             shape: AnyShape(RoundedRectangle(cornerRadius: cornerRadius))
         )
-        .allowsHitTesting(true)
+        .allowsHitTesting(false)
     }
 
     var announcementSendDisabled: Bool {

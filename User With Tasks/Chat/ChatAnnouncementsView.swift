@@ -252,6 +252,8 @@ struct AnnouncementPollView: View {
     var chatID: String
     var messageID: String
     var userID: String?
+    @State var pendingOptionID: String?
+    @State var isSubmittingVote = false
 
     var sortedOptions: [(key: String, value: Chat.ChatMessage.Poll.Option)] {
         poll.options.sorted(by: { $0.value.order < $1.value.order })
@@ -261,23 +263,59 @@ struct AnnouncementPollView: View {
         poll.votes?.count ?? 0
     }
 
+    var selectedOptionID: String? {
+        guard let userID else { return nil }
+        return poll.votes?[userID]
+    }
+
+    var hasVoted: Bool {
+        selectedOptionID != nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("Poll", systemImage: "chart.bar.fill")
                     .font(.subheadline.bold())
                 Spacer()
-                Text("\(totalVotes) vote\(totalVotes == 1 ? "" : "s")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if hasVoted {
+                    Text("\(totalVotes) vote\(totalVotes == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             ForEach(sortedOptions, id: \.key) { option in
                 pollOption(id: option.key, option: option.value)
             }
+
+            if !hasVoted {
+                HStack {
+                    Spacer()
+                    Button(action: submitVote) {
+                        if isSubmittingVote {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Select")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+                    .disabled(
+                        pendingOptionID == nil || userID == nil
+                            || isSubmittingVote
+                    )
+                }
+            }
         }
         .padding(14)
         .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+        .onChange(of: selectedOptionID) { _, selectedOptionID in
+            guard selectedOptionID != nil else { return }
+            pendingOptionID = nil
+            isSubmittingVote = false
+        }
     }
 
     func pollOption(
@@ -286,18 +324,12 @@ struct AnnouncementPollView: View {
     ) -> some View {
         let voteCount = poll.votes?.values.filter { $0 == id }.count ?? 0
         let fraction = totalVotes == 0 ? 0 : Double(voteCount) / Double(totalVotes)
-        let isSelected = poll.votes?[userID ?? ""] == id
+        let isSelected = hasVoted
+            ? selectedOptionID == id : pendingOptionID == id
 
         return Button {
-            guard let userID else { return }
-            Task {
-                await updateMessagePollVote(
-                    chatID: chatID,
-                    messageID: messageID,
-                    userID: userID,
-                    optionID: isSelected ? nil : id
-                )
-            }
+            guard !hasVoted, !isSubmittingVote else { return }
+            pendingOptionID = id
         } label: {
             VStack(spacing: 7) {
                 HStack {
@@ -306,16 +338,52 @@ struct AnnouncementPollView: View {
                     Text(option.text)
                         .font(.subheadline.weight(.medium))
                     Spacer()
-                    Text("\(Int((fraction * 100).rounded()))%")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
+                    if hasVoted {
+                        Text("\(Int((fraction * 100).rounded()))%")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                ProgressView(value: fraction)
-                    .tint(.blue)
+                if hasVoted {
+                    ProgressView(value: fraction)
+                        .tint(.blue)
+                }
             }
+            .padding(8)
+            .background(
+                !hasVoted && isSelected ? Color.blue.opacity(0.1) : .clear,
+                in: RoundedRectangle(cornerRadius: 10)
+            )
             .contentShape(Rectangle())
+            .bold()
+            .animation(.smooth(duration: 0.1), value: isSelected)
+
         }
         .buttonStyle(.plain)
+    }
+
+    func submitVote() {
+        guard
+            let userID,
+            let pendingOptionID,
+            !hasVoted,
+            !isSubmittingVote
+        else { return }
+
+        isSubmittingVote = true
+        Task {
+            let succeeded = await updateMessagePollVote(
+                chatID: chatID,
+                messageID: messageID,
+                userID: userID,
+                optionID: pendingOptionID
+            )
+            if !succeeded {
+                await MainActor.run {
+                    isSubmittingVote = false
+                }
+            }
+        }
     }
 }

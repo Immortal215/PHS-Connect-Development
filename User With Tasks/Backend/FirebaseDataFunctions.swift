@@ -822,7 +822,7 @@ func updateMessagePollVote(
     chatID: String,
     messageID: String,
     userID: String,
-    optionID: String?
+    optionID: String
 ) async -> Bool {
     let messageRef = Database.database().reference().child("chats").child(
         chatID
@@ -830,7 +830,7 @@ func updateMessagePollVote(
 
     do {
         _ = try await messageRef.updateChildValues([
-            "poll/votes/\(userID)": optionID ?? NSNull(),
+            "poll/votes/\(userID)": optionID,
             "lastUpdated": Date().timeIntervalSince1970,
         ])
         return true
