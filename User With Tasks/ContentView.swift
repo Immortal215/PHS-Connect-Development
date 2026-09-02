@@ -43,7 +43,7 @@ struct ContentView: View {
     @StateObject var chatTabHost = PersistentTabHostStore()
     @StateObject var calendarTabHost = PersistentTabHostStore()
     
-    @State var firstCalendarAppearance = false
+    @AppStorage("firstCalendarAppearance") var firstCalendarAppearance = false
 
     var body: some View {
         VStack {

@@ -13,8 +13,8 @@ struct CalendarView: View {
     var screenWidth = appScreenBounds.width
     var screenHeight = appScreenBounds.height
 
-    @State var selectedDate = Date()
-    @State var firstCalendarAppearance = false
+    @AppStorage("selectedDate") var selectedDate : Date = Date()
+    @AppStorage("firstCalendarAppearance") var firstCalendarAppearance = false
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @State var offset: CGSize = .zero
@@ -78,5 +78,19 @@ struct CalendarView: View {
             firstCalendarAppearance = true
             selectedDate = Date()
         }
+    }
+}
+
+
+// for appstorage for the selectedDate
+extension Date: RawRepresentable {
+    private static let formatter = ISO8601DateFormatter()
+    
+    public var rawValue: String {
+        Date.formatter.string(from: self)
+    }
+    
+    public init?(rawValue: String) {
+        self = Date.formatter.date(from: rawValue) ?? Date()
     }
 }
