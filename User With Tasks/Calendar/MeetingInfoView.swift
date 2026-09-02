@@ -150,6 +150,26 @@ struct MeetingInfoView: View {
                     .foregroundColor(darkMode ? .gray : .darkGray)
                     .bold()
 
+                    if isRepeatingMeeting {
+                        Group {
+                            Divider()
+                            
+                            LabeledContent {
+                                Text(recurrenceDescription)
+                                    .foregroundStyle(.secondary)
+                            } label: {
+                                Label("Repeat", systemImage: "repeat")
+                                    .fontWeight(.semibold)
+                            }
+                            
+                            LabeledContent("End Repeat") {
+                                Text(recurrenceEndDescription)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.trailing)
+                    }
+
                     if meeting.location != nil || meeting.description != nil {
                         Divider()
                     }
@@ -401,6 +421,29 @@ struct MeetingInfoView: View {
     private var isRepeatingMeeting: Bool {
         guard let seriesID = meeting.seriesID else { return false }
         return !seriesID.isEmpty
+    }
+
+    var recurrenceDescription: String {
+        switch meeting.recurrenceIntervalWeeks {
+        case 1:
+            return "Every Week"
+        case 2:
+            return "Every 2 Weeks"
+        case let interval?:
+            return "Every \(interval) Weeks"
+        case nil:
+            return "Repeating"
+        }
+    }
+
+    var recurrenceEndDescription: String {
+        guard let endDate = meeting.recurrenceEndDate, !endDate.isEmpty else {
+            return "Never"
+        }
+
+        return dateFromString(endDate).formatted(
+            .dateTime.month(.abbreviated).day().year()
+        )
     }
 
     private func performDeletion(includingFuture: Bool) {

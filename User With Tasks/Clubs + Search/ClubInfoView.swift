@@ -284,13 +284,15 @@ struct ClubInfoView: View {
                                         hourHeight: 60,
                                         meetingInfo: meetingFull,
                                         preview: true,
+                                        fixedDurationMinutes: 60,
                                         clubs: [club],
                                         numOfOverlapping: 1,
                                         hasOverlap: true
                                     )
                                     .padding(.vertical)
                                     .frame(
-                                        width: appScreenBounds.width / 1.1
+                                        width: appScreenBounds.width / 1.1,
+                                        height: 60
                                     )
                                     .foregroundStyle(.black)
                                     .offset(x: appScreenBounds.width / 1.1)
@@ -301,13 +303,15 @@ struct ClubInfoView: View {
                                         hourHeight: 60,
                                         meetingInfo: meetingFull,
                                         preview: true,
+                                        fixedDurationMinutes: 60,
                                          clubs: [club],
                                         numOfOverlapping: 1,
                                         hasOverlap: true
                                     )
                                     .padding(.vertical)
                                     .frame(
-                                        width: appScreenBounds.width / 1.1
+                                        width: appScreenBounds.width / 1.1,
+                                        height: 60
                                     )
                                     .foregroundStyle(.black)
                                     .offset(x: appScreenBounds.width / 1.1)

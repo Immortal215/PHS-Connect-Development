@@ -6,6 +6,7 @@ struct MeetingView: View {
     let hourHeight: CGFloat
     @State var meetingInfo: Bool
     var preview: Bool? = false
+    var fixedDurationMinutes: Int? = nil
     @State var clubs: [Club]
     var numOfOverlapping: Int? = 1
     var screenWidth = appScreenBounds.width
@@ -21,7 +22,8 @@ struct MeetingView: View {
         let endMinutes =
             Calendar.current.component(.hour, from: endTime) * 60
             + Calendar.current.component(.minute, from: endTime)
-        let durationMinutes = max(endMinutes - startMinutes, 0)
+        let durationMinutes = fixedDurationMinutes
+            ?? max(endMinutes - startMinutes, 0)
 
         let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
         let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
@@ -83,6 +85,12 @@ struct MeetingView: View {
                                 if meeting.description != nil {
                                     Image(systemName: "text.alignleft")
                                         .font(.caption2)
+                                }
+
+                                if meeting.seriesID?.isEmpty == false {
+                                    Image(systemName: "repeat")
+                                        .font(.caption2)
+                                        .accessibilityLabel("Repeating meeting")
                                 }
                             }
                             .font(.footnote)

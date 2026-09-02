@@ -9,6 +9,7 @@ struct WeekCalendarView: View {
     @State var addMeetingTimeView = false
     @State var showMonthPicker = false
     @Binding var clubs: [Club]
+    @Binding var listMode: Bool
     @AppStorage("darkMode") var darkMode = false
     @State var appear = Array(repeating: true, count: 4)
     @AppStorage("Animations+") var animationsPlus = false
@@ -37,6 +38,15 @@ struct WeekCalendarView: View {
             .padding()
 
             HStack(alignment: .center, spacing: 15) {
+                CustomToggleSwitch(
+                    boolean: $listMode,
+                    colors: [.blue, .blue],
+                    images: ["list.bullet", "calendar"]
+                )
+                .accessibilityLabel(
+                    listMode ? "Show calendar view" : "Show meeting list"
+                )
+                
                 Button {
                     showMonthPicker.toggle()
                 } label: {

@@ -1,11 +1,13 @@
 import Foundation
 
 struct CalendarMeetingIndex {
+    let visibleMeetings: [Club.MeetingTime]
     let visibleMeetingsByDay: [String: [Club.MeetingTime]]
     let monthMeetingCountsByDay:
         [String: [(clubID: String, count: Int)]]
 
     init(clubs: [Club], userEmail: String?) {
+        var visibleMeetings: [Club.MeetingTime] = []
         var visibleMeetingsByDay: [String: [Club.MeetingTime]] = [:]
         var monthMeetingCountsByDay: [String: [String: Int]] = [:]
 
@@ -30,11 +32,15 @@ struct CalendarMeetingIndex {
                     || meeting.visibleByArray?.contains(userEmail ?? "") == true
                     || isLeader
                 {
+                    visibleMeetings.append(meeting)
                     visibleMeetingsByDay[dayKey, default: []].append(meeting)
                 }
             }
         }
 
+        self.visibleMeetings = visibleMeetings.sorted {
+            dateFromString($0.startTime) < dateFromString($1.startTime)
+        }
         self.visibleMeetingsByDay = visibleMeetingsByDay
         self.monthMeetingCountsByDay = monthMeetingCountsByDay.mapValues {
             counts in
@@ -48,5 +54,11 @@ struct CalendarMeetingIndex {
 
     func monthCounts(on date: Date) -> [(clubID: String, count: Int)] {
         monthMeetingCountsByDay[schoolScheduleDateString(from: date)] ?? []
+    }
+
+    func hasRepeatingMeeting(on date: Date, clubID: String) -> Bool {
+        visibleMeetings(on: date).contains {
+            $0.clubID == clubID && $0.seriesID?.isEmpty == false
+        }
     }
 }
