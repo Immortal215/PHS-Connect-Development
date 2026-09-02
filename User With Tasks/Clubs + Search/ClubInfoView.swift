@@ -257,34 +257,6 @@ struct ClubInfoView: View {
 
                     }
 
-
-
-                    if clubLeader {
-                        Button {
-                            showAddMeeting = true
-                        } label: {
-                            Text("Add Meeting +")
-                                .font(.subheadline)
-                                .foregroundStyle(.blue)
-                                .padding(6)
-                                .background(Color.blue.opacity(0.2))
-                                .cornerRadius(8)
-                        }
-                        .sheet(isPresented: $showAddMeeting) {
-                            AddMeetingView(
-                                viewCloser: {
-                                    showAddMeeting = false
-                                },
-                                leaderClubs: [club],
-                                selectedDate: Date(),
-                                userInfo: $userInfo
-                            )
-                            .presentationDragIndicator(.visible)
-                            .presentationSizing(.page)
-                            .cornerRadius(25)
-                        }
-                    }
-
                     if let meetingTimes = club.meetingTimes,
                         !meetingTimes.isEmpty
                     {
@@ -345,6 +317,32 @@ struct ClubInfoView: View {
                         }
                     }
 
+                    if clubLeader {
+                        Button {
+                            showAddMeeting = true
+                        } label: {
+                            Text("Add Meeting +")
+                                .font(.subheadline)
+                                .foregroundStyle(.blue)
+                                .padding(6)
+                                .background(Color.blue.opacity(0.2))
+                                .cornerRadius(8)
+                        }
+                        .sheet(isPresented: $showAddMeeting) {
+                            AddMeetingView(
+                                viewCloser: {
+                                    showAddMeeting = false
+                                },
+                                leaderClubs: [club],
+                                selectedDate: Date(),
+                                userInfo: $userInfo
+                            )
+                            .presentationDragIndicator(.visible)
+                            .presentationSizing(.page)
+                            .cornerRadius(25)
+                        }
+                    }
+                    
                     if let meetingTime = club.normalMeetingTime {
                         Text("Normal Meeting Time")
                             .font(.headline)

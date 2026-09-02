@@ -198,3 +198,150 @@ exports.sendReactionNotification = onValueWritten(
     }
   }
 );
+
+function meetingsFromSnapshot(snapshot) {
+  if (!snapshot.exists()) return [];
+
+  const value = snapshot.val();
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return Object.values(value || {}).filter(Boolean);
+}
+
+function canonicalValue(value) {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.keys(value)
+    .sort()
+    .reduce((result, key) => {
+      result[key] = canonicalValue(value[key]);
+      return result;
+    }, {});
+}
+
+function changedMeetings(beforeMeetings, afterMeetings) {
+  const beforeKeys = new Set(
+    beforeMeetings.map((meeting) => JSON.stringify(canonicalValue(meeting)))
+  );
+  const afterKeys = new Set(
+    afterMeetings.map((meeting) => JSON.stringify(canonicalValue(meeting)))
+  );
+
+  return {
+    added: afterMeetings.filter(
+      (meeting) => !beforeKeys.has(JSON.stringify(canonicalValue(meeting)))
+    ),
+    removed: beforeMeetings.filter(
+      (meeting) => !afterKeys.has(JSON.stringify(canonicalValue(meeting)))
+    ),
+  };
+}
+
+function meetingDateTimeParts(value) {
+  const match = /^(\d{2})-(\d{2})-(\d{4}),\s*(\d{1,2}:\d{2}\s*[AP]M)$/i.exec(
+    value || ""
+  );
+  if (!match) return null;
+
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  const month = months[Number(match[1]) - 1];
+  if (!month) return null;
+
+  return {
+    date: `${month} ${Number(match[2])}, ${match[3]}`,
+    time: match[4].replace(/\s+/g, " ").toUpperCase(),
+  };
+}
+
+function meetingDateTimeText(meeting) {
+  const start = meetingDateTimeParts(meeting.startTime);
+  const end = meetingDateTimeParts(meeting.endTime);
+
+  if (!start || !end) {
+    return `${meeting.startTime || ""} - ${meeting.endTime || ""}`.trim();
+  }
+
+  if (start.date === end.date) {
+    return `${start.date}, ${start.time} - ${end.time}`;
+  }
+
+  return `${start.date}, ${start.time} - ${end.date}, ${end.time}`;
+}
+
+exports.sendMeetingNotification = onValueWritten(
+  "/clubs/{clubID}/meetingTimes",
+  async (event) => {
+    const clubID = event.params.clubID;
+    const beforeMeetings = meetingsFromSnapshot(event.data.before);
+    const afterMeetings = meetingsFromSnapshot(event.data.after);
+    const changes = changedMeetings(beforeMeetings, afterMeetings);
+
+    // Deletions do not create a meeting notification.
+    if (changes.added.length === 0) return;
+
+    const meeting = changes.added.sort((first, second) =>
+      (first.startTime || "").localeCompare(second.startTime || "")
+    )[0];
+    const isEdit = changes.removed.length > 0;
+    const isRepeating = Boolean(meeting.seriesID);
+
+    try {
+      const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
+      const club = clubSnap.val();
+      if (!club) return;
+
+      const usersSnap = await admin.database().ref("/users").once("value");
+      const users = usersSnap.val() || {};
+      const memberEmails = new Set([
+        ...(club.members || []),
+        ...(club.leaders || []),
+      ]);
+      const visibleEmails = Array.isArray(meeting.visibleByArray)
+        ? new Set(meeting.visibleByArray)
+        : null;
+      const tokens = new Set();
+
+      for (const user of Object.values(users)) {
+        if (!user || !user.fcmToken || !memberEmails.has(user.userEmail)) continue;
+        if (visibleEmails && !visibleEmails.has(user.userEmail)) continue;
+        tokens.add(user.fcmToken);
+      }
+
+      if (tokens.size === 0) return;
+
+      const action = isEdit ? "Updated" : "Created";
+      const eventType = isRepeating ? "repeating event" : "meeting";
+      const meetingSummary = `${action} ${eventType}: ${meeting.title || "Club Meeting"}`;
+      const dateTimeSummary = meetingDateTimeText(meeting);
+      const body = `${meetingSummary}\n${dateTimeSummary}`;
+      const tokenList = Array.from(tokens);
+      const sends = [];
+
+      for (let index = 0; index < tokenList.length; index += 500) {
+        sends.push(
+          admin.messaging().sendEachForMulticast({
+            tokens: tokenList.slice(index, index + 500),
+            notification: {
+              title: club.name || "Meeting Update",
+              body,
+            },
+            data: {
+              type: "meeting",
+              clubID,
+              clubName: club.name || "",
+              meetingTitle: meeting.title || "",
+              startTime: meeting.startTime || "",
+            },
+          })
+        );
+      }
+
+      return Promise.all(sends);
+    } catch (err) {
+      console.error("Error sending meeting notification:", err);
+    }
+  }
+);
