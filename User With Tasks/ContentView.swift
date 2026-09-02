@@ -42,6 +42,8 @@ struct ContentView: View {
     @State var tabChooserPageOpen = false
     @StateObject var chatTabHost = PersistentTabHostStore()
     @StateObject var calendarTabHost = PersistentTabHostStore()
+    
+    @State var firstCalendarAppearance = false
 
     var body: some View {
         VStack {
@@ -341,6 +343,8 @@ struct ContentView: View {
             _ = networkMonitor.isConnected
         }
         .onAppearOnce {
+            firstCalendarAppearance = false
+
             if viewModel.isGuestUser {
                 do {
                     try AuthenticationManager.shared.signOut()
@@ -368,7 +372,7 @@ struct ContentView: View {
                     clubs.append(loadedClub)
                 }
             }
-
+            
             setupClubsListener()
 
         }

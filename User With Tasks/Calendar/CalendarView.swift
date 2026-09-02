@@ -14,7 +14,7 @@ struct CalendarView: View {
     var screenHeight = appScreenBounds.height
 
     @State var selectedDate = Date()
-    @State var hasAppeared = false
+    @State var firstCalendarAppearance = false
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @State var offset: CGSize = .zero
@@ -74,8 +74,8 @@ struct CalendarView: View {
 
         }
         .onAppear {
-            guard !hasAppeared else { return }
-            hasAppeared = true
+            guard !firstCalendarAppearance else { return }
+            firstCalendarAppearance = true
             selectedDate = Date()
         }
     }
