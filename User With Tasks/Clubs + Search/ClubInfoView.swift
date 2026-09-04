@@ -23,6 +23,7 @@ struct ClubInfoView: View {
     @State var showAddMeeting = false
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
+    @ObservedObject var pendingEdits: ClubEditUndoStore
     @State var showIncompleteClubBanner = false
     @State var selectedLeaderEmail = ""
     @State var showLeaderMailComposer = false
@@ -53,6 +54,14 @@ struct ClubInfoView: View {
     )
     @State var mapEditorMode = false
     @State var pinPosition = CGPoint(x: 200.0, y: 200.0)
+
+    init(club: Club, viewModel: AuthenticationViewModel, userInfo: Binding<Personal?>) {
+        let edits = ClubEditPersistence.shared.store(for: club.clubID)
+        _club = State(initialValue: edits.pending?.after ?? club)
+        self.viewModel = viewModel
+        _userInfo = userInfo
+        pendingEdits = edits
+    }
 
     var body: some View {
         let clubLeader = isClubLeaderOrSuperAdmin(
@@ -169,6 +178,7 @@ struct ClubInfoView: View {
                                                 }
                                         }
                                     )
+                                    .id(club.abstract)
 
                                 if abstractGreaterThanFour {
                                     Text(
@@ -766,6 +776,7 @@ struct ClubInfoView: View {
                     Group {
                         if clubLeader {
                             Button {
+                                pendingEdits.pauseForEditing()
                                 DispatchQueue.main.asyncAfter(
                                     deadline: .now() + 0.01
                                 ) {
@@ -775,20 +786,24 @@ struct ClubInfoView: View {
                                 Image(systemName: "gear")
                                     .imageScale(.large)
                             }
+                            .disabled(pendingEdits.isSaving)
                             .sheet(isPresented: $showEditScreen) {
                                 CreateClubView(
                                     onClose: {
                                         showEditScreen = false
-                                        dropper(
-                                            title: "Club Edited!",
-                                            subtitle: club.name,
-                                            icon: UIImage(
-                                                systemName: "checkmark"
-                                            )
-                                        )
                                     },
                                     onValidationError: {
                                         showIncompleteClubInformationBanner()
+                                    },
+                                    onSubmitEdit: { before, after, photos in
+                                        updateDisplayedClub(after)
+                                        pendingEdits.stage(before: before, after: after, photos: photos) { edit in
+                                            do {
+                                                updateDisplayedClub(try edit.restoredClub(from: club))
+                                            } catch {
+                                                updateDisplayedClub(edit.before)
+                                            }
+                                        }
                                     },
                                     CreatedClub: club
                                 )
@@ -880,6 +895,27 @@ struct ClubInfoView: View {
                     .zIndex(10)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            ClubEditUndoBanner(edits: pendingEdits)
+        }
+        .onAppear {
+            if let edit = pendingEdits.pending {
+                updateDisplayedClub(edit.after)
+                pendingEdits.pending?.onRevert = { edit in
+                    updateDisplayedClub((try? edit.restoredClub(from: club)) ?? edit.before)
+                }
+            }
+        }
+        .onDisappear {
+            pendingEdits.pending?.onRevert = { _ in }
+            pendingEdits.resume()
+        }
+        .onChange(of: pendingEdits.recoveredClub) { _, updated in
+            if let updated { updateDisplayedClub(updated) }
+        }
+        .onChange(of: showEditScreen) { _, showing in
+            if !showing { pendingEdits.resume() }
+        }
         .sheet(isPresented: $showLeaderMailComposer) {
             MailView(
                 isShowing: $showLeaderMailComposer,
@@ -910,6 +946,11 @@ struct ClubInfoView: View {
             Text(leaderMailErrorMessage)
         }
         //    .background(colorFromClub(club.clubID).opacity(0.2))
+    }
+
+    func updateDisplayedClub(_ updated: Club) {
+        if club.abstract != updated.abstract { abstractExpanded = true }
+        club = updated
     }
 
     private func removeDeletedMeeting(

@@ -19,6 +19,7 @@ class AppDelegate: NSObject, UIApplicationDelegate,
 
         FirebaseApp.configure()
         Database.database().isPersistenceEnabled = true
+        ClubEditPersistence.shared.start()
 
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self

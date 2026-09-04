@@ -12,6 +12,15 @@ import SwiftUIX
 
 struct SearchClubView: View {
     @Binding var clubs: [Club]
+    @ObservedObject var clubEdits = ClubEditPersistence.shared
+
+    // Preview queued edits without changing the published club cache or fetching Firebase.
+    var displayedClubs: [Club] {
+        let edits = clubEdits.archive.edits.filter { $0.ownerID == Auth.auth().currentUser?.uid }
+        guard !edits.isEmpty else { return clubs }
+        let drafts = Dictionary(uniqueKeysWithValues: edits.map { ($0.after.clubID, $0.after) })
+        return clubs.map { drafts[$0.clubID] ?? $0 }
+    }
     @Binding var userInfo: Personal?
     var screenWidth = appScreenBounds.width
     var screenHeight = appScreenBounds.height
@@ -193,9 +202,7 @@ struct SearchClubView: View {
                                                         showClubInfoSheet = true
                                                     } label: {
                                                         ClubCard(
-                                                            club: clubs[
-                                                                infoRelativeIndex
-                                                            ],
+                                                            club: club,
                                                             screenWidth:
                                                                 screenWidth,
                                                             screenHeight:
@@ -387,7 +394,7 @@ struct SearchClubView: View {
 
                                     }
                                     .overlay {
-                                        if let chosenClub = clubs.first(where: {
+                                        if let chosenClub = displayedClubs.first(where: {
                                             scales[$0.clubID] == 1.5
                                         }) {
                                             ClubCard(
@@ -498,67 +505,6 @@ struct SearchClubView: View {
                                             }
                                         }
                                     }
-                                    .onChange(of: clubs) { oldClubs, newClubs in
-                                        guard
-                                            let userEmail = viewModel.userEmail
-                                        else { return }
-
-                                        let userWasAdded = newClubs.contains {
-                                            newClub in
-                                            if let oldClub = oldClubs.first(
-                                                where: {
-                                                    $0.clubID == newClub.clubID
-                                                })
-                                            {
-                                                return
-                                                    (!oldClub.members.contains(
-                                                        userEmail
-                                                    )
-                                                    && newClub.members.contains(
-                                                        userEmail
-                                                    ))
-                                                    || (!oldClub.leaders
-                                                        .contains(userEmail)
-                                                        && newClub.leaders
-                                                            .contains(userEmail))
-                                            } else {
-                                                return false
-                                            }
-                                        }
-
-                                        let userWasRemoved = newClubs.contains {
-                                            newClub in
-                                            if let oldClub = oldClubs.first(
-                                                where: {
-                                                    $0.clubID == newClub.clubID
-                                                })
-                                            {
-                                                return
-                                                    (oldClub.members.contains(
-                                                        userEmail
-                                                    )
-                                                    && !newClub.members
-                                                        .contains(userEmail))
-                                                    || (oldClub.leaders
-                                                        .contains(userEmail)
-                                                        && !newClub.leaders
-                                                            .contains(userEmail))
-                                            } else {
-                                                return false
-                                            }
-                                        }
-
-                                        if userWasAdded || userWasRemoved {
-                                            loadingClubs = true
-                                            DispatchQueue.main.asyncAfter(
-                                                deadline: .now() + 1
-                                            ) {
-                                                filteredItems =
-                                                    calculateFiltered()
-                                                loadingClubs = false
-                                            }
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -595,6 +541,13 @@ struct SearchClubView: View {
                 //.animation(.smooth())
                 .closeOnTapOutside(false)
                 .closeOnTap(false)
+        }
+        .task(id: displayedClubs) {
+            loadingClubs = true
+            do { try await Task.sleep(for: .seconds(1)) }
+            catch { return }
+            filteredItems = calculateFiltered()
+            loadingClubs = false
         }
         .onChange(of: sharedGenre) {
             if !sharedGenre.isEmpty {
@@ -637,7 +590,7 @@ struct SearchClubView: View {
         loadingClubs = true
         if searchText.isEmpty {
             return
-                clubs
+                displayedClubs
                 .filter { club in
                     if let genres = club.genres {
                         return selectedGenres.allSatisfy { keyword in
@@ -666,7 +619,7 @@ struct SearchClubView: View {
                 }
         } else {
             return
-                clubs
+                displayedClubs
                 .filter { club in
                     if let genres = club.genres {
                         return selectedGenres.allSatisfy { keyword in

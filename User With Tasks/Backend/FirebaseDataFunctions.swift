@@ -6,7 +6,7 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-func addClub(club: Club) {
+func addClub(club: Club, onSaved: (@MainActor (Error?) -> Void)? = nil) {
     let reference = Database.database().reference()
     let clubReference = reference.child("clubs").child(club.clubID)
 
@@ -21,13 +21,21 @@ func addClub(club: Club) {
             Task {
                 do {
                     try await setFirebaseValue(dictionary, at: clubReference)
+                    await onSaved?(nil)
                 } catch {
                     print("Error saving club data: \(error)")
+                    await onSaved?(error)
                 }
             }
+        } else {
+            throw EncodingError.invalidValue(
+                clubToSave,
+                .init(codingPath: [], debugDescription: "Club data must encode as an object.")
+            )
         }
     } catch {
         print("Error encoding club data: \(error)")
+        Task { await onSaved?(error) }
     }
 }
 

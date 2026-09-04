@@ -10,6 +10,7 @@ import SwiftUI
 import SwiftUIX
 
 struct ClubCard: View {
+    var sourceClub: Club
     @State var club: Club
     @State var screenWidth: CGFloat
     @State var screenHeight: CGFloat
@@ -20,6 +21,18 @@ struct ClubCard: View {
     @State var youSureYouWantToLeave = false
     @Binding var selectedGenres: [String]
     @AppStorage("darkMode") var darkMode = false
+
+    init(club: Club, screenWidth: CGFloat, screenHeight: CGFloat, imageScaler: Double, viewModel: AuthenticationViewModel, shownInfo: Int = -1, userInfo: Binding<Personal?>, selectedGenres: Binding<[String]>) {
+        sourceClub = club
+        _club = State(initialValue: club)
+        _screenWidth = State(initialValue: screenWidth)
+        _screenHeight = State(initialValue: screenHeight)
+        _imageScaler = State(initialValue: imageScaler)
+        _viewModel = State(initialValue: viewModel)
+        _shownInfo = AppStorage(wrappedValue: shownInfo, "shownInfo")
+        _userInfo = userInfo
+        _selectedGenres = selectedGenres
+    }
 
     var body: some View {
         let clubColor = Color(
@@ -354,6 +367,10 @@ struct ClubCard: View {
             maxHeight: screenHeight / 5
         )
         .implicitAnimation(.snappy)
+        .onChange(of: sourceClub) {
+            // Keep optimistic Join/Leave changes until the parent supplies a new club.
+            club = sourceClub
+        }
     }
 
     func refreshUserInfo() {
