@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isOwner(userID) { return signedIn() && request.auth.uid == userID; }
+    function isChatJPEGUpload() {
+      return request.resource != null
+        && request.resource.contentType == "image/jpeg"
+        && request.resource.size < 2 * 1024 * 1024;
+    }
+    match /chatImages/{chatID}/{userID}/{imageID} {
+      allow read: if signedIn();
+      allow write: if isOwner(userID) && (
+        (resource == null && isChatJPEGUpload() && imageID.matches(".*\\.jpg"))
+        || (resource != null && request.resource == null)
+      );
+    }
+    match /clubPhotos/{clubID}/{imageID} {
+      // Existing photos remain readable, but their paths do not identify an owner.
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /clubPhotos/{clubID}/{userID}/{imageID} {
+      allow read: if signedIn();
+      allow write: if isOwner(userID) && (
+        (resource == null && isChatJPEGUpload() && imageID.matches(".*\\.jpg"))
+        || (resource != null && request.resource == null)
+      );
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

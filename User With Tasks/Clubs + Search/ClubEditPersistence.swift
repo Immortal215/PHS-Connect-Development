@@ -148,14 +148,18 @@ final class ClubEditPersistence: ObservableObject {
                     guard Auth.auth().currentUser?.uid == owner else { return }
                     // Never accept paths outside the app's club-photo folder from disk.
                     let parts = path.split(separator: "/", omittingEmptySubsequences: false)
-                    guard parts.count == 3, parts[0] == "clubPhotos",
-                        parts.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }), parts[2].hasSuffix(".jpg")
-                    else { continue }
+                    let canDelete = parts.count == 4 && parts[0] == "clubPhotos"
+                        && parts[2] == owner
+                        && parts.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." })
+                        && parts[3].hasSuffix(".jpg")
                     do {
-                        do {
-                            try await Storage.storage().reference().child(path).delete()
-                        } catch {
-                            guard (error as NSError).code == StorageErrorCode.objectNotFound.rawValue else { throw error }
+                        // Other owners' and legacy photos stay in Storage; discard only the cleanup job.
+                        if canDelete {
+                            do {
+                                try await Storage.storage().reference().child(path).delete()
+                            } catch {
+                                guard (error as NSError).code == StorageErrorCode.objectNotFound.rawValue else { throw error }
+                            }
                         }
                         var updated = archive
                         if let index = updated.cleanups.firstIndex(where: { $0.id == cleanup.id }) {

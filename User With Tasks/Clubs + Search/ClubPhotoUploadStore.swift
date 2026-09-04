@@ -64,14 +64,15 @@ final class ClubPhotoUploadStore: ObservableObject {
 
     func uploadImage(clubID: String, onUploaded: @escaping (String) -> Void) {
         guard isActive, !isUploading, let pendingUpload else { return }
-        guard Auth.auth().currentUser != nil, !clubID.isEmpty else {
+        guard let userID = Auth.auth().currentUser?.uid, !clubID.isEmpty else {
             error = "Sign in before uploading a club photo."
             return
         }
 
         isUploading = true
         error = nil
-        let path = "clubPhotos/\(clubID)/\(UUID().uuidString).jpg"
+        ownerID = userID
+        let path = "clubPhotos/\(clubID)/\(userID)/\(UUID().uuidString).jpg"
         let reference = Storage.storage().reference().child(path)
         let metadata = StorageMetadata()
         metadata.contentType = "image/jpeg"
@@ -157,9 +158,9 @@ func clubPhotoStoragePath(from value: String?, bucket: String) -> String? {
     else { return nil }
 
     let parts = path.split(separator: "/", omittingEmptySubsequences: false)
-    guard parts.count == 3, parts[0] == "clubPhotos",
+    guard (parts.count == 3 || parts.count == 4), parts[0] == "clubPhotos",
         parts.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }),
-        parts[2].hasSuffix(".jpg")
+        parts.last?.hasSuffix(".jpg") == true
     else { return nil }
     return path
 }
