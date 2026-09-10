@@ -6,9 +6,21 @@ struct EditDeck: View {
     @Binding var isEditing: Bool
     @Binding var deck: Deck
     @State var cardsCopy = ""
+    @Environment(\.appViewportSize) var viewportSize
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && viewportSize.width >= 900
+            && viewportSize.width > viewportSize.height
+    }
+
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
 
     var body: some View {
-        VStack(spacing: 12) {
+        ScrollView {
+            VStack(spacing: 12) {
             TextField("Title", text: $deck.title)
                 .multilineTextAlignment(.center)
                 .font(.title)
@@ -27,65 +39,32 @@ struct EditDeck: View {
 
                 Text("\(deck.targetDays) days")
             }
-            .padding(.horizontal, 80)
+            .padding(
+                .horizontal,
+                usesLegacyWideIPadLayout ? 80 : 16
+            )
 
-            HStack(spacing: 16) {
-                Button {
-                    let newCard = Card(
-                        id: UUID(),
-                        front: "",
-                        back: "",
-                        intervalDays: 0,
-                        due: Date(),
-                        ease: 2.3,
-                        lapses: 0
-                    )
-                    deck.cards.append(newCard)
-                } label: {
-                    Text("+ Add Card")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) {
+                    addCardButton
+                    copyCardsButton
+                    pasteCardsButton
                 }
 
-                Button {
-                    cardsCopy = ""
-                    for card in deck.cards {
-                        cardsCopy += "/\(card.front)/:/\(card.back)/,"
-                    }
-                    UIPasteboard.general.string = cardsCopy
-                } label: {
-                    Text("Copy all cards")
+                VStack(alignment: .leading, spacing: 10) {
+                    addCardButton
+                    copyCardsButton
+                    pasteCardsButton
+                    Text("Paste format: term/:/definition/,/term/:/definition")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-
-                Button {
-                    guard let cardsPaste = UIPasteboard.general.string else {
-                        return
-                    }
-                    let rawCards = cardsPaste.components(separatedBy: "/,/").map
-                    { String($0) }
-                    for raw in rawCards {
-                        var trimmed = raw.trimmingPrefix("/")
-                        if trimmed.hasSuffix("/,") {
-                            trimmed = trimmed.dropLast(2)
-                        }
-                        let parts = trimmed.components(separatedBy: "/:/")
-                        guard parts.count == 2 else { continue }
-                        let newCard = Card(
-                            id: UUID(),
-                            front: parts[0],
-                            back: parts[1],
-                            intervalDays: 0,
-                            due: Date(),
-                            ease: 2.3,
-                            lapses: 0
-                        )
-                        deck.cards.append(newCard)
-                    }
-                } label: {
-                    Text(
-                        "Paste new cards from clipboard in the following format (term/:/definition/,/term/:/definition/,/term/:/definition...)"
-                    )
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding()
+            .buttonStyle(.bordered)
+            .padding(.horizontal, usesPhoneLayout ? 16 : 24)
+            .padding(.vertical, 8)
 
             Button {
                 if deck.cards.isEmpty {
@@ -98,10 +77,13 @@ struct EditDeck: View {
 
                 save(deck)
             } label: {
-                Text("Save Deck")
+                Label("Save Deck", systemImage: "checkmark")
+                    .frame(maxWidth: usesPhoneLayout ? .infinity : nil)
             }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal, 16)
 
-            ScrollView {
+            Group {
                 LazyVStack {
                     ForEach($deck.cards) { $card in
                         HStack {
@@ -125,13 +107,80 @@ struct EditDeck: View {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(.secondary.opacity(0.3))
                         }
-                        .padding(.horizontal, 60)
+                        .padding(
+                            .horizontal,
+                            usesLegacyWideIPadLayout ? 60 : 16
+                        )
                     }
                 }
                 .padding(.bottom, 40)
             }
         }
-        .padding(.top, 40)
+            .padding(.top, usesLegacyWideIPadLayout ? 40 : 16)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .appPresentationSizing()
+    }
+
+    var addCardButton: some View {
+        Button {
+            let newCard = Card(
+                id: UUID(),
+                front: "",
+                back: "",
+                intervalDays: 0,
+                due: Date(),
+                ease: 2.3,
+                lapses: 0
+            )
+            deck.cards.append(newCard)
+        } label: {
+            Label("Add Card", systemImage: "plus")
+                .frame(maxWidth: usesPhoneLayout ? .infinity : nil)
+        }
+    }
+
+    var copyCardsButton: some View {
+        Button {
+            cardsCopy = deck.cards
+                .map { "/\($0.front)/:/\($0.back)/," }
+                .joined()
+            UIPasteboard.general.string = cardsCopy
+        } label: {
+            Label("Copy Cards", systemImage: "doc.on.doc")
+                .frame(maxWidth: usesPhoneLayout ? .infinity : nil)
+        }
+    }
+
+    var pasteCardsButton: some View {
+        PasteButton(payloadType: String.self) { strings in
+            guard let cardsPaste = strings.first else { return }
+            pasteCards(from: cardsPaste)
+        }
+        .labelStyle(.titleAndIcon)
+        .frame(maxWidth: usesPhoneLayout ? .infinity : nil)
+    }
+
+    func pasteCards(from cardsPaste: String) {
+        let rawCards = cardsPaste.components(separatedBy: "/,/")
+        for raw in rawCards {
+            var trimmed = raw.trimmingPrefix("/")
+            if trimmed.hasSuffix("/,") {
+                trimmed = trimmed.dropLast(2)
+            }
+            let parts = trimmed.components(separatedBy: "/:/")
+            guard parts.count == 2 else { continue }
+            let newCard = Card(
+                id: UUID(),
+                front: "\(parts[0])",
+                back: parts[1],
+                intervalDays: 0,
+                due: Date(),
+                ease: 2.3,
+                lapses: 0
+            )
+            deck.cards.append(newCard)
+        }
     }
 
     func save(_ deck: Deck) {

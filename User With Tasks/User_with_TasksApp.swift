@@ -121,10 +121,12 @@ struct User_with_TasksApp: App {
                     .accentColor(.blue)
                     .transition(.opacity)
             } else {
-                Start()
-                    .preferredColorScheme(.dark)
-                    .accentColor(.cyan)
-                    .transition(.opacity)
+                AdaptiveViewport {
+                    Start()
+                        .preferredColorScheme(.dark)
+                        .accentColor(.cyan)
+                        .transition(.opacity)
+                }
             }
         }
     }

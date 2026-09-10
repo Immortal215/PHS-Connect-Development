@@ -26,7 +26,6 @@ struct SettingsView: View {
     @ObservedObject var changeLogViewModel = ChangelogViewModel()
     @AppStorage("mostRecentVersionSeen") var mostRecentVersionSeen =
         "0.1.0 Alpha"
-    var screenHeight = appScreenBounds.height
     @State var isNewChangeLogShown = false
     @State var recentVersionForChangelogLibrary: Changelog = Changelog.init(
         version: "0.1.0 Alpha",
@@ -45,21 +44,36 @@ struct SettingsView: View {
     @State var globalChatsRef: DatabaseReference?
     @State var globalChatsHandle: DatabaseHandle?
     @State var isSavingGlobalChatsSetting = false
+    @Environment(\.appViewportSize) var viewportSize
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && viewportSize.width >= 900
+            && viewportSize.width > viewportSize.height
+    }
+
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
 
     var isSuperAdmin: Bool {
         isSuperAdminEmail(viewModel.userEmail ?? userInfo?.userEmail)
     }
 
     var body: some View {
-        VStack {
-            HStack(alignment: .top) {
+        ScrollView {
+            VStack {
+            HStack(alignment: .top, spacing: usesPhoneLayout ? 12 : 8) {
                 if !viewModel.isGuestUser {
                     WebImage(url: URL(string: viewModel.userImage ?? "")) {
                         image in
                         image
                             .resizable()
                             .clipShape(RoundedRectangle(cornerRadius: 25))
-                            .frame(width: 100, height: 100)
+                            .frame(
+                                width: usesPhoneLayout ? 84 : 100,
+                                height: usesPhoneLayout ? 84 : 100
+                            )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 25).stroke(
                                     lineWidth: 5
@@ -70,9 +84,12 @@ struct SettingsView: View {
                             RoundedRectangle(cornerRadius: 25).stroke(.gray)
                             ProgressView("Loading...")
                         }
-                        .frame(width: 100, height: 100)
+                        .frame(
+                            width: usesPhoneLayout ? 84 : 100,
+                            height: usesPhoneLayout ? 84 : 100
+                        )
                     }
-                    .padding(.trailing)
+                    .padding(.trailing, usesPhoneLayout ? 0 : 16)
                     .onTapGesture(count: 5) {
                         debugTools.toggle()
                     }
@@ -80,12 +97,17 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading) {
                     Text(viewModel.userName ?? "No name")
-                        .font(.largeTitle)
+                        .font(usesPhoneLayout ? .title2 : .largeTitle)
                         .bold()
+                        .lineLimit(2)
 
                     Text(viewModel.userEmail ?? "No Email")
+                        .font(usesPhoneLayout ? .footnote : .body)
+                        .lineLimit(usesPhoneLayout ? 1 : nil)
+                        .minimumScaleFactor(0.82)
 
                     Text("\(viewModel.userType ?? "User Type Not Found")")
+                        .font(usesPhoneLayout ? .subheadline : .body)
                 }
 
                 Spacer()
@@ -163,8 +185,11 @@ struct SettingsView: View {
                 .padding(.top, 8)
             }
 
-            Button {
-            } label: {
+            if usesPhoneLayout {
+                phoneSettingsControls
+            } else {
+                Button {
+                } label: {
                 HStack(spacing: 16) {
                     VStack {
                         CustomToggleSwitch(
@@ -257,7 +282,10 @@ struct SettingsView: View {
                             }
                             .padding()
                         }
-                        .fixedSize()
+                        .fixedSize(
+                            horizontal: usesLegacyWideIPadLayout,
+                            vertical: true
+                        )
                         .foregroundColor(.blue)
                     }
 
@@ -286,7 +314,7 @@ struct SettingsView: View {
                         }
                         .foregroundColor(.blue)
                     }
-                    .sheet(isPresented: $isChangelogShown) {
+                    .appSheet(isPresented: $isChangelogShown) {
                         ChangelogSheetView(
                             currentVersion: changeLogViewModel.currentVersion,
                             history: changeLogViewModel.history
@@ -295,10 +323,16 @@ struct SettingsView: View {
                         .cornerRadius(25)
 
                     }
-                    .fixedSize()
+                    .fixedSize(
+                        horizontal: usesLegacyWideIPadLayout,
+                        vertical: true
+                    )
 
                     FeatureReportButton(uid: viewModel.uid ?? "None")
-                        .fixedSize()
+                        .fixedSize(
+                            horizontal: usesLegacyWideIPadLayout,
+                            vertical: true
+                        )
 
                     Button {
                         do {
@@ -327,12 +361,17 @@ struct SettingsView: View {
                         }
                         .foregroundColor(.red)
                     }
-                    .fixedSize()
+                    .fixedSize(
+                        horizontal: usesLegacyWideIPadLayout,
+                        vertical: true
+                    )
 
                 }
-                .frame(height: 30)
+                .frame(minHeight: usesLegacyWideIPadLayout ? nil : 44)
+                .frame(height: usesLegacyWideIPadLayout ? 30 : nil)
+                }
+                .padding()
             }
-            .padding()
 
             Spacer()
 
@@ -353,6 +392,7 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
             }
             .padding()
+        }
         }
         .onAppear {
             startGlobalChatsListener()
@@ -393,13 +433,240 @@ struct SettingsView: View {
         .onChange(of: isNewChangeLogShown) { old, new in
             if old == true && new == false {  // onDismis dont work for some reason with this libary
                 mostRecentVersionSeen =
-                    changeLogViewModel.currentVersion.version
+                changeLogViewModel.currentVersion.version
             }
         }
-        .frame(maxHeight: screenHeight - screenHeight / 6 - 36)
+        .frame(
+            maxHeight: usesLegacyWideIPadLayout
+                ? viewportSize.height - viewportSize.height / 6 - 36
+                : nil
+        )
         .padding()
         .background(Color.systemGray6.cornerRadius(15).padding())
 
+    }
+
+    var phoneSettingsControls: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Appearance")
+                    .font(.title3.bold())
+
+                Text("Choose how PHS Connect looks and moves on this device.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(spacing: 0) {
+                phoneSettingRow(
+                    title: "Follow device appearance",
+                    detail: "Automatically match your iPhone's light or dark mode.",
+                    systemImage: "circle.lefthalf.filled"
+                ) {
+                    CustomToggleSwitch(
+                        boolean: $autoBuffer,
+                        colors: [.gray, .green],
+                        images: ["lightbulb.slash", "sun.dust"]
+                    )
+                    .onChange(of: autoBuffer) { _, newValue in
+                        debounceCancellable?.cancel()
+                        debounceCancellable = Just(newValue)
+                            .delay(
+                                for: .milliseconds(300),
+                                scheduler: DispatchQueue.main
+                            )
+                            .sink { finalValue in
+                                autoColorScheme = !finalValue
+                            }
+                    }
+                    .onChange(of: colorScheme) {
+                        if autoColorScheme {
+                            darkMode = (colorScheme == .dark)
+                        }
+                    }
+                }
+
+                Divider().padding(.leading, 48)
+
+                phoneSettingRow(
+                    title: "Dark mode",
+                    detail: autoColorScheme
+                        ? "Turn off automatic appearance to change this."
+                        : "Use PHS Connect's dark appearance.",
+                    systemImage: "moon.fill"
+                ) {
+                    CustomToggleSwitch(
+                        boolean: $darkModeBuffer,
+                        enabled: !autoColorScheme,
+                        colors: [
+                            autoColorScheme ? .gray : .purple,
+                            autoColorScheme ? .gray : .yellow,
+                        ],
+                        images: ["moon.fill", "sun.max.fill"]
+                    )
+                    .onChange(of: darkModeBuffer) { _, newValue in
+                        debounceCancellable?.cancel()
+                        debounceCancellable = Just(newValue)
+                            .delay(
+                                for: .milliseconds(300),
+                                scheduler: DispatchQueue.main
+                            )
+                            .sink { finalValue in
+                                if !autoColorScheme {
+                                    darkMode = finalValue
+                                }
+                            }
+                    }
+                }
+
+                Divider().padding(.leading, 48)
+
+                phoneSettingRow(
+                    title: "Animations",
+                    detail: animationsPlus
+                        ? "Enhanced animations are enabled."
+                        : "Basic animations are enabled.",
+                    systemImage: "sparkles"
+                ) {
+                    CustomToggleSwitch(
+                        boolean: $animationsPlusBuffer,
+                        colors: [.blue, .orange],
+                        images: ["star.fill", "star.slash.fill"]
+                    )
+                    .onChange(of: animationsPlusBuffer) { _, _ in
+                        animationsPlus = animationsPlusBuffer
+                    }
+                }
+            }
+            .background(Color.systemBackground, in: RoundedRectangle(cornerRadius: 16))
+
+            VStack(spacing: 10) {
+                Button {
+                    openToDo = true
+                } label: {
+                    phoneActionLabel(
+                        title: "Drawing Board",
+                        detail: "Open your notes and drawing space.",
+                        systemImage: "square.and.pencil",
+                        color: .teal
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    mostRecentVersionSeen =
+                        changeLogViewModel.currentVersion.version
+                    isChangelogShown.toggle()
+                } label: {
+                    phoneActionLabel(
+                        title: "Release Notes",
+                        detail: "See what changed in this version.",
+                        systemImage: "arrow.up.circle",
+                        color: .blue
+                    )
+                }
+                .buttonStyle(.plain)
+                .appSheet(isPresented: $isChangelogShown) {
+                    ChangelogSheetView(
+                        currentVersion: changeLogViewModel.currentVersion,
+                        history: changeLogViewModel.history
+                    )
+                    .fontDesign(.monospaced)
+                    .cornerRadius(25)
+                }
+
+                FeatureReportButton(
+                    uid: viewModel.uid ?? "None",
+                    fillsWidth: true
+                )
+
+                Button(action: signOut) {
+                    phoneActionLabel(
+                        title: "Log Out",
+                        detail: "Return to the sign-in screen.",
+                        systemImage: "rectangle.portrait.and.arrow.right",
+                        color: .red
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+    }
+
+    func phoneSettingRow<Accessory: View>(
+        title: String,
+        detail: String,
+        systemImage: String,
+        @ViewBuilder accessory: () -> Accessory
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.headline)
+                .foregroundStyle(.blue)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+            accessory()
+        }
+        .padding(14)
+    }
+
+    func phoneActionLabel(
+        title: String,
+        detail: String,
+        systemImage: String,
+        color: Color
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(color)
+                .frame(width: 34, height: 34)
+                .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(color == .red ? Color.red : Color.primary)
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.systemBackground, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    func signOut() {
+        do {
+            try AuthenticationManager.shared.signOut()
+            userEmail = nil
+            userName = nil
+            userImage = nil
+            userType = nil
+            uid = nil
+            userInfo = nil
+            showSignInView = true
+        } catch {
+            print("Error signing out: \(error.localizedDescription)")
+        }
     }
 
     func startGlobalChatsListener() {

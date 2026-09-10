@@ -23,6 +23,10 @@ struct FlowingScheduleView: View {
     @State var showSchoolScheduleEditor = false
     @State var openEditorAfterScheduleDismissal = false
 
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -55,10 +59,10 @@ struct FlowingScheduleView: View {
                         dragOffset: $dragOffset,
                         onMeetingTap: handleMeetingTap
                     )
-                    .onAppearOnce {
+                    .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01)
                         {  // need this otherwise it will scroll before the calendar is made so it wont do anything
-                            proxy.scrollTo(calendarScrollPoint, anchor: .top)  // scroll to 6 am
+                            proxy.scrollTo(scrollTargetHour, anchor: .top)
                         }
                     }
                 }
@@ -76,27 +80,7 @@ struct FlowingScheduleView: View {
                     }
                 )
                 .onChange(of: selectedDate) {
-                    let timelineStarts =
-                        meetings
-                        .map { dateFromString($0.startTime) }
-                    let schoolStarts =
-                        schoolEvents
-                        .compactMap { $0.startDate }
-                        .filter {
-                            Calendar.current.isDate(
-                                $0,
-                                inSameDayAs: selectedDate
-                            )
-                        }
-                    let earliestStart = (timelineStarts + schoolStarts).min()
-                    let targetHour =
-                        earliestStart.map {
-                            max(
-                                Calendar.current.component(.hour, from: $0) - 1,
-                                0
-                            )
-                        } ?? calendarScrollPoint
-                    proxy.scrollTo(targetHour, anchor: .top)
+                    proxy.scrollTo(scrollTargetHour, anchor: .top)
                 }
                 .gesture(
                     DragGesture()
@@ -120,7 +104,15 @@ struct FlowingScheduleView: View {
                     meetingInfo = false
                     refreshMeetings()
                 }
-                .popup(isPresented: $meetingInfo) {
+                .appSheet(
+                    isPresented: phoneMeetingInfoPresented,
+                    onDismiss: refreshMeetings
+                ) {
+                    selectedMeetingInfo
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.visible)
+                }
+                .popup(isPresented: ipadMeetingInfoPresented) {
                     if let selectedMeeting = selectedMeeting {
                         MeetingInfoView(
                             meeting: selectedMeeting,
@@ -146,7 +138,7 @@ struct FlowingScheduleView: View {
                 }
             }
         }
-        .sheet(
+        .appSheet(
             isPresented: $showSchoolScheduleSheet,
             onDismiss: {
                 guard openEditorAfterScheduleDismissal else { return }
@@ -172,7 +164,7 @@ struct FlowingScheduleView: View {
             }
             .presentationDetents([.large])
         }
-        .sheet(isPresented: $showSchoolScheduleEditor) {
+        .appSheet(isPresented: $showSchoolScheduleEditor) {
             SchoolScheduleEditorView(config: schoolScheduleStore.config) {
                 updatedConfig in
                 await schoolScheduleStore.save(updatedConfig)
@@ -208,9 +200,58 @@ struct FlowingScheduleView: View {
         }
     }
 
+    var scrollTargetHour: Int {
+        let timelineStarts = meetings.map { dateFromString($0.startTime) }
+        let schoolStarts = schoolEvents
+            .compactMap(\.startDate)
+            .filter { Calendar.current.isDate($0, inSameDayAs: selectedDate) }
+        let earliestStart = (timelineStarts + schoolStarts).min()
+
+        return earliestStart.map {
+            max(
+                Calendar.current.component(.hour, from: $0)
+                    - (usesPhoneLayout ? 2 : 1),
+                0
+            )
+        } ?? calendarScrollPoint
+    }
+
     func handleMeetingDeleted(_: Bool) {
         selectedMeeting = nil
         meetingInfo = false
         refreshMeetings()
+    }
+
+    var phoneMeetingInfoPresented: Binding<Bool> {
+        Binding(
+            get: { usesPhoneLayout && meetingInfo },
+            set: { presented in
+                meetingInfo = presented
+                if !presented {
+                    selectedMeeting = nil
+                }
+            }
+        )
+    }
+
+    var ipadMeetingInfoPresented: Binding<Bool> {
+        Binding(
+            get: { !usesPhoneLayout && meetingInfo },
+            set: { meetingInfo = $0 }
+        )
+    }
+
+    @ViewBuilder
+    var selectedMeetingInfo: some View {
+        if let selectedMeeting {
+            MeetingInfoView(
+                meeting: selectedMeeting,
+                clubs: clubs,
+                viewModel: viewModel,
+                selectedDate: selectedDate,
+                userInfo: $userInfo,
+                onDelete: handleMeetingDeleted
+            )
+        }
     }
 }

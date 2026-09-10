@@ -17,50 +17,22 @@ struct DeckView: View {
     @State var studySelect = false
     @State var deckToDelete: String = ""
 
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
                 Text("Your Decks")
                     .font(.largeTitle)
 
-                HStack(spacing: 16) {
-                    Button {
-                        let id = UUID()
-                        editedDeck = Deck(
-                            id: id,
-                            targetDays: 14,
-                            startDate: today,
-                            title: "New Deck",
-                            cards: []
-                        )
-                        decks.append(editedDeck)
-                        cachedDeckIDs += "\(id),"
-                        editingDeck = true
-                    } label: {
-                        Text("+ New Deck")
-                    }
-                    .disabled(studySelect)
-
-                    if studySelect {
-                        NavigationLink("Start Studying") {
-                            StudyView(allDecks: decks)
-                        }
-                        .disabled(!decks.contains(where: { $0.selected }))
-
-                        Button {
-                            studySelect = false
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                    } else {
-                        Button {
-                            studySelect.toggle()
-                        } label: {
-                            Text("Select Decks for Casual Study")
-                        }
-                        .disabled(decks.isEmpty)
-                    }
+                ViewThatFits(in: .horizontal) {
+                    deckActionButtons(horizontal: true)
+                    deckActionButtons(horizontal: false)
                 }
+                .buttonStyle(.bordered)
+                .padding(.horizontal, 16)
 
                 ScrollView(.vertical) {
                     LazyVStack {
@@ -142,7 +114,7 @@ struct DeckView: View {
                     .padding()
                 }
             }
-            .sheet(isPresented: $editingDeck) {
+            .appSheet(isPresented: $editingDeck) {
                 EditDeck(
                     decks: $decks,
                     isEditing: $editingDeck,
@@ -159,6 +131,65 @@ struct DeckView: View {
             }
 
             studySelect = false
+        }
+    }
+
+    @ViewBuilder
+    func deckActionButtons(horizontal: Bool) -> some View {
+        let content = Group {
+            Button {
+                let id = UUID()
+                editedDeck = Deck(
+                    id: id,
+                    targetDays: 14,
+                    startDate: today,
+                    title: "New Deck",
+                    cards: []
+                )
+                decks.append(editedDeck)
+                cachedDeckIDs += "\(id),"
+                editingDeck = true
+            } label: {
+                Label("New Deck", systemImage: "plus")
+                    .frame(maxWidth: horizontal ? nil : .infinity)
+            }
+            .disabled(studySelect)
+
+            if studySelect {
+                NavigationLink {
+                    StudyView(allDecks: decks)
+                } label: {
+                    Label("Start Studying", systemImage: "play.fill")
+                        .frame(maxWidth: horizontal ? nil : .infinity)
+                }
+                .disabled(!decks.contains(where: { $0.selected }))
+
+                Button {
+                    studySelect = false
+                } label: {
+                    Label("Cancel Selection", systemImage: "xmark")
+                        .frame(maxWidth: horizontal ? nil : .infinity)
+                }
+            } else {
+                Button {
+                    studySelect.toggle()
+                } label: {
+                    Label("Casual Study", systemImage: "rectangle.stack")
+                        .frame(maxWidth: horizontal ? nil : .infinity)
+                }
+                .disabled(decks.isEmpty)
+            }
+        }
+
+        if horizontal {
+            HStack(spacing: 16) {
+                content
+            }
+        } else {
+            VStack(spacing: 10) {
+                content
+            }
+            .frame(maxWidth: .infinity)
         }
     }
 

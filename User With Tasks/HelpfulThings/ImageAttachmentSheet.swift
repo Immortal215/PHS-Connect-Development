@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftUIX
 
 struct ImageAttachmentSheet: View {
+    @Environment(\.appViewportSize) var parentViewportSize
     @Binding var attachmentURL: String
     @Binding var attachmentLoaded: Bool
     @Binding var selectedPhotoItem: PhotosPickerItem?
@@ -10,16 +11,36 @@ struct ImageAttachmentSheet: View {
     var isUploadingAttachment: Bool
     var canAcceptMoreAttachments: Bool
     var uploadError: String?
-    var screenWidth: CGFloat = appScreenBounds.width
-    var screenHeight: CGFloat = appScreenBounds.height
+    var screenWidth: CGFloat { presentationSize.width }
+    var screenHeight: CGFloat { presentationSize.height }
     var title = "Paste Attachment URL"
     var confirmURL: (String) -> Void
     var pasteImageFromClipboard: () -> Void
     var cancelPendingUpload: () -> Void
     var uploadPendingImage: () -> Void
 
+    @State var presentationSize = CGSize(width: 390, height: 600)
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && parentViewportSize.width >= 900
+            && parentViewportSize.width > parentViewportSize.height
+    }
+
     var body: some View {
-        VStack {
+        GeometryReader { geometry in
+            presentationContent
+                .environment(\.appViewportSize, geometry.size)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
+        .appPresentationSizing()
+    }
+
+    @ViewBuilder
+    var presentationContent: some View {
+        ScrollView {
+            VStack {
             Text(title)
                 .padding()
 
@@ -27,8 +48,15 @@ struct ImageAttachmentSheet: View {
             imageUploadControls
             attachmentSheetPreview
             uploadErrorView
+            }
+            .frame(maxWidth: .infinity)
         }
-        .presentationDetents([.height(0.5 * screenHeight + 230)])
+        .scrollDismissesKeyboard(.interactively)
+        .presentationDetents(
+            usesLegacyWideIPadLayout
+                ? [.height(0.5 * parentViewportSize.height + 230)]
+                : [.medium, .large]
+        )
         .presentationBackground {
             GlassBackground(color: .clear)
         }

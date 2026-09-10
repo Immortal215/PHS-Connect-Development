@@ -61,7 +61,6 @@ struct SchoolScheduleTimelineEventView: View {
     let event: SchoolScheduleEvent
     let scale: Double
     let hourHeight: CGFloat
-    var screenWidth = appScreenBounds.width
     @AppStorage("darkMode") var darkMode = false
     
     var body: some View {
@@ -109,9 +108,9 @@ struct SchoolScheduleTimelineEventView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .frame(maxWidth: screenWidth / 1.1 - 20, maxHeight: duration, alignment: .topLeading)
+                    .frame(maxWidth: max(0, geometry.size.width - 20), maxHeight: duration, alignment: .topLeading)
                 }
-                .frame(maxWidth: screenWidth / 1.1, maxHeight: duration, alignment: .topLeading)
+                .frame(maxWidth: geometry.size.width, maxHeight: duration, alignment: .topLeading)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -119,7 +118,7 @@ struct SchoolScheduleTimelineEventView: View {
             }
             .saturation(darkMode ? 1.3 : 1.0)
             .brightness(darkMode ? 0.15 : 0.0)
-            .frame(width: screenWidth / 1.1, height: duration)
+            .frame(width: geometry.size.width, height: duration)
             .position(x: geometry.size.width / -2, y: startOffset + (duration / 2))
         }
         .allowsHitTesting(false)

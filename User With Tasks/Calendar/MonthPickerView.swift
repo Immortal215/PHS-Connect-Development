@@ -2,6 +2,7 @@ import Pow
 import SwiftUI
 
 struct MonthPickerView: View {
+    @Environment(\.appViewportSize) var parentViewportSize
     @Binding var selectedDate: Date
     @State var currentYear: Int
     @Binding var clubs: [Club]
@@ -11,12 +12,31 @@ struct MonthPickerView: View {
     @AppStorage("darkMode") var darkMode = false
     var viewModel: AuthenticationViewModel
     
+    @State var presentationSize = CGSize(width: 390, height: 600)
+    @State var visibleMonthOffset: Int?
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && parentViewportSize.width >= 900
+            && parentViewportSize.width > parentViewportSize.height
+    }
+
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
+            presentationContent
+                .environment(\.appViewportSize, geometry.size)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
+        .appPresentationSizing()
+    }
+
+    @ViewBuilder
+    var presentationContent: some View {
+        NavigationStack {
             VStack {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack {
+                ScrollView {
+                    LazyVStack {
                             ForEach(0..<12, id: \.self) { monthOffset in
                                 let monthDate = calendarStartingOnSunday().date(
                                     from: DateComponents(
@@ -366,8 +386,9 @@ struct MonthPickerView: View {
                                                             .frame(
                                                                 height:
                                                                     isTubeView
-                                                                ? appScreenBounds
-                                                                    .height
+                                                                ? (usesLegacyWideIPadLayout
+                                                                    ? parentViewportSize.height
+                                                                    : presentationSize.height)
                                                                 / 4
                                                                 : nil
                                                             )
@@ -396,18 +417,16 @@ struct MonthPickerView: View {
                                 .padding(.horizontal)
                                 .id(monthOffset)
                             }
-                        }
-                        .geometryGroup()
-                        .onAppear {
-                            proxy.scrollTo(
-                                Calendar.current.component(
-                                    .month,
-                                    from: selectedDate
-                                ) - 1,
-                                anchor: .top
-                            )
-                        }
                     }
+                    .geometryGroup()
+                    .scrollTargetLayout()
+                }
+                .scrollPosition(id: $visibleMonthOffset, anchor: .top)
+                .onAppear {
+                    visibleMonthOffset = Calendar.current.component(
+                        .month,
+                        from: selectedDate
+                    ) - 1
                 }
             }
             .toolbar {
@@ -475,7 +494,12 @@ struct MonthPickerView: View {
         )!
     }
     
-    var monthDayWidth: CGFloat { appScreenBounds.width / 1.05 / 7 - 16 }
+    var monthDayWidth: CGFloat {
+        if usesLegacyWideIPadLayout {
+            return parentViewportSize.width / 1.05 / 7 - 16
+        }
+        return max(1, (presentationSize.width - 92) / 7)
+    }
     
     func monthName(for date: Date) -> String {
         let formatter = DateFormatter()

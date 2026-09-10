@@ -3,8 +3,11 @@ import SwiftUI
 
 struct Notebook: View {
     @EnvironmentObject var drawingBoardStore: DrawingBoardStore
-    @State var screenWidth = appScreenBounds.width
-    @State var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
+    var narrowLayout: Bool { screenWidth < 760 }
+    var panelWidth: CGFloat { narrowLayout ? max(1, screenWidth - 32) : screenWidth / 2.1 }
 
     @AppStorage("completed") var completed = 0
 
@@ -159,7 +162,7 @@ struct Notebook: View {
                     Text("Planner")
                         .font(.title)
                         .fontWeight(.semibold)
-                        .offset(x: currentTab != "+erder" ? 160 : 0)
+                        .offset(x: !narrowLayout && currentTab != "+erder" ? 160 : 0)
                     HStack {
                         if currentTab != "+erder" {
                             Button {
@@ -178,12 +181,12 @@ struct Notebook: View {
                                         height: loadedData ? 25 : 0,
                                         alignment: .center
                                     )
-                                    .frame(width: loadedData ? 150 : 0)
+                                    .frame(width: loadedData ? (narrowLayout ? 44 : 150) : 0)
                             }
                             .implicitAnimation(.snappy(duration: 1, extraBounce: 0.1))
 
                             // make assignment
-                            .sheet(isPresented: $showAlert) {
+                            .appSheet(isPresented: $showAlert) {
                                 VStack {
                                     Text("Create a new task!")
                                         .font(.largeTitle)
@@ -455,7 +458,7 @@ struct Notebook: View {
                                         alignment: .center
                                     )
                                     .foregroundStyle(.red)
-                                    .frame(width: loadedData ? 150 : 0)
+                                    .frame(width: loadedData ? (narrowLayout ? 44 : 150) : 0)
                             }
                             .alert(
                                 "Delete All Assignments?",
@@ -490,7 +493,7 @@ struct Notebook: View {
                         Button("Ok", role: .cancel) {}
                     }
 
-                    .offset(x: screenWidth / 2 - 200)
+                    .offset(x: narrowLayout ? 0 : screenWidth / 2 - 200)
                 }
 
                 VStack {
@@ -504,7 +507,7 @@ struct Notebook: View {
 
                         Text("Edit Lists").tag("+erder")
                     }
-                    .pickerStyle(.segmented)
+                    .adaptivePlannerPicker(compact: narrowLayout)
                     .fixedSize()
                     .padding()
 

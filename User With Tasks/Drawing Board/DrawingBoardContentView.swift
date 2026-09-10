@@ -8,91 +8,143 @@ struct ContentViewDrawingBoard: View {
     @AppStorage("pagedStyle") var pagedStyle = false
     @AppStorage("chosenOpacity") var chosenOpacity = 0.8
 
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
     var body: some View {
-        ZStack {
-            TabView(selection: $selectedTab) {
-                Homepage()
-                    .environmentObject(drawingBoardStore)
-                    .tabItem {
-                        Image(systemName: "house.fill")
-                    }
-                    .tag(0)
+        AdaptiveViewport { content }
+            .preferredColorScheme(.dark)
+    }
 
-                Notebook()
-                    .environmentObject(drawingBoardStore)
-                    .tabItem {
-                        Image(systemName: "text.book.closed.fill")
-                    }
-                    .tag(1)
+    @ViewBuilder
+    var content: some View {
+        if usesPhoneLayout {
+            VStack(spacing: 0) {
+                drawingBoardPages
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                Pomo()
-                    .tabItem {
-                        Image(systemName: "timer")
-                    }
-                    .tag(2)
-
-                Settinger()
-                    .tabItem {
-                        Image(systemName: "gearshape")
-                    }
-                    .tag(3)
+                drawingBoardTabBar
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
+                    .background(.black.opacity(chosenOpacity))
             }
-            .tabViewStyle(
-                .page(indexDisplayMode: pagedStyle ? .always : .never)
-            )
-            
-            VStack {
-                Spacer()
-                ZStack {
-                    if tabStyle {
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(height: 60)
-                            .foregroundStyle(.black)
-                            .shadow(color: .blue, radius: 5)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .opacity(chosenOpacity)
-                            .allowsHitTesting(false)
+        } else {
+            ZStack {
+                drawingBoardPages
 
-                        HStack {
-
-                            TabBarButtonDrawing(
-                                image: "house.fill",
-                                index: 0,
-                                labelr: "Home"
-                            )
-                            .padding(.horizontal, 100)
-                            
-                            TabBarButtonDrawing(
-                                image: "text.book.closed.fill",
-                                index: 1,
-                                labelr: "Planner"
-                            )
-                            .padding(.horizontal, 100)
-                            
-                            TabBarButtonDrawing(
-                                image: "clock",
-                                index: 2,
-                                labelr: "Timer / Pomo"
-                            )
-                            .padding(.horizontal, 100)
-                            
-                            TabBarButtonDrawing(
-                                image: "gear",
-                                index: 3,
-                                labelr: "Settings"
-                            )
-                            .padding(.horizontal, 100)
-                        }
-                        .allowsHitTesting(true)
-
-                    }
+                VStack {
+                    Spacer()
+                    drawingBoardTabBar
+                        .padding()
                 }
-                .padding()
-
             }
-            .ignoresSafeArea(.keyboard)
         }
-        .preferredColorScheme(.dark)
+    }
+
+    var drawingBoardPages: some View {
+        TabView(selection: $selectedTab) {
+            Homepage()
+                .environmentObject(drawingBoardStore)
+                .tabItem {
+                    Image(systemName: "house.fill")
+                }
+                .tag(0)
+
+            Notebook()
+                .environmentObject(drawingBoardStore)
+                .tabItem {
+                    Image(systemName: "text.book.closed.fill")
+                }
+                .tag(1)
+
+            Pomo()
+                .tabItem {
+                    Image(systemName: "timer")
+                }
+                .tag(2)
+
+            Settinger()
+                .tabItem {
+                    Image(systemName: "gearshape")
+                }
+                .tag(3)
+        }
+        .tabViewStyle(
+            .page(indexDisplayMode: pagedStyle ? .always : .never)
+        )
+    }
+
+    @ViewBuilder
+    var drawingBoardTabBar: some View {
+        if tabStyle {
+            ZStack {
+                if !usesPhoneLayout {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(height: 60)
+                        .foregroundStyle(.black)
+                        .shadow(color: .blue, radius: 5)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .opacity(chosenOpacity)
+                        .allowsHitTesting(false)
+                }
+
+                HStack {
+                    TabBarButtonDrawing(
+                        image: "house.fill",
+                        index: 0,
+                        labelr: "Home"
+                    )
+                    .drawingBoardTabItemLayout()
+
+                    TabBarButtonDrawing(
+                        image: "text.book.closed.fill",
+                        index: 1,
+                        labelr: "Planner"
+                    )
+                    .drawingBoardTabItemLayout()
+
+                    TabBarButtonDrawing(
+                        image: "clock",
+                        index: 2,
+                        labelr: "Timer / Pomo"
+                    )
+                    .drawingBoardTabItemLayout()
+
+                    TabBarButtonDrawing(
+                        image: "gear",
+                        index: 3,
+                        labelr: "Settings"
+                    )
+                    .drawingBoardTabItemLayout()
+                }
+                .allowsHitTesting(true)
+            }
+            .frame(height: 60)
+        }
+    }
+}
+
+struct DrawingBoardTabItemLayout: ViewModifier {
+    @Environment(\.appViewportSize) var viewportSize
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && viewportSize.width >= 900
+            && viewportSize.width > viewportSize.height
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, usesLegacyWideIPadLayout ? 100 : 0)
+            .frame(maxWidth: usesLegacyWideIPadLayout ? nil : .infinity)
+    }
+}
+
+extension View {
+    func drawingBoardTabItemLayout() -> some View {
+        modifier(DrawingBoardTabItemLayout())
     }
 }
 
@@ -122,7 +174,7 @@ struct TabBarButtonDrawing: View {
                         )
                 }
                 .offset(y: selectedTab == index ? -20 : 0.0)
-                .foregroundColor(selectedTab == index ? .blue : .gray)
+                .foregroundStyle(selectedTab == index ? Color.blue : Color.gray)
             }
         }
         .shadow(color: .gray, radius: 5)

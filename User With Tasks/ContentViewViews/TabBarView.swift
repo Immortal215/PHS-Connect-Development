@@ -29,25 +29,107 @@ struct FloatingTabBar: View {
     @State var settings = false
     @Namespace var namespace
 
-    var body: some View {
-            if keyboardHeight > 0 {
-                keyboardBar
-            } else {
-                HStack {
-                    bottomBar
+    @AppStorage("selectedTab") var currentTab = 3
 
-                    Spacer()
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && screenWidth >= 900
+            && screenWidth > screenHeight
+    }
+
+    var usesPhoneTabBar: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
+    var visibleTabs: [AppTab] {
+        orderedTabs.filter(shouldShow)
+    }
+
+    var compactMenu: some View {
+        Menu {
+            ForEach(orderedTabs.filter(shouldShow), id: \.self) { tab in
+                Button {
+                    currentTab = tab.index
+                } label: {
+                    Label(tab.name, systemImage: tab.systemImage)
                 }
-                .frame(
-                    maxWidth: .infinity,
-                    maxHeight: .infinity,
-                    alignment: .bottom
-                )
-                .padding()
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal")
+                .imageScale(.large)
+                .frame(minWidth: 44, minHeight: 44)
+        }
+        .buttonStyle(.glass)
+        .accessibilityLabel("App navigation")
+    }
+
+    var body: some View {
+        Group {
+            if usesPhoneTabBar {
+                if keyboardHeight == 0 {
+                    phoneBar
+                }
+            } else if keyboardHeight > 0 {
+                if usesLegacyWideIPadLayout {
+                    legacyKeyboardBar
+                } else {
+                    compactMenu
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    bottomBar.fixedSize(horizontal: true, vertical: false)
+                    compactMenu
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
         }
+        .padding(usesPhoneTabBar ? 0 : 16)
+    }
 
-    var keyboardBar: some View {
+    var phoneBar: some View {
+        HStack(spacing: 2) {
+            ForEach(visibleTabs, id: \.self) { tab in
+                Button {
+                    currentTab = tab.index
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.systemImage)
+                            .font(.system(size: 20, weight: .semibold))
+                            .symbolVariant(
+                                currentTab == tab.index ? .fill : .none
+                            )
+
+                        Text(tab.name)
+                            .font(.caption2)
+                            .fontWeight(
+                                currentTab == tab.index ? .semibold : .regular
+                            )
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(
+                        currentTab == tab.index ? Color.accentColor : .secondary
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.name)
+                .accessibilityAddTraits(
+                    currentTab == tab.index ? .isSelected : []
+                )
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
+        .background(.bar)
+        .overlay(alignment: .top) {
+            Divider()
+        }
+    }
+
+    var legacyKeyboardBar: some View {
         VStack(alignment: .center, spacing: 16) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 if shouldShow(tab) {

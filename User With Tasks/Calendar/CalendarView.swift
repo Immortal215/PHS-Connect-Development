@@ -10,8 +10,9 @@ struct CalendarView: View {
     @Binding var userInfo: Personal?
     var viewModel: AuthenticationViewModel
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
 
     @AppStorage("selectedDate") var selectedDate : Date = Date()
     @AppStorage("firstCalendarAppearance") var firstCalendarAppearance = false
@@ -83,7 +84,7 @@ struct CalendarView: View {
 
 
 // for appstorage for the selectedDate
-extension Date: RawRepresentable {
+extension Date: @retroactive RawRepresentable {
     private static let formatter = ISO8601DateFormatter()
     
     public var rawValue: String {

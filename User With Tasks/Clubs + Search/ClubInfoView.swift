@@ -13,8 +13,11 @@ import SwiftUIX
 
 struct ClubInfoView: View {
     @State var club: Club
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    var screenWidth: CGFloat { presentationSize.width }
+    var screenHeight: CGFloat { presentationSize.height }
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
     var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var createClubToggler = false
@@ -63,7 +66,20 @@ struct ClubInfoView: View {
         pendingEdits = edits
     }
 
+    @State var presentationSize = CGSize(width: 390, height: 600)
+
     var body: some View {
+        GeometryReader { geometry in
+            presentationContent
+                .environment(\.appViewportSize, geometry.size)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
+        .appPresentationSizing()
+    }
+
+    @ViewBuilder
+    var presentationContent: some View {
         let clubLeader = isClubLeaderOrSuperAdmin(
             club: club,
             userEmail: viewModel.userEmail
@@ -204,8 +220,8 @@ struct ClubInfoView: View {
                         Text("Leaders (\(club.leaders.count))")
                             .font(.headline)
 
-                        ScrollView(.horizontal) {
-                            LazyHGrid(rows: [GridItem(.flexible())]) {
+                        if screenWidth < 600 {
+                            VStack(spacing: 8) {
                                 ForEach(
                                     club.leaders.sorted {
                                         $0.localizedCaseInsensitiveCompare($1)
@@ -213,36 +229,22 @@ struct ClubInfoView: View {
                                     },
                                     id: \.self
                                 ) { leader in
-                                    Button {
-                                        composeEmail(to: leader)
-                                    } label: {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "envelope.fill")
-                                                .font(.caption)
-
-                                            Text(leader)
-                                                .font(.subheadline)
-                                                .lineLimit(1)
-                                        }
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 11)
-                                        .foregroundStyle(.blue)
-                                        .background(
-                                            Color.blue.opacity(0.12),
-                                            in: Capsule()
-                                        )
-                                        .overlay {
-                                            Capsule()
-                                                .stroke(
-                                                    Color.blue.opacity(0.22),
-                                                    lineWidth: 1
-                                                )
-                                        }
+                                    leaderContactButton(leader)
+                                }
+                            }
+                        } else {
+                            ScrollView(.horizontal) {
+                                LazyHGrid(rows: [GridItem(.flexible())]) {
+                                    ForEach(
+                                        club.leaders.sorted {
+                                            $0.localizedCaseInsensitiveCompare($1)
+                                                == .orderedAscending
+                                        },
+                                        id: \.self
+                                    ) { leader in
+                                        leaderContactButton(leader)
+                                            .padding(.trailing, 8)
                                     }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel("Email \(leader)")
-                                    .padding(1)
-                                    .padding(.trailing, 8)
                                 }
                             }
                         }
@@ -301,11 +303,14 @@ struct ClubInfoView: View {
                                     )
                                     .padding(.vertical)
                                     .frame(
-                                        width: appScreenBounds.width / 1.1,
+                                        width: presentationSize.width / 1.1,
                                         height: 60
                                     )
                                     .foregroundStyle(.black)
-                                    .offset(x: appScreenBounds.width / 1.1)
+                                    .offset(
+                                        x: usesPhoneLayout
+                                            ? 0 : presentationSize.width / 1.1
+                                    )
                                 } else {
                                     MeetingView(
                                         meeting: closestMeeting,
@@ -320,11 +325,14 @@ struct ClubInfoView: View {
                                     )
                                     .padding(.vertical)
                                     .frame(
-                                        width: appScreenBounds.width / 1.1,
+                                        width: presentationSize.width / 1.1,
                                         height: 60
                                     )
                                     .foregroundStyle(.black)
-                                    .offset(x: appScreenBounds.width / 1.1)
+                                    .offset(
+                                        x: usesPhoneLayout
+                                            ? 0 : presentationSize.width / 1.1
+                                    )
                                 }
                             }
 
@@ -342,7 +350,7 @@ struct ClubInfoView: View {
                                 .background(Color.blue.opacity(0.2))
                                 .cornerRadius(8)
                         }
-                        .sheet(isPresented: $showAddMeeting) {
+                        .appSheet(isPresented: $showAddMeeting) {
                             AddMeetingView(
                                 viewCloser: {
                                     showAddMeeting = false
@@ -515,12 +523,20 @@ struct ClubInfoView: View {
                             )
                     }
 
-                    HStack {
-                        Text("Schoology Code")
-                            .font(.headline)
+                    ViewThatFits(in: .horizontal) {
+                        HStack {
+                            Text("Schoology Code")
+                                .font(.headline)
 
-                        CodeSnippetView(code: club.schoologyCode)
+                            CodeSnippetView(code: club.schoologyCode)
+                        }
 
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Schoology Code")
+                                .font(.headline)
+
+                            CodeSnippetView(code: club.schoologyCode)
+                        }
                     }
 
                     if let username = club.instagram {
@@ -532,32 +548,32 @@ struct ClubInfoView: View {
                             Text("Genres")
                                 .font(.headline)
 
-                            HStack {
-                                ForEach(
-                                    genres.sorted {
-                                        $0.localizedCaseInsensitiveCompare($1)
-                                            == .orderedAscending
-                                    },
-                                    id: \.self
-                                ) { genre in
-                                    HStack(spacing: 10) {
-                                        Button(action: {
-                                            tagsExpanded = false
-                                            currentSearchingBy = "Genre"
-                                            selectedTab = AppTab.search.index
-                                            sharedGenre = genre
-                                            presentationMode.wrappedValue
-                                                .dismiss()
-                                        }) {
-                                            Text(genre)
-                                                .font(.subheadline)
-                                                .foregroundStyle(.blue)
-                                                .padding(6)
-                                                .background(
-                                                    Color.blue.opacity(0.2)
-                                                )
-                                                .cornerRadius(8)
-                                        }
+                            if screenWidth < 600 {
+                                LazyVGrid(
+                                    columns: [GridItem(.flexible())],
+                                    alignment: .leading,
+                                    spacing: 8
+                                ) {
+                                    ForEach(
+                                        genres.sorted {
+                                            $0.localizedCaseInsensitiveCompare($1)
+                                                == .orderedAscending
+                                        },
+                                        id: \.self
+                                    ) { genre in
+                                        genreButton(genre)
+                                    }
+                                }
+                            } else {
+                                HStack {
+                                    ForEach(
+                                        genres.sorted {
+                                            $0.localizedCaseInsensitiveCompare($1)
+                                                == .orderedAscending
+                                        },
+                                        id: \.self
+                                    ) { genre in
+                                        genreButton(genre)
                                     }
                                 }
                             }
@@ -724,27 +740,13 @@ struct ClubInfoView: View {
                     .closeOnTap(false)
                     .closeOnTapOutside(true)
             }
-            .popup(isPresented: $meetingFull) {
-                if let closestMeeting = club.meetingTimes!.sorted(by: {
-                    dateFromString($0.startTime) < dateFromString($1.startTime)
-                }).filter({ meeting in
-                    return dateFromString(meeting.startTime) >= Date()
-                }).first {
-                    MeetingInfoView(
-                        meeting: closestMeeting,
-                        clubs: [club],
-                        viewModel: viewModel,
-                        selectedDate: dateFromString(closestMeeting.startTime),
-                        userInfo: .constant(nil),
-                        onDelete: { includingFuture in
-                            removeDeletedMeeting(
-                                closestMeeting,
-                                includingFuture: includingFuture
-                            )
-                            meetingFull = false
-                        }
-                    )
-                }
+            .appSheet(isPresented: phoneMeetingInfoPresented) {
+                upcomingMeetingInfo
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+            .popup(isPresented: ipadMeetingInfoPresented) {
+                upcomingMeetingInfo
             } customize: {
                 $0
                     .type(.default)
@@ -787,7 +789,7 @@ struct ClubInfoView: View {
                                     .imageScale(.large)
                             }
                             .disabled(pendingEdits.isSaving)
-                            .sheet(isPresented: $showEditScreen) {
+                            .appSheet(isPresented: $showEditScreen) {
                                 CreateClubView(
                                     onClose: {
                                         showEditScreen = false
@@ -916,7 +918,7 @@ struct ClubInfoView: View {
         .onChange(of: showEditScreen) { _, showing in
             if !showing { pendingEdits.resume() }
         }
-        .sheet(isPresented: $showLeaderMailComposer) {
+        .appSheet(isPresented: $showLeaderMailComposer) {
             MailView(
                 isShowing: $showLeaderMailComposer,
                 result: { result in
@@ -948,12 +950,54 @@ struct ClubInfoView: View {
         //    .background(colorFromClub(club.clubID).opacity(0.2))
     }
 
+    var phoneMeetingInfoPresented: Binding<Bool> {
+        Binding(
+            get: { usesPhoneLayout && meetingFull },
+            set: { meetingFull = $0 }
+        )
+    }
+
+    var ipadMeetingInfoPresented: Binding<Bool> {
+        Binding(
+            get: { !usesPhoneLayout && meetingFull },
+            set: { meetingFull = $0 }
+        )
+    }
+
+    var closestUpcomingMeeting: Club.MeetingTime? {
+        club.meetingTimes?.sorted {
+            dateFromString($0.startTime) < dateFromString($1.startTime)
+        }.first {
+            dateFromString($0.startTime) >= Date()
+        }
+    }
+
+    @ViewBuilder
+    var upcomingMeetingInfo: some View {
+        if let closestMeeting = closestUpcomingMeeting {
+            MeetingInfoView(
+                meeting: closestMeeting,
+                clubs: [club],
+                viewModel: viewModel,
+                selectedDate: dateFromString(closestMeeting.startTime),
+                userInfo: .constant(nil),
+                onDelete: { includingFuture in
+                    removeDeletedMeeting(
+                        closestMeeting,
+                        includingFuture: includingFuture
+                    )
+                    meetingFull = false
+                }
+            )
+        }
+    }
+
     func updateDisplayedClub(_ updated: Club) {
         if club.abstract != updated.abstract { abstractExpanded = true }
         club = updated
     }
 
-    private func removeDeletedMeeting(
+    func removeDeletedMeeting(
         _ deletedMeeting: Club.MeetingTime,
         includingFuture: Bool
     ) {
@@ -968,6 +1012,56 @@ struct ClubInfoView: View {
                 && meeting.startTime == deletedMeeting.startTime
                 && meeting.endTime == deletedMeeting.endTime
         }
+    }
+
+    func leaderContactButton(_ leader: String) -> some View {
+        Button {
+            composeEmail(to: leader)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "envelope.fill")
+                    .font(.caption)
+
+                Text(leader)
+                    .font(.subheadline)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .foregroundStyle(.blue)
+            .frame(maxWidth: screenWidth < 600 ? .infinity : nil)
+            .background(Color.blue.opacity(0.12), in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(Color.blue.opacity(0.22), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Email \(leader)")
+        .padding(1)
+    }
+
+    func genreButton(_ genre: String) -> some View {
+        Button {
+            tagsExpanded = false
+            currentSearchingBy = "Genre"
+            selectedTab = AppTab.search.index
+            sharedGenre = genre
+            presentationMode.wrappedValue.dismiss()
+        } label: {
+            Text(genre)
+                .font(.subheadline)
+                .foregroundStyle(.blue)
+                .lineLimit(1)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: screenWidth < 600 ? .infinity : nil)
+                .background(Color.blue.opacity(0.2))
+                .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
     }
 
     func composeEmail(to leader: String) {

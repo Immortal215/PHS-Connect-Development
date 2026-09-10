@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SignInChatsPreview: View {
     @State var bubbleMode = false
+    var isCompact = false
 
     var body: some View {
         VStack(spacing: 10) {
@@ -11,30 +12,36 @@ struct SignInChatsPreview: View {
                     icon: "bubble.left.and.bubble.right.fill"
                 )
 
-                SignInChatModeToggle(bubbleMode: $bubbleMode)
-            }
-
-            HStack(spacing: 0) {
-                SignInChatClubRail()
-                SignInChatThreadRail()
-
-                Group {
-                    if bubbleMode {
-                        SignInBubbleMessages()
-                    } else {
-                        SignInClassicMessages()
-                    }
+                if !isCompact {
+                    SignInChatModeToggle(bubbleMode: $bubbleMode)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentTransition(.opacity)
             }
-            .background {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.systemBackground.opacity(0.62))
+
+            if isCompact {
+                SignInCompactChatPreview()
+            } else {
+                HStack(spacing: 0) {
+                    SignInChatClubRail()
+                    SignInChatThreadRail()
+
+                    Group {
+                        if bubbleMode {
+                            SignInBubbleMessages()
+                        } else {
+                            SignInClassicMessages()
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentTransition(.opacity)
+                }
+                .background {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color.systemBackground.opacity(0.62))
+                }
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                )
             }
-            .clipShape(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-            )
         }
         .padding(12)
         .background {
@@ -47,6 +54,69 @@ struct SignInChatsPreview: View {
                 .stroke(Color.white.opacity(0.18), lineWidth: 1)
         }
         .animation(.snappy(duration: 0.25), value: bubbleMode)
+    }
+}
+
+struct SignInCompactChatPreview: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 0) {
+                SignInChatClubRail()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("THREADS")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.secondary)
+
+                    Label("general", systemImage: "number")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.blue)
+
+                    Label("announcements", systemImage: "megaphone.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.systemGray6.opacity(0.48))
+            }
+            .frame(height: 126)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            HStack(alignment: .top, spacing: 10) {
+                Circle()
+                    .fill(Color.orange)
+                    .overlay {
+                        Text("MS")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                    }
+                    .frame(width: 36, height: 36)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Maya S.")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+
+                    Text("The drivetrain test worked! New notes are in #general.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.systemBackground.opacity(0.62))
+            }
+        }
     }
 }
 

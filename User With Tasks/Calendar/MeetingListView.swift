@@ -10,6 +10,10 @@ struct MeetingListView: View {
     @State var selectedMeeting: Club.MeetingTime?
     @State var showMeetingInfo = false
 
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
     var clubsWithMeetings: [Club] {
         let clubIDs = Set(meetings.map(\.clubID))
         return clubs.filter { clubIDs.contains($0.clubID) }.sorted {
@@ -137,7 +141,12 @@ struct MeetingListView: View {
             }
         }
         .padding()
-        .popup(isPresented: $showMeetingInfo) {
+        .appSheet(isPresented: phoneMeetingInfoPresented) {
+            selectedMeetingInfo
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
+        .popup(isPresented: ipadMeetingInfoPresented) {
             if let selectedMeeting,
                 clubs.contains(where: { $0.clubID == selectedMeeting.clubID })
             {
@@ -187,6 +196,44 @@ struct MeetingListView: View {
         } else {
             showMeetingInfo = false
             selectedMeeting = nil
+        }
+    }
+
+    var phoneMeetingInfoPresented: Binding<Bool> {
+        Binding(
+            get: { usesPhoneLayout && showMeetingInfo },
+            set: { presented in
+                showMeetingInfo = presented
+                if !presented {
+                    selectedMeeting = nil
+                }
+            }
+        )
+    }
+
+    var ipadMeetingInfoPresented: Binding<Bool> {
+        Binding(
+            get: { !usesPhoneLayout && showMeetingInfo },
+            set: { showMeetingInfo = $0 }
+        )
+    }
+
+    @ViewBuilder
+    var selectedMeetingInfo: some View {
+        if let selectedMeeting,
+            clubs.contains(where: { $0.clubID == selectedMeeting.clubID })
+        {
+            MeetingInfoView(
+                meeting: selectedMeeting,
+                clubs: clubs,
+                viewModel: viewModel,
+                selectedDate: dateFromString(selectedMeeting.startTime),
+                userInfo: $userInfo,
+                onDelete: { _ in
+                    self.selectedMeeting = nil
+                    showMeetingInfo = false
+                }
+            )
         }
     }
 

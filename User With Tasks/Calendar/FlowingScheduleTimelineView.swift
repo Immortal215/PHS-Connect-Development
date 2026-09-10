@@ -20,8 +20,16 @@ struct FlowingScheduleTimelineView: View {
     @Binding var dragOffset: CGSize
     var onMeetingTap: (Club.MeetingTime) -> Void
 
+    @Environment(\.appViewportSize) var viewportSize
+
     var totalWidth: CGFloat {
-        appScreenBounds.width / 1.1
+        if UIDevice.current.userInterfaceIdiom == .pad,
+            viewportSize.width >= 900,
+            viewportSize.width > viewportSize.height
+        {
+            return viewportSize.width / 1.1
+        }
+        return max(1, viewportSize.width - 76)
     }
 
     var schoolTimelineEvents: [SchoolScheduleEvent] {

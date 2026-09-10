@@ -10,6 +10,7 @@ struct FeatureReportButton: View {
 
     let recipientEmail = "sharulshah@icloud.com"
     let subject = "Feature Report"
+    var fillsWidth = false
 
     var body: some View {
         Button(action: {
@@ -28,6 +29,7 @@ struct FeatureReportButton: View {
             .foregroundColor(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 18)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -39,7 +41,7 @@ struct FeatureReportButton: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .sheet(isPresented: $isShowingMailView) {
+        .appSheet(isPresented: $isShowingMailView) {
             MailView(
                 isShowing: $isShowingMailView,
                 result: { result in

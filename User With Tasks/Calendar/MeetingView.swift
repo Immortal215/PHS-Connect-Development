@@ -9,9 +9,12 @@ struct MeetingView: View {
     var fixedDurationMinutes: Int? = nil
     @State var clubs: [Club]
     var numOfOverlapping: Int? = 1
-    var screenWidth = appScreenBounds.width
     var hasOverlap: Bool? = false
     @AppStorage("darkMode") var darkMode = false
+
+    var usesPhoneLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
 
     var body: some View {
         let startTime = dateFromString(meeting.startTime)
@@ -24,12 +27,19 @@ struct MeetingView: View {
             + Calendar.current.component(.minute, from: endTime)
         let durationMinutes = fixedDurationMinutes
             ?? max(endMinutes - startMinutes, 0)
+        let showsInlinePreview = preview == true
 
         let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
         let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
 
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
+                if usesPhoneLayout && !meetingInfo {
+                    Rectangle()
+                        .fill(Color(.systemBackground))
+                        .clipShape(.rect(cornerRadius: 5))
+                }
+
                 if meetingInfo {
                     Rectangle()
                         .fill(
@@ -97,12 +107,14 @@ struct MeetingView: View {
                             .lineLimit(1)
                             .foregroundStyle(
                                 meetingInfo
-                                    ? .white
-                                    : colorFromClub(
+                                    ? Color.white
+                                    : (usesPhoneLayout
+                                        ? Color.primary
+                                        : colorFromClub(
                                         club: clubs.first(where: {
                                             $0.clubID == meeting.clubID
                                         })!
-                                    )
+                                    ))
                             )
                             .bold()
                         }
@@ -122,12 +134,14 @@ struct MeetingView: View {
                             }
                             .foregroundStyle(
                                 meetingInfo
-                                    ? .white
-                                    : colorFromClub(
+                                    ? Color.white
+                                    : (usesPhoneLayout
+                                        ? Color.secondary
+                                        : colorFromClub(
                                         club: clubs.first(where: {
                                             $0.clubID == meeting.clubID
                                         })!
-                                    ).opacity(0.6)
+                                    ).opacity(0.6))
                             )
                             .font(.caption2)
                         }
@@ -150,12 +164,14 @@ struct MeetingView: View {
                             }
                             .foregroundStyle(
                                 meetingInfo
-                                    ? .white
-                                    : colorFromClub(
+                                    ? Color.white
+                                    : (usesPhoneLayout
+                                        ? Color.secondary
+                                        : colorFromClub(
                                         club: clubs.first(where: {
                                             $0.clubID == meeting.clubID
                                         })!
-                                    ).opacity(0.6)
+                                    ).opacity(0.6))
                             )
                             .font(.caption2)
                         }
@@ -184,12 +200,14 @@ struct MeetingView: View {
                             }
                             .foregroundStyle(
                                 meetingInfo
-                                    ? .white
-                                    : colorFromClub(
+                                    ? Color.white
+                                    : (usesPhoneLayout
+                                        ? Color.secondary
+                                        : colorFromClub(
                                         club: clubs.first(where: {
                                             $0.clubID == meeting.clubID
                                         })!
-                                    ).opacity(0.6)
+                                    ).opacity(0.6))
                             )
                             .font(.caption2)
                         }
@@ -197,17 +215,13 @@ struct MeetingView: View {
                         Spacer()
                     }
                     .frame(
-                        maxWidth: hasOverlap!
-                            ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!))
-                                - 16 : (screenWidth / 1.1) - 16,
+                        maxWidth: max(0, geometry.size.width - 16),
                         maxHeight: duration,
                         alignment: .topLeading
                     )
                 }
                 .frame(
-                    maxWidth: hasOverlap!
-                        ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!))
-                        : (screenWidth / 1.1),
+                    maxWidth: geometry.size.width,
                     maxHeight: duration,
                     alignment: .topLeading
                 )
@@ -215,18 +229,18 @@ struct MeetingView: View {
             .saturation(darkMode ? 1.3 : 1.0)
             .brightness(darkMode ? 0.3 : 0.0)
             .frame(
-                width: hasOverlap!
-                    ? (screenWidth / 1.1 / CGFloat(numOfOverlapping!))
-                    : (screenWidth / 1.1),
+                width: geometry.size.width,
                 height: duration
             )
             .position(
-                x: geometry.size.width / -2,
-                y: preview!
-                    ? 0
+                x: showsInlinePreview && usesPhoneLayout
+                    ? geometry.size.width / 2
+                    : geometry.size.width / -2,
+                y: showsInlinePreview
+                    ? (usesPhoneLayout ? duration / 2 : 0)
                     : startOffset + (duration / 2)
                         + (12 * (startOffset / geometry.size.height))
-            )  // don't know why, just works, don't touch it
+            )
         }
     }
 

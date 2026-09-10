@@ -12,8 +12,9 @@ import SwiftUIX
 struct ClubCard: View {
     var sourceClub: Club
     @State var club: Club
-    @State var screenWidth: CGFloat
-    @State var screenHeight: CGFloat
+    var screenWidth: CGFloat
+    var screenHeight: CGFloat
+    var usesLegacyWideLayout: Bool
     @State var imageScaler: Double
     @State var viewModel: AuthenticationViewModel
     @AppStorage("shownInfo") var shownInfo = -1
@@ -22,11 +23,12 @@ struct ClubCard: View {
     @Binding var selectedGenres: [String]
     @AppStorage("darkMode") var darkMode = false
 
-    init(club: Club, screenWidth: CGFloat, screenHeight: CGFloat, imageScaler: Double, viewModel: AuthenticationViewModel, shownInfo: Int = -1, userInfo: Binding<Personal?>, selectedGenres: Binding<[String]>) {
+    init(club: Club, screenWidth: CGFloat, screenHeight: CGFloat, imageScaler: Double, viewModel: AuthenticationViewModel, shownInfo: Int = -1, userInfo: Binding<Personal?>, selectedGenres: Binding<[String]>, usesLegacyWideLayout: Bool = false) {
         sourceClub = club
         _club = State(initialValue: club)
-        _screenWidth = State(initialValue: screenWidth)
-        _screenHeight = State(initialValue: screenHeight)
+        self.screenWidth = screenWidth
+        self.screenHeight = screenHeight
+        self.usesLegacyWideLayout = usesLegacyWideLayout
         _imageScaler = State(initialValue: imageScaler)
         _viewModel = State(initialValue: viewModel)
         _shownInfo = AppStorage(wrappedValue: shownInfo, "shownInfo")
@@ -60,14 +62,23 @@ struct ClubCard: View {
                                     RoundedRectangle(cornerRadius: 25)
                                         .foregroundStyle(.blue)
                                     Text(club.name)
-                                        .padding()
+                                        .font(usesLegacyWideLayout ? .body : .footnote)
+                                        .lineLimit(usesLegacyWideLayout ? nil : 2)
+                                        .minimumScaleFactor(usesLegacyWideLayout ? 1 : 0.9)
+                                        .multilineTextAlignment(.center)
+                                        .padding(usesLegacyWideLayout ? 16 : 6)
                                         .foregroundStyle(.white)
                                 }
                                 .frame(
-                                    maxWidth: screenWidth
-                                        / CGFloat(imageScaler + 0.3)
+                                    maxWidth: usesLegacyWideLayout
+                                        ? screenWidth / CGFloat(imageScaler + 0.3)
+                                        : .infinity,
+                                    maxHeight: usesLegacyWideLayout ? nil : .infinity
                                 )
-                                .fixedSize()
+                                .fixedSize(
+                                    horizontal: usesLegacyWideLayout,
+                                    vertical: usesLegacyWideLayout
+                                )
                             }
                         }
                     },
@@ -82,17 +93,25 @@ struct ClubCard: View {
                         }
                     }
                 )
-                .padding()
+                .frame(
+                    width: usesLegacyWideLayout ? nil : min(88, screenWidth * 0.24),
+                    height: usesLegacyWideLayout ? nil : 100
+                )
+                .padding(usesLegacyWideLayout ? 16 : 8)
 
                 VStack {
                     Text(club.name)
-                        .font(.callout)
+                        .font(usesLegacyWideLayout ? .callout : .headline)
                         .bold()
+                        .lineLimit(usesLegacyWideLayout ? nil : 2)
+                        .minimumScaleFactor(usesLegacyWideLayout ? 1 : 0.9)
+                        .layoutPriority(usesLegacyWideLayout ? 0 : 1)
                         .padding(.bottom, 8)
                         .foregroundColor(.primary)
 
                     Text(club.description)
-                        .font(.caption)
+                        .font(usesLegacyWideLayout ? .caption : .footnote)
+                        .lineLimit(usesLegacyWideLayout ? nil : 4)
                         .multilineTextAlignment(.leading)
                         .foregroundColor(.secondary)
 
@@ -118,10 +137,13 @@ struct ClubCard: View {
                                     : Text("\(partialResult), \(genreText)")
                             }
                             .lineLimit(2)
-                            .font(.caption)
+                            .font(usesLegacyWideLayout ? .caption : .footnote)
                     }
                 }
-                .frame(maxWidth: screenWidth / 2.8)
+                .frame(
+                    maxWidth: usesLegacyWideLayout ? screenWidth / 2.8 : .infinity,
+                    alignment: .leading
+                )
                 .padding()
 
                 VStack(alignment: .trailing) {
@@ -361,12 +383,12 @@ struct ClubCard: View {
             }
         }
         .frame(
-            minWidth: screenWidth / 2.2,
-            maxWidth: screenWidth / 2,
-            minHeight: screenHeight / 5,
-            maxHeight: screenHeight / 5
+            minWidth: usesLegacyWideLayout ? screenWidth / 2.2 : nil,
+            maxWidth: usesLegacyWideLayout ? screenWidth / 2 : .infinity,
+            minHeight: usesLegacyWideLayout ? screenHeight / 5 : 196,
+            maxHeight: usesLegacyWideLayout ? screenHeight / 5 : nil
         )
-        .implicitAnimation(.snappy)
+        .animation(.snappy, value: club)
         .onChange(of: sourceClub) {
             // Keep optimistic Join/Leave changes until the parent supplies a new club.
             club = sourceClub

@@ -24,7 +24,9 @@ struct TabBarButton: View {
             }
             .foregroundColor(selectedTab == index ? .blue : .primary)
             .brightness(0.1)
+            .frame(minWidth: 44, minHeight: 44)
         }
+        .accessibilityLabel(labelr)
         .apply {
             if #available(iOS 26, *) {
                 $0.buttonStyle(.glass)

@@ -77,12 +77,107 @@ enum ChatLoadingState: Equatable {
     }
 }
 
+enum CompactChatPage {
+    case browser
+    case conversation
+}
+
+enum ChatColumn {
+    case clubs
+    case threads
+    case conversation
+}
+
+struct ChatColumnLayoutValueKey: LayoutValueKey {
+    static let defaultValue = ChatColumn.conversation
+}
+
+struct CompactChatColumnsLayout: Layout {
+    var page: CompactChatPage
+    var clubRailWidth: CGFloat = 88
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let railWidth = min(clubRailWidth, bounds.width)
+        let threadWidth = max(0, bounds.width - railWidth)
+        let hiddenOrigin = CGPoint(
+            x: bounds.minX - (bounds.width * 2),
+            y: bounds.minY
+        )
+
+        for subview in subviews {
+            switch (page, subview[ChatColumnLayoutValueKey.self]) {
+            case (.browser, .clubs):
+                subview.place(
+                    at: bounds.origin,
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(
+                        width: railWidth,
+                        height: bounds.height
+                    )
+                )
+            case (.browser, .threads):
+                subview.place(
+                    at: CGPoint(x: bounds.minX + railWidth, y: bounds.minY),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(
+                        width: threadWidth,
+                        height: bounds.height
+                    )
+                )
+            case (.browser, .conversation):
+                let hasThreadColumn = subviews.contains {
+                    $0[ChatColumnLayoutValueKey.self] == .threads
+                }
+                subview.place(
+                    at: hasThreadColumn
+                        ? hiddenOrigin
+                        : CGPoint(x: bounds.minX + railWidth, y: bounds.minY),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(
+                        width: hasThreadColumn ? 0 : threadWidth,
+                        height: bounds.height
+                    )
+                )
+            case (.conversation, .conversation):
+                subview.place(
+                    at: bounds.origin,
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(
+                        width: bounds.width,
+                        height: bounds.height
+                    )
+                )
+            case (.conversation, .clubs), (.conversation, .threads):
+                subview.place(
+                    at: hiddenOrigin,
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(width: 0, height: bounds.height)
+                )
+            }
+        }
+    }
+}
+
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
     var viewModel: AuthenticationViewModel
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("Animations+") var animationsPlus = false
     @AppStorage("selectedTab") var selectedTab = 3
@@ -222,15 +317,25 @@ struct ChatView: View {
         .joined(separator: "|")
     }
 
+    @State var compactChatPage = CompactChatPage.conversation
+
     var body: some View {
 
         GeometryReader { geometry in
             let safeArea = geometry.safeAreaInsets
+            let compact = geometry.size.width < 760
+            let visibleCompactPage = selectedChatID == nil
+                ? CompactChatPage.browser
+                : compactChatPage
+            let chatLayout = compact
+                ? AnyLayout(CompactChatColumnsLayout(page: visibleCompactPage))
+                : AnyLayout(HStackLayout(spacing: 0))
 
             NavigationStack {
-                HStack(spacing: 0) {
+                chatLayout {
                     // LEFT COLUMN: Chats - Fixed 80pt width
                     VStack(spacing: 8) {
+                        VStack(spacing: 8) {
                         // Toggle button for bubble (imessage) mode
                         CustomToggleSwitch(
                             boolean: $bubbleBuffer,
@@ -275,10 +380,11 @@ struct ChatView: View {
                             .padding(.vertical, 8)
                         }
                         .allowsHitTesting(chatsEnabled)
-                        .padding(.bottom, 60)
+                        .padding(.bottom, compact ? 0 : 60)
                         
                     }
-                    .frame(width: 80)
+                    }
+                    .frame(width: compact ? nil : 80)
                     .background {
                         GlassBackground()
                     }
@@ -288,9 +394,14 @@ struct ChatView: View {
                     }
                     .padding(.leading)
                     .padding(.trailing, 8)
+                    .layoutValue(key: ChatColumnLayoutValueKey.self, value: .clubs)
+                    .opacity(!compact || visibleCompactPage == .browser ? 1 : 0)
+                    .allowsHitTesting(!compact || visibleCompactPage == .browser)
+                    .accessibilityHidden(compact && visibleCompactPage != .browser)
 
                     // LEFTISH: Threads - Fixed 240pt width
-                    if let selected = selectedChat {
+                    Group {
+                        if let selected = selectedChat {
                         let currentThread =
                             (selectedThread[selected.chatID] ?? nil)
                             ?? "general"
@@ -305,7 +416,7 @@ struct ChatView: View {
                             let clubChatEnabled = club.chatEnabled ?? true
 
                             VStack(alignment: .leading, spacing: 0) {
-
+                                VStack(alignment: .leading, spacing: 0) {
                                 HStack {
                                     Button {
                                         showClubInfo = true
@@ -324,17 +435,14 @@ struct ChatView: View {
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityLabel("Open \(club.name)")
-                                    .sheet(isPresented: $showClubInfo) {
+                                    .appSheet(isPresented: $showClubInfo) {
                                         ClubInfoView(
                                             club: club,
                                             viewModel: viewModel,
                                             userInfo: $userInfo
                                         )
                                         .presentationDragIndicator(.visible)
-                                        .frame(
-                                            width: appScreenBounds
-                                                .width / 1.05
-                                        )
+                                        .frame(maxWidth: .infinity)
                                         .presentationBackground {
                                             GlassBackground(
                                                 color: Color(
@@ -541,6 +649,7 @@ struct ChatView: View {
                                                     selectedThread[
                                                         selected.chatID
                                                     ] = joinRequestsThreadKey
+                                                    showCompactConversation()
                                                     editingMessageID = nil
                                                     replyingMessageID = nil
                                                     isReactionListPresented = false
@@ -579,6 +688,7 @@ struct ChatView: View {
                                                 selectedThread[
                                                     selected.chatID
                                                 ] = "announcements"
+                                                showCompactConversation()
                                                 editingMessageID = nil
                                                 replyingMessageID = nil
                                                 isReactionListPresented = false
@@ -768,6 +878,7 @@ struct ChatView: View {
                                                                                     .chatID
                                                                             ] =
                                                                                 trimmed
+                                                                            showCompactConversation()
                                                                             focusedOnNewThread =
                                                                                 false
                                                                             threadNameAttempts =
@@ -889,6 +1000,7 @@ struct ChatView: View {
                                                                         .count
                                                                         - 1
                                                             ]
+                                                        showCompactConversation()
                                                         DispatchQueue.main
                                                             .asyncAfter(
                                                                 deadline: .now()
@@ -931,6 +1043,7 @@ struct ChatView: View {
                                                                     ? index + 1
                                                                     : 0
                                                             ]
+                                                        showCompactConversation()
                                                         DispatchQueue.main
                                                             .asyncAfter(
                                                                 deadline: .now()
@@ -964,6 +1077,7 @@ struct ChatView: View {
                                                             selectedThread[
                                                                 selected.chatID
                                                             ] = thread
+                                                            showCompactConversation()
                                                             updateUnreadIndicator()
                                                             replyingMessageID =
                                                                 nil
@@ -1201,60 +1315,139 @@ struct ChatView: View {
                                 }
                                 .allowsHitTesting(settings || clubChatEnabled)
                             }
-                            .frame(width: 240)
+                            }
+                            .frame(width: compact ? nil : 240)
                             .background {
                                 GlassBackground()
                             }
                            // .clipped()
                             .allowsHitTesting(chatsEnabled)
+                            }
                         }
                     }
+                    .layoutValue(key: ChatColumnLayoutValueKey.self, value: .threads)
+                    .opacity(!compact || visibleCompactPage == .browser ? 1 : 0)
+                    .allowsHitTesting(
+                        chatsEnabled && (!compact || visibleCompactPage == .browser)
+                    )
+                    .accessibilityHidden(
+                        compact && visibleCompactPage != .browser
+                    )
 
                     // RIGHT COLUMN: Messages - Takes remaining space
-                    if selectedChatID != nil {
-                        ZStack {
-                            messageSection
-                                .frame(
-                                    maxWidth: .infinity,
-                                    maxHeight: .infinity
-                                )
-                                .allowsHitTesting(
-                                    chatsEnabled && selectedClubChatEnabled
-                                )
+                    Group {
+                        if let selected = selectedChat {
+                        let currentThread =
+                            (selectedThread[selected.chatID] ?? nil)
+                            ?? "general"
+                        let clubName = clubs.first(where: {
+                            $0.clubID == selected.clubID
+                        })?.name ?? "Chat"
 
-                            if !selectedClubChatEnabled {
-                                ClubChatDisabledOverlay()
-                            }
-                        }
-                    } else {
-                        VStack {
-                            Spacer()
-                            Text("No chat selected")
-                                .font(.largeTitle)
-                                .foregroundStyle(.secondary)
+                        VStack(spacing: 0) {
+                            if compact {
+                                HStack(spacing: 12) {
+                                    Button {
+                                        showCompactChatBrowser()
+                                    } label: {
+                                        Image(systemName: "chevron.left")
+                                            .font(.headline)
+                                            .frame(width: 36, height: 36)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Show clubs and threads")
 
-                            if userIsInNoClubs {
-                                Button("Join Clubs!") {
-                                    selectedTab = AppTab.search.index
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(clubName)
+                                            .font(.headline)
+                                            .lineLimit(1)
+
+                                        Text("# \(currentThread)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+
+                                    Spacer()
                                 }
-                                .font(.largeTitle)
-                                .bold()
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.extraLarge)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+
+                                Divider()
                             }
 
-                            Spacer()
+                            ZStack {
+                                messageSection
+                                    .frame(
+                                        maxWidth: .infinity,
+                                        maxHeight: .infinity
+                                    )
+                                    .allowsHitTesting(
+                                        chatsEnabled && selectedClubChatEnabled
+                                    )
+
+                                if !selectedClubChatEnabled {
+                                    ClubChatDisabledOverlay()
+                                }
+                            }
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            VStack {
+                                Spacer()
+                                Text("No chat selected")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.secondary)
+
+                                if userIsInNoClubs {
+                                    Button("Join Clubs!") {
+                                        selectedTab = AppTab.search.index
+                                    }
+                                    .font(.largeTitle)
+                                    .bold()
+                                    .buttonStyle(.borderedProminent)
+                                    .controlSize(.extraLarge)
+                                }
+
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     }
+                    .layoutValue(
+                        key: ChatColumnLayoutValueKey.self,
+                        value: .conversation
+                    )
+                    .opacity(
+                        !compact || visibleCompactPage == .conversation
+                            || selectedChatID == nil ? 1 : 0
+                    )
+                    .allowsHitTesting(
+                        !compact || visibleCompactPage == .conversation
+                            || selectedChatID == nil
+                    )
+                    .accessibilityHidden(
+                        compact && visibleCompactPage != .conversation
+                            && selectedChatID != nil
+                    )
                 }
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 24)
+                        .onEnded { value in
+                            handleCompactChatSwipe(
+                                value,
+                                isCompact: compact
+                            )
+                        }
+                )
                 .background {
                     ZStack {
                         RandomShapesBackground()
                             .blur(radius: bubbles ? 0 : 4)
 
                         Color.secondarySystemBackground.opacity(0.6)
-                            .frame(height: screenHeight + 20)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     }
                     .ignoresSafeArea(.keyboard)
@@ -1397,6 +1590,47 @@ struct ChatView: View {
                     .transition(.opacity)
                     .allowsHitTesting(false)
             }
+        }
+    }
+
+    func showCompactChatBrowser() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            compactChatPage = .browser
+        }
+    }
+
+    func showCompactConversation() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            compactChatPage = .conversation
+        }
+    }
+
+    func handleCompactChatSwipe(
+        _ value: DragGesture.Value,
+        isCompact: Bool
+    ) {
+        guard isCompact, selectedChatID != nil else { return }
+
+        let horizontal =
+            abs(value.predictedEndTranslation.width) > abs(value.translation.width)
+            ? value.predictedEndTranslation.width : value.translation.width
+        let vertical =
+            abs(value.predictedEndTranslation.height) > abs(value.translation.height)
+            ? value.predictedEndTranslation.height : value.translation.height
+
+        guard abs(horizontal) >= 64,
+            abs(horizontal) > abs(vertical) * 1.2
+        else { return }
+
+        switch compactChatPage {
+        case .browser where horizontal < 0:
+            showCompactConversation()
+        case .conversation where horizontal > 0:
+            composerDismissRequestID += 1
+            focusedOnNewThread = false
+            showCompactChatBrowser()
+        default:
+            break
         }
     }
 
@@ -1600,6 +1834,7 @@ struct ChatView: View {
                             selectedClub = clubs.first(where: {
                                 $0.clubID == chat.clubID
                             })
+                            showCompactChatBrowser()
 
                             cachedChatIDs.append(chat.chatID + ",")
 
@@ -1686,6 +1921,7 @@ struct ChatView: View {
                             selectedClub = clubs.first(where: {
                                 $0.clubID == chat.clubID
                             })
+                            showCompactChatBrowser()
                             chatLoadingState = .openingChat
                             DispatchQueue.main.asyncAfter(
                                 deadline: .now() + loadingOverlayHoldTime
@@ -2360,6 +2596,7 @@ struct ChatView: View {
             selectedChatID = chat.chatID
             selectedClub = clubs.first(where: { $0.clubID == chat.clubID })
             selectedThread[chat.chatID] = thread
+            showCompactConversation()
             openChatIDFromNotification = nil
             openThreadNameFromNotification = nil
         }
@@ -2873,8 +3110,9 @@ struct ReactionListView: View {
     @Binding var userInfo: Personal?
     @Binding var users: [String: Personal]
     
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
     
     var body: some View {
         if let message = selectedMessage {

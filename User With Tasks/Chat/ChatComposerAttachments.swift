@@ -27,7 +27,7 @@ extension ChatComposer {
             composerRow
                 .padding(.horizontal)
                 .padding(.vertical, 12)
-                .sheet(isPresented: $attachmentPresented) {
+                .appSheet(isPresented: $attachmentPresented) {
                     attachmentSheetContent
                 }
         }
@@ -371,8 +371,6 @@ extension ChatComposer {
             isUploadingAttachment: isUploadingAttachment,
             canAcceptMoreAttachments: canAcceptMoreAttachments,
             uploadError: uploadError,
-            screenWidth: screenWidth,
-            screenHeight: screenHeight,
             confirmURL: { url in
                 attachmentPresented = false
                 appendAttachment(url: url)

@@ -2,8 +2,9 @@ import SwiftUI
 import SwiftUIX
 
 struct MeetingInfoView: View {
-    let screenWidth = appScreenBounds.width
-    let screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var parentViewportSize
+    var screenWidth: CGFloat { presentationSize.width }
+    var screenHeight: CGFloat { presentationSize.height }
     @State var meeting: Club.MeetingTime
     @State var clubs: [Club]
     @State var openSettings = false
@@ -25,7 +26,26 @@ struct MeetingInfoView: View {
     @State private var deletingMeeting = false
     @State private var showDeleteError = false
 
+    @State var presentationSize = CGSize(width: 390, height: 600)
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && parentViewportSize.width >= 900
+            && parentViewportSize.width > parentViewportSize.height
+    }
+
     var body: some View {
+        GeometryReader { geometry in
+            presentationContent
+                .environment(\.appViewportSize, geometry.size)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
+        .appPresentationSizing()
+    }
+
+    @ViewBuilder
+    var presentationContent: some View {
         let club = clubs.first(where: { $0.clubID == meeting.clubID })!
         var clubColor: Color {
             Color(
@@ -320,10 +340,13 @@ struct MeetingInfoView: View {
                             .font(.caption)
                     }
 
-                    Color.clear.frame(height: screenHeight / 3)
+                    Color.clear.frame(
+                        height: usesLegacyWideIPadLayout
+                            ? parentViewportSize.height / 3 : 16
+                    )
                 }
             }
-            .sheet(isPresented: $showInfo) {
+            .appSheet(isPresented: $showInfo) {
                 if userInfo != nil {
                     if let cluber = clubs.first(where: {
                         $0.clubID == meeting.clubID
@@ -334,7 +357,14 @@ struct MeetingInfoView: View {
                             userInfo: $userInfo
                         )
                         .presentationDragIndicator(.visible)
-                        .frame(width: appScreenBounds.width / 1.05)
+                        .frame(
+                            width: usesLegacyWideIPadLayout
+                                ? parentViewportSize.width / 1.05 : nil
+                        )
+                        .frame(
+                            maxWidth: usesLegacyWideIPadLayout
+                                ? nil : .infinity
+                        )
                         .foregroundColor(nil)
                         .presentationBackground {
                             GlassBackground(color: clubColor)
@@ -350,7 +380,7 @@ struct MeetingInfoView: View {
         .saturation(darkMode ? 1.3 : 1.0)
         .brightness(darkMode ? 0.3 : 0.0)
         .implicitAnimation(.smooth)
-        .sheet(isPresented: $openSettings) {
+        .appSheet(isPresented: $openSettings) {
             AddMeetingView(
                 viewCloser: {
                     openSettings = false
@@ -408,7 +438,13 @@ struct MeetingInfoView: View {
             Text("Please check your connection and try again.")
         }
         .padding()
-        .frame(width: screenWidth / 2.5)
+        .frame(
+            width: usesLegacyWideIPadLayout
+                ? parentViewportSize.width / 2.5 : nil
+        )
+        .frame(
+            maxWidth: usesLegacyWideIPadLayout ? nil : .infinity
+        )
         .background(
             colorFromClub(club: club).opacity(darkMode ? 0.5 : 0.2).background(
                 .systemGray6

@@ -14,30 +14,45 @@ struct WeekCalendarView: View {
     @State var appear = Array(repeating: true, count: 4)
     @AppStorage("Animations+") var animationsPlus = false
 
-    var body: some View {
-        VStack {
-            HStack(alignment: .center) {
-                Button(action: {
-                    navigateWeek(by: -1)
-                }) {
-                    Image(systemName: "chevron.left")
-                }
-                .padding()
-                Spacer()
-                Text(weekRange(for: currentWeek))
-                    .font(.title)
-                    .bold()
-                Spacer()
-                Button(action: {
-                    navigateWeek(by: 1)
-                }) {
-                    Image(systemName: "chevron.right")
-                }
-                .padding()
-            }
-            .padding()
+    @Environment(\.appViewportSize) var viewportSize
 
-            HStack(alignment: .center, spacing: 15) {
+    var narrowCalendarLayout: Bool { viewportSize.width < 700 }
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && viewportSize.width >= 900
+            && viewportSize.width > viewportSize.height
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: usesLegacyWideIPadLayout ? 15 : 12) {
+                Button {
+                    showMonthPicker = true
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.subheadline.weight(.semibold))
+
+                        Text(
+                            currentWeek,
+                            format: .dateTime.month(.wide).year()
+                        )
+                        .font(
+                            usesLegacyWideIPadLayout
+                                ? .title2.weight(.semibold)
+                                : .headline
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.blue)
+                .layoutPriority(1)
+                .accessibilityLabel("Choose month")
+
+                Spacer(minLength: 8)
+
                 CustomToggleSwitch(
                     boolean: $listMode,
                     colors: [.blue, .blue],
@@ -46,34 +61,15 @@ struct WeekCalendarView: View {
                 .accessibilityLabel(
                     listMode ? "Show calendar view" : "Show meeting list"
                 )
-                
-                Button {
-                    showMonthPicker.toggle()
-                } label: {
-                    if !showMonthPicker {
-                        Image(systemName: "calendar")
-                            .imageScale(.large)
-                    } else {
-                        ProgressView()
-                    }
-                }
-                .padding()
-                .sheet(isPresented: $showMonthPicker) {
-                    MonthPickerView(
-                        selectedDate: $selectedDate,
-                        currentYear: Calendar.current.component(
-                            .year,
-                            from: selectedDate
-                        ),
-                        clubs: $clubs,
-                        meetingIndex: meetingIndex,
-                        schoolScheduleStore: schoolScheduleStore,
-                        viewModel: viewModel
-                    )
-                    .frame(width: appScreenBounds.width / 1.05)
-                    .cornerRadius(25)
-                }
 
+                addMeetingButton
+            }
+            .padding(.horizontal)
+
+            HStack(
+                alignment: .top,
+                spacing: usesLegacyWideIPadLayout ? 15 : 2
+            ) {
                 ForEach(getDaysInWeek(for: currentWeek), id: \.self) { date in
                     let schoolBadge = schoolScheduleStore.badge(for: date)
                     VStack {
@@ -86,7 +82,7 @@ struct WeekCalendarView: View {
                                 isSelected(date)
                                     ? .white : isToday(date) ? .blue : .primary
                             )
-                            .padding(10)
+                            .padding(usesLegacyWideIPadLayout ? 10 : 8)
                             .background(
                                 isSelected(date)
                                     ? Circle().fill(Color.blue)
@@ -184,34 +180,36 @@ struct WeekCalendarView: View {
                             }
                         }
                     }
+                    .frame(maxWidth: narrowCalendarLayout ? .infinity : nil)
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         selectedDate = date
                     }
                 }
 
-                if clubs.contains(where: {
-                    isClubLeaderOrSuperAdmin(
-                        club: $0,
-                        userEmail: viewModel.userEmail
-                    )
-                }) {
-                    Button {
-                        addMeetingTimeView.toggle()
-                    } label: {
-                        Image(systemName: "plus")
-                            .imageScale(.large)
-                            .foregroundStyle(.green)
-                    }
-                    .padding()
-                } else {
-                    Image(systemName: "plus")
-                        .imageScale(.large)
-                        .foregroundStyle(.clear)
-                        .padding()
-                }
             }
             .padding(.horizontal)
-            .sheet(isPresented: $addMeetingTimeView) {
+        }
+        .appSheet(isPresented: $showMonthPicker) {
+            MonthPickerView(
+                selectedDate: $selectedDate,
+                currentYear: Calendar.current.component(
+                    .year,
+                    from: selectedDate
+                ),
+                clubs: $clubs,
+                meetingIndex: meetingIndex,
+                schoolScheduleStore: schoolScheduleStore,
+                viewModel: viewModel
+            )
+            .frame(
+                width: usesLegacyWideIPadLayout
+                    ? viewportSize.width / 1.05 : nil
+            )
+            .frame(maxWidth: usesLegacyWideIPadLayout ? nil : .infinity)
+            .cornerRadius(25)
+        }
+        .appSheet(isPresented: $addMeetingTimeView) {
                 AddMeetingView(
                     viewCloser: {
                         addMeetingTimeView = false
@@ -228,10 +226,9 @@ struct WeekCalendarView: View {
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
                 .cornerRadius(25)
-            }
-            .onChange(of: selectedDate) {
-                currentWeek = selectedDate
-            }
+        }
+        .onChange(of: selectedDate) {
+            currentWeek = selectedDate
         }
         .animation(.smooth, value: currentWeek)
         .onAppear {
@@ -265,6 +262,25 @@ struct WeekCalendarView: View {
                     }
                 }
         )
+    }
+
+    @ViewBuilder
+    var addMeetingButton: some View {
+        if clubs.contains(where: {
+            isClubLeaderOrSuperAdmin(
+                club: $0,
+                userEmail: viewModel.userEmail
+            )
+        }) {
+            Button {
+                addMeetingTimeView.toggle()
+            } label: {
+                Image(systemName: "plus")
+                    .imageScale(.large)
+                    .foregroundStyle(.green)
+            }
+            .padding()
+        }
     }
 
     func getDaysInWeek(for date: Date) -> [Date] {
@@ -302,25 +318,6 @@ struct WeekCalendarView: View {
                 currentWeek = newWeek
             }
         }
-    }
-
-    func weekRange(for date: Date) -> String {
-        let calendar = calendarStartingOnSunday()
-        guard
-            let weekInterval = calendar.dateInterval(
-                of: .weekOfYear,
-                for: date
-            ),
-            let saturday = calendar.date(
-                byAdding: .day,
-                value: -1,
-                to: weekInterval.end
-            )
-        else { return "" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return
-            "\(formatter.string(from: weekInterval.start)) - \(formatter.string(from: saturday)), \(String(calendar.component(.year, from: weekInterval.start)))"
     }
 
     func isSelected(_ date: Date) -> Bool {

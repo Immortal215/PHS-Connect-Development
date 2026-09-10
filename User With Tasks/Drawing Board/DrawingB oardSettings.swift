@@ -3,8 +3,16 @@ import SwiftUI
 
 struct Settinger: View {
 
-    @State var screenWidth = appScreenBounds.width
-    @State var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
+    var narrowLayout: Bool { screenWidth < 760 }
+    var panelWidth: CGFloat { narrowLayout ? max(1, screenWidth - 32) : screenWidth / 2.1 }
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && screenWidth >= 900
+            && screenWidth > screenHeight
+    }
 
     @AppStorage("duedatesetter") var dueDateSetter = "Two Days"
     @State var dueDaters: [String] = [
@@ -455,7 +463,7 @@ struct Settinger: View {
                         }
                         .font(.callout)
                         .foregroundStyle(.red)
-                        .sheet(isPresented: $clear) {
+                        .appSheet(isPresented: $clear) {
                             Text("Are you sure???")
                             Button("Cancel") {
                                 clear = false
@@ -518,10 +526,16 @@ struct Settinger: View {
                     }
 
                 }
-                .frame(width: screenWidth / 1.3)
+                .frame(
+                    width: usesLegacyWideIPadLayout
+                        ? screenWidth / 1.3 : nil
+                )
+                .frame(
+                    maxWidth: usesLegacyWideIPadLayout ? nil : .infinity
+                )
 
                 Spacer()
-                    .frame(height: 100)
+                    .frame(height: usesLegacyWideIPadLayout ? 100 : 16)
             }
         }
         .onAppear {

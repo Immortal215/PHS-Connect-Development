@@ -45,7 +45,7 @@ struct ClubPhotoEditorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
-        .sheet(isPresented: $upload.sheetPresented) {
+        .appSheet(isPresented: $upload.sheetPresented) {
             ImageAttachmentSheet(
                 attachmentURL: $upload.attachmentURL,
                 attachmentLoaded: $upload.attachmentLoaded,

@@ -7,7 +7,7 @@ import Pow
 import SwiftUI
 import SwiftUIX
 
-private enum ClubSettingsSection: CaseIterable, Hashable {
+enum ClubSettingsSection: CaseIterable, Hashable {
     case information
     case access
     case leaders
@@ -42,13 +42,13 @@ struct CreateClubView: View {
     @State var instagram: String?
     @State var clubColor: Color?
     @State var chatEnabled = true
-    @State private var didLoadForm = false
-    @State private var didCommit = false
+    @State var didLoadForm = false
+    @State var didCommit = false
     @State var didCancel = false
-    @State private var showMembersEditor = false
-    @State private var expandedSections = Set(ClubSettingsSection.allCases)
+    @State var showMembersEditor = false
+    @State var expandedSections = Set(ClubSettingsSection.allCases)
 
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     var onClose: (() -> Void)?
     var onValidationError: (() -> Void)?
@@ -152,7 +152,7 @@ struct CreateClubView: View {
         .onAppear(perform: loadClub)
         .onDisappear(perform: handleDismissal)
         .interactiveDismissDisabled(photoUpload.isUploading)
-        .sheet(isPresented: $showMembersEditor) {
+        .appSheet(isPresented: $showMembersEditor) {
             ClubMembersEditorView(members: $members)
                 .presentationDragIndicator(.visible)
                 .presentationSizing(.page)
@@ -170,8 +170,53 @@ struct CreateClubView: View {
         ]
     }
 
+    @ViewBuilder
     var editorHeader: some View {
+        Group {
+            if horizontalSizeClass == .compact {
+                compactEditorHeader
+            } else {
+                wideEditorHeader
+            }
+        }
+        .padding(horizontalSizeClass == .compact ? 16 : 20)
+        .background(Color.systemBackground)
+    }
+
+    var wideEditorHeader: some View {
         HStack(spacing: 14) {
+            editorIdentity
+
+            Spacer(minLength: 12)
+
+            completionBadge
+            commitButton
+            cancelButton
+        }
+    }
+
+    var compactEditorHeader: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                editorIdentity
+
+                Spacer(minLength: 4)
+
+                cancelButton
+            }
+
+            HStack(spacing: 10) {
+                completionBadge
+
+                Spacer(minLength: 0)
+
+                commitButton
+            }
+        }
+    }
+
+    var editorIdentity: some View {
+        HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(
@@ -202,53 +247,55 @@ struct CreateClubView: View {
                 )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .lineLimit(horizontalSizeClass == .compact ? 2 : 1)
             }
-
-            Spacer(minLength: 12)
-
-            Label(
-                isFormComplete ? "Ready" : "Missing information",
-                systemImage: isFormComplete
-                    ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
-            )
-            .font(.caption.bold())
-            .foregroundStyle(isFormComplete ? .green : .red)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                (isFormComplete ? Color.green : Color.red).opacity(0.12),
-                in: Capsule()
-            )
-
-            Button(action: commitClub) {
-                Label(
-                    isEditingClub ? "Edit Club" : "Create Club",
-                    systemImage: isEditingClub ? "pencil" : "plus"
-                )
-                .font(.headline)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 11)
-                .background(
-                    isFormComplete
-                        ? (isEditingClub ? Color.blue : Color.green)
-                        : Color.gray,
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(!isFormComplete || photoUpload.isUploading || didCommit)
-
-            Button("Cancel", role: .cancel) {
-                didCancel = true
-                photoUpload.abandon()
-                onClose?()
-            }
-            .buttonStyle(.bordered)
         }
-        .padding(20)
-        .background(Color.systemBackground)
+    }
+
+    var completionBadge: some View {
+        Label(
+            isFormComplete ? "Ready" : "Missing information",
+            systemImage: isFormComplete
+                ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
+        )
+        .font(.caption.bold())
+        .foregroundStyle(isFormComplete ? .green : .red)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            (isFormComplete ? Color.green : Color.red).opacity(0.12),
+            in: Capsule()
+        )
+    }
+
+    var commitButton: some View {
+        Button(action: commitClub) {
+            Label(
+                isEditingClub ? "Edit Club" : "Create Club",
+                systemImage: isEditingClub ? "pencil" : "plus"
+            )
+            .font(.headline)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .background(
+                isFormComplete
+                    ? (isEditingClub ? Color.blue : Color.green)
+                    : Color.gray,
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isFormComplete || photoUpload.isUploading || didCommit)
+    }
+
+    var cancelButton: some View {
+        Button("Cancel", role: .cancel) {
+            didCancel = true
+            photoUpload.abandon()
+            onClose?()
+        }
+        .buttonStyle(.bordered)
     }
 
     @ViewBuilder
@@ -433,16 +480,15 @@ struct CreateClubView: View {
             Text("Schoology code")
                 .font(.subheadline.bold())
 
-            HStack {
-                TextField("XXXX-XXXX-XXXXX", text: $schoology)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    TextField("XXXX-XXXX-XXXXX", text: $schoology)
+                    schoologyTypePicker
+                }
 
-                if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
-                    Picker("Type", selection: $clubType) {
-                        Text("Course").tag("Course")
-                        Text("Group").tag("Group")
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 190)
+                VStack(alignment: .leading, spacing: 10) {
+                    TextField("XXXX-XXXX-XXXXX", text: $schoology)
+                    schoologyTypePicker
                 }
             }
 
@@ -477,34 +523,73 @@ struct CreateClubView: View {
 
     @ViewBuilder
     var genreSection: some View {
-        HStack {
-            Picker("Genre", selection: $genrePicker) {
-                Text("Competitive").tag("Competitive")
-                Text("Non-Competitive").tag("Non-Competitive")
-
-                Section("Subjects") {
-                    Text("Math").tag("Math")
-                    Text("Science").tag("Science")
-                    Text("Reading").tag("Reading")
-                    Text("History").tag("History")
-                    Text("Business").tag("Business")
-                    Text("Technology").tag("Technology")
-                    Text("Art").tag("Art")
-                    Text("Fine Arts").tag("Fine Arts")
-                    Text("Speaking").tag("Speaking")
-                    Text("Health").tag("Health")
-                    Text("Law").tag("Law")
-                    Text("Engineering").tag("Engineering")
-                }
-
-                Section("Descriptors") {
-                    Text("Cultural").tag("Cultural")
-                    Text("Physical").tag("Physical")
-                    Text("Mental Health").tag("Mental Health")
-                    Text("Safe Space").tag("Safe Space")
-                }
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                genrePickerControl
+                genreActionButtons
             }
 
+            VStack(alignment: .leading, spacing: 10) {
+                genrePickerControl
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                genreActionButtons
+            }
+        }
+
+        selectableChipGrid(
+            values: genres,
+            selection: $selectedGenres,
+            emptyMessage: "No genres selected. Non-Competitive will be used by default."
+        )
+
+        Text("\(genres.count)/5 genres")
+            .font(.caption)
+            .foregroundStyle(genres.count >= 5 ? .red : .secondary)
+    }
+
+    @ViewBuilder
+    var schoologyTypePicker: some View {
+        if schoology.replacingOccurrences(of: "-", with: "").count > 12 {
+            Picker("Type", selection: $clubType) {
+                Text("Course").tag("Course")
+                Text("Group").tag("Group")
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: horizontalSizeClass == .compact ? .infinity : 190)
+        }
+    }
+
+    var genrePickerControl: some View {
+        Picker("Genre", selection: $genrePicker) {
+            Text("Competitive").tag("Competitive")
+            Text("Non-Competitive").tag("Non-Competitive")
+
+            Section("Subjects") {
+                Text("Math").tag("Math")
+                Text("Science").tag("Science")
+                Text("Reading").tag("Reading")
+                Text("History").tag("History")
+                Text("Business").tag("Business")
+                Text("Technology").tag("Technology")
+                Text("Art").tag("Art")
+                Text("Fine Arts").tag("Fine Arts")
+                Text("Speaking").tag("Speaking")
+                Text("Health").tag("Health")
+                Text("Law").tag("Law")
+                Text("Engineering").tag("Engineering")
+            }
+
+            Section("Descriptors") {
+                Text("Cultural").tag("Cultural")
+                Text("Physical").tag("Physical")
+                Text("Mental Health").tag("Mental Health")
+                Text("Safe Space").tag("Safe Space")
+            }
+        }
+    }
+
+    var genreActionButtons: some View {
+        HStack(spacing: 10) {
             Button {
                 guard genres.count < 5, !genres.contains(genrePicker) else {
                     return
@@ -521,24 +606,14 @@ struct CreateClubView: View {
                     genres.removeAll { selectedGenres.contains($0) }
                     selectedGenres.removeAll()
                 } label: {
-                    Image(systemName: "trash")
+                    Label("Remove", systemImage: "trash")
                 }
                 .buttonStyle(.bordered)
             }
         }
-
-        selectableChipGrid(
-            values: genres,
-            selection: $selectedGenres,
-            emptyMessage: "No genres selected. Non-Competitive will be used by default."
-        )
-
-        Text("\(genres.count)/5 genres")
-            .font(.caption)
-            .foregroundStyle(genres.count >= 5 ? .red : .secondary)
     }
 
-    private func settingsCard<Content: View>(
+    func settingsCard<Content: View>(
         section: ClubSettingsSection,
         title: String,
         subtitle: String,
@@ -582,17 +657,18 @@ struct CreateClubView: View {
                     HStack(spacing: 6) {
                         Text(title)
                             .font(.headline)
+                            .foregroundColor(.primary)
 
                         if showsRequiredIndicator {
                             Text("Required")
-                                .font(.caption2.bold())
+                                .font(.caption.bold())
                                 .foregroundStyle(.red)
                         }
                     }
 
                     Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(horizontalSizeClass == .compact ? .footnote : .caption)
+                        .foregroundColor(.secondary)
                 }
             }
         }
@@ -670,21 +746,64 @@ struct CreateClubView: View {
         removeAction: @escaping () -> Void,
         canRemove: Bool
     ) -> some View {
-        HStack {
-            TextField(placeholder, text: text)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .changeEffect(.shake(rate: .fast), value: isShaking)
-                .onSubmit(addAction)
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                emailTextField(
+                    placeholder: placeholder,
+                    text: text,
+                    isShaking: isShaking,
+                    addAction: addAction
+                )
+                emailActionButtons(
+                    addAction: addAction,
+                    removeAction: removeAction,
+                    canRemove: canRemove
+                )
+            }
 
+            VStack(alignment: .leading, spacing: 10) {
+                emailTextField(
+                    placeholder: placeholder,
+                    text: text,
+                    isShaking: isShaking,
+                    addAction: addAction
+                )
+                emailActionButtons(
+                    addAction: addAction,
+                    removeAction: removeAction,
+                    canRemove: canRemove
+                )
+            }
+        }
+    }
+
+    func emailTextField(
+        placeholder: String,
+        text: Binding<String>,
+        isShaking: Bool,
+        addAction: @escaping () -> Void
+    ) -> some View {
+        TextField(placeholder, text: text)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .changeEffect(.shake(rate: .fast), value: isShaking)
+            .onSubmit(addAction)
+    }
+
+    func emailActionButtons(
+        addAction: @escaping () -> Void,
+        removeAction: @escaping () -> Void,
+        canRemove: Bool
+    ) -> some View {
+        HStack(spacing: 10) {
             Button(action: addAction) {
-                Image(systemName: "plus")
+                Label("Add", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
 
             if canRemove {
                 Button(role: .destructive, action: removeAction) {
-                    Image(systemName: "trash")
+                    Label("Remove", systemImage: "trash")
                 }
                 .buttonStyle(.bordered)
             }
@@ -717,9 +836,9 @@ struct CreateClubView: View {
                     .padding(.vertical, 4)
             } else {
                 LazyVGrid(
-                    columns: [
-                        GridItem(.adaptive(minimum: 150), spacing: 8)
-                    ],
+                    columns: horizontalSizeClass == .compact
+                        ? [GridItem(.flexible())]
+                        : [GridItem(.adaptive(minimum: 150), spacing: 8)],
                     alignment: .leading,
                     spacing: 8
                 ) {
@@ -740,9 +859,9 @@ struct CreateClubView: View {
                                 )
                                 Text(value)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.75)
+                                    .minimumScaleFactor(0.9)
                             }
-                            .font(.caption)
+                            .font(horizontalSizeClass == .compact ? .footnote : .caption)
                             .foregroundStyle(isSelected ? .red : .primary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)

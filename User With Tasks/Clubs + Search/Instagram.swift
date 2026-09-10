@@ -65,7 +65,7 @@ struct InstagramLinkButton: View {
             .cornerRadius(10)
             .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
         }
-        .sheet(isPresented: $showingSafari) {
+        .appSheet(isPresented: $showingSafari) {
             InstagramSafariView(url: instagramUrl)
                 .edgesIgnoringSafeArea(.all)
                 .presentationSizing(.page)

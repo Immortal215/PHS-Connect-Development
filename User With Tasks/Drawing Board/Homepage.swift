@@ -4,8 +4,16 @@ import SwiftUI
 
 struct Homepage: View {
     @EnvironmentObject var drawingBoardStore: DrawingBoardStore
-    @State var screenWidth = appScreenBounds.width
-    @State var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
+    var narrowLayout: Bool { screenWidth < 760 }
+    var panelWidth: CGFloat {
+        narrowLayout ? max(1, screenWidth - 32) : screenWidth / 2
+    }
+    var cardPanelWidth: CGFloat {
+        narrowLayout ? panelWidth : screenWidth / 2.1
+    }
 
     @AppStorage("completed") var completed = 0
 
@@ -367,13 +375,26 @@ struct Homepage: View {
     }
 
     var body: some View {
+        if narrowLayout {
+            ScrollView {
+                homeContent.frame(minHeight: max(300, screenHeight - 100))
+            }
+        } else {
+            homeContent.frame(minHeight: max(300, screenHeight - 100))
+        }
+    }
+
+    var homeContent: some View {
         ZStack {
             VStack {
                 Text("Home")
                     .font(.title)
                     .fontWeight(.semibold)
 
-                HStack {
+                let panels = narrowLayout
+                    ? AnyLayout(VStackLayout(spacing: 24))
+                    : AnyLayout(HStackLayout())
+                panels {
                     // planner
                     VStack {
                         ZStack {
@@ -462,7 +483,7 @@ struct Homepage: View {
                         .fixedSize()
 
                         // Divider()
-                        .frame(width: 400)
+                        .frame(maxWidth: min(400, panelWidth))
 
                         Button {
                             selectedTab = 1
@@ -507,7 +528,7 @@ struct Homepage: View {
                                                     cornerRadius: 25
                                                 )
                                                 .stroke(.white, lineWidth: 3)
-                                                .frame(width: screenWidth / 2.1)
+                                                .frame(width: cardPanelWidth)
                                             )
                                             .shadow(
                                                 color: .white.opacity(0.2),
@@ -515,7 +536,7 @@ struct Homepage: View {
                                                 x: 0,
                                                 y: 4
                                             )
-                                            .frame(width: screenWidth / 2.1)
+                                            .frame(width: cardPanelWidth)
 
                                         VStack {
                                             HStack {
@@ -815,7 +836,7 @@ struct Homepage: View {
                                             )
                                         }
                                         .offset(x: 25)
-                                        .frame(width: screenWidth / 2)
+                                        .frame(width: panelWidth)
                                         .padding(10)
                                     }
                                     .padding(7.5)
@@ -835,7 +856,7 @@ struct Homepage: View {
                         }
                         Spacer()
                     }
-                    .frame(width: screenWidth / 2)
+                    .frame(width: panelWidth)
 
                     // timer/draw/thoughts
                     VStack {
@@ -870,7 +891,7 @@ struct Homepage: View {
                         .fixedSize()
 
                         //  Divider()
-                        //  .frame(width: 400)
+                        //  .frame(maxWidth: min(400, panelWidth))
 
                         Button {
                             selectedTab = 2
@@ -1367,12 +1388,12 @@ struct Homepage: View {
                                     .padding()
                                 }
                             }
-                            .frame(width: screenWidth / 2)
+                            .frame(width: panelWidth)
 
                         }
 
                     }
-                    .frame(width: screenWidth / 2)
+                    .frame(width: panelWidth)
                 }
 
             }

@@ -13,8 +13,9 @@ struct MessageScrollView: View {
     @Binding var replyingMessageID: String?
     var focusSendBar: () -> Void
     @Binding var bubbles: Bool
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
     @Binding var clubColor: Color
     @State var nonBubbleMenuMessage: Chat.ChatMessage? = nil
     @State var isEmojiPickerPresented = false

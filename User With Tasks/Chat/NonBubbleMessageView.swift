@@ -23,8 +23,9 @@ struct NonBubbleMessageView: View {
     @Binding var editingMessageID: String?
     @Binding var replyingMessageID: String?
     var focusSendBar: () -> Void
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
     @Binding var nonBubbleMenuMessage: Chat.ChatMessage?
     @Binding var isEmojiPickerPresented: Bool
     @Binding var selectedEmoji: Emoji?

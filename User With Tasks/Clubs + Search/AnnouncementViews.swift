@@ -8,6 +8,7 @@ import SwiftUI
 import SwiftUIX
 
 struct AddAnnouncementSheet: View {
+    @Environment(\.appViewportSize) var viewportSize
     @State var clubName: String
     @State var announcementBody: String = ""
     @State var announcementTitle: String = ""
@@ -64,7 +65,12 @@ struct AddAnnouncementSheet: View {
                     .onChange(of: announcementBody) {
                         setAnnouncementToValues()
                     }
-                    .frame(height: appScreenBounds.height / 4)
+                    .frame(
+                        height: UIDevice.current.userInterfaceIdiom == .pad
+                            && viewportSize.width >= 900
+                            && viewportSize.width > viewportSize.height
+                            ? viewportSize.height / 4 : 160
+                    )
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
                     .overlay(
@@ -202,7 +208,7 @@ struct AddAnnouncementSheet: View {
                     )
 
                 }
-                .sheet(isPresented: $announceFull) {
+                .appSheet(isPresented: $announceFull) {
                     SingleAnnouncementView(
                         clubName: clubName,
                         announcement: $announcement,
@@ -411,7 +417,7 @@ struct AnnouncementsView: View {
                                     userInfo: $userInfo
                                 )
                             }
-                            .sheet(item: $selectedAnnouncement) { selected in
+                            .appSheet(item: $selectedAnnouncement) { selected in
                                 SingleAnnouncementView(
                                     clubName: clubNames[
                                         selected.announcement.clubID
@@ -510,7 +516,7 @@ struct AnnouncementsView: View {
                                 }
                             }
                         }
-                        .sheet(isPresented: $showAllAnnouncements) {
+                        .appSheet(isPresented: $showAllAnnouncements) {
                             ScrollView {
                                 Text("All Announcements")
                                     .font(.largeTitle)
@@ -541,6 +547,7 @@ struct AnnouncementsView: View {
 }
 
 struct AllAnnouncementsView: View {
+    @Environment(\.appViewportSize) var viewportSize
     @State var announcements: [String: Club.Announcements]
     @State var clubNames: [String: String] = [:]
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
@@ -550,6 +557,12 @@ struct AllAnnouncementsView: View {
     @State var isHomePage: Bool = false
     @Binding var userInfo: Personal?
     @State var isTheHomeScreenClubView = false
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && viewportSize.width >= 900
+            && viewportSize.width > viewportSize.height
+    }
 
     var body: some View {
 
@@ -579,10 +592,13 @@ struct AllAnnouncementsView: View {
                 }
                 .frame(
                     width: isTheHomeScreenClubView
-                        ? appScreenBounds.width / 3 : nil
+                        ? (usesLegacyWideIPadLayout
+                            ? viewportSize.width / 3
+                            : min(360, max(240, viewportSize.width - 48)))
+                        : nil
                 )
                 .padding(.horizontal, isTheHomeScreenClubView ? 0 : 16)
-                .sheet(item: $selectedAnnouncement) { selected in
+                .appSheet(item: $selectedAnnouncement) { selected in
                     SingleAnnouncementView(
                         clubName: clubNames[selected.announcement.clubID]
                             ?? "Unknown Club",
@@ -724,7 +740,7 @@ struct SingleAnnouncementView: View {
                 Spacer()
             }
         }
-        .sheet(isPresented: $showInfo) {
+        .appSheet(isPresented: $showInfo) {
             if let cluber = clubs.first(where: {
                 $0.clubID == announcement.clubID
             }) {
@@ -734,7 +750,7 @@ struct SingleAnnouncementView: View {
                     userInfo: $userInfo
                 )
                 .presentationDragIndicator(.visible)
-                .frame(width: appScreenBounds.width / 1.05)
+                .frame(maxWidth: .infinity)
                 .foregroundColor(nil)
                 .presentationBackground {
                     GlassBackground()

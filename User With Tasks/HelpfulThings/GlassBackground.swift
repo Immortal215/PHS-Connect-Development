@@ -2,31 +2,24 @@ import SwiftUI
 
 struct GlassBackground: View {
     var color: Color?
-    var shape: AnyShape = AnyShape(
-        RoundedRectangle(cornerRadius: 24, style: .continuous)
-    )  // must pass in a shape with AnyShape() around it!!!
-    @AppStorage("darkMode") var darkMode = false
+    var shape: AnyShape?
 
+    @ViewBuilder
     var body: some View {
-        if #available(iOS 26, *) {
-            let color =
-                color?.opacity(0.2) ?? Color.systemBackground.opacity(0.2)
-            let glass = Glass.clear.tint(color)
+        let color = color?.opacity(0.2) ?? Color.systemBackground.opacity(0.2)
+        let glass = Glass.clear.tint(color)
 
+        if let shape {
             shape
                 .glassEffect(glass, in: shape)
                 .foregroundStyle(.clear)
         } else {
-            shape
-                .fill(Color.systemGray6.opacity(darkMode ? 0.1 : 0.6))
-                .background {
-                    shape.fill(.ultraThinMaterial)
-                }
-                .overlay(
-                    shape
-                        .stroke((color ?? .white).opacity(0.2), lineWidth: 1)
+            ConcentricRectangle(corners: .concentric(minimum: 24), isUniform: true)
+                .glassEffect(
+                    glass,
+                    in: ConcentricRectangle(corners: .concentric(minimum: 24), isUniform: true)
                 )
-                .shadow(color: color ?? .clear, radius: 1)
+                .foregroundStyle(.clear)
         }
     }
 }

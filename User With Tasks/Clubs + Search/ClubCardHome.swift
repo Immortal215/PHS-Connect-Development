@@ -11,8 +11,8 @@ import SwiftUIX
 
 struct ClubCardHome: View {
     @State var club: Club
-    @State var screenWidth: CGFloat
-    @State var screenHeight: CGFloat
+    var screenWidth: CGFloat
+    var screenHeight: CGFloat
     @State var imageScaler: Double
     @State var viewModel: AuthenticationViewModel
     @AppStorage("shownInfo") var shownInfo = -1

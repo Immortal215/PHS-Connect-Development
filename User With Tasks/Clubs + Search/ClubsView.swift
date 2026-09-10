@@ -11,8 +11,14 @@ import SwiftUIX
 struct ClubView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && screenWidth >= 900
+            && screenWidth > screenHeight
+    }
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
     @State var advSearchShown = true
@@ -67,7 +73,8 @@ struct ClubView: View {
                                 clubs: clubs,
                                 viewModel: viewModel,
                                 screenHeight: screenHeight,
-                                screenWidth: screenHeight,
+                                screenWidth: usesLegacyWideIPadLayout
+                                    ? screenHeight : screenWidth,
                                 userInfo: $userInfo,
                                 scrollerOf: "Enrolled"
                             )

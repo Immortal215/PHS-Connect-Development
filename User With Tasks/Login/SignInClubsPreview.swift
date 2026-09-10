@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SignInClubsPreview: View {
+    var isCompact = false
+
     var body: some View {
         VStack(spacing: 10) {
             SignInPreviewWindowHeader(
@@ -8,7 +10,7 @@ struct SignInClubsPreview: View {
                 icon: "magnifyingglass"
             )
 
-            SignInMockSearchBar(text: "build non-competitive")
+            SignInMockSearchBar(text: "Build non-competitive")
 
             SignInMiniClubCard(
                 name: "CS Club",
@@ -16,16 +18,18 @@ struct SignInClubsPreview: View {
                 genres: ["STEM", "Technology", "Non-Competitive"],
                 color: .blue,
                 actionText: "Connect",
-                symbol: "gearshape.2.fill"
+                symbol: "gearshape.2.fill",
+                isCompact: isCompact
             )
 
             SignInMiniClubCard(
                 name: "Service Club",
                 description: "Make an impact by building the community up.",
-                genres: ["Service", "Leadership", "Non-Competitve"],
+                genres: ["Service", "Leadership", "Non-Competitive"],
                 color: .green,
                 actionText: "Apply",
-                symbol: "hands.sparkles.fill"
+                symbol: "hands.sparkles.fill",
+                isCompact: isCompact
             )
         }
         .padding(14)
@@ -87,7 +91,7 @@ struct SignInMockSearchBar: View {
                 .foregroundStyle(.secondary)
 
             Text(text)
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
 
@@ -111,6 +115,11 @@ struct SignInMiniClubCard: View {
     var color: Color
     var actionText: String
     var symbol: String
+    var isCompact = false
+
+    var displayedGenres: [String] {
+        isCompact ? Array(genres.prefix(2)) : genres
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -147,14 +156,14 @@ struct SignInMiniClubCard: View {
                 }
 
                 Text(description)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
 
                 HStack(spacing: 5) {
-                    ForEach(genres, id: \.self) { genre in
+                    ForEach(displayedGenres, id: \.self) { genre in
                         Text(genre)
-                            .font(.caption2)
+                            .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(color)
                             .padding(.horizontal, 7)
@@ -168,7 +177,7 @@ struct SignInMiniClubCard: View {
                     Spacer(minLength: 2)
 
                     Text(actionText)
-                        .font(.caption2)
+                        .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10)

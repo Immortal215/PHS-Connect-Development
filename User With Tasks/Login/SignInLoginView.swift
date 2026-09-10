@@ -14,7 +14,8 @@ struct SignInLoginView: View {
             ZStack {
                 SignInAnimatedBackground()
 
-                VStack {
+                ScrollView {
+                    VStack {
                     HStack {
                         Spacer()
 
@@ -32,8 +33,11 @@ struct SignInLoginView: View {
 
                     Spacer()
 
-                    loginCard
-                        .frame(maxWidth: 520)
+                    loginCard(
+                        compactLandscape: UIDevice.current.userInterfaceIdiom == .phone
+                            && geometry.size.height < 500
+                    )
+                        .frame(maxWidth: geometry.size.height < 500 ? 700 : 520)
                         .padding(.horizontal, 24)
                         .opacity(revealContent ? 1 : 0)
                         .offset(y: revealContent ? 0 : 28)
@@ -47,7 +51,13 @@ struct SignInLoginView: View {
                     Text("Built for Prospect students")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 16))
+                        .padding(
+                            .bottom,
+                            max(geometry.safeAreaInsets.bottom, 16)
+                        )
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: geometry.size.height)
                 }
             }
             .onAppear {
@@ -57,12 +67,45 @@ struct SignInLoginView: View {
         }
     }
 
-    var loginCard: some View {
-        VStack(spacing: 22) {
+    func loginCard(compactLandscape: Bool) -> some View {
+        Group {
+            if compactLandscape {
+                HStack(spacing: 28) {
+                    loginBrand(compact: true)
+                        .frame(maxWidth: 300)
+                    signInControls
+                        .frame(maxWidth: 340)
+                }
+            } else {
+                VStack(spacing: 22) {
+                    loginBrand(compact: false)
+                    signInControls
+                }
+            }
+        }
+        .padding(compactLandscape ? 20 : 30)
+        .background {
+            GlassBackground(color: .blue)
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .stroke(Color.white.opacity(0.30), lineWidth: 1)
+        }
+        .shadow(color: .blue.opacity(0.20), radius: 30, y: 16)
+    }
+
+    func loginBrand(compact: Bool) -> some View {
+        VStack(spacing: compact ? 8 : 22) {
             ZStack {
                 Circle()
                     .stroke(Color.blue.opacity(0.22), lineWidth: 3)
-                    .frame(width: 116, height: 116)
+                    .frame(
+                        width: compact ? 84 : 116,
+                        height: compact ? 84 : 116
+                    )
                     .scaleEffect(pulseLogo ? 1.08 : 0.92)
                     .animation(
                         reduceMotion
@@ -76,16 +119,30 @@ struct SignInLoginView: View {
                     color: .blue,
                     shape: AnyShape(Circle())
                 )
-                .frame(width: 92, height: 92)
+                .frame(
+                    width: compact ? 68 : 92,
+                    height: compact ? 68 : 92
+                )
 
                 Image(systemName: "person.3.fill")
-                    .font(.system(size: 40, weight: .semibold))
+                    .font(
+                        .system(
+                            size: compact ? 30 : 40,
+                            weight: .semibold
+                        )
+                    )
                     .foregroundStyle(.blue)
             }
 
             VStack(spacing: 7) {
                 Text("Welcome to PHS Connect")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(
+                        .system(
+                            size: compact ? 26 : 34,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.75)
 
@@ -94,8 +151,11 @@ struct SignInLoginView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
+        }
+    }
 
-            VStack(spacing: 14) {
+    var signInControls: some View {
+        VStack(spacing: 14) {
                 GoogleSignInButton(
                     viewModel: GoogleSignInButtonViewModel(
                         scheme: .dark,
@@ -119,20 +179,7 @@ struct SignInLoginView: View {
                 }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.roundedRectangle(radius: 16))
-            }
         }
-        .padding(30)
-        .background {
-            GlassBackground(color: .blue)
-                .clipShape(
-                    RoundedRectangle(cornerRadius: 34, style: .continuous)
-                )
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .stroke(Color.white.opacity(0.30), lineWidth: 1)
-        }
-        .shadow(color: .blue.opacity(0.20), radius: 30, y: 16)
     }
 }
 

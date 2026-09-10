@@ -1,7 +1,6 @@
 import FirebaseAuth
 import FirebaseCore
 import FirebaseDatabase
-import Flow
 import GoogleSignIn
 import GoogleSignInSwift
 import PopupView
@@ -9,6 +8,85 @@ import Pow
 import Shimmer
 import SwiftUI
 import SwiftUIX
+
+struct SearchClubGrid<Content: View>: View {
+    let usesLegacyWideLayout: Bool
+    let columns: [GridItem]
+    let legacyWidth: CGFloat
+    let content: Content
+
+    init(
+        usesLegacyWideLayout: Bool,
+        columns: [GridItem],
+        legacyWidth: CGFloat,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.usesLegacyWideLayout = usesLegacyWideLayout
+        self.columns = columns
+        self.legacyWidth = legacyWidth
+        self.content = content()
+    }
+
+    var body: some View {
+        LazyVGrid(
+            columns: columns,
+            alignment: .center,
+            spacing: usesLegacyWideLayout ? 0 : 16
+        ) {
+            content
+        }
+        .frame(
+            width: usesLegacyWideLayout ? legacyWidth : nil,
+            alignment: .leading
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct SearchResizePlaceholder: View {
+    let columnCount: Int
+    let cardHeight: CGFloat
+
+    var columns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(), spacing: 16),
+            count: max(1, columnCount)
+        )
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(0..<6, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 12) {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.secondary.opacity(0.16))
+                            .frame(height: max(64, cardHeight * 0.48))
+
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(.secondary.opacity(0.2))
+                            .frame(width: 150, height: 16)
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(.secondary.opacity(0.13))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 11)
+                    }
+                    .padding(14)
+                    .frame(height: cardHeight, alignment: .top)
+                    .background(
+                        .secondary.opacity(0.08),
+                        in: RoundedRectangle(cornerRadius: 20)
+                    )
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
 
 struct SearchClubView: View {
     @Binding var clubs: [Club]
@@ -22,8 +100,9 @@ struct SearchClubView: View {
         return clubs.map { drafts[$0.clubID] ?? $0 }
     }
     @Binding var userInfo: Personal?
-    var screenWidth = appScreenBounds.width
-    var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
     @AppStorage("shownInfo") var shownInfo = -1
     @AppStorage("searchText") var searchText: String = ""
     var viewModel: AuthenticationViewModel
@@ -44,121 +123,76 @@ struct SearchClubView: View {
     @State var zindexs: [String: Double] = [:]
     @AppStorage("Animations+") var animationsPlus = false
     @AppStorage("selectedTab") var selectedTab = 3
+    @State var previousViewportSize: CGSize?
+    @State var isAdaptingViewport = false
+
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && screenWidth > screenHeight
+            && screenWidth >= 900
+    }
+    var columnCount: Int {
+        usesLegacyWideIPadLayout
+            ? 2 : max(1, Int((screenWidth - 32) / 340))
+    }
+    var gridColumns: [GridItem] {
+        if usesLegacyWideIPadLayout {
+            return Array(
+                repeating: GridItem(
+                    .fixed(screenWidth / 2.15 + 32),
+                    spacing: 0
+                ),
+                count: 2
+            )
+        }
+        return Array(
+            repeating: GridItem(.flexible(), spacing: 16),
+            count: columnCount
+        )
+    }
+    var cardWidth: CGFloat {
+        usesLegacyWideIPadLayout
+            ? screenWidth
+            : max(
+                0,
+                (screenWidth - 32 - CGFloat(columnCount - 1) * 16)
+                    / CGFloat(columnCount)
+            )
+    }
+    var showsResizePlaceholder: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && isAdaptingViewport
+    }
 
     var body: some View {
         ZStack {
             if advSearchShown {
                 VStack {
-                    HStack {
-                        Text("Search")
-                            .font(.title)
-                            .bold()
-                            .padding()
-                            .foregroundColor(.primary)
-                            .implicitAnimation(.smooth)
-
-                        if loadingClubs {
-                            ProgressView()
-                        }
-
-                        Spacer()
-
-                        ZStack(alignment: .leading) {
-                            HStack {
-                                SearchBar(
-                                    "Search For Clubs",
-                                    text: $searchText,
-                                    isEditing: $isSearching
-                                )
-                                .frame(width: screenWidth / 3)
-
-                                Text(
-                                    "Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")"
-                                )
-                                .bold()
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
-                                .background(
-                                    currentSearchingBy == "Genre"
-                                        ? Color.accentColor.opacity(0.7)
-                                        : Color.gray.opacity(0.2)
-                                )
-                                .foregroundColor(
-                                    currentSearchingBy == "Genre"
-                                        ? .white : .primary
-                                )
-                                .cornerRadius(15)
-                                .onTapGesture {
-                                    currentSearchingBy =
-                                        (currentSearchingBy == "Genre")
-                                        ? "Name" : "Genre"
-                                }
-                                .fixedSize(horizontal: true, vertical: false)
-
-                                Text("Sort")
-                                    .bold()
-                                    .padding(.horizontal)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        sortingMenu
-                                            ? Color.accentColor.opacity(0.7)
-                                            : Color.gray.opacity(0.2)
-                                    )
-                                    .foregroundColor(
-                                        sortingMenu ? .white : .primary
-                                    )
-                                    .cornerRadius(15)
-                                    .onTapGesture {
-                                        if !loadingClubs {
-                                            sortingMenu.toggle()
-                                        }
-                                    }
-                                    .fixedSize(
-                                        horizontal: true,
-                                        vertical: false
-                                    )
-
-                                if viewModel.isSuperAdmin {
-                                    Button {
-                                        createClubToggler = true
-                                    } label: {
-                                        Image(systemName: "plus")
-                                            .foregroundColor(.green)
-                                            .imageScale(.large)
-                                    }
-                                    .sheet(isPresented: $createClubToggler) {
-                                        CreateClubView(
-                                            onClose: {
-                                                createClubToggler = false
-                                            },
-                                            onValidationError: {
-                                                showIncompleteClubInformationBanner()
-                                            },
-                                            clubs: clubs
-                                        )
-                                        .presentationDragIndicator(.visible)
-                                        .presentationSizing(.page)
-                                        .cornerRadius(25)
-
-                                    }
-                                }
-                            }
-                            .padding()
-                        }
+                    ViewThatFits(in: .horizontal) {
+                        wideSearchHeader
+                        narrowSearchHeader
                     }
                     .padding(.bottom, -8)
 
-                    HStack {
-                        VStack {
+                    VStack {
                             if currentSearchingBy == "Genre" {
-                                HorizontalScrollView {
-                                    MultiGenrePickerView(
-                                        selectedGenres: $selectedGenres
-                                    )
-
+                                Group {
+                                    if usesLegacyWideIPadLayout {
+                                        HorizontalScrollView {
+                                            MultiGenrePickerView(
+                                                selectedGenres: $selectedGenres
+                                            )
+                                        }
+                                        .frame(height: screenHeight / 11)
+                                        .padding(.top, -24)
+                                    } else {
+                                        ScrollView(.horizontal) {
+                                            MultiGenrePickerView(
+                                                selectedGenres: $selectedGenres
+                                            )
+                                        }
+                                        .frame(height: 84)
+                                    }
                                 }
-                                .frame(height: screenHeight / 11)
-                                .padding(.top, -24)
                                 .animation(
                                     .smooth,
                                     value: currentSearchingBy == "Genre"
@@ -181,12 +215,21 @@ struct SearchClubView: View {
                                     ProgressView("Loading Clubs...")
 
                                 }
-                                ScrollViewReader { proxy in
-                                    ScrollView {
-                                        HFlow(
-                                            horizontalAlignment: .center,
-                                            verticalAlignment: .center,
-                                            distributeItemsEvenly: false
+                                if showsResizePlaceholder {
+                                    SearchResizePlaceholder(
+                                        columnCount: columnCount,
+                                        cardHeight: usesLegacyWideIPadLayout
+                                            ? max(140, screenHeight / 5) : 180
+                                    )
+                                    .transition(.opacity)
+                                } else {
+                                    ScrollViewReader { proxy in
+                                        ScrollView {
+                                        SearchClubGrid(
+                                            usesLegacyWideLayout:
+                                                usesLegacyWideIPadLayout,
+                                            columns: gridColumns,
+                                            legacyWidth: screenWidth
                                         ) {
                                             ForEach(filteredItems, id: \.clubID)
                                             { club in
@@ -204,7 +247,7 @@ struct SearchClubView: View {
                                                         ClubCard(
                                                             club: club,
                                                             screenWidth:
-                                                                screenWidth,
+                                                                cardWidth,
                                                             screenHeight:
                                                                 screenHeight,
                                                             imageScaler: 6,
@@ -214,7 +257,9 @@ struct SearchClubView: View {
                                                                 shownInfo,
                                                             userInfo: $userInfo,
                                                             selectedGenres:
-                                                                $selectedGenres
+                                                                $selectedGenres,
+                                                            usesLegacyWideLayout:
+                                                                usesLegacyWideIPadLayout
                                                         )
                                                         .foregroundStyle(
                                                             .primary
@@ -358,13 +403,26 @@ struct SearchClubView: View {
                                                         ) : 0
                                                 )
                                                 .frame(
-                                                    width: screenWidth / 2.15,
-                                                    height: screenHeight / 5,
+                                                    width: usesLegacyWideIPadLayout
+                                                        ? screenWidth / 2.15 : nil,
+                                                    height: usesLegacyWideIPadLayout
+                                                        ? screenHeight / 5 : nil,
                                                     alignment: .topLeading
                                                 )
+                                                .frame(
+                                                    minHeight: usesLegacyWideIPadLayout
+                                                        ? nil : 180
+                                                )
+                                                .padding(
+                                                    .horizontal,
+                                                    usesLegacyWideIPadLayout ? 16 : 0
+                                                )
+                                                .padding(
+                                                    .vertical,
+                                                    usesLegacyWideIPadLayout ? 16 : 0
+                                                )
 
-                                                .padding(.vertical)
-                                                .padding(.horizontal, 16)
+
                                                 .onAppear {
                                                     DispatchQueue.main
                                                         .asyncAfter(
@@ -375,15 +433,13 @@ struct SearchClubView: View {
                                                 }
                                             }
                                         }
-                                        .frame(
-                                            maxWidth: .infinity,
-                                            alignment: .leading
-                                        )
-                                        //    }
-
                                         .animation(.smooth, value: loadingClubs)
                                         .id(1)
-                                        .frame(width: screenWidth)
+                                        .padding(
+                                            .horizontal,
+                                            usesLegacyWideIPadLayout ? 0 : 16
+                                        )
+                                        .frame(maxWidth: .infinity)
 
                                         if filteredItems.isEmpty {
                                             Text(
@@ -422,7 +478,7 @@ struct SearchClubView: View {
                                         //                                            .bold()
                                         //                                            .foregroundStyle(.primary)
                                     }
-                                    .sheet(isPresented: $showClubInfoSheet) {
+                                    .appSheet(isPresented: $showClubInfoSheet) {
                                         if shownInfo >= 0 {
                                             let club = clubs[shownInfo]
                                             ClubInfoView(
@@ -432,8 +488,7 @@ struct SearchClubView: View {
                                             )
                                             .presentationDragIndicator(.visible)
                                             .frame(
-                                                width: appScreenBounds
-                                                    .width / 1.05
+                                                maxWidth: .infinity
                                             )
                                             .presentationBackground {
                                                 GlassBackground(
@@ -505,9 +560,10 @@ struct SearchClubView: View {
                                             }
                                         }
                                     }
+                                    }
+                                    .transition(.opacity)
                                 }
                             }
-                        }
                     }
                     .animation(.smooth, value: filteredItems)
                 }
@@ -549,6 +605,32 @@ struct SearchClubView: View {
             filteredItems = calculateFiltered()
             loadingClubs = false
         }
+        .task(id: viewportSize) {
+            guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+
+            guard let previousViewportSize else {
+                self.previousViewportSize = viewportSize
+                return
+            }
+            guard previousViewportSize != viewportSize else { return }
+
+            isAdaptingViewport = true
+            do {
+                try await Task.sleep(for: .milliseconds(160))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+
+            self.previousViewportSize = viewportSize
+            withAnimation(.easeOut(duration: 0.18)) {
+                isAdaptingViewport = false
+            }
+        }
+        .onDisappear {
+            previousViewportSize = viewportSize
+            isAdaptingViewport = false
+        }
         .onChange(of: sharedGenre) {
             if !sharedGenre.isEmpty {
                 selectedGenres = [sharedGenre]
@@ -571,6 +653,7 @@ struct SearchClubView: View {
                     .zIndex(10)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     }
 
@@ -582,6 +665,131 @@ struct SearchClubView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             withAnimation(.easeOut(duration: 0.2)) {
                 showIncompleteClubBanner = false
+            }
+        }
+    }
+
+    var wideSearchHeader: some View {
+        HStack {
+            Text("Search")
+                .font(.title)
+                .bold()
+                .padding()
+                .foregroundColor(.primary)
+
+            if loadingClubs {
+                ProgressView()
+            }
+
+            Spacer()
+
+            ZStack(alignment: .leading) {
+                HStack {
+                    SearchBar(
+                        "Search For Clubs",
+                        text: $searchText,
+                        isEditing: $isSearching
+                    )
+                    .frame(width: screenWidth / 3)
+
+                    searchActionButtons
+                }
+                .padding()
+            }
+        }
+    }
+
+    var narrowSearchHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Search")
+                    .font(.title)
+                    .bold()
+                    .foregroundColor(.primary)
+
+                if loadingClubs {
+                    ProgressView()
+                }
+
+                Spacer()
+            }
+
+            SearchBar(
+                "Search For Clubs",
+                text: $searchText,
+                isEditing: $isSearching
+            )
+            .frame(maxWidth: .infinity)
+
+            HStack {
+                searchActionButtons
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+    }
+
+    @ViewBuilder
+    var searchActionButtons: some View {
+        Text(
+            "Tags\(selectedGenres.isEmpty ? "" : " (\(selectedGenres.count))")"
+        )
+        .bold()
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(
+            currentSearchingBy == "Genre"
+                ? Color.accentColor.opacity(0.7)
+                : Color.gray.opacity(0.2)
+        )
+        .foregroundColor(
+            currentSearchingBy == "Genre" ? .white : .primary
+        )
+        .cornerRadius(15)
+        .onTapGesture {
+            currentSearchingBy = currentSearchingBy == "Genre" ? "Name" : "Genre"
+        }
+        .fixedSize(horizontal: true, vertical: false)
+
+        Text("Sort")
+            .bold()
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(
+                sortingMenu ? Color.accentColor.opacity(0.7) : Color.gray.opacity(0.2)
+            )
+            .foregroundColor(sortingMenu ? .white : .primary)
+            .cornerRadius(15)
+            .onTapGesture {
+                if !loadingClubs {
+                    sortingMenu.toggle()
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+
+        if viewModel.isSuperAdmin {
+            Button {
+                createClubToggler = true
+            } label: {
+                Image(systemName: "plus")
+                    .foregroundColor(.green)
+                    .imageScale(.large)
+            }
+            .appSheet(isPresented: $createClubToggler) {
+                CreateClubView(
+                    onClose: {
+                        createClubToggler = false
+                    },
+                    onValidationError: {
+                        showIncompleteClubInformationBanner()
+                    },
+                    clubs: clubs
+                )
+                .presentationDragIndicator(.visible)
+                .presentationSizing(.page)
+                .cornerRadius(25)
             }
         }
     }
@@ -662,9 +870,10 @@ struct SearchClubView: View {
                 $0.clubID == clubID
             })
         else { return 0 }
-        let clubHeight: CGFloat = screenHeight / 5
+        let clubHeight: CGFloat = usesLegacyWideIPadLayout
+            ? screenHeight / 5 : 180
         let spacing: CGFloat = 13
-        return CGFloat(clubIndex / 2) * (clubHeight + spacing) - screenHeight
+        return CGFloat(clubIndex / columnCount) * (clubHeight + spacing) - screenHeight
             / 3
     }
 

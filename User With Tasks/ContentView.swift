@@ -14,8 +14,6 @@ struct ContentView: View {
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
     @AppStorage("selectedTab") var selectedTab = 3
-    @State var screenWidth = appScreenBounds.width
-    @State var screenHeight = appScreenBounds.height
     @StateObject var networkMonitor = NetworkMonitor()
     @State var expanded = false
     @State var advSearchShown = false
@@ -40,13 +38,51 @@ struct ContentView: View {
 
     @State var tabsCache: UserTabPreferences?
     @State var tabChooserPageOpen = false
+    @StateObject var searchTabHost = PersistentTabHostStore()
+    @StateObject var clubsTabHost = PersistentTabHostStore()
     @StateObject var chatTabHost = PersistentTabHostStore()
     @StateObject var calendarTabHost = PersistentTabHostStore()
+    @StateObject var settingsTabHost = PersistentTabHostStore()
+    @StateObject var flashcardsTabHost = PersistentTabHostStore()
     
     @AppStorage("firstCalendarAppearance") var firstCalendarAppearance = false
 
     var body: some View {
-        VStack {
+        GeometryReader { geometry in
+            content(viewportSize: geometry.size)
+                .environment(
+                    \.appViewportSize,
+                    adaptiveViewportSize(for: geometry)
+                )
+                .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .ignoresSafeArea(
+            .container,
+            edges: UIDevice.current.userInterfaceIdiom == .pad ? .bottom : []
+        )
+    }
+
+    func adaptiveViewportSize(for geometry: GeometryProxy) -> CGSize {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            return geometry.size
+        }
+
+        return CGSize(
+            width: geometry.size.width
+                + geometry.safeAreaInsets.leading
+                + geometry.safeAreaInsets.trailing,
+            height: geometry.size.height
+                + geometry.safeAreaInsets.top
+                + geometry.safeAreaInsets.bottom
+        )
+    }
+
+    func content(viewportSize: CGSize) -> some View {
+        let usesPhoneTabBar = UIDevice.current.userInterfaceIdiom == .phone
+        let phoneTabBarHeight: CGFloat =
+            usesPhoneTabBar && keyboardResponder.currentHeight == 0 ? 66 : 0
+
+        return VStack {
             VStack {
                 if showSignInView {
                     SignInLandingView(
@@ -72,94 +108,31 @@ struct ContentView: View {
                     ZStack {
                         if advSearchShown {  // add indexing is in TabStructs.swift
                             ZStack {
-                                SearchClubView(
-                                    clubs: $clubs,
-                                    userInfo: $userInfo,
-                                    viewModel: viewModel
-                                )
-                                .opacity(
-                                    selectedTab == AppTab.search.index ? 1 : 0
-                                )
+                                activeTabContent(viewportSize: viewportSize)
+                                .frame(width: viewportSize.width)
+                                .frame(maxHeight: .infinity)
+                                .transition(.opacity)
                                 .animation(
-                                    .easeInOut(duration: 0.25),
+                                    .easeInOut(duration: 0.2),
                                     value: selectedTab
                                 )
-
-                                if userInfo != nil {
-                                    ClubView(
-                                        clubs: $clubs,
-                                        userInfo: $userInfo,
-                                        viewModel: viewModel
-                                    )
-                                    .opacity(
-                                        selectedTab == AppTab.clubs.index
-                                            ? 1 : 0
-                                    )
-                                    .animation(
-                                        .easeInOut(duration: 0.25),
-                                        value: selectedTab
-                                    )
-
-                                    if selectedTab == AppTab.chat.index {
-                                        PersistentTabHost(
-                                            store: chatTabHost,
-                                            rootView: AnyView(
-                                                ChatView(
-                                                    clubs: $clubs,
-                                                    userInfo: $userInfo,
-                                                    viewModel: viewModel
-                                                )
-                                            )
-                                        )
-                                        .transition(.opacity)
-                                    }
-
-                                    if selectedTab == AppTab.calendar.index {
-                                        PersistentTabHost(
-                                            store: calendarTabHost,
-                                            rootView: AnyView(
-                                                CalendarView(
-                                                    clubs: $clubs,
-                                                    userInfo: $userInfo,
-                                                    viewModel: viewModel,
-                                                    schoolScheduleStore:
-                                                        schoolScheduleStore
-                                                )
-                                            )
-                                        )
-                                        .transition(.opacity)
-                                    }
-
-                                }
-
-                                SettingsView(
-                                    viewModel: viewModel,
-                                    userInfo: $userInfo,
-                                    showSignInView: $showSignInView
-                                )
-                                .padding()
-                                .opacity(
-                                    selectedTab == AppTab.settings.index ? 1 : 0
-                                )
-                                .animation(
-                                    .easeInOut(duration: 0.25),
-                                    value: selectedTab
-                                )
-
-                                DeckView()
-                                    .opacity(
-                                        selectedTab == AppTab.flashcards.index
-                                            ? 1 : 0
-                                    )
-                                    .animation(
-                                        .easeInOut(duration: 0.25),
-                                        value: selectedTab
-                                    )
                             }
+                            .frame(width: viewportSize.width)
+                            .frame(
+                                height: usesPhoneTabBar
+                                    ? max(
+                                        0,
+                                        viewportSize.height - phoneTabBarHeight
+                                    ) : nil
+                            )
+                            .frame(maxHeight: .infinity, alignment: .top)
                             .transition(.opacity)
-                            .ignoresSafeArea(edges: .all)
+                            .ignoresSafeArea(
+                                edges: usesPhoneTabBar ? Edge.Set() : .all
+                            )
                             .background {
                                 RandomShapesBackground()
+                                    .ignoresSafeArea()
                             }
 
                         } else {
@@ -170,17 +143,28 @@ struct ContentView: View {
                             tabsCache: tabsCache,
                             isGuestUser: viewModel.isGuestUser,
                             keyboardHeight: keyboardResponder.currentHeight,
-                            screenWidth: screenWidth,
-                            screenHeight: screenHeight,
+                            screenWidth: viewportSize.width,
+                            screenHeight: viewportSize.height,
                             isConnected: networkMonitor.isConnected,
                             selectedTab: selectedTab
+                        )
+                        .frame(width: viewportSize.width)
+                        .frame(
+                            height: usesPhoneTabBar
+                                ? phoneTabBarHeight : nil
+                        )
+                        .frame(
+                            maxHeight: .infinity,
+                            alignment: usesPhoneTabBar ? .bottom : .center
                         )
                         .onTapGesture(count: 2) {
                             tabChooserPageOpen.toggle()
                         }
 
                     }
-                    .sheet(isPresented: $tabChooserPageOpen) {
+                    .frame(width: viewportSize.width)
+                    .frame(maxHeight: .infinity)
+                    .appSheet(isPresented: $tabChooserPageOpen) {
                         TabChooserSheet(
                             tabsCache: $tabsCache,
                             isGuestUser: viewModel.isGuestUser
@@ -377,6 +361,110 @@ struct ContentView: View {
 
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+
+    @ViewBuilder
+    func activeTabContent(viewportSize: CGSize) -> some View {
+        switch selectedTab {
+        case AppTab.search.index:
+            PersistentTabHost(
+                store: searchTabHost,
+                rootView: AnyView(
+                    SearchClubView(
+                        clubs: $clubs,
+                        userInfo: $userInfo,
+                        viewModel: viewModel
+                    )
+                    .frame(width: viewportSize.width)
+                    .frame(maxHeight: .infinity)
+                )
+            )
+            .id(AppTab.search)
+
+        case AppTab.clubs.index:
+            if userInfo != nil {
+                PersistentTabHost(
+                    store: clubsTabHost,
+                    rootView: AnyView(
+                        ClubView(
+                            clubs: $clubs,
+                            userInfo: $userInfo,
+                            viewModel: viewModel
+                        )
+                        .frame(width: viewportSize.width)
+                        .frame(maxHeight: .infinity)
+                    )
+                )
+                .id(AppTab.clubs)
+            } else {
+                ProgressView()
+            }
+
+        case AppTab.chat.index:
+            if userInfo != nil {
+                PersistentTabHost(
+                    store: chatTabHost,
+                    rootView: AnyView(
+                        ChatView(
+                            clubs: $clubs,
+                            userInfo: $userInfo,
+                            viewModel: viewModel
+                        )
+                    )
+                )
+                .id(AppTab.chat)
+            } else {
+                ProgressView()
+            }
+
+        case AppTab.calendar.index:
+            if userInfo != nil {
+                PersistentTabHost(
+                    store: calendarTabHost,
+                    rootView: AnyView(
+                        CalendarView(
+                            clubs: $clubs,
+                            userInfo: $userInfo,
+                            viewModel: viewModel,
+                            schoolScheduleStore: schoolScheduleStore
+                        )
+                    )
+                )
+                .id(AppTab.calendar)
+            } else {
+                ProgressView()
+            }
+
+        case AppTab.settings.index:
+            PersistentTabHost(
+                store: settingsTabHost,
+                rootView: AnyView(
+                    SettingsView(
+                        viewModel: viewModel,
+                        userInfo: $userInfo,
+                        showSignInView: $showSignInView
+                    )
+                    .padding()
+                    .frame(width: viewportSize.width)
+                    .frame(maxHeight: .infinity)
+                )
+            )
+            .id(AppTab.settings)
+
+        case AppTab.flashcards.index:
+            PersistentTabHost(
+                store: flashcardsTabHost,
+                rootView: AnyView(
+                    DeckView()
+                        .frame(width: viewportSize.width)
+                        .frame(maxHeight: .infinity)
+                )
+            )
+            .id(AppTab.flashcards)
+
+        default:
+            EmptyView()
+        }
     }
 
     func setupClubsListener() {  // definitly work on making this a lot lot lot less often for especially changing clubs

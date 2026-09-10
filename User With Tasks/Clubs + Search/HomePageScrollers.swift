@@ -13,8 +13,8 @@ struct HomePageScrollers: View {
     @AppStorage("shownInfo") var shownInfo = -1
     @State var showClubInfoSheet = false
     @State var viewModel: AuthenticationViewModel
-    @State var screenHeight = appScreenBounds.height
-    @State var screenWidth = appScreenBounds.width
+    var screenHeight: CGFloat
+    var screenWidth: CGFloat
     @Binding var userInfo: Personal?
     @State var scrollerOf: String
     @AppStorage("selectedTab") var selectedTab = 3
@@ -53,7 +53,7 @@ struct HomePageScrollers: View {
                             //.fixedSize(horizontal: false, vertical: false)
                             // .frame(width: screenWidth/2.2, height: screenHeight/5)
                             .padding()
-                            .sheet(isPresented: $showClubInfoSheet) {
+                            .appSheet(isPresented: $showClubInfoSheet) {
                             } content: {
                                 if shownInfo >= 0 {
                                     let club = clubs[shownInfo]
@@ -63,9 +63,7 @@ struct HomePageScrollers: View {
                                         userInfo: $userInfo
                                     )
                                     .presentationDragIndicator(.visible)
-                                    .frame(
-                                        width: appScreenBounds.width / 1.05
-                                    )
+                                    .frame(maxWidth: .infinity)
                                     .presentationBackground {
                                         GlassBackground(
                                             color: Color(

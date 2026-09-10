@@ -4,8 +4,19 @@ import SwiftUI
 import UserNotifications
 
 struct Pomo: View {
-    @State var screenWidth = appScreenBounds.width
-    @State var screenHeight = appScreenBounds.height
+    @Environment(\.appViewportSize) var viewportSize
+    var screenWidth: CGFloat { viewportSize.width }
+    var screenHeight: CGFloat { viewportSize.height }
+    var narrowLayout: Bool { screenWidth < 900 }
+    var usesLegacyWideIPadLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+            && screenWidth >= 900
+            && screenWidth > screenHeight
+    }
+    var panelWidth: CGFloat {
+        if usesLegacyWideIPadLayout { return screenWidth / 2 }
+        return narrowLayout ? max(1, screenWidth - 32) : screenWidth / 2.1
+    }
     @AppStorage("pomotimer") var pomoTime = 1500
     @AppStorage("breakTime") var breakTime = 300
     @AppStorage("breaks") var breaks = 4
@@ -108,7 +119,10 @@ struct Pomo: View {
         ZStack {
             NavigationStack {
 
-                HStack {
+                let panels = narrowLayout
+                    ? AnyLayout(VStackLayout(spacing: 24))
+                    : AnyLayout(HStackLayout())
+                panels {
 
                     Spacer()
                     VStack {
@@ -178,7 +192,8 @@ struct Pomo: View {
                         }
                         Spacer()
                     }
-                    .frame(width: screenWidth / 2)
+                    .frame(width: panelWidth)
+                    .frame(minHeight: narrowLayout ? 440 : max(300, screenHeight - 120))
                     Spacer()
 
                     Spacer()
@@ -386,13 +401,16 @@ struct Pomo: View {
                                 .padding()
                             }
                             .padding()
+                            .offset(y: narrowLayout ? -24 : 0)
 
                             Spacer()
                         }
                     }
-                    .frame(width: screenWidth / 2)
+                    .frame(width: panelWidth)
+                    .frame(minHeight: narrowLayout ? 440 : max(300, screenHeight - 120))
                 }
                 .implicitAnimation(.snappy(duration: 0.3, extraBounce: 0.3))
+                .pomoScrollableWhenNarrow(narrowLayout)
             }
 
         }
@@ -499,6 +517,22 @@ func scheduleTimeBasedNotification(
             print("Authorization error: \(error.localizedDescription)")
         } else {
             print("Permission not granted")
+        }
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func pomoScrollableWhenNarrow(_ narrow: Bool) -> some View {
+        if narrow {
+            ScrollView {
+                self
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 80)
+            }
+        } else {
+            self
         }
     }
 }

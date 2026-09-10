@@ -102,12 +102,19 @@ struct SignInIntroFlowView: View {
 
                     TabView(selection: $currentPage) {
                         ForEach(SignInIntroPage.allCases) { page in
-                            SignInIntroCard(
-                                page: page,
-                                isCompact: geometry.size.width < 650
-                            )
-                            .padding(.horizontal, geometry.size.width < 650 ? 16 : 56)
-                            .padding(.vertical, 8)
+                            ScrollView {
+                                SignInIntroCard(
+                                    page: page,
+                                    isCompact: geometry.size.width < 650
+                                )
+                                .padding(
+                                    .horizontal,
+                                    geometry.size.width < 650 ? 16 : 56
+                                )
+                                .padding(.vertical, 8)
+                                .frame(minHeight: 440)
+                            }
+                            .scrollIndicators(.hidden)
                             .tag(page.rawValue)
                         }
                     }
@@ -155,7 +162,10 @@ struct SignInIntroFlowView: View {
                     }
                     .buttonStyle(SignInPressButtonStyle())
                     .padding(.horizontal, 24)
-                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 18))
+                    .padding(
+                        .bottom,
+                        max(geometry.safeAreaInsets.bottom, 18)
+                    )
                 }
             }
         }
@@ -233,10 +243,11 @@ struct SignInIntroCard: View {
                                 design: .rounded
                             )
                         )
-                        .minimumScaleFactor(0.75)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     Text(page.subtitle)
-                        .font(isCompact ? .caption : .subheadline)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -281,11 +292,11 @@ struct SignInIntroCard: View {
     var preview: some View {
         switch page {
         case .clubs:
-            SignInClubsPreview()
+            SignInClubsPreview(isCompact: isCompact)
         case .chats:
-            SignInChatsPreview()
+            SignInChatsPreview(isCompact: isCompact)
         case .calendar:
-            SignInCalendarPreview()
+            SignInCalendarPreview(isCompact: isCompact)
         }
     }
 }
