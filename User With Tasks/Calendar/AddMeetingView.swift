@@ -4,11 +4,19 @@ import PopupView
 import SwiftUI
 import SwiftUIX
 
+private var phsSchoolCalendar: Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.locale = Locale(identifier: "en_US_POSIX")
+    calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+    return calendar
+}
+
 struct AddMeetingView: View {
     @Environment(\.appViewportSize) var parentViewportSize
     @State var title = ""
     @State var startTime = Date()
     @State var endTime = Date().addingTimeInterval(3600)
+    @State var fullDay = false
     @State var description = ""
     @State var clubId = ""
     @State var location = ""
@@ -27,8 +35,13 @@ struct AddMeetingView: View {
     @State var refresher = false
     @State var recurrence = MeetingRecurrenceOption.never
     @State var recurrenceEndDate =
-        Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+        phsSchoolCalendar.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     @State var seriesEditScope = MeetingSeriesEditScope.thisAndFuture
+    @Environment(CalendarDataStore.self) private var calendarStore
+    @State private var saveIntent = MeetingMutationIntent()
+    @State private var isSaving = false
+    @State private var showSaveError = false
+    var allowsAdministrativeCalendarAccess = false
     var viewCloser: (() -> Void)?
 
     @State var CreatedMeetingTime: Club.MeetingTime = Club.MeetingTime(
@@ -66,10 +79,11 @@ struct AddMeetingView: View {
     }
 
     var ableToCreate: Bool {
-        title != "" && endTime > startTime && clubId != ""
-            && isSameDay(endTime, startTime)
-            && startTime.distance(to: endTime) >= 15
-            && recurrenceEndDateIsValid
+        let datesAreValid = fullDay
+            ? phsSchoolCalendar.startOfDay(for: endTime) >= phsSchoolCalendar.startOfDay(for: startTime)
+            : endTime > startTime && phsSchoolCalendar.isDate(endTime, inSameDayAs: startTime)
+                && startTime.distance(to: endTime) >= 15 * 60
+        return title != "" && clubId != "" && datesAreValid && recurrenceEndDateIsValid
     }
 
     var body: some View {
@@ -79,7 +93,17 @@ struct AddMeetingView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
-        .appPresentationSizing()
+        .environment(\.timeZone, TimeZone(identifier: "America/Chicago")!)
+        .alert("Unable to Save Meeting", isPresented: $showSaveError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Please check your connection and try again.")
+        }
+        .calendarAdministrativeAccess(
+            clubID: clubId,
+            enabled: allowsAdministrativeCalendarAccess
+                && !calendarStore.isMember(of: clubId)
+        )
     }
 
     @ViewBuilder
@@ -138,11 +162,23 @@ struct AddMeetingView: View {
                     .padding()
                 }
 
-                DatePicker("Start Time", selection: $startTime)
-                    .onChange(of: startTime) {
-                        endTime = startTime.addingTimeInterval(timeDifference)
-                    }
-                    .padding()
+                Toggle("All-day event", isOn: $fullDay)
+                    .padding(.horizontal, usesPhoneLayout ? 20 : 16)
+                    .padding(.vertical, 8)
+
+                if fullDay {
+                    DatePicker("Start Date", selection: $startTime, displayedComponents: .date)
+                        .onChange(of: startTime) {
+                            if endTime < startTime { endTime = startTime }
+                        }
+                        .padding()
+                } else {
+                    DatePicker("Start Time", selection: $startTime)
+                        .onChange(of: startTime) {
+                            endTime = startTime.addingTimeInterval(timeDifference)
+                        }
+                        .padding()
+                }
 
                 endTimePicker
 
@@ -175,7 +211,7 @@ struct AddMeetingView: View {
                         DatePicker(
                             "Repeat Until",
                             selection: $recurrenceEndDate,
-                            in: Calendar.current.startOfDay(for: startTime)...,
+                            in: phsSchoolCalendar.startOfDay(for: startTime)...,
                             displayedComponents: .date
                         )
                         .padding()
@@ -294,6 +330,7 @@ struct AddMeetingView: View {
 
                 if CreatedMeetingTime.title != "" {
                     title = CreatedMeetingTime.title
+                    fullDay = CreatedMeetingTime.fullDay == true
                     location = CreatedMeetingTime.location ?? ""
                     description = CreatedMeetingTime.description ?? ""
 
@@ -314,7 +351,7 @@ struct AddMeetingView: View {
                             savedRecurrenceEndDate
                         )
                     } else {
-                        recurrenceEndDate = Calendar.current.date(
+                        recurrenceEndDate = phsSchoolCalendar.date(
                             byAdding: .month,
                             value: 3,
                             to: startTime
@@ -337,20 +374,20 @@ struct AddMeetingView: View {
                     }
 
                 } else {
-                    let selectedDay = Calendar.current.component(
+                    let selectedDay = phsSchoolCalendar.component(
                         .day,
                         from: selectedDate
                     )
-                    let selectedMonth = Calendar.current.component(
+                    let selectedMonth = phsSchoolCalendar.component(
                         .month,
                         from: selectedDate
                     )
-                    let selectedYear = Calendar.current.component(
+                    let selectedYear = phsSchoolCalendar.component(
                         .year,
                         from: selectedDate
                     )
 
-                    startTime = Calendar.current.date(
+                    startTime = phsSchoolCalendar.date(
                         from: DateComponents(
                             year: selectedYear,
                             month: selectedMonth,
@@ -362,7 +399,7 @@ struct AddMeetingView: View {
                     )!
 
                     startTime = getFlooredCurrentTime(startTime)
-                    recurrenceEndDate = Calendar.current.date(
+                    recurrenceEndDate = phsSchoolCalendar.date(
                         byAdding: .month,
                         value: 3,
                         to: startTime
@@ -374,9 +411,9 @@ struct AddMeetingView: View {
             }
             .onChange(of: startTime) {
                 if recurrenceEndDate
-                    < Calendar.current.startOfDay(for: startTime)
+                    < phsSchoolCalendar.startOfDay(for: startTime)
                 {
-                    recurrenceEndDate = Calendar.current.date(
+                    recurrenceEndDate = phsSchoolCalendar.date(
                         byAdding: .month,
                         value: 3,
                         to: startTime
@@ -384,20 +421,20 @@ struct AddMeetingView: View {
                 }
                 addInfoToHelper()
                 startMinutes =
-                    Calendar.current.component(.hour, from: startTime) * 60
-                    + Calendar.current.component(.minute, from: startTime)
+                    phsSchoolCalendar.component(.hour, from: startTime) * 60
+                    + phsSchoolCalendar.component(.minute, from: startTime)
                 endMinutes =
-                    Calendar.current.component(.hour, from: endTime) * 60
-                    + Calendar.current.component(.minute, from: endTime)
+                    phsSchoolCalendar.component(.hour, from: endTime) * 60
+                    + phsSchoolCalendar.component(.minute, from: endTime)
             }
             .onChange(of: endTime) {
                 addInfoToHelper()
                 startMinutes =
-                    Calendar.current.component(.hour, from: startTime) * 60
-                    + Calendar.current.component(.minute, from: startTime)
+                    phsSchoolCalendar.component(.hour, from: startTime) * 60
+                    + phsSchoolCalendar.component(.minute, from: startTime)
                 endMinutes =
-                    Calendar.current.component(.hour, from: endTime) * 60
-                    + Calendar.current.component(.minute, from: endTime)
+                    phsSchoolCalendar.component(.hour, from: endTime) * 60
+                    + phsSchoolCalendar.component(.minute, from: endTime)
             }
             .onChange(of: location) {
                 addInfoToHelper()
@@ -421,6 +458,13 @@ struct AddMeetingView: View {
                 clubs: leaderClubs,
                 userInfo: $userInfo
             )
+            .frame(
+                width: min(
+                    max(presentationSize.width / 2, 440),
+                    presentationSize.width
+                ),
+                height: presentationSize.height
+            )
         } customize: {
             $0
                 .type(.default)
@@ -437,7 +481,8 @@ struct AddMeetingView: View {
     @ViewBuilder
     func meetingActionButton(compact: Bool) -> some View {
         Button {
-            guard ableToCreate else { return }
+            guard ableToCreate, !isSaving else { return }
+            isSaving = true
             completeMeeting()
         } label: {
             Label {
@@ -450,7 +495,12 @@ struct AddMeetingView: View {
                 )
                 .font(.headline)
             } icon: {
-                Image(systemName: ableToCreate ? "checkmark" : "exclamationmark.triangle")
+                if isSaving {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: ableToCreate ? "checkmark" : "exclamationmark.triangle")
+                }
             }
             .foregroundStyle(.white)
             .padding(.horizontal, compact ? 14 : 16)
@@ -464,6 +514,7 @@ struct AddMeetingView: View {
             .shadow(radius: compact ? 2 : 5)
         }
         .buttonStyle(.plain)
+        .disabled(isSaving)
         .accessibilityHint(
             ableToCreate
                 ? "Saves this meeting"
@@ -477,9 +528,13 @@ struct AddMeetingView: View {
             let meetings = meetingsToSave(from: CreatedMeetingTime)
 
             if meetings.count == 1 {
-                addMeeting(meeting: meetings[0])
+                addMeeting(meeting: meetings[0], intent: saveIntent, calendarStore: calendarStore) { saved in
+                    finishSave(saved)
+                }
             } else {
-                addMeetings(meetings: meetings)
+                addMeetings(meetings: meetings, intent: saveIntent, calendarStore: calendarStore) { saved in
+                    finishSave(saved)
+                }
             }
         } else {
             addInfoToHelper()
@@ -488,22 +543,35 @@ struct AddMeetingView: View {
             if editsThisAndFuture {
                 replaceMeetingAndFuture(
                     oldMeeting: CreatedMeetingTime,
-                    newMeetings: meetings
-                )
+                    newMeetings: meetings, intent: saveIntent, calendarStore: calendarStore
+                ) { saved in
+                    finishSave(saved)
+                }
             } else if meetings.count == 1 {
                 replaceMeeting(
                     oldMeeting: CreatedMeetingTime,
-                    newMeeting: meetings[0]
-                )
+                    newMeeting: meetings[0], intent: saveIntent, calendarStore: calendarStore
+                ) { saved in
+                    finishSave(saved)
+                }
             } else {
                 replaceMeeting(
                     oldMeeting: CreatedMeetingTime,
-                    newMeetings: meetings
-                )
+                    newMeetings: meetings, intent: saveIntent, calendarStore: calendarStore
+                ) { saved in
+                    finishSave(saved)
+                }
             }
         }
+    }
 
-        viewCloser?()
+    private func finishSave(_ saved: Bool) {
+        isSaving = false
+        if saved {
+            viewCloser?()
+        } else {
+            showSaveError = true
+        }
     }
 
     func phoneTextField(
@@ -531,8 +599,10 @@ struct AddMeetingView: View {
 
     @ViewBuilder
     var endTimePicker: some View {
-        let isInvalidEndTime = endTime <= startTime || !isSameDay(endTime, startTime)
-        let isTooShort = startTime.distance(to: endTime) / 60 < 15
+        let isInvalidEndTime = fullDay
+            ? phsSchoolCalendar.startOfDay(for: endTime) < phsSchoolCalendar.startOfDay(for: startTime)
+            : endTime <= startTime || !phsSchoolCalendar.isDate(endTime, inSameDayAs: startTime)
+        let isTooShort = !fullDay && startTime.distance(to: endTime) / 60 < 15
         let validationText = isInvalidEndTime
             ? "Must be after the start time"
             : (isTooShort ? "Must be at least 15 minutes after the start time" : "")
@@ -540,10 +610,14 @@ struct AddMeetingView: View {
         if usesPhoneLayout {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("End Time")
+                    Text(fullDay ? "End Date" : "End Time")
                         .font(.headline)
                     Spacer()
-                    DatePicker("End Time", selection: $endTime)
+                    DatePicker(
+                        fullDay ? "End Date" : "End Time",
+                        selection: $endTime,
+                        displayedComponents: fullDay ? .date : [.date, .hourAndMinute]
+                    )
                         .labelsHidden()
                 }
                 if !validationText.isEmpty {
@@ -559,7 +633,10 @@ struct AddMeetingView: View {
             }
         } else {
             LabeledContent {
-                DatePicker("", selection: $endTime)
+                DatePicker(
+                    "", selection: $endTime,
+                    displayedComponents: fullDay ? .date : [.date, .hourAndMinute]
+                )
                     .onChange(of: endTime) {
                         timeDifference = abs(endTime.distance(to: startTime))
                     }
@@ -681,15 +758,9 @@ struct AddMeetingView: View {
     @ViewBuilder
     var notesSection: some View {
         if usesPhoneLayout {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Notes")
                     .font(.headline)
-                DisclosureGroup("Markdown formatting help") {
-                    markdownHelp
-                        .padding(.top, 6)
-                }
-                .font(.subheadline)
-                markdownToolbar
                 markdownEditor
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -815,8 +886,8 @@ struct AddMeetingView: View {
 
     var recurrenceEndDateIsValid: Bool {
         editsOnlyThisMeeting || recurrence == .never
-            || Calendar.current.startOfDay(for: recurrenceEndDate)
-                >= Calendar.current.startOfDay(for: startTime)
+            || phsSchoolCalendar.startOfDay(for: recurrenceEndDate)
+                >= phsSchoolCalendar.startOfDay(for: startTime)
     }
 
     func meetingsToSave(
@@ -838,6 +909,11 @@ struct AddMeetingView: View {
         CreatedMeetingTime.clubID = clubId
         CreatedMeetingTime.startTime = stringFromDate(startTime)
         CreatedMeetingTime.endTime = stringFromDate(endTime)
+        CreatedMeetingTime.fullDay = fullDay
+        CreatedMeetingTime.visibility = .init(
+            mode: visibleByWho == "Only Leaders" ? "leaders" : (visibleByWho == "Custom" ? "uids" : "public"),
+            uids: nil
+        )
 
         if !location.isEmpty {
             CreatedMeetingTime.location = location
@@ -862,6 +938,11 @@ struct AddMeetingView: View {
         meetingTimeForInfo.clubID = clubId
         meetingTimeForInfo.endTime = stringFromDate(endTime)
         meetingTimeForInfo.startTime = stringFromDate(startTime)
+        meetingTimeForInfo.fullDay = fullDay
+        meetingTimeForInfo.visibility = .init(
+            mode: visibleByWho == "Only Leaders" ? "leaders" : (visibleByWho == "Custom" ? "uids" : "public"),
+            uids: nil
+        )
 
         if title != "" {
             meetingTimeForInfo.title = title
@@ -946,7 +1027,7 @@ struct AddMeetingView: View {
 }
 
 func getFlooredCurrentTime(_ inputDate: Date) -> Date {
-    let calendar = Calendar.current
+    let calendar = phsSchoolCalendar
     let currentTime = Date()
     let currentComponents = calendar.dateComponents(
         [.hour, .minute],

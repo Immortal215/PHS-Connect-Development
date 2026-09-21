@@ -53,7 +53,10 @@ struct HomePageScrollers: View {
                             //.fixedSize(horizontal: false, vertical: false)
                             // .frame(width: screenWidth/2.2, height: screenHeight/5)
                             .padding()
-                            .appSheet(isPresented: $showClubInfoSheet) {
+                            .appSheet(
+                                isPresented: $showClubInfoSheet,
+                                iPadWidthDivisor: 1.05
+                            ) {
                             } content: {
                                 if shownInfo >= 0 {
                                     let club = clubs[shownInfo]

@@ -20,6 +20,7 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         FirebaseApp.configure()
         Database.database().isPersistenceEnabled = true
         ClubEditPersistence.shared.start()
+        NotificationRegistrationManager.shared.configure()
 
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
@@ -28,9 +29,7 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         UNUserNotificationCenter.current().requestAuthorization(
             options: options
         ) { _, error in
-            if let error = error {
-                print("Notification auth error:", error)
-            }
+            _ = error
         }
 
         UIApplication.shared.registerForRemoteNotifications()
@@ -42,7 +41,6 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         if let notification = launchOptions?[remoteNotificationKey]
             as? [AnyHashable: Any]
         {
-            print("LaunchOptions remoteNotification:", notification)
             NotificationOpenRouter.shared.handle(userInfo: notification)
         }
 
@@ -53,9 +51,7 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         Messaging.messaging().apnsToken = deviceToken
-        print("APNs token:", token)
     }
 
     func messaging(
@@ -63,20 +59,8 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         didReceiveRegistrationToken fcmToken: String?
     ) {
         guard let fcmToken else { return }
-        print("FCM token:", fcmToken)
-
-        if let uid = Auth.auth().currentUser?.uid {
-            let tokenReference = Database.database()
-                .reference()
-                .child("users").child(uid).child("fcmToken")
-
-            Task {
-                do {
-                    try await setFirebaseValue(fcmToken, at: tokenReference)
-                } catch {
-                    print("Failed to save FCM token: \(error)")
-                }
-            }
+        Task { @MainActor in
+            NotificationRegistrationManager.shared.receivedFCMToken(fcmToken)
         }
     }
 
@@ -86,7 +70,13 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         withCompletionHandler completionHandler:
             @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound, .badge])
+        Task { @MainActor in
+            completionHandler(
+                NotificationRegistrationManager.shared.shouldPresent(
+                    notification.request.content.userInfo
+                ) ? [.banner, .sound, .badge] : []
+            )
+        }
     }
 
     func userNotificationCenter(
@@ -95,11 +85,22 @@ class AppDelegate: NSObject, UIApplicationDelegate,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        print("Opened from notification:", userInfo)
-
         NotificationOpenRouter.shared.handle(userInfo: userInfo)
 
         completionHandler()
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler:
+            @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        Task { @MainActor in
+            let handled = await NotificationRegistrationManager.shared
+                .handleBackgroundNotification(userInfo)
+            completionHandler(handled ? .newData : .noData)
+        }
     }
 }
 
@@ -120,6 +121,7 @@ struct User_with_TasksApp: App {
                     )
                     .accentColor(.blue)
                     .transition(.opacity)
+                    .onOpenURL { NotificationOpenRouter.shared.handle(url: $0) }
             } else {
                 AdaptiveViewport {
                     Start()

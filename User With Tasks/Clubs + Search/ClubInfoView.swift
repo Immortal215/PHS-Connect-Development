@@ -12,6 +12,7 @@ import SwiftUI
 import SwiftUIX
 
 struct ClubInfoView: View {
+    @Environment(CalendarDataStore.self) private var calendarStore
     @State var club: Club
     var screenWidth: CGFloat { presentationSize.width }
     var screenHeight: CGFloat { presentationSize.height }
@@ -26,6 +27,7 @@ struct ClubInfoView: View {
     @State var showAddMeeting = false
     @State var oneMinuteAfter = Date()
     @State var showEditScreen = false
+    @State private var isPreparingEditScreen = false
     @ObservedObject var pendingEdits: ClubEditUndoStore
     @State var showIncompleteClubBanner = false
     @State var selectedLeaderEmail = ""
@@ -57,6 +59,7 @@ struct ClubInfoView: View {
     )
     @State var mapEditorMode = false
     @State var pinPosition = CGPoint(x: 200.0, y: 200.0)
+    @State private var nextPublicMeetingPreview: Club.MeetingTime?
 
     init(club: Club, viewModel: AuthenticationViewModel, userInfo: Binding<Personal?>) {
         let edits = ClubEditPersistence.shared.store(for: club.clubID)
@@ -75,7 +78,11 @@ struct ClubInfoView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
-        .appPresentationSizing()
+        .calendarAdministrativeAccess(
+            clubID: club.clubID,
+            enabled: viewModel.isSuperAdmin
+                && !calendarStore.isMember(of: club.clubID)
+        )
     }
 
     @ViewBuilder
@@ -269,15 +276,7 @@ struct ClubInfoView: View {
 
                     }
 
-                    if let meetingTimes = club.meetingTimes,
-                        !meetingTimes.isEmpty
-                    {
-                        if let closestMeeting = meetingTimes.sorted(by: {
-                            dateFromString($0.startTime)
-                                < dateFromString($1.startTime)
-                        }).filter({ meeting in
-                            return dateFromString(meeting.startTime) >= Date()
-                        }).first {
+                    if let closestMeeting = closestUpcomingMeeting {
 
                             Text(
                                 "Next Meeting (\(dateFromString(closestMeeting.startTime).formatted(date: .abbreviated, time: .omitted)))"
@@ -335,8 +334,6 @@ struct ClubInfoView: View {
                                     )
                                 }
                             }
-
-                        }
                     }
 
                     if clubLeader {
@@ -350,8 +347,12 @@ struct ClubInfoView: View {
                                 .background(Color.blue.opacity(0.2))
                                 .cornerRadius(8)
                         }
-                        .appSheet(isPresented: $showAddMeeting) {
+                        .appSheet(
+                            isPresented: $showAddMeeting,
+                            iPadWidthDivisor: 1.05
+                        ) {
                             AddMeetingView(
+                                allowsAdministrativeCalendarAccess: viewModel.isSuperAdmin,
                                 viewCloser: {
                                     showAddMeeting = false
                                 },
@@ -360,7 +361,6 @@ struct ClubInfoView: View {
                                 userInfo: $userInfo
                             )
                             .presentationDragIndicator(.visible)
-                            .presentationSizing(.page)
                             .cornerRadius(25)
                         }
                     }
@@ -392,10 +392,15 @@ struct ClubInfoView: View {
                                             Text(i)
 
                                             Button {
-                                                club.pendingMemberRequests?
-                                                    .remove(i)
-                                                club.members.append(i)
-                                                addClub(club: club)
+                                                resolveMembershipRequest(
+                                                    clubID: club.clubID,
+                                                    email: i,
+                                                    accepted: true
+                                                ) { saved in
+                                                    guard saved else { return }
+                                                    club.pendingMemberRequests?.remove(i)
+                                                    club.members.append(i)
+                                                }
                                             } label: {
                                                 Image(
                                                     systemName:
@@ -406,9 +411,14 @@ struct ClubInfoView: View {
                                             .imageScale(.large)
 
                                             Button {
-                                                club.pendingMemberRequests?
-                                                    .remove(i)
-                                                addClub(club: club)
+                                                resolveMembershipRequest(
+                                                    clubID: club.clubID,
+                                                    email: i,
+                                                    accepted: false
+                                                ) { saved in
+                                                    guard saved else { return }
+                                                    club.pendingMemberRequests?.remove(i)
+                                                }
                                             } label: {
                                                 Image(
                                                     systemName: "xmark.circle"
@@ -747,6 +757,13 @@ struct ClubInfoView: View {
             }
             .popup(isPresented: ipadMeetingInfoPresented) {
                 upcomingMeetingInfo
+                    .frame(
+                        width: min(
+                            max(presentationSize.width / 2, 440),
+                            presentationSize.width
+                        ),
+                        height: presentationSize.height
+                    )
             } customize: {
                 $0
                     .type(.default)
@@ -778,17 +795,17 @@ struct ClubInfoView: View {
                     Group {
                         if clubLeader {
                             Button {
-                                pendingEdits.pauseForEditing()
-                                DispatchQueue.main.asyncAfter(
-                                    deadline: .now() + 0.01
-                                ) {
-                                    showEditScreen.toggle()
-                                }
+                                Task { await presentClubEditor() }
                             } label: {
-                                Image(systemName: "gear")
-                                    .imageScale(.large)
+                                if isPreparingEditScreen {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "gear")
+                                        .imageScale(.large)
+                                }
                             }
-                            .disabled(pendingEdits.isSaving)
+                            .disabled(pendingEdits.isSaving || isPreparingEditScreen)
                             .appSheet(isPresented: $showEditScreen) {
                                 CreateClubView(
                                     onClose: {
@@ -901,6 +918,8 @@ struct ClubInfoView: View {
             ClubEditUndoBanner(edits: pendingEdits)
         }
         .onAppear {
+            Task { await calendarStore.refreshClubAccess(club.clubID) }
+            club = calendarStore.hydrated(club, userEmail: viewModel.userEmail)
             if let edit = pendingEdits.pending {
                 updateDisplayedClub(edit.after)
                 pendingEdits.pending?.onRevert = { edit in
@@ -908,12 +927,18 @@ struct ClubInfoView: View {
                 }
             }
         }
+        .task(id: calendarStore.role(for: club.clubID)) {
+            await loadNextMeetingPreview()
+        }
         .onDisappear {
             pendingEdits.pending?.onRevert = { _ in }
             pendingEdits.resume()
         }
         .onChange(of: pendingEdits.recoveredClub) { _, updated in
             if let updated { updateDisplayedClub(updated) }
+        }
+        .onChange(of: calendarStore.accessRevision) {
+            club = calendarStore.hydrated(club, userEmail: viewModel.userEmail)
         }
         .onChange(of: showEditScreen) { _, showing in
             if !showing { pendingEdits.resume() }
@@ -965,10 +990,34 @@ struct ClubInfoView: View {
     }
 
     var closestUpcomingMeeting: Club.MeetingTime? {
-        club.meetingTimes?.sorted {
+        let permitted = calendarStore.isMember(of: club.clubID) || viewModel.isSuperAdmin
+            ? calendarStore.meetings.filter { $0.clubID == club.clubID }
+            : [nextPublicMeetingPreview].compactMap { $0 }
+        return permitted.sorted {
             dateFromString($0.startTime) < dateFromString($1.startTime)
         }.first {
-            dateFromString($0.startTime) >= Date()
+            let end = $0.endUtc.map { Date(timeIntervalSince1970: $0) }
+                ?? strictDateFromString($0.endTime)
+                ?? dateForMeeting($0)
+            return end >= Date()
+        }
+    }
+
+    private func loadNextMeetingPreview() async {
+        guard !calendarStore.isMember(of: club.clubID), !viewModel.isSuperAdmin else {
+            nextPublicMeetingPreview = nil
+            return
+        }
+        struct Envelope: Decodable { var meeting: Club.MeetingTime? }
+        do {
+            let value: Envelope = try await PHSAPIClient.shared.request(
+                "GET",
+                path: "clubs/next-meeting",
+                query: [URLQueryItem(name: "clubID", value: club.clubID)]
+            )
+            nextPublicMeetingPreview = value.meeting
+        } catch {
+            nextPublicMeetingPreview = nil
         }
     }
 
@@ -981,11 +1030,7 @@ struct ClubInfoView: View {
                 viewModel: viewModel,
                 selectedDate: dateFromString(closestMeeting.startTime),
                 userInfo: .constant(nil),
-                onDelete: { includingFuture in
-                    removeDeletedMeeting(
-                        closestMeeting,
-                        includingFuture: includingFuture
-                    )
+                onDelete: { _ in
                     meetingFull = false
                 }
             )
@@ -997,21 +1042,42 @@ struct ClubInfoView: View {
         club = updated
     }
 
-    func removeDeletedMeeting(
-        _ deletedMeeting: Club.MeetingTime,
-        includingFuture: Bool
-    ) {
-        club.meetingTimes?.removeAll { meeting in
-            if includingFuture, let seriesID = deletedMeeting.seriesID {
-                return meeting.seriesID == seriesID
-                    && dateFromString(meeting.startTime)
-                        >= dateFromString(deletedMeeting.startTime)
+    @MainActor
+    func presentClubEditor() async {
+        guard !isPreparingEditScreen else { return }
+        pendingEdits.pauseForEditing()
+
+        if pendingEdits.pending == nil {
+            isPreparingEditScreen = true
+            await calendarStore.refreshClubAccess(club.clubID)
+            func decodedClub(from snapshot: DataSnapshot) -> Club? {
+                guard snapshot.exists(),
+                      JSONSerialization.isValidJSONObject(snapshot.value as Any),
+                      let data = try? JSONSerialization.data(withJSONObject: snapshot.value as Any)
+                else { return nil }
+                return try? JSONDecoder().decode(Club.self, from: data)
             }
 
-            return meeting.title == deletedMeeting.title
-                && meeting.startTime == deletedMeeting.startTime
-                && meeting.endTime == deletedMeeting.endTime
+            let snapshot = await observeSingleValue(
+                at: Database.database().reference().child("clubs").child(club.clubID)
+            )
+            let latest = decodedClub(from: snapshot)
+            isPreparingEditScreen = false
+            guard let latest else {
+                pendingEdits.resume()
+                dropper(
+                    title: "Unable to Open Club Editor",
+                    subtitle: "Please check your connection and try again.",
+                    icon: UIImage(systemName: "exclamationmark.triangle")
+                )
+                return
+            }
+            updateDisplayedClub(
+                calendarStore.hydrated(latest, userEmail: viewModel.userEmail)
+            )
         }
+
+        showEditScreen = true
     }
 
     func leaderContactButton(_ leader: String) -> some View {

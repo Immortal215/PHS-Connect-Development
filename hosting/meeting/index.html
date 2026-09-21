@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Open meeting in PHS Connect</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #eef5ff; color: #14213d; }
+    main { max-width: 30rem; margin: 1.5rem; padding: 2rem; text-align: center; border-radius: 1.5rem; background: rgba(255,255,255,.82); box-shadow: 0 1rem 3rem rgba(22,75,145,.16); }
+    a { display: inline-block; margin-top: 1rem; padding: .8rem 1.1rem; border-radius: .8rem; background: #1769e0; color: white; text-decoration: none; font-weight: 700; }
+    p { line-height: 1.45; }
+    @media (prefers-color-scheme: dark) { body { background: #081329; color: #f3f7ff; } main { background: rgba(20,36,65,.9); } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PHS Connect meeting</h1>
+    <p>Sign in to PHS Connect to view this meeting. Meeting details are never shown on this page.</p>
+    <a id="open" href="#">Open PHS Connect</a>
+  </main>
+  <script>
+    const parts = location.pathname.split('/').filter(Boolean);
+    const meetingID = parts.length >= 3 ? parts[2] : '';
+    const clubID = parts.length >= 2 ? parts[1] : '';
+    const link = document.getElementById('open');
+    if (meetingID && clubID) {
+      link.href = `phsconnect://meeting/${encodeURIComponent(clubID)}/${encodeURIComponent(meetingID)}`;
+    } else {
+      link.removeAttribute('href');
+      link.setAttribute('aria-disabled', 'true');
+    }
+  </script>
+</body>
+</html>

@@ -27,7 +27,8 @@ final class AuthenticationManager {
         return AuthDataResultModel(user: user)
     }
 
-    func signOut() throws {
+    func signOut() async throws {
+        await NotificationRegistrationManager.shared.prepareForSignOut()
         try Auth.auth().signOut()
     }
 }

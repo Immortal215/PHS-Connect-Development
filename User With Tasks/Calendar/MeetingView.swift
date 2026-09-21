@@ -1,5 +1,11 @@
 import SwiftUI
 
+enum MeetingClubResolver {
+    static func club(for clubID: String, in clubs: [Club]) -> Club? {
+        clubs.first(where: { $0.clubID == clubID })
+    }
+}
+
 struct MeetingView: View {
     var meeting: Club.MeetingTime
     var scale: Double
@@ -32,6 +38,8 @@ struct MeetingView: View {
         let startOffset = CGFloat(startMinutes) * hourHeight * scale / 60
         let duration = CGFloat(durationMinutes) * hourHeight * scale / 60
 
+        if let club = MeetingClubResolver.club(for: meeting.clubID, in: clubs) {
+            let clubColor = colorFromClub(club: club)
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 if usesPhoneLayout && !meetingInfo {
@@ -42,36 +50,18 @@ struct MeetingView: View {
 
                 if meetingInfo {
                     Rectangle()
-                        .fill(
-                            colorFromClub(
-                                club: clubs.first(where: {
-                                    $0.clubID == meeting.clubID
-                                })!
-                            ).opacity(0.7)
-                        )
+                        .fill(clubColor.opacity(0.7))
                         .cornerRadius(5)
                 } else {
                     Rectangle()
-                        .fill(
-                            colorFromClub(
-                                club: clubs.first(where: {
-                                    $0.clubID == meeting.clubID
-                                })!
-                            ).opacity(0.2)
-                        )
+                        .fill(clubColor.opacity(0.2))
                         .cornerRadius(5)
                 }
 
                 HStack {
                     RoundedRectangle(cornerRadius: 25)
                         .frame(width: 4)
-                        .foregroundStyle(
-                            colorFromClub(
-                                club: clubs.first(where: {
-                                    $0.clubID == meeting.clubID
-                                })!
-                            ).opacity(0.8)
-                        )
+                        .foregroundStyle(clubColor.opacity(0.8))
                         .padding(4)
                         .padding(.trailing, -8)
 
@@ -84,12 +74,8 @@ struct MeetingView: View {
                         ) {
                             HStack {
                                 Text(
-                                    (meeting.title.first?.uppercased() ?? "")
-                                        + meeting.title.suffix(
-                                            from: meeting.title.index(
-                                                after: meeting.title.startIndex
-                                            )
-                                        )
+                                    String(meeting.title.prefix(1)).uppercased()
+                                        + String(meeting.title.dropFirst())
                                 )
 
                                 if meeting.description != nil {
@@ -110,11 +96,7 @@ struct MeetingView: View {
                                     ? Color.white
                                     : (usesPhoneLayout
                                         ? Color.primary
-                                        : colorFromClub(
-                                        club: clubs.first(where: {
-                                            $0.clubID == meeting.clubID
-                                        })!
-                                    ))
+                                        : clubColor)
                             )
                             .bold()
                         }
@@ -137,11 +119,7 @@ struct MeetingView: View {
                                     ? Color.white
                                     : (usesPhoneLayout
                                         ? Color.secondary
-                                        : colorFromClub(
-                                        club: clubs.first(where: {
-                                            $0.clubID == meeting.clubID
-                                        })!
-                                    ).opacity(0.6))
+                                        : clubColor.opacity(0.6))
                             )
                             .font(.caption2)
                         }
@@ -155,10 +133,7 @@ struct MeetingView: View {
                                 Image(systemName: "person.circle")
                                     .padding(.trailing, -4)
                                 Text(
-                                    getClubNameByIDWithClubs(
-                                        clubID: meeting.clubID,
-                                        clubs: clubs
-                                    )
+                                    club.name
                                 )
                                 .lineLimit(1)
                             }
@@ -167,11 +142,7 @@ struct MeetingView: View {
                                     ? Color.white
                                     : (usesPhoneLayout
                                         ? Color.secondary
-                                        : colorFromClub(
-                                        club: clubs.first(where: {
-                                            $0.clubID == meeting.clubID
-                                        })!
-                                    ).opacity(0.6))
+                                        : clubColor.opacity(0.6))
                             )
                             .font(.caption2)
                         }
@@ -188,12 +159,8 @@ struct MeetingView: View {
                                     .padding(.trailing, -4)
                                 Text(
                                     .init(
-                                        (location.first?.uppercased() ?? "")
-                                            + location.suffix(
-                                                from: location.index(
-                                                    after: location.startIndex
-                                                )
-                                            )
+                                        String(location.prefix(1)).uppercased()
+                                            + String(location.dropFirst())
                                     )
                                 )
                                 .lineLimit(1)
@@ -203,11 +170,7 @@ struct MeetingView: View {
                                     ? Color.white
                                     : (usesPhoneLayout
                                         ? Color.secondary
-                                        : colorFromClub(
-                                        club: clubs.first(where: {
-                                            $0.clubID == meeting.clubID
-                                        })!
-                                    ).opacity(0.6))
+                                        : clubColor.opacity(0.6))
                             )
                             .font(.caption2)
                         }
@@ -241,6 +204,7 @@ struct MeetingView: View {
                     : startOffset + (duration / 2)
                         + (12 * (startOffset / geometry.size.height))
             )
+        }
         }
     }
 

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftUIX
 
 struct MeetingInfoView: View {
+    @Environment(CalendarDataStore.self) private var calendarStore
     @Environment(\.appViewportSize) var parentViewportSize
     var screenWidth: CGFloat { presentationSize.width }
     var screenHeight: CGFloat { presentationSize.height }
@@ -12,17 +13,16 @@ struct MeetingInfoView: View {
     @State var showMoreTitle = true
     @State var showMoreDescription = true
     @State var showMoreLocation = true
-    @State var showMoreAttending = true
     var selectedDate: Date? = nil
     @State var titleMoreThan4 = false
     @State var locationMoreThan1 = false
     @State var descMoreThan9 = false
-    @State var attendingMoreThan2 = false
     @State var showInfo = false
     @Binding var userInfo: Personal?
     var onDelete: (Bool) -> Void = { _ in }
     @AppStorage("darkMode") var darkMode = false
     @State private var showDeleteConfirmation = false
+    @State private var deleteIntent = MeetingMutationIntent()
     @State private var deletingMeeting = false
     @State private var showDeleteError = false
 
@@ -42,11 +42,29 @@ struct MeetingInfoView: View {
         }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
         .appPresentationSizing()
+        .calendarAdministrativeAccess(
+            clubID: meeting.clubID,
+            enabled: viewModel?.isSuperAdmin == true
+                && !calendarStore.isMember(of: meeting.clubID)
+        )
     }
 
     @ViewBuilder
     var presentationContent: some View {
-        let club = clubs.first(where: { $0.clubID == meeting.clubID })!
+        if let club = MeetingClubResolver.club(for: meeting.clubID, in: clubs) {
+            presentationContent(for: club)
+        } else {
+            ContentUnavailableView(
+                "Meeting Unavailable",
+                systemImage: "calendar.badge.exclamationmark",
+                description: Text("This meeting's club is no longer available.")
+            )
+            .padding()
+        }
+    }
+
+    @ViewBuilder
+    private func presentationContent(for club: Club) -> some View {
         var clubColor: Color {
             Color(
                 hexadecimal: club.clubColor
@@ -58,12 +76,8 @@ struct MeetingInfoView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text(
-                            (meeting.title.first?.uppercased() ?? "")
-                                + meeting.title.suffix(
-                                    from: meeting.title.index(
-                                        after: meeting.title.startIndex
-                                    )
-                                )
+                            String(meeting.title.prefix(1)).uppercased()
+                                + String(meeting.title.dropFirst())
                         )
                         .font(.title2)
                         .fontWeight(.bold)
@@ -109,13 +123,10 @@ struct MeetingInfoView: View {
 
                         Spacer()
 
-                        if let selectedClub = clubs.first(where: {
-                            $0.clubID == meeting.clubID
-                        }),
-                            isClubLeaderOrSuperAdmin(
-                                club: selectedClub,
-                                userEmail: viewModel?.userEmail
-                            )
+                        if isClubLeaderOrSuperAdmin(
+                            club: club,
+                            userEmail: viewModel?.userEmail
+                        )
                         {
                             VStack {
                                 Button {
@@ -157,16 +168,13 @@ struct MeetingInfoView: View {
                         }
                     } label: {
                         Text(
-                            clubs.first(where: { $0.clubID == meeting.clubID })?
-                                .name ?? "Club Name"
+                            club.name
                         )
                         .foregroundStyle(colorFromClub(club: club))
                         .bold()
                     }
 
-                    Text(
-                        "\(dateFromString(meeting.startTime).formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) to \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))"
-                    )
+                    Text(meetingDateDescription)
                     .foregroundColor(darkMode ? .gray : .darkGray)
                     .bold()
 
@@ -202,12 +210,8 @@ struct MeetingInfoView: View {
 
                             Text(
                                 .init(
-                                    (location.first?.uppercased() ?? "")
-                                        + location.suffix(
-                                            from: location.index(
-                                                after: location.startIndex
-                                            )
-                                        )
+                                    String(location.prefix(1)).uppercased()
+                                        + String(location.dropFirst())
                                 )
                             )
                             .textSelection(.enabled)
@@ -306,39 +310,18 @@ struct MeetingInfoView: View {
 
                     Divider()
 
-                    if let peopleAttending = meeting.visibleByArray {
+                    MeetingRSVPView(
+                        meeting: meeting,
+                        isEligible: calendarStore.isMember(of: meeting.clubID),
+                        isLeader: calendarStore.isLeader(of: meeting.clubID)
+                            || viewModel?.isSuperAdmin == true
+                    )
 
-                        Text(.init(peopleAttending.joined(separator: ", ")))
-                            .font(.caption)
-                            .foregroundColor(darkMode ? .gray : .darkGray)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .lineLimit(showMoreAttending ? nil : 2)
-                            .background(
-                                GeometryReader { geometry in
-                                    Color.clear
-                                        .onAppear {
-                                            calculateLines(
-                                                size: geometry.size,
-                                                variable: $attendingMoreThan2,
-                                                maxLines: 2,
-                                                textStyle: .caption
-                                            )
-                                            showMoreAttending = false
-                                        }
-                                }
-                            )
-
-                        if attendingMoreThan2 {
-                            Button(
-                                showMoreAttending ? "Show Less" : "Show More"
-                            ) {
-                                showMoreAttending.toggle()
-                            }
-                        }
-                    } else {
-                        Text("All Club Members")
-                            .font(.caption)
-                    }
+                    Text(meeting.visibleByArray == nil
+                        ? "Visible to all club members"
+                        : "Visible to selected club members")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
                     Color.clear.frame(
                         height: usesLegacyWideIPadLayout
@@ -346,33 +329,22 @@ struct MeetingInfoView: View {
                     )
                 }
             }
-            .appSheet(isPresented: $showInfo) {
-                if userInfo != nil {
-                    if let cluber = clubs.first(where: {
-                        $0.clubID == meeting.clubID
-                    }) {
+            .appSheet(
+                isPresented: $showInfo,
+                iPadWidthDivisor: 1.05
+            ) {
+                if userInfo != nil, let viewModel {
                         ClubInfoView(
-                            club: cluber,
-                            viewModel: viewModel!,
+                            club: club,
+                            viewModel: viewModel,
                             userInfo: $userInfo
                         )
                         .presentationDragIndicator(.visible)
-                        .frame(
-                            width: usesLegacyWideIPadLayout
-                                ? parentViewportSize.width / 1.05 : nil
-                        )
-                        .frame(
-                            maxWidth: usesLegacyWideIPadLayout
-                                ? nil : .infinity
-                        )
                         .foregroundColor(nil)
                         .presentationBackground {
                             GlassBackground(color: clubColor)
                                 .cornerRadius(25)
                         }
-                    } else {
-                        Text("Club not found")
-                    }
                 }
             }
 
@@ -380,8 +352,12 @@ struct MeetingInfoView: View {
         .saturation(darkMode ? 1.3 : 1.0)
         .brightness(darkMode ? 0.3 : 0.0)
         .implicitAnimation(.smooth)
-        .appSheet(isPresented: $openSettings) {
+        .appSheet(
+            isPresented: $openSettings,
+            iPadWidthDivisor: 1.05
+        ) {
             AddMeetingView(
+                allowsAdministrativeCalendarAccess: viewModel?.isSuperAdmin == true,
                 viewCloser: {
                     openSettings = false
                 },
@@ -398,7 +374,6 @@ struct MeetingInfoView: View {
                 userInfo: $userInfo
             )
             .presentationDragIndicator(.visible)
-            .presentationSizing(.page)
             .presentationBackground {
                 GlassBackground(color: clubColor)
                     .cornerRadius(25)
@@ -437,6 +412,16 @@ struct MeetingInfoView: View {
         } message: {
             Text("Please check your connection and try again.")
         }
+        .task(id: meeting.meetingID) {
+            guard let meetingID = meeting.meetingID,
+                  let revision = meeting.revision,
+                  revision > 0
+            else { return }
+            await NotificationRegistrationManager.shared.markMeetingSeen(
+                meetingID: meetingID,
+                revision: revision
+            )
+        }
         .padding()
         .frame(
             width: usesLegacyWideIPadLayout
@@ -457,6 +442,34 @@ struct MeetingInfoView: View {
     private var isRepeatingMeeting: Bool {
         guard let seriesID = meeting.seriesID else { return false }
         return !seriesID.isEmpty
+    }
+
+    private var meetingDateDescription: String {
+        if meeting.fullDay == true {
+            let start = dateForMeeting(meeting)
+            guard let exclusive = meeting.endDateExclusive else {
+                return start.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())
+            }
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = calendar
+            formatter.timeZone = calendar.timeZone
+            formatter.dateFormat = "yyyy-MM-dd"
+            let finalDay = formatter.date(from: exclusive).flatMap {
+                calendar.date(byAdding: .day, value: -1, to: $0)
+            } ?? start
+            if calendar.isDate(start, inSameDayAs: finalDay) {
+                return "All day • \(start.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))"
+            }
+            return "All day • \(start.formatted(date: .abbreviated, time: .omitted)) – \(finalDay.formatted(date: .abbreviated, time: .omitted))"
+        }
+        let start = dateForMeeting(meeting)
+        let end = meeting.endUtc.map { Date(timeIntervalSince1970: $0) }
+            ?? strictDateFromString(meeting.endTime)
+            ?? start
+        return "\(start.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(start.formatted(date: .omitted, time: .shortened)) to \(end.formatted(date: .omitted, time: .shortened))"
     }
 
     var recurrenceDescription: String {
@@ -486,7 +499,7 @@ struct MeetingInfoView: View {
         guard !deletingMeeting else { return }
         deletingMeeting = true
 
-        deleteMeeting(meeting, includingFuture: includingFuture) { success in
+        deleteMeeting(meeting, includingFuture: includingFuture, intent: deleteIntent, calendarStore: calendarStore) { success in
             deletingMeeting = false
 
             if success {

@@ -2,6 +2,7 @@ import PopupView
 import SwiftUI
 
 struct MeetingListView: View {
+    @Environment(\.appViewportSize) private var viewportSize
     var meetings: [Club.MeetingTime]
     @Binding var clubs: [Club]
     var viewModel: AuthenticationViewModel
@@ -160,6 +161,10 @@ struct MeetingListView: View {
                         self.selectedMeeting = nil
                         showMeetingInfo = false
                     }
+                )
+                .frame(
+                    width: min(max(viewportSize.width / 2.5, 320), viewportSize.width),
+                    height: viewportSize.height
                 )
             }
         } customize: {

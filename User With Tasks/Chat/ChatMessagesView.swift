@@ -218,8 +218,7 @@ struct MessageScrollView: View {
                             Image(systemName: "arrow.down")
                         }
                         .buttonStyle(.glass)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 8)
+                        .padding()
                     }
 
                     Spacer()

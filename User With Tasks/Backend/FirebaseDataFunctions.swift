@@ -6,36 +6,52 @@ import GoogleSignIn
 import GoogleSignInSwift
 import SwiftUI
 
-func addClub(club: Club, onSaved: (@MainActor (Error?) -> Void)? = nil) {
-    let reference = Database.database().reference()
-    let clubReference = reference.child("clubs").child(club.clubID)
+private struct ClubSaveRequest: Encodable {
+    let operationID: String
+    let expectedLastUpdated: Double?
+    let club: Club
+}
 
+private struct ClubSaveResponse: Decodable {
+    let clubID: String
+    let unresolved: [UnresolvedIdentity]
+
+    struct UnresolvedIdentity: Decodable {
+        let email: String
+        let reason: String
+    }
+}
+
+func saveClubThroughBackend(
+    _ club: Club,
+    operationID: String,
+    expectedLastUpdated: Double?
+) async throws {
+    let _: ClubSaveResponse = try await PHSAPIClient.shared.request(
+        "POST",
+        path: "clubs/save",
+        body: ClubSaveRequest(
+            operationID: operationID,
+            expectedLastUpdated: expectedLastUpdated,
+            club: club
+        )
+    )
+}
+
+func addClub(club: Club, onSaved: (@MainActor (Error?) -> Void)? = nil) {
     var clubToSave = club
     clubToSave.lastUpdated = Date().timeIntervalSince1970
-
-    do {
-        let data = try JSONEncoder().encode(clubToSave)
-        if let dictionary = try JSONSerialization.jsonObject(with: data)
-            as? [String: Any]
-        {
-            Task {
-                do {
-                    try await setFirebaseValue(dictionary, at: clubReference)
-                    await onSaved?(nil)
-                } catch {
-                    print("Error saving club data: \(error)")
-                    await onSaved?(error)
-                }
-            }
-        } else {
-            throw EncodingError.invalidValue(
+    Task {
+        do {
+            try await saveClubThroughBackend(
                 clubToSave,
-                .init(codingPath: [], debugDescription: "Club data must encode as an object.")
+                operationID: UUID().uuidString,
+                expectedLastUpdated: nil
             )
+            await onSaved?(nil)
+        } catch {
+            await onSaved?(error)
         }
-    } catch {
-        print("Error encoding club data: \(error)")
-        Task { await onSaved?(error) }
     }
 }
 
@@ -140,65 +156,16 @@ func removeClubFromFavorites(for userID: String, clubID: String) {
     }
 }
 
-func clubIDByName(from snapshot: DataSnapshot, clubName: String) -> String? {
-    for child in snapshot.children {
-        if let snap = child as? DataSnapshot,
-            let clubData = snap.value as? [String: Any],
-            let name = clubData["name"] as? String,
-            name == clubName
-        {
-            return snap.key
-        }
-    }
-
-    return nil
-}
-
-func getClubIDByName(clubName: String) async -> String? {
-    let reference = Database.database().reference().child("clubs")
-    let snapshot = await observeSingleValue(at: reference)
-    return clubIDByName(from: snapshot, clubName: clubName)
-}
-
-func clubName(from snapshot: DataSnapshot) -> String? {
-    guard let clubData = snapshot.value as? [String: Any],
-        let clubName = clubData["name"] as? String
-    else {
-        return nil
-    }
-
-    return clubName
-}
-
 func getClubNameByID(clubID: String) async -> String? {
-    let reference = Database.database().reference().child("clubs").child(clubID)
+    let reference = Database.database().reference().child("clubs").child(clubID).child("name")
     let snapshot = await observeSingleValue(at: reference)
-    return clubName(from: snapshot)
+    return snapshot.value as? String
 }
 
 func getClubNameByIDWithClubs(clubID: String, clubs: [Club]) -> String {
     var name = ""
     name = clubs.first(where: { $0.clubID == clubID })?.name ?? ""
     return name
-}
-
-func getFavoritedClubNames(from clubIDs: [String]) async -> [String] {
-    await withTaskGroup(of: String?.self) { group in
-        for clubID in clubIDs {
-            group.addTask {
-                await getClubNameByID(clubID: clubID)
-            }
-        }
-
-        var clubNames: [String] = []
-        for await clubName in group {
-            if let clubName {
-                clubNames.append(clubName)
-            }
-        }
-
-        return clubNames
-    }
 }
 
 func addAnnouncement(announcement: Club.Announcements) {
@@ -265,97 +232,187 @@ func addPersonSeen(announcement: Club.Announcements, memberEmail: String) {
     }
 }
 
-func addMeeting(meeting: Club.MeetingTime) {
+private struct MeetingWritePayload: Encodable {
+    let meetingID: String?
+    let clubID: String
+    let title: String
+    let description: String
+    let location: String
+    let fullDay: Bool
+    let startUtc: Double?
+    let endUtc: Double?
+    let startDate: String?
+    let endDateExclusive: String?
+    let timeZone = "America/Chicago"
+    let visibilityMode: String
+    let visibilityEmails: [String]
+    let seriesID: String?
+    let recurrenceIntervalWeeks: Int?
+    let recurrenceEndDate: String?
+
+    init(_ meeting: Club.MeetingTime) {
+        meetingID = meeting.meetingID
+        clubID = meeting.clubID
+        title = meeting.title
+        description = meeting.description ?? ""
+        location = meeting.location ?? ""
+        fullDay = meeting.fullDay == true
+        seriesID = meeting.seriesID
+        recurrenceIntervalWeeks = meeting.recurrenceIntervalWeeks
+        recurrenceEndDate = meeting.recurrenceEndDate
+        visibilityMode = meeting.visibility?.mode
+            ?? ((meeting.visibleByArray?.isEmpty == false) ? "uids" : "public")
+        visibilityEmails = meeting.visibleByArray ?? []
+        if fullDay {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = calendar
+            formatter.timeZone = calendar.timeZone
+            formatter.dateFormat = "yyyy-MM-dd"
+            let start = strictDateFromString(meeting.startTime)
+            let end = strictDateFromString(meeting.endTime)
+            startDate = start.map { formatter.string(from: $0) }
+            endDateExclusive = end.flatMap { calendar.date(byAdding: .day, value: 1, to: $0) }
+                .map { formatter.string(from: $0) }
+            startUtc = nil
+            endUtc = nil
+        } else {
+            startUtc = strictDateFromString(meeting.startTime)?.timeIntervalSince1970
+            endUtc = strictDateFromString(meeting.endTime)?.timeIntervalSince1970
+            startDate = nil
+            endDateExclusive = nil
+        }
+    }
+}
+
+private struct SaveMeetingRequest: Encodable {
+    let operationID: String
+    let meetings: [MeetingWritePayload]
+    let replacingClubID: String?
+    let replacingMeetingID: String?
+    let includingFuture: Bool
+    let expectedRevision: Int?
+}
+
+private struct SavedMeetingsResponse: Decodable { let meetings: [Club.MeetingTime] }
+private struct DeletedMeetingsResponse: Decodable { let deleted: [String] }
+
+@MainActor
+func addMeeting(meeting: Club.MeetingTime, intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
+    completion: @escaping (Bool) -> Void = { _ in }) {
     saveMeetings(
         [meeting],
         replacing: nil,
         includingFuture: false,
-        successTitle: "Added Meeting Time!"
+        successTitle: "Added Meeting Time!",
+        intent: intent, calendarStore: calendarStore,
+        completion: completion
     )
 }
 
-func addMeetings(meetings: [Club.MeetingTime]) {
+@MainActor
+func addMeetings(meetings: [Club.MeetingTime], intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
+    completion: @escaping (Bool) -> Void = { _ in }) {
     saveMeetings(
         meetings,
         replacing: nil,
         includingFuture: false,
-        successTitle: "Added Meeting Times!"
+        successTitle: "Added Meeting Times!",
+        intent: intent, calendarStore: calendarStore,
+        completion: completion
     )
 }
 
-func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime)
+@MainActor
+func replaceMeeting(oldMeeting: Club.MeetingTime, newMeeting: Club.MeetingTime, intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
+    completion: @escaping (Bool) -> Void = { _ in })
 {
     saveMeetings(
         [newMeeting],
         replacing: oldMeeting,
         includingFuture: false,
-        successTitle: "Added Meeting Time!"
+        successTitle: "Added Meeting Time!",
+        intent: intent, calendarStore: calendarStore,
+        completion: completion
     )
 }
 
+@MainActor
 func replaceMeeting(
     oldMeeting: Club.MeetingTime,
-    newMeetings: [Club.MeetingTime]
+    newMeetings: [Club.MeetingTime],
+    intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
+    completion: @escaping (Bool) -> Void = { _ in }
 ) {
     saveMeetings(
         newMeetings,
         replacing: oldMeeting,
         includingFuture: false,
-        successTitle: "Edited Meeting Times!"
+        successTitle: "Edited Meeting Times!",
+        intent: intent, calendarStore: calendarStore,
+        completion: completion
     )
 }
 
+@MainActor
 func replaceMeetingAndFuture(
     oldMeeting: Club.MeetingTime,
-    newMeetings: [Club.MeetingTime]
+    newMeetings: [Club.MeetingTime],
+    intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
+    completion: @escaping (Bool) -> Void = { _ in }
 ) {
     saveMeetings(
         newMeetings,
         replacing: oldMeeting,
         includingFuture: true,
-        successTitle: "Edited Meeting Times!"
+        successTitle: "Edited Meeting Times!",
+        intent: intent, calendarStore: calendarStore,
+        completion: completion
     )
 }
 
+@MainActor
 func deleteMeeting(
     _ meetingToDelete: Club.MeetingTime,
     includingFuture: Bool,
+    intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
     completion: @escaping (Bool) -> Void = { _ in }
 ) {
-    let reference = Database.database().reference()
-    let meetingsReference = reference.child("clubs")
-        .child(meetingToDelete.clubID)
-        .child("meetingTimes")
-
+    guard !intent.isRunning else { return }
+    intent.isRunning = true
     Task {
-        let snapshot = await observeSingleValue(at: meetingsReference)
-        var clubMeetings = meetings(from: snapshot)
-
-        clubMeetings.removeAll { meeting in
-            if includingFuture, let seriesID = meetingToDelete.seriesID {
-                return meeting.seriesID == seriesID
-                    && dateFromString(meeting.startTime)
-                        >= dateFromString(meetingToDelete.startTime)
-            }
-
-            return meeting.title == meetingToDelete.title
-                && meeting.startTime == meetingToDelete.startTime
-                && meeting.endTime == meetingToDelete.endTime
-        }
-
+        defer { intent.isRunning = false }
         do {
-            let sortedMeetings = clubMeetings.sorted {
-                dateFromString($0.startTime) < dateFromString($1.startTime)
+            let scope = try MeetingMutationIntent.currentScope()
+            guard let meetingID = meetingToDelete.meetingID else {
+                throw PHSAPIError.server(status: 409, message: "Refresh the calendar before deleting this legacy meeting.")
             }
-            let data = try JSONEncoder().encode(sortedMeetings)
-            let meetingValues = try JSONSerialization.jsonObject(with: data)
-            let lastUpdated = Date().timeIntervalSince1970
+            struct Request: Encodable {
+                let operationID: String
+                let clubID: String
+                let meetingID: String
+                let includingFuture: Bool
+            }
+            let payload = try intent.prepare(scope: scope, path: "meetings/delete") { operationID in
+                Request(operationID: operationID, clubID: meetingToDelete.clubID,
+                        meetingID: meetingID, includingFuture: includingFuture)
+            }
+            let response: DeletedMeetingsResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "meetings/delete",
+                body: payload
+            )
 
-            _ = try await reference.updateChildValues([
-                "clubs/\(meetingToDelete.clubID)/meetingTimes": meetingValues,
-                "clubs/\(meetingToDelete.clubID)/lastUpdated": lastUpdated,
-            ])
-
+            guard try MeetingMutationIntent.currentScope() == scope else { throw PHSAPIError.signedOut }
+            intent.confirm()
+            calendarStore.acceptMutation(saved: [], deleted: response.deleted, uid: scope.uid, projectID: scope.projectID)
             await MainActor.run {
                 dropper(
                     title: includingFuture
@@ -366,81 +423,58 @@ func deleteMeeting(
                 completion(true)
             }
         } catch {
-            print("Error deleting meeting data: \(error)")
+            intent.handleFailure(error)
             await MainActor.run {
+                dropper(title: "Meeting Not Deleted", subtitle: error.localizedDescription, icon: nil)
                 completion(false)
             }
         }
     }
 }
 
+@MainActor
 func saveMeetings(
     _ newMeetings: [Club.MeetingTime],
     replacing oldMeeting: Club.MeetingTime?,
     includingFuture: Bool,
-    successTitle: String
+    successTitle: String,
+    intent: MeetingMutationIntent,
+    calendarStore: CalendarDataStore,
+    completion: @escaping (Bool) -> Void = { _ in }
 ) {
-    guard let newClubID = newMeetings.first?.clubID else { return }
-
-    let reference = Database.database().reference()
-    let oldClubID = oldMeeting?.clubID ?? newClubID
-
+    guard !newMeetings.isEmpty else { completion(false); return }
+    guard !intent.isRunning else { return }
+    intent.isRunning = true
     Task {
-        let oldMeetingsRef = reference.child("clubs").child(oldClubID).child(
-            "meetingTimes"
-        )
-        var meetingsByClub: [String: [Club.MeetingTime]] = [:]
-
-        if oldClubID == newClubID {
-            let snapshot = await observeSingleValue(at: oldMeetingsRef)
-            meetingsByClub[oldClubID] = meetings(from: snapshot)
-        } else {
-            let newMeetingsRef = reference.child("clubs").child(newClubID)
-                .child("meetingTimes")
-            async let oldSnapshot = observeSingleValue(at: oldMeetingsRef)
-            async let newSnapshot = observeSingleValue(at: newMeetingsRef)
-            let snapshots = await (oldSnapshot, newSnapshot)
-            meetingsByClub[oldClubID] = meetings(from: snapshots.0)
-            meetingsByClub[newClubID] = meetings(from: snapshots.1)
-        }
-
-        if let oldMeeting {
-            meetingsByClub[oldClubID]?.removeAll { meeting in
-                if includingFuture, let seriesID = oldMeeting.seriesID {
-                    return meeting.seriesID == seriesID
-                        && dateFromString(meeting.startTime)
-                            >= dateFromString(oldMeeting.startTime)
-                }
-
-                return meeting.title == oldMeeting.title
-                    && meeting.startTime == oldMeeting.startTime
-                    && meeting.endTime == oldMeeting.endTime
-            }
-        }
-
-        meetingsByClub[newClubID, default: []].append(contentsOf: newMeetings)
-
+        defer { intent.isRunning = false }
         do {
-            var updates: [String: Any] = [:]
-            let lastUpdated = Date().timeIntervalSince1970
-
-            for (clubID, clubMeetings) in meetingsByClub {
-                let sortedMeetings = clubMeetings.sorted {
-                    dateFromString($0.startTime) < dateFromString($1.startTime)
-                }
-                let data = try JSONEncoder().encode(sortedMeetings)
-                let meetingValues = try JSONSerialization.jsonObject(with: data)
-
-                updates["clubs/\(clubID)/meetingTimes"] = meetingValues
-                updates["clubs/\(clubID)/lastUpdated"] = lastUpdated
+            let scope = try MeetingMutationIntent.currentScope()
+            let payload = try intent.prepare(scope: scope, path: "meetings/save") { operationID in
+                SaveMeetingRequest(
+                operationID: operationID,
+                meetings: newMeetings.map(MeetingWritePayload.init),
+                replacingClubID: oldMeeting?.clubID,
+                replacingMeetingID: oldMeeting?.meetingID,
+                includingFuture: includingFuture,
+                expectedRevision: oldMeeting?.revision
+            )
             }
-
-            _ = try await reference.updateChildValues(updates)
+            let response: SavedMeetingsResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "meetings/save", body: payload
+            )
+            guard try MeetingMutationIntent.currentScope() == scope else { throw PHSAPIError.signedOut }
+            intent.confirm()
+            calendarStore.acceptMutation(saved: response.meetings, deleted: [], uid: scope.uid, projectID: scope.projectID)
             await MainActor.run {
                 dropper(title: successTitle, subtitle: "", icon: nil)
+                completion(true)
             }
         } catch {
-            print("Error saving meeting data: \(error)")
+            intent.handleFailure(error)
+            await MainActor.run {
+                dropper(title: "Meeting Not Saved", subtitle: error.localizedDescription, icon: nil)
+                completion(false)
+            }
         }
     }
 }
@@ -459,95 +493,43 @@ func meetings(from snapshot: DataSnapshot) -> [Club.MeetingTime] {
 }
 
 func addMemberToClub(clubID: String, memberEmail: String) {
-    let databaseRef = Database.database().reference()
-    let clubRef = databaseRef.child("clubs").child(clubID)
-
     Task {
-        let membersRef = clubRef.child("members")
-        let snapshot = await observeSingleValue(at: membersRef)
-        var members = snapshot.value as? [String] ?? []
-
-        if members.contains(memberEmail.lowercased()) {
-            print("Error: Member already in the members.")
-            return
-        }
-
-        members.append(memberEmail.lowercased())
-
         do {
-            try await setFirebaseValue(Array(Set(members)), at: membersRef)
-            print("Member added successfully.")
-            try? await setFirebaseValue(
-                Date().timeIntervalSince1970,
-                at: clubRef.child("lastUpdated")
+            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "membership",
+                body: MembershipMutationRequest(clubID: clubID, action: "join")
             )
             await MainActor.run {
                 dropper(title: "Joined Club!", subtitle: "", icon: nil)
             }
         } catch {
-            print(
-                "Error adding member to members: \(error.localizedDescription)"
-            )
+            await MainActor.run { dropper(title: "Could Not Join", subtitle: error.localizedDescription, icon: nil) }
         }
     }
 }
 
 func removeMemberFromClub(clubID: String, emailToRemove: String) {
-    let databaseRef = Database.database().reference()
-    let clubRef = databaseRef.child("clubs").child(clubID)
-
     Task {
-        let membersRef = clubRef.child("members")
-        let snapshot = await observeSingleValue(at: membersRef)
-        var members = snapshot.value as? [String] ?? []
-
-        if let index = members.firstIndex(of: emailToRemove.lowercased()) {
-            members.remove(at: index)
-
-            do {
-                try await setFirebaseValue(members, at: membersRef)
-                try? await setFirebaseValue(
-                    Date().timeIntervalSince1970,
-                    at: clubRef.child("lastUpdated")
-                )
-                print("Email removed successfully.")
-                await MainActor.run {
-                    dropper(title: "Club Left!", subtitle: "", icon: nil)
-                }
-            } catch {
-                print("Error removing email: \(error.localizedDescription)")
+        do {
+            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "membership",
+                body: MembershipMutationRequest(clubID: clubID, action: "leave")
+            )
+            await MainActor.run {
+                dropper(title: "Club Left!", subtitle: "", icon: nil)
             }
-        } else {
-            print("Error: Email not found in the club.")
+        } catch {
+            await MainActor.run { dropper(title: "Could Not Leave", subtitle: error.localizedDescription, icon: nil) }
         }
     }
 }
 
 func addPendingMemberRequest(clubID: String, memberEmail: String) {
-    let databaseRef = Database.database().reference()
-    let clubRef = databaseRef.child("clubs").child(clubID)
-
     Task {
-        let pendingRequestsRef = clubRef.child("pendingMemberRequests")
-        let snapshot = await observeSingleValue(at: pendingRequestsRef)
-        var pendingRequests = snapshot.value as? [String] ?? []
-
-        if pendingRequests.contains(memberEmail.lowercased()) {
-            print("Error: Member already in the pending requests.")
-            return
-        }
-
-        pendingRequests.append(memberEmail.lowercased())
-
         do {
-            try await setFirebaseValue(
-                Array(Set(pendingRequests)),
-                at: pendingRequestsRef
-            )
-            print("Member added to pending requests successfully.")
-            try? await setFirebaseValue(
-                Date().timeIntervalSince1970,
-                at: clubRef.child("lastUpdated")
+            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "membership",
+                body: MembershipMutationRequest(clubID: clubID, action: "request")
             )
             await MainActor.run {
                 dropper(
@@ -557,51 +539,60 @@ func addPendingMemberRequest(clubID: String, memberEmail: String) {
                 )
             }
         } catch {
-            print(
-                "Error adding member to pending requests: \(error.localizedDescription)"
-            )
+            await MainActor.run { dropper(title: "Request Not Sent", subtitle: error.localizedDescription, icon: nil) }
         }
     }
 }
 
 func removePendingMemberRequest(clubID: String, emailToRemove: String) {
-    let databaseRef = Database.database().reference()
-    let clubRef = databaseRef.child("clubs").child(clubID)
-
     Task {
-        let pendingRequestsRef = clubRef.child("pendingMemberRequests")
-        let snapshot = await observeSingleValue(at: pendingRequestsRef)
-        var pendingRequests = snapshot.value as? [String] ?? []
-
-        if let index = pendingRequests.firstIndex(
-            of: emailToRemove.lowercased()
-        ) {
-            pendingRequests.remove(at: index)
-
-            do {
-                try await setFirebaseValue(
-                    pendingRequests,
-                    at: pendingRequestsRef
-                )
-                try? await setFirebaseValue(
-                    Date().timeIntervalSince1970,
-                    at: clubRef.child("lastUpdated")
-                )
-                print("Email removed from pending requests successfully.")
-                await MainActor.run {
-                    dropper(
-                        title: "Join Request Cancelled!",
-                        subtitle: "",
-                        icon: nil
-                    )
-                }
-            } catch {
-                print(
-                    "Error removing email from pending requests: \(error.localizedDescription)"
+        do {
+            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "membership",
+                body: MembershipMutationRequest(clubID: clubID, action: "cancelRequest")
+            )
+            await MainActor.run {
+                dropper(
+                    title: "Join Request Cancelled!", subtitle: "", icon: nil
                 )
             }
-        } else {
-            print("Error: Email not found in pending requests.")
+        } catch {
+            await MainActor.run { dropper(title: "Request Not Cancelled", subtitle: error.localizedDescription, icon: nil) }
+        }
+    }
+}
+
+private struct MembershipMutationRequest: Encodable {
+    let clubID: String
+    let action: String
+    var targetUID: String? = nil
+    var targetEmail: String? = nil
+}
+
+private struct MembershipMutationResponse: Decodable { let ok: Bool }
+
+func resolveMembershipRequest(
+    clubID: String,
+    email: String,
+    accepted: Bool,
+    completion: (@MainActor (Bool) -> Void)? = nil
+) {
+    Task {
+        do {
+            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
+                "POST", path: "membership",
+                body: MembershipMutationRequest(
+                    clubID: clubID,
+                    action: accepted ? "approve" : "reject",
+                    targetEmail: normalizedEmail(email)
+                )
+            )
+            await completion?(true)
+        } catch {
+            await MainActor.run {
+                dropper(title: "Request Not Updated", subtitle: error.localizedDescription, icon: nil)
+            }
+            await completion?(false)
         }
     }
 }

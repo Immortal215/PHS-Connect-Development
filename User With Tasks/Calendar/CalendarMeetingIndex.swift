@@ -6,45 +6,21 @@ struct CalendarMeetingIndex {
     let monthMeetingCountsByDay:
         [String: [(clubID: String, count: Int)]]
 
-    init(clubs: [Club], userEmail: String?) {
-        var visibleMeetings: [Club.MeetingTime] = []
-        var visibleMeetingsByDay: [String: [Club.MeetingTime]] = [:]
-        var monthMeetingCountsByDay: [String: [String: Int]] = [:]
-
-        for club in clubs
-        where isClubMemberLeaderOrSuperAdmin(club: club, userEmail: userEmail) {
-            let isLeader = isClubLeaderOrSuperAdmin(
-                club: club,
-                userEmail: userEmail
-            )
-
-            for meeting in club.meetingTimes ?? [] {
-                let dayKey = schoolScheduleDateString(
-                    from: dateFromString(meeting.startTime)
-                )
-
-                monthMeetingCountsByDay[dayKey, default: [:]][
-                    meeting.clubID,
-                    default: 0
-                ] += 1
-
-                if meeting.visibleByArray?.isEmpty ?? true
-                    || meeting.visibleByArray?.contains(userEmail ?? "") == true
-                    || isLeader
-                {
-                    visibleMeetings.append(meeting)
-                    visibleMeetingsByDay[dayKey, default: []].append(meeting)
-                }
-            }
+    init(meetings: [Club.MeetingTime]) {
+        let visible = meetings.filter { $0.cancelled != true }.sorted {
+            dateForMeeting($0) < dateForMeeting($1)
         }
-
-        self.visibleMeetings = visibleMeetings.sorted {
-            dateFromString($0.startTime) < dateFromString($1.startTime)
+        var byDay: [String: [Club.MeetingTime]] = [:]
+        var counts: [String: [String: Int]] = [:]
+        for meeting in visible {
+            let dayKey = schoolScheduleDateString(from: dateForMeeting(meeting))
+            byDay[dayKey, default: []].append(meeting)
+            counts[dayKey, default: [:]][meeting.clubID, default: 0] += 1
         }
-        self.visibleMeetingsByDay = visibleMeetingsByDay
-        self.monthMeetingCountsByDay = monthMeetingCountsByDay.mapValues {
-            counts in
-            counts.map { (clubID: $0.key, count: $0.value) }
+        visibleMeetings = visible
+        visibleMeetingsByDay = byDay
+        monthMeetingCountsByDay = counts.mapValues {
+            $0.map { (clubID: $0.key, count: $0.value) }
         }
     }
 

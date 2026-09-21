@@ -1,5 +1,6 @@
 import CUIExpandableButton
 import Drops
+import Foundation
 import FirebaseAuth
 import FirebaseCore
 import FirebaseDatabaseInternal
@@ -11,6 +12,7 @@ import SwiftUI
 import SwiftUIX
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject var viewModel = AuthenticationViewModel()
     @State var showSignInView = true
     @AppStorage("selectedTab") var selectedTab = 3
@@ -26,11 +28,12 @@ struct ContentView: View {
     @State var clubs: [Club] = []
     @State var userInfo: Personal? = nil
     @StateObject var schoolScheduleStore = SchoolScheduleStore()
+    @State private var calendarStore = CalendarDataStore()
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @ObservedObject var keyboardResponder = KeyboardResponder()
     @AppStorage("darkMode") var darkMode = false
-    @AppStorage("cachedClubIDs") var cachedClubIDs: String = ""  // comma-separated chatIDs
+    @AppStorage("cachedClubIDs") var cachedClubIDs: String = ""  // comma-separated club IDs
 
     @State var pendingChatID: String? = nil
     @State var pendingThreadName: String? = nil
@@ -44,6 +47,10 @@ struct ContentView: View {
     @StateObject var calendarTabHost = PersistentTabHostStore()
     @StateObject var settingsTabHost = PersistentTabHostStore()
     @StateObject var flashcardsTabHost = PersistentTabHostStore()
+    @State private var clubObservers: [(DatabaseQuery, DatabaseHandle)] = []
+    @State private var isReconcilingClubIDs = false
+    @State private var clubInitialDeltaReady = false
+    @State private var clubListenerGeneration = UUID()
     
     @AppStorage("firstCalendarAppearance") var firstCalendarAppearance = false
 
@@ -54,12 +61,35 @@ struct ContentView: View {
                     \.appViewportSize,
                     adaptiveViewportSize(for: geometry)
                 )
+                .environment(
+                    \.appRootViewportSize,
+                    adaptiveViewportSize(for: geometry)
+                )
                 .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .ignoresSafeArea(
-            .container,
-            edges: UIDevice.current.userInterfaceIdiom == .pad ? .bottom : []
-        )
+        .ignoresSafeArea(.container, edges: .bottom)
+        .onChange(of: viewModel.uid) { _, newUID in
+            if let newUID, !viewModel.isGuestUser {
+                calendarStore.start(uid: newUID)
+            } else {
+                calendarStore.stop()
+            }
+        }
+        .onChange(of: calendarStore.accessRevision) {
+            hydratePrivateClubAccess()
+        }
+        .onChange(of: networkMonitor.isConnected) { _, connected in
+            if connected {
+                calendarStore.refresh()
+                Task { await reconcileCachedClubIDs() }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await reconcileCachedClubIDs() }
+            }
+        }
+        .environment(calendarStore)
     }
 
     func adaptiveViewportSize(for geometry: GeometryProxy) -> CGSize {
@@ -203,20 +233,11 @@ struct ContentView: View {
                             DispatchQueue.main.async {
                                 selectedTab = AppTab.chat.index
                             }
+                        } else if NotificationOpenRouter.shared.pendingMeetingID != nil {
+                            DispatchQueue.main.async {
+                                selectedTab = AppTab.calendar.index
+                            }
                         }
-
-                        //                        if viewModel.userEmail == "sharul.shah2008@gmail.com" || viewModel.userEmail == "frank.mirandola@d214.org" {
-                        //
-                        //                            // litterally all this function does is if it the club does not have any lastUpdated, it will add it now. This is just for migrating everything to have it now and really neccessary, ONLY USE ONCE AND THEN DELETE THIS
-                        //                            Database.database().reference().child("clubs").observeSingleEvent(of: .value) { snapshot in
-                        //                                for case let child as DataSnapshot in snapshot.children {
-                        //                                    if var clubDict = child.value as? [String: Any],
-                        //                                       clubDict["lastUpdated"] == nil {
-                        //                                        Database.database().reference().child("clubs").child(child.key).child("lastUpdated").setValue(0)
-                        //                                    }
-                        //                                }
-                        //                            }
-                        //                        }
 
                     }
                     .onReceive(
@@ -243,6 +264,15 @@ struct ContentView: View {
                     }
                     .onReceive(
                         NotificationCenter.default.publisher(
+                            for: Notification.Name("OpenMeetingFromNotification")
+                        )
+                    ) { _ in
+                        guard showSignInView == false else { return }
+                        advSearchShown = true
+                        selectedTab = AppTab.calendar.index
+                    }
+                    .onReceive(
+                        NotificationCenter.default.publisher(
                             for: Notification.Name("RequestPendingChatID")
                         )
                     ) { _ in
@@ -259,30 +289,6 @@ struct ContentView: View {
                             )
                         }
                     }
-                    //                    .refreshable {
-                    //                        if !viewModel.isGuestUser {
-                    //                            if let UserID = viewModel.uid {
-                    //                                fetchUser(for: UserID) { user in
-                    //                                    if let user = user {
-                    //                                        userInfo = user
-                    //                                    } else {
-                    //                                        print("Failed to fetch user")
-                    //                                        showSignInView = true
-                    //                                    }
-                    //                                }
-                    //
-                    //                            }
-                    //                        }
-                    //
-                    //                        calendarScrollPoint = 6
-                    //                        scale = 0.7
-                    //                        advSearchShown = !advSearchShown
-                    //
-                    //                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    //                            advSearchShown = !advSearchShown
-                    //                        }
-                    //                        dropper(title: "Refreshed!", subtitle: "", icon: UIImage(systemName: "icloud.and.arrow.down"))
-                    //                    }
                 }
             }
             .onChange(of: showSignInView) {
@@ -330,35 +336,48 @@ struct ContentView: View {
             firstCalendarAppearance = false
 
             if viewModel.isGuestUser {
-                do {
-                    try AuthenticationManager.shared.signOut()
-                    userEmail = nil
-                    userName = nil
-                    userImage = nil
-                    userType = nil
-                    uid = nil
-                    showSignInView = true
-                } catch {
-                    print("error with guest signout")
+                Task {
+                    do {
+                        try await AuthenticationManager.shared.signOut()
+                        userEmail = nil
+                        userName = nil
+                        userImage = nil
+                        userType = nil
+                        uid = nil
+                        showSignInView = true
+                    } catch {
+                        print("error with guest signout")
+                    }
                 }
             }
             advSearchShown = true
             searchText = ""
 
-            for clubId in cachedClubIDs.split(separator: ",") {
+            var clubIDsNeedingRefresh: Set<String> = []
+            for clubID in cachedClubIDSet() {
                 let cache = ClubCache(
-                    clubID: String(clubId).replacingOccurrences(
-                        of: " ",
-                        with: ""
-                    )
+                    clubID: clubID
                 )
-                if let loadedClub = cache.load() {
-                    clubs.append(loadedClub)
+                if let cachedClub = cache.load() {
+                    let loadedClub = publicClubRecord(cachedClub)
+                    if loadedClub != cachedClub {
+                        _ = cache.save(club: loadedClub)
+                    }
+                    clubs.append(calendarStore.hydrated(loadedClub, userEmail: viewModel.userEmail))
+                } else {
+                    clubIDsNeedingRefresh.insert(clubID)
                 }
             }
-            
-            setupClubsListener()
+            if let currentUID = viewModel.uid, !viewModel.isGuestUser {
+                calendarStore.start(uid: currentUID)
+            }
+            setupClubsListener(refreshClubIDs: clubIDsNeedingRefresh)
+            Task { await reconcileCachedClubIDs() }
 
+        }
+        .onDisappear {
+            removeClubsListeners()
+            calendarStore.stop(clearMemory: true)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
@@ -426,7 +445,8 @@ struct ContentView: View {
                             clubs: $clubs,
                             userInfo: $userInfo,
                             viewModel: viewModel,
-                            schoolScheduleStore: schoolScheduleStore
+                            schoolScheduleStore: schoolScheduleStore,
+                            calendarStore: calendarStore
                         )
                     )
                 )
@@ -467,74 +487,177 @@ struct ContentView: View {
         }
     }
 
-    func setupClubsListener() {  // definitly work on making this a lot lot lot less often for especially changing clubs
-        let databaseRef = Database.database().reference().child("clubs")
+    func setupClubsListener(refreshClubIDs: Set<String> = []) {
+        removeClubsListeners()
+        let listenerGeneration = UUID()
+        clubListenerGeneration = listenerGeneration
+        let clubsRef = Database.database().reference().child("clubs")
+        let latestCachedTimestamp = clubs.compactMap(\.lastUpdated).max() ?? -0.001
+        let changesQuery = clubsRef.queryOrdered(byChild: "lastUpdated").queryStarting(
+            atValue: latestCachedTimestamp.nextUp
+        )
+        let addedHandle = changesQuery.observe(.childAdded) { snapshot in
+            receiveClubSnapshot(snapshot)
+        }
+        clubObservers.append((changesQuery, addedHandle))
 
-        let latestCachedTimestamp =
-            clubs.compactMap { $0.lastUpdated }.max() ?? -0.001
+        let changedHandle = changesQuery.observe(.childChanged) { snapshot in
+            receiveClubSnapshot(snapshot)
+        }
+        clubObservers.append((changesQuery, changedHandle))
 
-        databaseRef.queryOrdered(byChild: "lastUpdated").queryStarting(
-            atValue: latestCachedTimestamp + 0.001
-        ).observe(.childAdded) { snapshot in
-            if let club = decodeClub(from: snapshot) {
-                DispatchQueue.main.async {
-                    if let index = clubs.firstIndex(where: {
-                        $0.clubID == club.clubID
-                    }) {
-                        clubs[index] = club
-                    } else {
-                        clubs.append(club)
-                    }
-
-                    let cache = ClubCache(clubID: club.clubID)
-                    cache.save(club: club)
-                    print(club.clubID + "added")
-                    if !cachedClubIDs.contains(club.clubID + ",") {
-                        cachedClubIDs.append(club.clubID + ",")
-                    }
-
-                }
+        // Firebase delivers the initial childAdded events before this value
+        // event. Wait for that boundary before comparing shallow server IDs so
+        // a clean install does not request the same club through both paths.
+        changesQuery.observeSingleEvent(of: .value) { _ in
+            DispatchQueue.main.async {
+                guard clubListenerGeneration == listenerGeneration else { return }
+                clubInitialDeltaReady = true
+                Task { await reconcileCachedClubIDs() }
             }
         }
 
-        databaseRef.queryOrdered(byChild: "lastUpdated").observe(.childChanged)
-        { snapshot in
-            if let club = decodeClub(from: snapshot) {
-                DispatchQueue.main.async {
-                    if let index = clubs.firstIndex(where: {
-                        $0.clubID == club.clubID
-                    }) {
-                        clubs[index] = club
-                    } else {
-                        clubs.append(club)
-                    }
-
-                    let cache = ClubCache(clubID: club.clubID)
-                    cache.save(club: club)
-
-                    print(club.clubID + "changed")
-                    if !cachedClubIDs.contains(club.clubID + ",") {
-                        cachedClubIDs.append(club.clubID + ",")
+        for clubID in refreshClubIDs {
+            clubsRef.child(clubID).observeSingleEvent(of: .value) { snapshot in
+                if snapshot.exists() {
+                    receiveClubSnapshot(snapshot)
+                } else {
+                    DispatchQueue.main.async {
+                        removeCachedClub(clubID)
                     }
                 }
             }
         }
 
-        databaseRef.observe(.childRemoved) { snapshot in
-            if let removedClub = decodeClub(from: snapshot) {
-                DispatchQueue.main.async {
-                    clubs.removeAll(where: { $0.clubID == removedClub.clubID })
-                    cachedClubIDs = cachedClubIDs.replacingOccurrences(
-                        of: removedClub.clubID + ",",
-                        with: ""
-                    )
-                    print(removedClub.clubID + "removed")
+    }
 
-                    let cache = ClubCache(clubID: removedClub.clubID)
-                    try? FileManager.default.removeItem(at: cache.cacheURL)
-                }
+    func receiveClubSnapshot(_ snapshot: DataSnapshot) {
+        guard let decodedClub = decodeClub(from: snapshot) else { return }
+        let club = publicClubRecord(decodedClub)
+        DispatchQueue.main.async {
+            if let current = clubs.first(where: { $0.clubID == club.clubID }),
+               (current.lastUpdated ?? -Double.greatestFiniteMagnitude)
+                    > (club.lastUpdated ?? -Double.greatestFiniteMagnitude)
+            {
+                return
+            }
+
+            let hydratedClub = calendarStore.hydrated(
+                club,
+                userEmail: viewModel.userEmail
+            )
+            if let index = clubs.firstIndex(where: { $0.clubID == club.clubID }) {
+                clubs[index] = hydratedClub
+            } else {
+                clubs.append(hydratedClub)
+            }
+
+            if ClubCache(clubID: club.clubID).save(club: club) {
+                markClubCached(club.clubID)
             }
         }
+    }
+
+    func cachedClubIDSet() -> Set<String> {
+        Set(cachedClubIDs.split(separator: ",").map {
+            String($0).trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty })
+    }
+
+    func markClubCached(_ clubID: String) {
+        var ids = cachedClubIDSet()
+        guard ids.insert(clubID).inserted else { return }
+        cachedClubIDs = ids.sorted().map { "\($0)," }.joined()
+    }
+
+    func removeCachedClub(_ clubID: String) {
+        clubs.removeAll(where: { $0.clubID == clubID })
+        var ids = cachedClubIDSet()
+        ids.remove(clubID)
+        cachedClubIDs = ids.sorted().map { "\($0)," }.joined()
+        ClubCache(clubID: clubID).delete()
+    }
+
+    @MainActor
+    func reconcileCachedClubIDs() async {
+        guard clubInitialDeltaReady else { return }
+        guard !isReconcilingClubIDs else { return }
+        isReconcilingClubIDs = true
+        defer { isReconcilingClubIDs = false }
+
+        do {
+            let serverClubIDs = try await fetchCurrentClubIDs()
+            guard !Task.isCancelled else { return }
+            let localClubIDs = cachedClubIDSet()
+            for clubID in localClubIDs.subtracting(serverClubIDs) {
+                removeCachedClub(clubID)
+            }
+            for clubID in serverClubIDs.subtracting(localClubIDs) {
+                Database.database().reference()
+                    .child("clubs")
+                    .child(clubID)
+                    .observeSingleEvent(of: .value) { snapshot in
+                        if snapshot.exists() {
+                            receiveClubSnapshot(snapshot)
+                        }
+                    }
+            }
+        } catch {
+            print("Club ID reconciliation deferred: \(error.localizedDescription)")
+        }
+    }
+
+    func fetchCurrentClubIDs() async throws -> Set<String> {
+        guard let databaseURL = FirebaseApp.app()?.options.databaseURL,
+              var components = URLComponents(string: databaseURL)
+        else {
+            throw URLError(.badURL)
+        }
+
+        let basePath = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        components.path = "/" + [basePath, "clubs.json"]
+            .filter { !$0.isEmpty }
+            .joined(separator: "/")
+        components.queryItems = [URLQueryItem(name: "shallow", value: "true")]
+        guard let url = components.url else { throw URLError(.badURL) }
+
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 15
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode
+        else {
+            throw URLError(.badServerResponse)
+        }
+
+        let value = try JSONSerialization.jsonObject(with: data)
+        if value is NSNull { return [] }
+        guard let clubsByID = value as? [String: Any] else {
+            throw URLError(.cannotParseResponse)
+        }
+        return Set(clubsByID.keys)
+    }
+
+    func removeClubsListeners() {
+        clubListenerGeneration = UUID()
+        clubInitialDeltaReady = false
+        for (query, handle) in clubObservers {
+            query.removeObserver(withHandle: handle)
+        }
+        clubObservers.removeAll()
+    }
+
+    func hydratePrivateClubAccess() {
+        clubs = clubs.map { calendarStore.hydrated($0, userEmail: viewModel.userEmail) }
+    }
+
+    func publicClubRecord(_ club: Club) -> Club {
+        var result = club
+        result.leaders = []
+        result.members = []
+        result.pendingMemberRequests = nil
+        return result
     }
 
     func decodeClub(from snapshot: DataSnapshot) -> Club? {

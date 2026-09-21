@@ -17,6 +17,10 @@ enum SharedDateFormatter {
         }
 
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "America/Chicago")
+        formatter.isLenient = false
         formatter.dateFormat = "MM-dd-yyyy, h:mm a"
         Thread.current.threadDictionary[meetingDateTimeKey] = formatter
         return formatter
@@ -28,5 +32,9 @@ func stringFromDate(_ from: Date) -> String {
 }
 
 func dateFromString(_ from: String) -> Date {
-    SharedDateFormatter.meetingDateTime.date(from: from) ?? Date()
+    strictDateFromString(from) ?? .distantPast
+}
+
+func strictDateFromString(_ value: String) -> Date? {
+    SharedDateFormatter.meetingDateTime.date(from: value)
 }

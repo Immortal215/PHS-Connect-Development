@@ -1,6 +1,15 @@
 import Pow
 import SwiftUI
 
+private struct MonthScrollID: Hashable {
+    let offset: Int
+}
+
+private struct MonthScrollTarget: Identifiable {
+    let offset: Int
+    var id: MonthScrollID { MonthScrollID(offset: offset) }
+}
+
 struct MonthPickerView: View {
     @Environment(\.appViewportSize) var parentViewportSize
     @Binding var selectedDate: Date
@@ -13,7 +22,7 @@ struct MonthPickerView: View {
     var viewModel: AuthenticationViewModel
     
     @State var presentationSize = CGSize(width: 390, height: 600)
-    @State var visibleMonthOffset: Int?
+    @State private var visibleMonthID: MonthScrollID?
 
     var usesLegacyWideIPadLayout: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
@@ -36,8 +45,9 @@ struct MonthPickerView: View {
         NavigationStack {
             VStack {
                 ScrollView {
-                    LazyVStack {
-                            ForEach(0..<12, id: \.self) { monthOffset in
+                    VStack {
+                            ForEach(monthScrollTargets) { monthTarget in
+                                let monthOffset = monthTarget.offset
                                 let monthDate = calendarStartingOnSunday().date(
                                     from: DateComponents(
                                         year: currentYear,
@@ -65,7 +75,7 @@ struct MonthPickerView: View {
                                         Spacer()
                                     }
                                     
-                                    VStack(alignment: .center, spacing: 10)
+                                    VStack(alignment: .center, spacing: 6)
                                     {
                                         let days = daysInMonth(
                                             for: monthDate
@@ -101,14 +111,6 @@ struct MonthPickerView: View {
                                                         )
                                                         
                                                         ZStack {
-                                                            Rectangle()
-                                                                .stroke(
-                                                                    .gray,
-                                                                    lineWidth:
-                                                                        1
-                                                                )
-                                                                .padding(-5)
-                                                            
                                                             VStack(
                                                                 alignment:
                                                                         .center
@@ -130,7 +132,10 @@ struct MonthPickerView: View {
                                                                     ? .blue
                                                                     : .primary
                                                                 )
-                                                                .padding(10)
+                                                                .frame(
+                                                                    width: 34,
+                                                                    height: 34
+                                                                )
                                                                 .background(
                                                                     isSelected(
                                                                         date
@@ -384,13 +389,9 @@ struct MonthPickerView: View {
                                                                 Spacer()
                                                             }
                                                             .frame(
-                                                                height:
-                                                                    isTubeView
-                                                                ? (usesLegacyWideIPadLayout
-                                                                    ? parentViewportSize.height
-                                                                    : presentationSize.height)
-                                                                / 4
-                                                                : nil
+                                                                minHeight: isTubeView
+                                                                    ? 96 : 64,
+                                                                alignment: .top
                                                             )
                                                             .onTapGesture {
                                                                 selectedDate =
@@ -400,6 +401,7 @@ struct MonthPickerView: View {
                                                         .frame(
                                                             width: monthDayWidth
                                                         )
+                                                        .contentShape(Rectangle())
                                                     } else {
                                                         Color.clear
                                                             .frame(
@@ -415,18 +417,21 @@ struct MonthPickerView: View {
                                     }
                                 }
                                 .padding(.horizontal)
-                                .id(monthOffset)
                             }
                     }
                     .geometryGroup()
                     .scrollTargetLayout()
                 }
-                .scrollPosition(id: $visibleMonthOffset, anchor: .top)
+                .scrollPosition(id: $visibleMonthID, anchor: .top)
                 .onAppear {
-                    visibleMonthOffset = Calendar.current.component(
-                        .month,
-                        from: selectedDate
-                    ) - 1
+                    let selectedMonthID = MonthScrollID(
+                        offset: Calendar.current.component(
+                            .month, from: selectedDate
+                        ) - 1
+                    )
+                    DispatchQueue.main.async {
+                        visibleMonthID = selectedMonthID
+                    }
                 }
             }
             .toolbar {
@@ -471,6 +476,10 @@ struct MonthPickerView: View {
             let range = calendar.range(of: .day, in: .month, for: date)
         else { return [] }
         return Array(range)
+    }
+
+    private var monthScrollTargets: [MonthScrollTarget] {
+        (0..<12).map(MonthScrollTarget.init(offset:))
     }
     
     func leadingBlankDays(for monthDate: Date) -> Int {

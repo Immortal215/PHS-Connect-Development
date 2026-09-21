@@ -4,10 +4,19 @@ struct AppViewportSizeKey: EnvironmentKey {
     static let defaultValue = CGSize(width: 390, height: 844)
 }
 
+struct AppRootViewportSizeKey: EnvironmentKey {
+    static let defaultValue = CGSize(width: 390, height: 844)
+}
+
 extension EnvironmentValues {
     var appViewportSize: CGSize {
         get { self[AppViewportSizeKey.self] }
         set { self[AppViewportSizeKey.self] = newValue }
+    }
+
+    var appRootViewportSize: CGSize {
+        get { self[AppRootViewportSizeKey.self] }
+        set { self[AppRootViewportSizeKey.self] = newValue }
     }
 }
 
@@ -19,33 +28,38 @@ struct AdaptiveViewport<Content: View>: View {
         GeometryReader { geometry in
             content()
                 .environment(\.appViewportSize, geometry.size)
+                .environment(\.appRootViewportSize, geometry.size)
                 .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 }
 
 struct AppSheetContent<Content: View>: View {
+    @Environment(\.appRootViewportSize) private var rootViewportSize
     let content: Content
+    let iPadWidthDivisor: CGFloat?
 
+    @ViewBuilder
     var body: some View {
-        if UIDevice.current.userInterfaceIdiom == .phone {
+        if UIDevice.current.userInterfaceIdiom == .pad,
+            let iPadWidthDivisor
+        {
+            content
+                .frame(width: rootViewportSize.width / iPadWidthDivisor)
+                .presentationSizing(
+                    .page.fitted(horizontal: true, vertical: false)
+                )
+        } else {
             content
                 .frame(maxWidth: .infinity)
                 .presentationSizing(.page)
-        } else {
-            content
         }
     }
 }
 
 struct AppPresentationSizingModifier: ViewModifier {
-    @ViewBuilder
     func body(content: Content) -> some View {
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            content.presentationSizing(.page)
-        } else {
-            content
-        }
+        content.presentationSizing(.page)
     }
 }
 
@@ -56,21 +70,29 @@ extension View {
 
     func appSheet<Content: View>(
         isPresented: Binding<Bool>,
+        iPadWidthDivisor: CGFloat? = nil,
         onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         sheet(isPresented: isPresented, onDismiss: onDismiss) {
-            AppSheetContent(content: content())
+            AppSheetContent(
+                content: content(),
+                iPadWidthDivisor: iPadWidthDivisor
+            )
         }
     }
 
     func appSheet<Item: Identifiable, Content: View>(
         item: Binding<Item?>,
+        iPadWidthDivisor: CGFloat? = nil,
         onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping (Item) -> Content
     ) -> some View {
         sheet(item: item, onDismiss: onDismiss) { item in
-            AppSheetContent(content: content(item))
+            AppSheetContent(
+                content: content(item),
+                iPadWidthDivisor: iPadWidthDivisor
+            )
         }
     }
 }

@@ -154,7 +154,7 @@ struct SignInCalendarDayCell: View {
                     .frame(width: 18, height: 13)
                     .background {
                         Capsule()
-                            .fill(badge == "A" ? Color.blue : Color.orange)
+                            .fill(badge == "A" ? SchoolSchedulePalette.navy : SchoolSchedulePalette.columbia)
                     }
             } else {
                 Color.clear.frame(width: 18, height: 13)

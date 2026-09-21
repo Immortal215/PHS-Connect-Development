@@ -209,8 +209,12 @@ struct WeekCalendarView: View {
             .frame(maxWidth: usesLegacyWideIPadLayout ? nil : .infinity)
             .cornerRadius(25)
         }
-        .appSheet(isPresented: $addMeetingTimeView) {
+        .appSheet(
+            isPresented: $addMeetingTimeView,
+            iPadWidthDivisor: 1.05
+        ) {
                 AddMeetingView(
+                    allowsAdministrativeCalendarAccess: viewModel.isSuperAdmin,
                     viewCloser: {
                         addMeetingTimeView = false
                     },
@@ -224,7 +228,6 @@ struct WeekCalendarView: View {
                     userInfo: .constant(nil)
                 )
                 .presentationDragIndicator(.visible)
-                .presentationSizing(.page)
                 .cornerRadius(25)
         }
         .onChange(of: selectedDate) {

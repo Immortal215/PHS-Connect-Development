@@ -1,6 +1,5 @@
 import FirebaseAuth
 import FirebaseCore
-import FirebaseDatabase
 import FirebaseStorage
 import SwiftUI
 
@@ -29,35 +28,110 @@ struct ClubEditArchive: Codable {
 final class ClubEditPersistence: ObservableObject {
     static let shared = ClubEditPersistence()
     @Published var archive = ClubEditArchive()
-    var loaded = false
+    var loadedOwnerID: String?
     var stores: [String: ClubEditUndoStore] = [:]
     var authHandle: AuthStateDidChangeListenerHandle?
     var foregroundObserver: NSObjectProtocol?
     var cleaning = false
 
-    var fileURL: URL {
-        let project = FirebaseApp.app()?.options.projectID ?? "default"
-        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("pending_club_edits_\(project).json")
+    private static func safe(_ value: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        return value.unicodeScalars.map { allowed.contains($0) ? String($0) : "_" }.joined()
     }
 
-    func load() throws {
-        guard !loaded else { return }
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            archive = try JSONDecoder().decode(ClubEditArchive.self, from: Data(contentsOf: fileURL))
+    private func scopedFileURL(ownerID: String, project: String) throws -> URL {
+        let support = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        return support
+            .appending(path: "PHSConnectCache/v2", directoryHint: .isDirectory)
+            .appending(path: Self.safe(project), directoryHint: .isDirectory)
+            .appending(path: Self.safe(ownerID), directoryHint: .isDirectory)
+            .appending(path: "club-edits.json")
+    }
+
+    private func migrateLegacyArchiveIfNeeded(project: String) throws {
+        let key = "PHSConnect.clubEditCache.v2.migrated.\(Self.safe(project))"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        let legacyURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("pending_club_edits_\(project).json")
+        guard FileManager.default.fileExists(atPath: legacyURL.path) else {
+            UserDefaults.standard.set(true, forKey: key)
+            return
         }
-        loaded = true
+        let legacy = try JSONDecoder().decode(ClubEditArchive.self, from: Data(contentsOf: legacyURL))
+        let owners = Set(legacy.edits.map(\.ownerID)).union(legacy.cleanups.map(\.ownerID))
+        for owner in owners where !owner.isEmpty {
+            let destination = try scopedFileURL(ownerID: owner, project: project)
+            var merged = ClubEditArchive()
+            if FileManager.default.fileExists(atPath: destination.path) {
+                merged = try JSONDecoder().decode(ClubEditArchive.self, from: Data(contentsOf: destination))
+            }
+            let existingEdits = Set(merged.edits.map(\.id))
+            let existingCleanups = Set(merged.cleanups.map(\.id))
+            merged.edits.append(contentsOf: legacy.edits.filter {
+                $0.ownerID == owner && !existingEdits.contains($0.id)
+            })
+            merged.cleanups.append(contentsOf: legacy.cleanups.filter {
+                $0.ownerID == owner && !existingCleanups.contains($0.id)
+            })
+            try FileManager.default.createDirectory(
+                at: destination.deletingLastPathComponent(), withIntermediateDirectories: true
+            )
+            try JSONEncoder().encode(merged).write(
+                to: destination, options: [.atomic, .completeFileProtection]
+            )
+        }
+        try FileManager.default.removeItem(at: legacyURL)
+        UserDefaults.standard.set(true, forKey: key)
+    }
+
+    private func fileURL(ownerID: String) throws -> URL {
+        let project = FirebaseApp.app()?.options.projectID ?? "default"
+        try migrateLegacyArchiveIfNeeded(project: project)
+        return try scopedFileURL(ownerID: ownerID, project: project)
+    }
+
+    func load(ownerID: String? = Auth.auth().currentUser?.uid) throws {
+        guard let ownerID, !ownerID.isEmpty else {
+            throw CocoaError(.userCancelled)
+        }
+        guard loadedOwnerID != ownerID else { return }
+        archive = ClubEditArchive()
+        let url = try fileURL(ownerID: ownerID)
+        if FileManager.default.fileExists(atPath: url.path) {
+            archive = try JSONDecoder().decode(ClubEditArchive.self, from: Data(contentsOf: url))
+        }
+        loadedOwnerID = ownerID
     }
 
     func write(_ updated: ClubEditArchive) throws {
-        try JSONEncoder().encode(updated).write(to: fileURL, options: .atomic)
+        guard let ownerID = loadedOwnerID else { throw CocoaError(.userCancelled) }
+        let url = try fileURL(ownerID: ownerID)
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        try JSONEncoder().encode(updated).write(
+            to: url, options: [.atomic, .completeFileProtection]
+        )
         archive = updated
     }
 
     func start() {
         guard authHandle == nil else { return }
-        authHandle = Auth.auth().addStateDidChangeListener { _, _ in
-            Task { @MainActor in self.recover() }
+        authHandle = Auth.auth().addStateDidChangeListener { _, user in
+            Task { @MainActor in
+                if self.loadedOwnerID != user?.uid {
+                    self.stores.values.forEach { $0.timer?.cancel() }
+                    self.stores.removeAll()
+                    self.archive = ClubEditArchive()
+                    self.loadedOwnerID = nil
+                }
+                self.recover()
+            }
         }
         foregroundObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
@@ -67,7 +141,7 @@ final class ClubEditPersistence: ObservableObject {
     }
 
     func store(for clubID: String) -> ClubEditUndoStore {
-        let owner = Auth.auth().currentUser?.uid ?? ""
+        guard let owner = Auth.auth().currentUser?.uid else { return ClubEditUndoStore() }
         let key = "\(owner)/\(clubID)"
         if let store = stores[key] { return store }
         let store = ClubEditUndoStore()
@@ -82,9 +156,9 @@ final class ClubEditPersistence: ObservableObject {
     }
 
     func recover() {
-        do { try load() } catch { report(error); return }
         for store in stores.values { store.timer?.cancel() }
         guard let owner = Auth.auth().currentUser?.uid else { return }
+        do { try load(ownerID: owner) } catch { report(error); return }
         for saved in archive.edits where saved.ownerID == owner {
             let store = store(for: saved.after.clubID)
             if store.pending == nil { store.restore(saved) }
@@ -94,7 +168,7 @@ final class ClubEditPersistence: ObservableObject {
     }
 
     func save(_ edit: SavedClubEdit) throws {
-        try load()
+        try load(ownerID: edit.ownerID)
         var updated = archive
         updated.edits.removeAll { $0.ownerID == edit.ownerID && $0.after.clubID == edit.after.clubID }
         updated.edits.append(edit)
@@ -122,7 +196,7 @@ final class ClubEditPersistence: ObservableObject {
     func queueCleanup(_ paths: Set<String>, ownerID: String?) {
         guard !paths.isEmpty, let ownerID else { return }
         do {
-            try load()
+            try load(ownerID: ownerID)
             var updated = archive
             updated.cleanups.append(ClubPhotoCleanup(ownerID: ownerID, paths: paths))
             try write(updated)
@@ -178,38 +252,5 @@ final class ClubEditPersistence: ObservableObject {
     func report(_ error: Error) {
         print("Could not persist club edits: \(error)")
         dropper(title: "Club Edit Not Stored", subtitle: "Please try again. Your saved club has not been discarded.", icon: UIImage(systemName: "exclamationmark.triangle"))
-    }
-}
-
-// Only restart recovery needs a transaction. Ordinary delayed saves remain one update.
-func recoverClubEdit(_ edit: PendingClubEdit, timestamp: Double) async throws -> Club? {
-    let changes = try edit.changes()
-    let previous = try edit.changes(reverting: true)
-    let reference = Database.database().reference().child("clubs").child(edit.after.clubID)
-    return try await withCheckedThrowingContinuation { continuation in
-        reference.runTransactionBlock({ data in
-            guard var current = data.value as? [String: Any] else {
-                return TransactionResult.success(withValue: data)
-            }
-            let stillOriginal = previous.allSatisfy { key, value in
-                NSDictionary(dictionary: ["value": current[key] ?? NSNull()]).isEqual(to: ["value": value])
-            }
-            if stillOriginal && !changes.isEmpty {
-                for (key, value) in changes { current[key] = value is NSNull ? nil : value }
-                current["lastUpdated"] = timestamp
-                data.value = current
-            }
-            return TransactionResult.success(withValue: data)
-        }, andCompletionBlock: { error, _, snapshot in
-            if let error { continuation.resume(throwing: error); return }
-            guard let value = snapshot?.value as? [String: Any] else {
-                continuation.resume(returning: nil)
-                return
-            }
-            do {
-                let data = try JSONSerialization.data(withJSONObject: value)
-                continuation.resume(returning: try JSONDecoder().decode(Club.self, from: data))
-            } catch { continuation.resume(throwing: error) }
-        }, withLocalEvents: false)
     }
 }

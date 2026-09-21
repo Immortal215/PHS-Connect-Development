@@ -81,8 +81,10 @@ struct SearchResizePlaceholder: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
+           // .padding(.top, 8)
         }
+        .ignoresSafeArea(.all)
+        .scaledToFill()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
@@ -478,7 +480,10 @@ struct SearchClubView: View {
                                         //                                            .bold()
                                         //                                            .foregroundStyle(.primary)
                                     }
-                                    .appSheet(isPresented: $showClubInfoSheet) {
+                                    .appSheet(
+                                        isPresented: $showClubInfoSheet,
+                                        iPadWidthDivisor: 1.05
+                                    ) {
                                         if shownInfo >= 0 {
                                             let club = clubs[shownInfo]
                                             ClubInfoView(

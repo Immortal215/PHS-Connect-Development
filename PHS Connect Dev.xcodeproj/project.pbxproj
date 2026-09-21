@@ -46,13 +46,29 @@
 		B8BEC6202CCBE5DA00991A38 /* Drops in Frameworks */ = {isa = PBXBuildFile; productRef = B8BEC61F2CCBE5DA00991A38 /* Drops */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A10C0000000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B861A83F2CB811A0006AF254 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B861A8462CB811A0006AF254;
+			remoteInfo = "PHS Connect Dev";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		71A947672FD5A3C700FC564D /* User-with-Tasks-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "User-with-Tasks-Info.plist"; sourceTree = "<group>"; };
 		71CF7D092EDBEE600095754A /* PHS Connect Dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "PHS Connect Dev.entitlements"; sourceTree = "<group>"; };
+		A10C00000000000000000001 /* PHS Connect DevTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "PHS Connect DevTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B861A8472CB811A0006AF254 /* PHS Connect Dev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PHS Connect Dev.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A10C00000000000000000002 /* PHS Connect DevTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "PHS Connect DevTests";
+			sourceTree = "<group>";
+		};
 		B861A8492CB811A0006AF254 /* User With Tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "User With Tasks";
@@ -61,6 +77,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A10C00000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B861A8442CB811A0006AF254 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -114,6 +137,7 @@
 				71A947672FD5A3C700FC564D /* User-with-Tasks-Info.plist */,
 				71CF7D092EDBEE600095754A /* PHS Connect Dev.entitlements */,
 				B861A8492CB811A0006AF254 /* User With Tasks */,
+				A10C00000000000000000002 /* PHS Connect DevTests */,
 				B861A8482CB811A0006AF254 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -122,6 +146,7 @@
 			isa = PBXGroup;
 			children = (
 				B861A8472CB811A0006AF254 /* PHS Connect Dev.app */,
+				A10C00000000000000000001 /* PHS Connect DevTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -129,6 +154,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A10C00000000000000000006 /* PHS Connect DevTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10C00000000000000000007 /* Build configuration list for PBXNativeTarget "PHS Connect DevTests" */;
+			buildPhases = (
+				A10C00000000000000000005 /* Sources */,
+				A10C00000000000000000003 /* Frameworks */,
+				A10C00000000000000000004 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10C0000000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A10C00000000000000000002 /* PHS Connect DevTests */,
+			);
+			name = "PHS Connect DevTests";
+			packageProductDependencies = (
+			);
+			productName = "PHS Connect DevTests";
+			productReference = A10C00000000000000000001 /* PHS Connect DevTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		B861A8462CB811A0006AF254 /* PHS Connect Dev */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B861A8552CB811A1006AF254 /* Build configuration list for PBXNativeTarget "PHS Connect Dev" */;
@@ -201,6 +249,10 @@
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					A10C00000000000000000006 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = B861A8462CB811A0006AF254;
+					};
 					B861A8462CB811A0006AF254 = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -237,11 +289,19 @@
 			projectRoot = "";
 			targets = (
 				B861A8462CB811A0006AF254 /* PHS Connect Dev */,
+				A10C00000000000000000006 /* PHS Connect DevTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A10C00000000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B861A8452CB811A0006AF254 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -252,6 +312,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A10C00000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B861A8432CB811A0006AF254 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -261,7 +328,65 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A10C0000000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B861A8462CB811A0006AF254 /* PHS Connect Dev */;
+			targetProxy = A10C0000000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		A10C00000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RST9Z3DY2L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Official.PHS.DevTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PHS Connect Dev.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PHS Connect Dev";
+			};
+			name = Debug;
+		};
+		A10C00000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RST9Z3DY2L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Official.PHS.DevTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PHS Connect Dev.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PHS Connect Dev";
+			};
+			name = Release;
+		};
 		B861A8532CB811A1006AF254 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -406,8 +531,8 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -449,8 +574,8 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -474,6 +599,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A10C00000000000000000007 /* Build configuration list for PBXNativeTarget "PHS Connect DevTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10C00000000000000000008 /* Debug */,
+				A10C00000000000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B861A8422CB811A0006AF254 /* Build configuration list for PBXProject "PHS Connect Dev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

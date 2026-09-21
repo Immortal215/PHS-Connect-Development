@@ -4,7 +4,6 @@ struct Club: Codable, Equatable, Hashable {
     var leaders: [String]  // emails
     var members: [String]  // emails
     var announcements: [String: Announcements]?  // announcements details
-    var meetingTimes: [MeetingTime]?  // meeting times details
     var description: String  // short description
     var name: String
     var normalMeetingTime: String?
@@ -22,11 +21,9 @@ struct Club: Codable, Equatable, Hashable {
     var chatIDs: [String]?  // chatID's for caching stuff
     var chatEnabled: Bool?
     var lastUpdated: Double?  // timestamp from 1970 and ALWAYS UPDATE THIS WHENEVER UPDATING A FUNCTION
-    var leadersUIDs: [String]?  // add implementation later
-    var membersUIDs: [String]? // add implementation later
     var photos: [String]? // (Store in firebase storage!) 
     
-    struct Announcements: Codable, Equatable, Hashable {  // move this out / use the schoology integration cause this uses too much data
+    struct Announcements: Codable, Equatable, Hashable {
         var date: String
         var title: String
         var body: String
@@ -37,7 +34,8 @@ struct Club: Codable, Equatable, Hashable {
         var linkText: String?
     }
 
-    struct MeetingTime: Codable, Equatable, Hashable {  // move this out / use the schoology integration cause this uses too much data
+    struct MeetingTime: Codable, Equatable, Hashable, Sendable {
+        var meetingID: String?
         var clubID: String
         var startTime: String
         var endTime: String
@@ -49,12 +47,51 @@ struct Club: Codable, Equatable, Hashable {
         var seriesID: String?
         var recurrenceIntervalWeeks: Int?
         var recurrenceEndDate: String?
+        var startUtc: Double?
+        var endUtc: Double?
+        var startDate: String?
+        var endDateExclusive: String?
+        var timeZone: String?
+        var visibility: MeetingVisibility?
+        var createdAt: Double?
+        var updatedAt: Double?
+        var revision: Int?
+        var cancelled: Bool?
+        var cancelledAt: Double?
+
+        struct MeetingVisibility: Codable, Equatable, Hashable, Sendable {
+            var mode: String
+            var uids: [String: Bool]?
+        }
     }
 
     mutating func setClubID(_ newID: String) {  // here so people dont just willy nilly change the clubID
         clubID = newID
     }
 
+}
+
+struct ClubMembershipRecord: Codable, Equatable, Sendable {
+    let role: String // "member" or "leader"
+    let email: String?
+    let emailHash: String?
+    let joinedAt: Double?
+    let updatedAt: Double?
+    let calendarCursor: String?
+    let accessRevision: Double?
+}
+
+struct JoinRequestRecord: Codable, Sendable {
+    var email: String?
+    var requestedAt: Double?
+    var updatedAt: Double?
+}
+
+struct ClubAccessEnvelope: Codable, Sendable {
+    var ownMembership: ClubMembershipRecord?
+    var ownRequest: JoinRequestRecord?
+    var memberships: [String: ClubMembershipRecord]?
+    var requests: [String: JoinRequestRecord]?
 }
 
 struct Chat: Codable, Equatable, Hashable {

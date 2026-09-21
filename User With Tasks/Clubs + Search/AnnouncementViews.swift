@@ -740,7 +740,7 @@ struct SingleAnnouncementView: View {
                 Spacer()
             }
         }
-        .appSheet(isPresented: $showInfo) {
+        .appSheet(isPresented: $showInfo, iPadWidthDivisor: 1.05) {
             if let cluber = clubs.first(where: {
                 $0.clubID == announcement.clubID
             }) {

@@ -20,6 +20,8 @@ struct FlowingScheduleTimelineView: View {
     @Binding var dragOffset: CGSize
     var onMeetingTap: (Club.MeetingTime) -> Void
 
+    @Environment(CalendarDataStore.self) private var calendarStore
+    @State private var moveIntents: [String: MeetingMutationIntent] = [:]
     @Environment(\.appViewportSize) var viewportSize
 
     var totalWidth: CGFloat {
@@ -166,10 +168,15 @@ struct FlowingScheduleTimelineView: View {
                             draggedMeeting,
                             by: dragValue.translation.height
                         )
+                        let key = draggedMeeting.meetingID ?? "\(draggedMeeting.clubID):\(draggedMeeting.startTime)"
+                        let intent = moveIntents[key] ?? MeetingMutationIntent()
+                        moveIntents[key] = intent
                         replaceMeeting(
                             oldMeeting: draggedMeeting,
-                            newMeeting: newMeeting
-                        )
+                            newMeeting: newMeeting, intent: intent, calendarStore: calendarStore
+                        ) { success in
+                            if success { moveIntents.removeValue(forKey: key) }
+                        }
                     }
 
                     draggedMeeting = nil

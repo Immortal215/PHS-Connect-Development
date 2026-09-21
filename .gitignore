@@ -7,8 +7,17 @@ yarn-error.log*
 firebase-debug.log*
 firebase-debug.*.log*
 
+# macOS and per-developer Xcode state
+.DS_Store
+**/.DS_Store
+xcuserdata/
+*.xcuserstate
+
 # Firebase cache
 .firebase/
+
+# Local rollout exports contain private Firebase data. Keep them out of Git.
+.local-rollout-backups/
 
 # Firebase config
 

@@ -10,6 +10,7 @@ struct CalendarView: View {
     @Binding var userInfo: Personal?
     var viewModel: AuthenticationViewModel
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
+    var calendarStore: CalendarDataStore
     @Environment(\.appViewportSize) var viewportSize
     var screenWidth: CGFloat { viewportSize.width }
     var screenHeight: CGFloat { viewportSize.height }
@@ -19,6 +20,9 @@ struct CalendarView: View {
     @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @State var offset: CGSize = .zero
+    @State private var subscriptionPresented = false
+    @State private var notificationMeeting: Club.MeetingTime?
+    @State private var notificationMeetingPresented = false
     @AppStorage("clubCalendarDisplayMode") var displayMode =
         ClubCalendarDisplayMode.calendar.rawValue
 
@@ -34,12 +38,25 @@ struct CalendarView: View {
     }
 
     var body: some View {
-        let meetingIndex = CalendarMeetingIndex(
-            clubs: clubs,
-            userEmail: viewModel.userEmail
-        )
+        let meetingIndex = CalendarMeetingIndex(meetings: calendarStore.meetings)
 
         VStack {
+            HStack(spacing: 10) {
+                Image(systemName: calendarStore.syncError == nil ? "checkmark.icloud" : "icloud.slash")
+                    .foregroundStyle(calendarStore.syncError == nil ? Color.secondary : Color.orange)
+                Text(calendarStore.statusText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Subscribe", systemImage: "calendar.badge.plus") {
+                    subscriptionPresented = true
+                }
+                .font(.caption.bold())
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal)
+            .padding(.top, 6)
+
             WeekCalendarView(  // double check the below
                 meetingIndex: meetingIndex,
                 selectedDate: $selectedDate,
@@ -75,10 +92,50 @@ struct CalendarView: View {
 
         }
         .onAppear {
+            openPendingMeetingIfAvailable()
             guard !firstCalendarAppearance else { return }
             firstCalendarAppearance = true
             selectedDate = Date()
         }
+        .onChange(of: calendarStore.meetings) {
+            openPendingMeetingIfAvailable()
+        }
+        .onChange(of: selectedDate) {
+            calendarStore.ensureDateLoaded(selectedDate)
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: Notification.Name("OpenMeetingFromNotification")
+            )
+        ) { _ in
+            openPendingMeetingIfAvailable()
+        }
+        .appSheet(isPresented: $subscriptionPresented) {
+            CalendarSubscriptionView()
+        }
+        .appSheet(isPresented: $notificationMeetingPresented) {
+            if let meeting = notificationMeeting,
+               clubs.contains(where: { $0.clubID == meeting.clubID }) {
+                MeetingInfoView(
+                    meeting: meeting,
+                    clubs: clubs,
+                    viewModel: viewModel,
+                    selectedDate: dateForMeeting(meeting),
+                    userInfo: $userInfo
+                )
+            }
+        }
+    }
+
+    private func openPendingMeetingIfAvailable() {
+        guard let meetingID = NotificationOpenRouter.shared.pendingMeetingID,
+              let meeting = calendarStore.meetings.first(where: { $0.meetingID == meetingID }),
+              clubs.contains(where: { $0.clubID == meeting.clubID })
+        else { return }
+        notificationMeeting = meeting
+        notificationMeetingPresented = true
+        selectedDate = dateForMeeting(meeting)
+        NotificationOpenRouter.shared.clearPendingMeeting()
     }
 }
 

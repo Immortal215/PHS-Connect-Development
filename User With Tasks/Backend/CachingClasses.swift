@@ -70,11 +70,19 @@ class ClubCache {
         return (try? JSONDecoder().decode(Club.self, from: data))
     }
 
-    func save(club: Club) {
-        if let data = try? JSONEncoder().encode(club) {
-            try? data.write(to: cacheURL)
-
+    @discardableResult
+    func save(club: Club) -> Bool {
+        guard let data = try? JSONEncoder().encode(club) else { return false }
+        do {
+            try data.write(to: cacheURL, options: .atomic)
+            return true
+        } catch {
+            return false
         }
+    }
+
+    func delete() {
+        try? FileManager.default.removeItem(at: cacheURL)
     }
 }
 

@@ -8,13 +8,30 @@
       "source": "functions",
       "codebase": "default",
       "disallowLegacyRuntimeConfig": true,
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" test"
+      ],
       "ignore": [
         "node_modules",
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
+        "scripts",
+        "test",
         "*.local"
       ]
     }
-  ]
+  ],
+  "hosting": {
+    "public": "hosting",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/meeting/**", "destination": "/meeting/index.html" }
+    ]
+  },
+  "emulators": {
+    "database": { "port": 9000 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
 }

@@ -43,9 +43,9 @@ enum SignInIntroPage: Int, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .clubs:
-            "Browse real club-style cards, search by interest, and connect with what fits."
+            "Browse real clubs, search by interest, and connect with what fits."
         case .chats:
-            "Move between clubs and threads, reply directly, and react without losing context."
+            "Move between clubs and threads, reply directly, and get notifications."
         case .calendar:
             "See A/B days, school periods, and club meetings together in one schedule."
         }
@@ -91,6 +91,10 @@ struct SignInIntroFlowView: View {
     @State var currentPage = 0
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
+    private var fillsAvailablePage: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -102,19 +106,25 @@ struct SignInIntroFlowView: View {
 
                     TabView(selection: $currentPage) {
                         ForEach(SignInIntroPage.allCases) { page in
-                            ScrollView {
-                                SignInIntroCard(
-                                    page: page,
-                                    isCompact: geometry.size.width < 650
-                                )
-                                .padding(
-                                    .horizontal,
-                                    geometry.size.width < 650 ? 16 : 56
-                                )
-                                .padding(.vertical, 8)
-                                .frame(minHeight: 440)
+                            GeometryReader { pageGeometry in
+                                ScrollView {
+                                    SignInIntroCard(
+                                        page: page,
+                                        isCompact: geometry.size.width < 650,
+                                        fillsAvailablePage: fillsAvailablePage
+                                    )
+                                    .padding(
+                                        .horizontal,
+                                        geometry.size.width < 650 ? 16 : 56
+                                    )
+                                    .padding(.vertical, 8)
+                                    .frame(
+                                        minHeight: fillsAvailablePage
+                                            ? pageGeometry.size.height : 440
+                                    )
+                                }
+                                .scrollIndicators(.hidden)
                             }
-                            .scrollIndicators(.hidden)
                             .tag(page.rawValue)
                         }
                     }
@@ -210,6 +220,7 @@ struct SignInIntroFlowView: View {
 struct SignInIntroCard: View {
     var page: SignInIntroPage
     var isCompact: Bool
+    var fillsAvailablePage = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: isCompact ? 12 : 18) {
@@ -262,7 +273,10 @@ struct SignInIntroCard: View {
                 )
         }
         .padding(isCompact ? 18 : 26)
-        .frame(maxWidth: 760, maxHeight: 580)
+        .frame(
+            maxWidth: fillsAvailablePage ? .infinity : 760,
+            maxHeight: fillsAvailablePage ? .infinity : 580
+        )
         .background {
             GlassBackground(color: .blue)
                 .clipShape(

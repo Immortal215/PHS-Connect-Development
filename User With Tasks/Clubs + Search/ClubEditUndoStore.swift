@@ -1,5 +1,4 @@
 import FirebaseAuth
-import FirebaseDatabase
 import SwiftUI
 
 struct PendingClubEdit {
@@ -143,31 +142,14 @@ final class ClubEditUndoStore: ObservableObject {
                     submittedAt: timestamp
                 ))
                 if needsRecovery {
-                    let current = try await recoverClubEdit(edit, timestamp: timestamp)
-                    let expected = try edit.changes()
-                    var values: [String: Any]?
-                    if let current {
-                        values = try JSONSerialization.jsonObject(with: JSONEncoder().encode(current)) as? [String: Any]
-                    }
-                    let applied = values.map { values in
-                        expected.allSatisfy { key, value in
-                            NSDictionary(dictionary: ["value": values[key] ?? NSNull()]).isEqual(to: ["value": value])
-                        }
-                    } ?? false
-                    try finish(edit, committed: applied, keeping: current?.clubPhoto)
-                    recoveredClub = current
-                    if !applied {
-                        if current == nil { edit.onRevert(edit) }
-                        dropper(title: "Club Changed", subtitle: "The queued edit was not applied because the saved club changed or was removed.", icon: UIImage(systemName: "exclamationmark.triangle"))
-                    }
-                    return
+                    // The operation ID is persisted with the edit, so a retry after a crash
+                    // returns the original backend result instead of applying the edit twice.
                 }
-                var values = try edit.changes()
-                if !values.isEmpty {
-                    values["lastUpdated"] = timestamp
-                    try await Database.database().reference().child("clubs")
-                        .child(edit.after.clubID).updateChildValues(values)
-                }
+                try await saveClubThroughBackend(
+                    edit.after,
+                    operationID: edit.id.uuidString,
+                    expectedLastUpdated: edit.before.lastUpdated
+                )
                 try finish(edit, committed: true, keeping: edit.after.clubPhoto)
             } catch {
                 isSaving = false

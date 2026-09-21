@@ -61,7 +61,11 @@ final class AuthenticationViewModel: ObservableObject {
                         as? [String: Any]
                     {
                         do {
-                            try await setFirebaseValue(json, at: userReference)
+                            // Field-level rules intentionally reject replacing the
+                            // whole user record so legacy clients cannot recreate a
+                            // publicly readable fcmToken. The permitted profile
+                            // fields are still committed together.
+                            _ = try await userReference.updateChildValues(json)
                             print("User node created successfully")
                         } catch {
                             print("Error creating user node: \(error)")

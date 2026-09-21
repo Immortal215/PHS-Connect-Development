@@ -186,7 +186,10 @@ struct ChatView: View {
 
     @State var chats: [Chat] = []
     @State var selectedChatID: String?
-    @State var listeningChats: [String] = []
+    @StateObject private var chatObservers = ChatObserverRegistry()
+    @State private var chatViewActive = false
+    @State private var chatSessionScope: ChatObserverRegistry.Scope?
+    @State private var chatAuthHandle: AuthStateDidChangeListenerHandle?
     @State var users: [String: Personal] = [:]  // UserID : UserStruct
     @AppStorage("cachedChatIDs") var cachedChatIDs: String = ""  // comma-separated chatIDs
     @State var composerFocusRequestID = 0
@@ -435,7 +438,10 @@ struct ChatView: View {
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityLabel("Open \(club.name)")
-                                    .appSheet(isPresented: $showClubInfo) {
+                                    .appSheet(
+                                        isPresented: $showClubInfo,
+                                        iPadWidthDivisor: 1.05
+                                    ) {
                                         ClubInfoView(
                                             club: club,
                                             viewModel: viewModel,
@@ -1455,12 +1461,9 @@ struct ChatView: View {
                 .onChange(of: selectedChatID) { _, selChatID in
                     DispatchQueue.main.async {
                         if let chatListener = selChatID {
-                            if !listeningChats.contains(chatListener) {
-                                listeningChats.append(chatListener)
-                                setupMessagesListener(for: chatListener)
-                                if selectedThread[chatListener] == nil {
-                                    selectedThread[chatListener] = "general"
-                                }
+                            setupMessagesListener(for: chatListener)
+                            if selectedThread[chatListener] == nil {
+                                selectedThread[chatListener] = "general"
                             }
                             clearNotificationsForOpenThread(
                                 chatID: chatListener,
@@ -1498,6 +1501,22 @@ struct ChatView: View {
 
         }
         .onAppear {
+            chatViewActive = true
+            if chatSessionScope != currentChatScope { resetChatSession() }
+            loadChats(showLoader: false)
+            if chatAuthHandle == nil {
+                chatAuthHandle = Auth.auth().addStateDidChangeListener { _, user in
+                    let uid = user?.uid
+                    DispatchQueue.main.async {
+                        guard chatViewActive else { return }
+                        if chatSessionScope?.uid != uid {
+                            resetChatSession()
+                            if uid == userInfo?.userID { loadChats(showLoader: false) }
+                        }
+                    }
+                }
+            }
+            if let selectedChatID { setupMessagesListener(for: selectedChatID) }
             NotificationCenter.default.post(
                 name: Notification.Name("RequestPendingChatID"),
                 object: nil
@@ -1507,7 +1526,13 @@ struct ChatView: View {
             startGlobalChatsListener()
         }
         .onDisappear {
+            chatViewActive = false
             membershipRefreshCancellable?.cancel()
+            chatLoadGeneration += 1
+            chatObservers.stop()
+            cancelMessageRemovals()
+            if let chatAuthHandle { Auth.auth().removeStateDidChangeListener(chatAuthHandle) }
+            chatAuthHandle = nil
             stopGlobalChatsListener()
         }
         .onReceive(
@@ -1537,12 +1562,15 @@ struct ChatView: View {
             refreshChatSidebarCache()
         }
         .onChange(of: userInfo?.userID) {
-            refreshChatSidebarCache()
+            resetChatSession()
+            if chatViewActive { loadChats(showLoader: false) }
         }
         .onChange(of: userInfo?.favoritedClubs) {
             refreshChatSidebarCache()
         }
         .onChange(of: chatMembershipSignature) { _, signature in
+            reconcileChatObservers()
+            chatLoadGeneration += 1
             membershipRefreshCancellable?.cancel()
             membershipRefreshCancellable = Just(signature)
                 .delay(for: .milliseconds(350), scheduler: DispatchQueue.main)
@@ -1709,7 +1737,7 @@ struct ChatView: View {
                         openMessageIDFromNotification:
                             $openMessageIDFromNotification
                     )
-                    .padding(.horizontal, 16)
+                    .padding(.leading, 16)
                 }
 
             }
@@ -1739,7 +1767,6 @@ struct ChatView: View {
                         clubsLeaderIn: clubsLeaderIn
                     )
                 }
-                .padding(.trailing)
             }
 
             if isReactionListPresented {
@@ -1760,7 +1787,7 @@ struct ChatView: View {
         for club: Club,
         accepted: Bool
     ) {
-        guard var updatedClub = clubs.first(where: {
+        guard let updatedClub = clubs.first(where: {
             $0.clubID == club.clubID
         }),
             isClubLeaderOrSuperAdmin(
@@ -1770,18 +1797,11 @@ struct ChatView: View {
             updatedClub.pendingMemberRequests?.contains(email) == true
         else { return }
 
-        updatedClub.pendingMemberRequests?.remove(email)
-
-        let memberEmail = normalizedEmail(email)
-        if accepted,
-            !updatedClub.members.contains(where: {
-                normalizedEmail($0) == memberEmail
-            })
-        {
-            updatedClub.members.append(memberEmail)
-        }
-
-        addClub(club: updatedClub)
+        resolveMembershipRequest(
+            clubID: updatedClub.clubID,
+            email: email,
+            accepted: accepted
+        )
     }
 
     @ViewBuilder
@@ -2037,6 +2057,8 @@ struct ChatView: View {
     }
 
     func loadChats(showLoader: Bool = true) {
+        guard chatViewActive, let scope = currentChatScope else { return }
+        reconcileChatObservers()
         chatLoadGeneration += 1
         let loadGeneration = chatLoadGeneration
 
@@ -2082,7 +2104,7 @@ struct ChatView: View {
             )
 
             DispatchQueue.main.async {
-                guard chatLoadGeneration == loadGeneration else { return }
+                guard chatViewActive, currentChatScope == scope, chatLoadGeneration == loadGeneration else { return }
 
                 chats = loadedChats
                 messageIndexByChatID = loadedMessageIndexByChatID
@@ -2099,6 +2121,7 @@ struct ChatView: View {
 
                 if chatIDsToFetch.isEmpty {
                     chatLoadingState = .hidden
+                    if let selectedChatID { setupMessagesListener(for: selectedChatID) }
                     attemptOpenChatFromNotification()
                     return
                 }
@@ -2111,7 +2134,7 @@ struct ChatView: View {
 
                     await MainActor.run {
                         guard !Task.isCancelled else { return }
-                        guard chatLoadGeneration == loadGeneration else { return }
+                        guard chatViewActive, currentChatScope == scope, chatLoadGeneration == loadGeneration else { return }
 
                         if let fetched = fetchedChats {
                             for chat in fetched {
@@ -2137,6 +2160,7 @@ struct ChatView: View {
                         }
 
                         chatLoadingState = .hidden
+                        if let selectedChatID { setupMessagesListener(for: selectedChatID) }
                         attemptOpenChatFromNotification()
                     }
                 }
@@ -2167,135 +2191,127 @@ struct ChatView: View {
         }
     }
 
+    var currentChatScope: ChatObserverRegistry.Scope? {
+        guard let uid = Auth.auth().currentUser?.uid, uid == userInfo?.userID,
+              let projectID = FirebaseApp.app()?.options.projectID else { return nil }
+        return .init(uid: uid, projectID: projectID)
+    }
+
+    var accessibleChatIDs: Set<String> {
+        Set(clubs.filter {
+            isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: userInfo?.userEmail)
+        }.flatMap { $0.chatIDs ?? [] })
+    }
+
+    func cancelMessageRemovals() {
+        messageRemovalBatcher.workItemsByChatID.values.forEach { $0.cancel() }
+        messageRemovalBatcher.workItemsByChatID = [:]
+        messageRemovalBatcher.messageIDsByChatID = [:]
+        messageRemovalBatcher.latestDeletionTimestampByChatID = [:]
+    }
+
+    func resetChatSession() {
+        chatSessionScope = currentChatScope
+        chatLoadGeneration += 1
+        chatObservers.stop()
+        cancelMessageRemovals()
+        chats = []
+        users = [:]
+        messageIndexByChatID = [:]
+        selectedChatID = nil
+        selectedClub = nil
+        selectedThread = [:]
+        selectedReactionListMessage = nil
+        isReactionListPresented = false
+        editingMessageID = nil
+        replyingMessageID = nil
+        refreshChatSidebarCache()
+    }
+
+    func reconcileChatObservers() {
+        let allowed = accessibleChatIDs
+        chatObservers.retain(chatIDs: allowed)
+        for chatID in Array(messageRemovalBatcher.workItemsByChatID.keys) where !allowed.contains(chatID) {
+            messageRemovalBatcher.workItemsByChatID.removeValue(forKey: chatID)?.cancel()
+            messageRemovalBatcher.messageIDsByChatID.removeValue(forKey: chatID)
+            messageRemovalBatcher.latestDeletionTimestampByChatID.removeValue(forKey: chatID)
+        }
+        chats.removeAll { !allowed.contains($0.chatID) }
+        messageIndexByChatID = messageIndexByChatID.filter { allowed.contains($0.key) }
+        if let selectedChatID, !allowed.contains(selectedChatID) {
+            self.selectedChatID = nil
+            selectedClub = nil
+        }
+        refreshChatSidebarCache()
+    }
+
     func setupMessagesListener(for chatID: String) {
-        let databaseRef = Database.database().reference()
-            .child("chats")
-            .child(chatID)
+        guard chatViewActive, accessibleChatIDs.contains(chatID), let scope = currentChatScope,
+              let token = chatObservers.begin(chatID: chatID, scope: scope) else { return }
+        let databaseRef = Database.database().reference().child("chats").child(chatID)
+        let cursor = chats.first(where: { $0.chatID == chatID })?.messages?
+            .compactMap { $0.lastUpdated ?? $0.date }.max()
+        let startup = ChatMessageStartup(cursor: cursor)
+        var messagesQuery = databaseRef.child("messages").queryOrdered(byChild: "lastUpdated")
+        if let cursor = startup.cursor { messagesQuery = messagesQuery.queryStarting(atValue: cursor) }
+        if let limit = startup.recentLimit { messagesQuery = messagesQuery.queryLimited(toLast: limit) }
 
-        let currentMessages = chats.first(where: { $0.chatID == chatID })?
-            .messages
-        let lastTimestamp =
-            currentMessages?.compactMap { $0.lastUpdated ?? $0.date }.max()
-            ?? -0.001
-
-        databaseRef.child("messages")
-            .queryOrdered(byChild: "lastUpdated")
-            .queryStarting(atValue: lastTimestamp + 0.001)  // MUST DO THIS OR ELSE IT WILL PULL EVERY SINGLE BIT OF DATA EVERY SINGLE TIME
-            .observe(.childAdded) { snapshot in
-                guard let message = decodeMessage(from: snapshot) else {
-                    return
-                }
-
+        func observe(_ query: DatabaseQuery, _ event: DataEventType, update: @escaping (DataSnapshot) -> Void) {
+            let handle = query.observe(event) { snapshot in
                 DispatchQueue.main.async {
-                    guard
-                        let chatIndex = chats.firstIndex(where: {
-                            $0.chatID == chatID
-                        })
-                    else { return }
-
-                    var chatMessages = chats[chatIndex].messages ?? []
-
-                    if !chatMessages.contains(where: {
-                        $0.messageID == message.messageID
-                    }) {
-                        insertMessageSorted(message, into: &chatMessages)
-                        withAnimation(.smooth) {
-                            chats[chatIndex].messages = chatMessages
-                        }
-                        rebuildThreadMessageIndex(for: chats[chatIndex])
-                        refreshChatSidebarCache()
-                        saveChatToCacheAsync(chats[chatIndex])
-                    }
+                    guard chatViewActive, currentChatScope == scope,
+                          accessibleChatIDs.contains(chatID),
+                          chatObservers.isCurrent(chatID: chatID, token: token, scope: scope) else { return }
+                    update(snapshot)
                 }
             }
-
-        databaseRef.child("messages")
-            .queryOrdered(byChild: "lastUpdated")
-            .observe(.childChanged) { snapshot in
-                guard let updatedMessage = decodeMessage(from: snapshot) else {
-                    return
-                }
-
-                DispatchQueue.main.async {
-                    guard
-                        let chatIndex = chats.firstIndex(where: {
-                            $0.chatID == chatID
-                        }),
-                        var chatMessages = chats[chatIndex].messages
-                    else { return }
-
-                    if let messageIndex = chatMessages.firstIndex(where: {
-                        $0.messageID == updatedMessage.messageID
-                    }) {
-                        chatMessages[messageIndex] = updatedMessage
-                    } else {
-                        insertMessageSorted(updatedMessage, into: &chatMessages)
-                    }
-                    withAnimation(.smooth) {
-                        chats[chatIndex].messages = chatMessages
-                    }
-                    rebuildThreadMessageIndex(for: chats[chatIndex])
-                    refreshChatSidebarCache()
-
-                    saveChatToCacheAsync(chats[chatIndex])
-                }
-            }
-
-        databaseRef.child("messages").observe(.childRemoved) { snapshot in
-            guard let removedMessage = decodeMessage(from: snapshot) else {
-                return
-            }
-
-            DispatchQueue.main.async {
-                queueMessageRemoval(
-                    removedMessage.messageID,
-                    for: chatID
-                )
-            }
+            chatObservers.addRemoval(chatID: chatID, token: token) { query.removeObserver(withHandle: handle) }
         }
 
-        let lastDeletionTimestamp = messageRemovalBatcher.deletionCursors
-            .lastProcessedAtByChatID[chatID] ?? -0.001
-        databaseRef.child("deletedMessages")
-            .queryOrderedByValue()
-            .queryStarting(atValue: lastDeletionTimestamp)
-            .observe(.childAdded) { snapshot in
-                guard let deletedAt = (snapshot.value as? NSNumber)?.doubleValue
-                else { return }
-
-                DispatchQueue.main.async {
-                    queueMessageRemoval(
-                        snapshot.key,
-                        for: chatID,
-                        deletedAt: deletedAt
-                    )
-                }
+        func upsert(_ snapshot: DataSnapshot) {
+            guard let message = decodeMessage(from: snapshot),
+                  let index = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
+            var messages = chats[index].messages ?? []
+            if let existing = messages.firstIndex(where: { $0.messageID == message.messageID }) {
+                guard messages[existing] != message else { return }
+                messages[existing] = message
+            } else {
+                insertMessageSorted(message, into: &messages)
             }
-
-        // listen only for typingUsers updates
-        databaseRef.child("typingUsers").observe(.value) { snapshot in
-            if let newTyping = snapshot.value as? [String],
-                let index = chats.firstIndex(where: { $0.chatID == chatID })
-            {
-                if chats[index].typingUsers != newTyping {
-                    chats[index].typingUsers = newTyping
-                    saveChatToCacheAsync(chats[index])
-                }
-            }
+            withAnimation(.smooth) { chats[index].messages = messages }
+            rebuildThreadMessageIndex(for: chats[index])
+            refreshChatSidebarCache()
+            saveChatToCacheAsync(chats[index])
         }
 
-        // listen only for pinned updates
-        databaseRef.child("pinned").observe(.value) { snapshot in
-            if let newPinned = snapshot.value as? [String],
-                let index = chats.firstIndex(where: { $0.chatID == chatID })
-            {
-                if chats[index].pinned != newPinned {
-                    chats[index].pinned = newPinned
-                    saveChatToCacheAsync(chats[index])
-                }
+        observe(messagesQuery, .childAdded, update: upsert)
+        observe(messagesQuery, .childChanged, update: upsert)
+        // Keep direct removals for legacy deletion writers until all writers emit
+        // deletedMessages records; detach this observer with the rest of the chat.
+        observe(databaseRef.child("messages"), .childRemoved) { snapshot in
+            queueMessageRemoval(snapshot.key, for: chatID)
+        }
+        let deletionCursor = messageRemovalBatcher.deletionCursors.lastProcessedAtByChatID[chatID] ?? -0.001
+        observe(databaseRef.child("deletedMessages").queryOrderedByValue().queryStarting(atValue: deletionCursor), .childAdded) { snapshot in
+            guard let deletedAt = (snapshot.value as? NSNumber)?.doubleValue else { return }
+            queueMessageRemoval(snapshot.key, for: chatID, deletedAt: deletedAt)
+        }
+        observe(databaseRef.child("typingUsers"), .value) { snapshot in
+            guard let typing = snapshot.value as? [String],
+                  let index = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
+            if chats[index].typingUsers != typing {
+                chats[index].typingUsers = typing
+                saveChatToCacheAsync(chats[index])
             }
         }
-
+        observe(databaseRef.child("pinned"), .value) { snapshot in
+            let pinned = ChatMessageStartup.pinnedIDs(snapshot.value)
+            guard let index = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
+            if chats[index].pinned != pinned {
+                chats[index].pinned = pinned
+                saveChatToCacheAsync(chats[index])
+            }
+        }
     }
 
     func queueMessageRemoval(
@@ -2610,10 +2626,23 @@ struct ChatView: View {
             return
         }
 
+        guard let messageID = chat.messages?
+            .last(where: { ($0.threadName ?? "general") == threadName })?
+            .messageID
+        else { return }
+
         NotificationOpenRouter.shared.clearDeliveredNotifications(
-            forClubID: chat.clubID,
-            threadName: threadName
+            chatID: chat.chatID,
+            threadName: threadName,
+            throughMessageID: messageID
         )
+        Task {
+            await NotificationRegistrationManager.shared.markChatSeen(
+                chatID: chat.chatID,
+                threadName: threadName,
+                messageID: messageID
+            )
+        }
     }
 
     func updateUnreadIndicator() {

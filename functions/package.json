@@ -2,6 +2,9 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
+    "test": "node --test test/admin-access.test.js test/admin-sdk-compat.test.js test/calendar-core.test.js test/calendar-service.test.js test/config.test.js test/legacy-calendar.test.js test/meeting-service.test.js test/membership-service.test.js test/migration.test.js test/notifications.test.js test/readiness-validator.test.js",
+    "test:rules": "firebase emulators:exec --project phs-connect-local-test --only database \"node --test test/database-rules.test.js\"",
+    "validate:calendar-v2": "node scripts/validate-calendar-v2-readiness.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
@@ -9,15 +12,15 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "24"
+    "node": "22"
   },
   "main": "index.js",
   "dependencies": {
-    "firebase-admin": "^13.6.0",
-    "firebase-functions": "^7.0.0"
+    "firebase-admin": "^14.4.0",
+    "firebase-functions": "^7.3.2"
   },
   "devDependencies": {
-    "firebase-functions-test": "^3.4.1"
+    "@firebase/rules-unit-testing": "^5.0.2"
   },
   "private": true
 }

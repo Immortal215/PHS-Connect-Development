@@ -1,347 +1,235 @@
-const { onValueCreated, onValueWritten } = require("firebase-functions/v2/database");
-const admin = require("firebase-admin");
+"use strict";
 
-admin.initializeApp();
+const { onRequest } = require("firebase-functions/v2/https");
+const { onValueCreated, onValueDeleted, onValueWritten } = require("firebase-functions/v2/database");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const functionsV1 = require("firebase-functions/v1");
+const { apiHandler, calendarFeedHandler } = require("./lib/api");
+const { REGION } = require("./lib/constants");
+const { createAdminServices } = require("./lib/firebase-admin-services");
+const {
+  appendLeaderAccessRevision, auditAuthUser, userRSVPInvalidationUpdates,
+} = require("./lib/membership-service");
+const { compactCalendarChanges, handleDeletedClub, readMeeting } = require("./lib/meeting-service");
+const {
+  alreadyRead, chatRecipients, expirationKey, formatMeetingTime, meetingRecipientRegistrations,
+  retryNotificationDeliveries, sendReactionNotification, sendToRegistrations, stateKey,
+} = require("./lib/notifications");
 
-/**
- * Notification rules (stored under each user: /users/{uid}/...)
- *
- * user.chatNotifStyles: { [chatID]: "all" | "thread" | "none" | "mentions" }
- * user.mutedThreadsByChat: { [chatID]: [threadName, ...] }   // thread NAMES exactly as stored
- *
- * Precedence:
- * - none: never notify
- * - mentions: only notify if isMention == true (mention detection not implemented here)
- * - all: notify always
- * - thread: notify unless threadName is in mutedThreadsByChat[chatID]
- */
+const admin = createAdminServices();
 
-exports.sendChatNotification = onValueCreated(
-  "/chats/{chatID}/messages/{messageID}",
-  async (event) => {
-    const message = event.data.val();
-    const chatID = event.params.chatID;
-    const messageID = event.params.messageID;
+exports.phsApi = onRequest({ region: REGION, cors: false }, apiHandler(admin));
+exports.calendarFeed = onRequest({ region: REGION, cors: false }, calendarFeedHandler(admin));
 
-    const senderUID = message.sender;
-    const messageText = message.message || "";
-    const threadName = message.threadName || "general";
+exports.compactCalendarChangeLog = onValueWritten({
+  ref: "/clubCalendars/{clubID}/latestChange", region: REGION, retry: true,
+}, async (event) => {
+  if (event.data.before.val() === event.data.after.val() || !event.data.after.exists()) return;
+  await compactCalendarChanges(admin, event.params.clubID);
+});
 
-    const isMention = false;
+exports.cleanupDeletedClub = onValueDeleted({
+  ref: "/clubs/{clubID}", region: REGION, retry: true,
+}, async (event) => {
+  await handleDeletedClub(admin, event.params.clubID, event.data.val() || {});
+});
 
-    try {
-      const chatSnap = await admin.database().ref(`/chats/${chatID}`).once("value");
-      const chatData = chatSnap.val();
-      if (!chatData || !chatData.clubID) return;
-
-      const clubID = chatData.clubID;
-
-      const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
-      const clubData = clubSnap.val();
-      if (!clubData) return;
-      if (clubData.chatEnabled === false) return;
-
-      const clubMembersEmails = clubData.members || [];
-      const clubLeadersEmails = clubData.leaders || [];
-      const clubName = clubData.name || "New Message";
-
-      const usersSnap = await admin.database().ref("/users").once("value");
-      const allUsers = usersSnap.val() || {};
-
-      const senderName = allUsers?.[senderUID]?.userName || "Someone";
-      const tokens = [];
-
-      for (const uid in allUsers) {
-        if (uid === senderUID) continue;
-
-        const user = allUsers[uid];
-        if (!user) continue;
-        if (!user.fcmToken) continue;
-
-        const email = user.userEmail;
-        const isMember = clubMembersEmails.includes(email);
-        const isLeader = clubLeadersEmails.includes(email);
-        if (!(isMember || isLeader)) continue;
-
-        const style =
-          (user.chatNotifStyles && user.chatNotifStyles[chatID]) || "all";
-
-        if (style === "none") continue;
-
-        if (style === "mentions") {
-          if (!isMention) continue;
-        }
-
-        if (style === "thread") {
-          const muted =
-            (user.mutedThreadsByChat &&
-              user.mutedThreadsByChat[chatID] &&
-              Array.isArray(user.mutedThreadsByChat[chatID]) &&
-              user.mutedThreadsByChat[chatID].includes(threadName)) || false;
-
-          if (muted) continue;
-        }
-
-        // style === "all" falls through, notify
-        tokens.push(user.fcmToken);
-      }
-
-      if (tokens.length === 0) return;
-
-      const preview = messageText.length > 0 ? messageText.slice(0, 80) : "(attachment)";
-
-      return admin.messaging().sendEachForMulticast({
-        tokens,
-        notification: {
-          title: `${senderName} • ${clubName}`,
-          body: threadName === "general" ? preview : `[${threadName}] ${preview}`,
-        },
-        data: {
-          type: "message",
-          chatID,
-          messageID,
-          threadName,
-          senderUID,
-          clubID,
-          clubName,
-          senderName,
-          preview,
-        },
-      });
-    } catch (err) {
-      console.error("Error sending push notification:", err);
-    }
-  }
-);
-
-exports.sendReactionNotification = onValueWritten(
-  "/chats/{chatID}/messages/{messageID}/reactions/{emoji}",
-  async (event) => {
-    const { chatID, messageID, emoji } = event.params;
-
-    const beforeArr = event.data.before.exists() ? (event.data.before.val() || []) : [];
-    const afterArr = event.data.after.exists() ? (event.data.after.val() || []) : [];
-
-    if (!Array.isArray(afterArr)) return;
-    const beforeLen = Array.isArray(beforeArr) ? beforeArr.length : 0;
-    if (afterArr.length <= beforeLen) return;
-
-    const beforeSet = new Set(Array.isArray(beforeArr) ? beforeArr : []);
-    const reactorUID = afterArr.find((u) => !beforeSet.has(u));
-    if (!reactorUID) return;
-
-    try {
-      const senderSnap = await admin.database().ref(`/chats/${chatID}/messages/${messageID}/sender`).once("value");
-      const messageSenderUID = senderSnap.val();
-      if (!messageSenderUID) return;
-
-      // Don't notify yourself
-      if (messageSenderUID === reactorUID) return;
-
-      const receiverSnap = await admin.database().ref(`/users/${messageSenderUID}`).once("value");
-      const receiver = receiverSnap.val();
-      if (!receiver) return;
-
-      const style =
-        (receiver.chatNotifStyles && receiver.chatNotifStyles[chatID]) || "all";
-
-      if (style === "none") return;
-
-
-      if (style === "mentions") return;
-
-      const token = receiver.fcmToken;
-      if (!token) return;
-
-      const reactorNameSnap = await admin.database().ref(`/users/${reactorUID}/userName`).once("value");
-      const reactorName = reactorNameSnap.val() || "Someone";
-
-      const clubIDSnap = await admin.database().ref(`/chats/${chatID}/clubID`).once("value");
-      const clubID = clubIDSnap.val() || "";
-
-      let clubName = "Reaction";
-      if (clubID) {
-        const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
-        const clubData = clubSnap.val();
-        if (clubData && clubData.chatEnabled === false) return;
-        clubName = (clubData && clubData.name) || "Reaction";
-      }
-        const messageSnap = await admin
-          .database()
-          .ref(`/chats/${chatID}/messages/${messageID}`)
-          .once("value");
-
-        const message = messageSnap.val();
-        if (!message) return;
-
-        const threadName = message.threadName || "general";
-      return admin.messaging().send({
-        token,
-        notification: {
-          title: `${reactorName} • ${clubName}`,
-          body: `reacted ${emoji}`,
-        },
-        data: {
-          type: "reaction",
-          chatID,
-          messageID,
-          threadName,
-          clubID: clubID || "",
-          clubName,
-          reactorUID,
-          reactorName,
-          emoji,
-        },
-      });
-    } catch (err) {
-      console.error("Error sending reaction notification:", err);
-    }
-  }
-);
-
-function meetingsFromSnapshot(snapshot) {
-  if (!snapshot.exists()) return [];
-
-  const value = snapshot.val();
-  if (Array.isArray(value)) return value.filter(Boolean);
-  return Object.values(value || {}).filter(Boolean);
+function previewText(value) {
+  const text = String(value || "");
+  return text.length ? text.slice(0, 80) : "(attachment)";
 }
 
-function canonicalValue(value) {
-  if (Array.isArray(value)) return value.map(canonicalValue);
-  if (!value || typeof value !== "object") return value;
-
-  return Object.keys(value)
-    .sort()
-    .reduce((result, key) => {
-      result[key] = canonicalValue(value[key]);
-      return result;
-    }, {});
-}
-
-function changedMeetings(beforeMeetings, afterMeetings) {
-  const beforeKeys = new Set(
-    beforeMeetings.map((meeting) => JSON.stringify(canonicalValue(meeting)))
-  );
-  const afterKeys = new Set(
-    afterMeetings.map((meeting) => JSON.stringify(canonicalValue(meeting)))
-  );
-
+function chatDescriptor(chatID, threadName, messageID) {
   return {
-    added: afterMeetings.filter(
-      (meeting) => !beforeKeys.has(JSON.stringify(canonicalValue(meeting)))
-    ),
-    removed: beforeMeetings.filter(
-      (meeting) => !afterKeys.has(JSON.stringify(canonicalValue(meeting)))
-    ),
+    type: "chat", scope: `chat\u0000${chatID}\u0000${threadName}`,
+    revision: messageID, chatID, threadName, messageID,
   };
 }
 
-function meetingDateTimeParts(value) {
-  const match = /^(\d{2})-(\d{2})-(\d{4}),\s*(\d{1,2}:\d{2}\s*[AP]M)$/i.exec(
-    value || ""
-  );
-  if (!match) return null;
+async function filterUnread(db, candidates, descriptor) {
+  const values = await Promise.all(candidates.map(async (candidate) => ({
+    candidate, read: await alreadyRead(db, candidate.uid, descriptor),
+  })));
+  return values.filter((value) => !value.read).map((value) => value.candidate);
+}
 
-  const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  ];
-  const month = months[Number(match[1]) - 1];
-  if (!month) return null;
+exports.sendChatNotification = onValueCreated({
+  ref: "/chats/{chatID}/messages/{messageID}", region: REGION, retry: true,
+}, async (event) => {
+  const message = event.data.val() || {};
+  const { chatID, messageID } = event.params;
+  const senderUID = String(message.sender || "");
+  const threadName = String(message.threadName || "general");
+  if (!senderUID) return;
+  const db = admin.database();
+  const clubID = (await db.ref(`/chats/${chatID}/clubID`).get()).val();
+  if (!clubID) return;
+  const [chatEnabled, clubName, senderName] = await Promise.all([
+    db.ref(`/clubs/${clubID}/chatEnabled`).get(),
+    db.ref(`/clubs/${clubID}/name`).get(),
+    db.ref(`/users/${senderUID}/userName`).get(),
+  ]);
+  if (chatEnabled.val() === false) return;
+  const candidates = await chatRecipients(db, {
+    clubID, chatID, senderUID, threadName, isMention: false,
+  });
+  const descriptor = chatDescriptor(chatID, threadName, messageID);
+  const unread = await filterUnread(db, candidates, descriptor);
+  const registrations = unread.flatMap(({ profile }) => profile.registrations);
+  if (!registrations.length) return;
+  const sender = senderName.val() || "Someone";
+  const club = clubName.val() || "New Message";
+  const preview = previewText(message.message);
+  return sendToRegistrations(admin, registrations, {
+    notification: {
+      title: `${sender} • ${club}`,
+      body: threadName === "general" ? preview : `[${threadName}] ${preview}`,
+    },
+    data: {
+      type: "message", chatID, messageID, threadName, senderUID,
+      clubID, clubName: club, senderName: sender, preview,
+      logicalScope: stateKey(descriptor.scope), readRevision: messageID,
+    },
+    apns: { headers: { "apns-collapse-id": stateKey(descriptor.scope) }, payload: { aps: { threadId: `chat-${chatID}` } } },
+  }, { deliveryID: `chat-${event.id}`, descriptor });
+});
 
-  return {
-    date: `${month} ${Number(match[2])}, ${match[3]}`,
-    time: match[4].replace(/\s+/g, " ").toUpperCase(),
+exports.sendReactionNotification = onValueWritten({
+  ref: "/chats/{chatID}/messages/{messageID}/reactions/{emoji}", region: REGION, retry: true,
+}, async (event) => {
+  return sendReactionNotification(admin, event);
+});
+
+exports.sendMeetingNotification = onValueCreated({
+  ref: "/internal/meetingNotificationJobs/{jobID}", region: REGION, retry: true,
+}, async (event) => {
+  const jobRef = event.data.ref;
+  const owner = event.id;
+  const now = Date.now();
+  const lease = await jobRef.transaction((current) => {
+    if (!current || current.status === "complete") return;
+    if (current.status === "processing" && current.leaseExpiresAt > now) return;
+    return { ...current, status: "processing", owner, leaseExpiresAt: now + 120000 };
+  }, undefined, false);
+  if (!lease.committed || lease.snapshot.val()?.owner !== owner) return;
+  const job = lease.snapshot.val();
+  try {
+    const db = admin.database();
+    const meeting = await readMeeting(db, job.clubID, job.meetingID);
+    if (!meeting || meeting.cancelled) {
+      await jobRef.update({ status: "complete", completedAt: admin.serverTimestamp });
+      return;
+    }
+    const clubName = (await db.ref(`/clubs/${job.clubID}/name`).get()).val() || "Meeting Update";
+    const registrations = await meetingRecipientRegistrations(db, meeting);
+    const byUID = new Map();
+    for (const registration of registrations) {
+      if (!byUID.has(registration.uid)) byUID.set(registration.uid, []);
+      byUID.get(registration.uid).push(registration);
+    }
+    const descriptor = {
+      type: "meeting", scope: `meeting\u0000${meeting.meetingID}`,
+      revision: meeting.revision, meetingID: meeting.meetingID,
+    };
+    const unread = await filterUnread(db, Array.from(byUID, ([uid, items]) => ({ uid, items })), descriptor);
+    const recipients = unread.flatMap((item) => item.items);
+    const action = job.kind === "updated" ? "Updated" : "Created";
+    const eventType = job.repeating ? "repeating event" : "meeting";
+    if (recipients.length) await sendToRegistrations(admin, recipients, {
+      notification: {
+        title: clubName,
+        body: `${action} ${eventType}: ${meeting.title || "Club Meeting"}\n${formatMeetingTime(meeting)}`,
+      },
+      data: {
+        type: "meeting", clubID: job.clubID, clubName,
+        meetingID: meeting.meetingID, meetingTitle: meeting.title || "",
+        meetingRevision: String(meeting.revision),
+        logicalScope: stateKey(descriptor.scope), readRevision: String(meeting.revision),
+      },
+      apns: { headers: { "apns-collapse-id": stateKey(descriptor.scope) }, payload: { aps: { threadId: `meeting-${meeting.meetingID}` } } },
+    }, { deliveryID: `meeting-${event.params.jobID}`, descriptor });
+    await jobRef.update({ status: "complete", completedAt: admin.serverTimestamp, owner: null, leaseExpiresAt: null });
+  } catch (error) {
+    console.error("Meeting notification delivery failed", { jobID: event.params.jobID, error });
+    await jobRef.update({ status: "retry", lastErrorAt: admin.serverTimestamp, owner: null, leaseExpiresAt: null });
+    throw error;
+  }
+});
+
+exports.cleanupStaleNotificationDevices = onSchedule({
+  schedule: "every day 03:17", timeZone: "America/Chicago", region: REGION,
+}, async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const expirationRef = admin.database().ref("/internal/notificationDeviceExpirations");
+  const deliveryExpirationRef = admin.database().ref("/internal/notificationDeliveryExpirations");
+  const [snapshot, deliverySnapshot] = await Promise.all([
+    expirationRef.orderByKey().endAt(today).limitToFirst(8).get(),
+    deliveryExpirationRef.orderByKey().endAt(today).limitToFirst(8).get(),
+  ]);
+  const removals = {};
+  for (const [day, entries] of Object.entries(snapshot.val() || {})) {
+    for (const value of Object.values(entries || {})) {
+      const uid = value?.uid;
+      const installationID = value?.installationID;
+      if (!uid || !installationID) continue;
+      removals[`notificationDevices/${uid}/${installationID}`] = null;
+      removals[`internal/notificationInstallationOwners/${installationID}`] = null;
+    }
+    removals[`internal/notificationDeviceExpirations/${day}`] = null;
+  }
+  for (const [day, deliveries] of Object.entries(deliverySnapshot.val() || {})) {
+    for (const deliveryKey of Object.keys(deliveries || {})) {
+      removals[`internal/notificationDeliveryReceipts/${deliveryKey}`] = null;
+    }
+    removals[`internal/notificationDeliveryExpirations/${day}`] = null;
+  }
+  if (Object.keys(removals).length) await admin.database().ref().update(removals);
+});
+
+exports.retryNotificationDeliveries = onSchedule({
+  schedule: "every 5 minutes", timeZone: "America/Chicago", region: REGION,
+}, async () => retryNotificationDeliveries(admin));
+
+exports.auditAuthIdentityLifecycle = onSchedule({
+  schedule: "every day 02:47", timeZone: "America/Chicago", region: REGION,
+}, async () => {
+  let pageToken;
+  do {
+    const page = await admin.auth().listUsers(500, pageToken);
+    for (const user of page.users) await auditAuthUser(admin, user);
+    pageToken = page.pageToken;
+  } while (pageToken);
+});
+
+exports.cleanupDeletedAccount = functionsV1.region(REGION).auth.user().onDelete(async (user) => {
+  const db = admin.database();
+  const [membershipsSnapshot, tokenHashSnapshot, devicesSnapshot] = await Promise.all([
+    db.ref(`/userClubMemberships/${user.uid}`).get(),
+    db.ref(`/calendarSubscriptions/${user.uid}/tokenHash`).get(),
+    db.ref(`/notificationDevices/${user.uid}`).get(),
+  ]);
+  const memberships = membershipsSnapshot.val() || {};
+  const updates = {
+    [`userClubMemberships/${user.uid}`]: null,
+    [`notificationDevices/${user.uid}`]: null,
+    [`notificationReadState/${user.uid}`]: null,
+    [`calendarSubscriptions/${user.uid}`]: null,
   };
-}
-
-function meetingDateTimeText(meeting) {
-  const start = meetingDateTimeParts(meeting.startTime);
-  const end = meetingDateTimeParts(meeting.endTime);
-
-  if (!start || !end) {
-    return `${meeting.startTime || ""} - ${meeting.endTime || ""}`.trim();
+  for (const [clubID, membership] of Object.entries(memberships)) {
+    updates[`clubMemberships/${clubID}/${user.uid}`] = null;
+    if (membership?.role === "pending") updates[`clubJoinRequests/${clubID}/${user.uid}`] = null;
+    else Object.assign(updates, await userRSVPInvalidationUpdates(
+      admin, user.uid, clubID, "identity-deleted"
+    ));
+    await appendLeaderAccessRevision(db, updates, clubID);
   }
-
-  if (start.date === end.date) {
-    return `${start.date}, ${start.time} - ${end.time}`;
-  }
-
-  return `${start.date}, ${start.time} - ${end.date}, ${end.time}`;
-}
-
-exports.sendMeetingNotification = onValueWritten(
-  "/clubs/{clubID}/meetingTimes",
-  async (event) => {
-    const clubID = event.params.clubID;
-    const beforeMeetings = meetingsFromSnapshot(event.data.before);
-    const afterMeetings = meetingsFromSnapshot(event.data.after);
-    const changes = changedMeetings(beforeMeetings, afterMeetings);
-
-    // Deletions do not create a meeting notification.
-    if (changes.added.length === 0) return;
-
-    const meeting = changes.added.sort((first, second) =>
-      (first.startTime || "").localeCompare(second.startTime || "")
-    )[0];
-    const isEdit = changes.removed.length > 0;
-    const isRepeating = Boolean(meeting.seriesID);
-
-    try {
-      const clubSnap = await admin.database().ref(`/clubs/${clubID}`).once("value");
-      const club = clubSnap.val();
-      if (!club) return;
-
-      const usersSnap = await admin.database().ref("/users").once("value");
-      const users = usersSnap.val() || {};
-      const memberEmails = new Set([
-        ...(club.members || []),
-        ...(club.leaders || []),
-      ]);
-      const visibleEmails = Array.isArray(meeting.visibleByArray)
-        ? new Set(meeting.visibleByArray)
-        : null;
-      const tokens = new Set();
-
-      for (const user of Object.values(users)) {
-        if (!user || !user.fcmToken || !memberEmails.has(user.userEmail)) continue;
-        if (visibleEmails && !visibleEmails.has(user.userEmail)) continue;
-        tokens.add(user.fcmToken);
-      }
-
-      if (tokens.size === 0) return;
-
-      const action = isEdit ? "Updated" : "Created";
-      const eventType = isRepeating ? "repeating event" : "meeting";
-      const meetingSummary = `${action} ${eventType}: ${meeting.title || "Club Meeting"}`;
-      const dateTimeSummary = meetingDateTimeText(meeting);
-      const body = `${meetingSummary}\n${dateTimeSummary}`;
-      const tokenList = Array.from(tokens);
-      const sends = [];
-
-      for (let index = 0; index < tokenList.length; index += 500) {
-        sends.push(
-          admin.messaging().sendEachForMulticast({
-            tokens: tokenList.slice(index, index + 500),
-            notification: {
-              title: club.name || "Meeting Update",
-              body,
-            },
-            data: {
-              type: "meeting",
-              clubID,
-              clubName: club.name || "",
-              meetingTitle: meeting.title || "",
-              startTime: meeting.startTime || "",
-            },
-          })
-        );
-      }
-
-      return Promise.all(sends);
-    } catch (err) {
-      console.error("Error sending meeting notification:", err);
+  for (const [installationID, device] of Object.entries(devicesSnapshot.val() || {})) {
+    updates[`internal/notificationInstallationOwners/${installationID}`] = null;
+    if (device?.expiresDay) {
+      const key = expirationKey(user.uid, installationID);
+      updates[`internal/notificationDeviceExpirations/${device.expiresDay}/${key}`] = null;
     }
   }
-);
+  if (tokenHashSnapshot.val()) updates[`calendarTokens/${tokenHashSnapshot.val()}`] = null;
+  await db.ref().update(updates);
+});

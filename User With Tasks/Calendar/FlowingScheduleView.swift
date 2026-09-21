@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftUIX
 
 struct FlowingScheduleView: View {
+    @Environment(\.appViewportSize) private var viewportSize
     var meetings: [Club.MeetingTime]
     var schoolEvents: [SchoolScheduleEvent]
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
@@ -121,6 +122,9 @@ struct FlowingScheduleView: View {
                             selectedDate: selectedDate,
                             userInfo: $userInfo,
                             onDelete: handleMeetingDeleted
+                        )
+                        .frame(
+                            width: min(max(viewportSize.width / 2.5, 320), viewportSize.width),
                         )
                     }
                 } customize: {

@@ -335,19 +335,21 @@ struct SettingsView: View {
                         )
 
                     Button {
-                        do {
-                            try AuthenticationManager.shared.signOut()
-                            userEmail = nil
-                            userName = nil
-                            userImage = nil
-                            userType = nil
-                            uid = nil
-                            userInfo = nil
-                            showSignInView = true
-                        } catch {
-                            print(
-                                "Error signing out: \(error.localizedDescription)"
-                            )
+                        Task {
+                            do {
+                                try await AuthenticationManager.shared.signOut()
+                                userEmail = nil
+                                userName = nil
+                                userImage = nil
+                                userType = nil
+                                uid = nil
+                                userInfo = nil
+                                showSignInView = true
+                            } catch {
+                                print(
+                                    "Error signing out: \(error.localizedDescription)"
+                                )
+                            }
                         }
                     } label: {
                         ZStack {
@@ -655,17 +657,19 @@ struct SettingsView: View {
     }
 
     func signOut() {
-        do {
-            try AuthenticationManager.shared.signOut()
-            userEmail = nil
-            userName = nil
-            userImage = nil
-            userType = nil
-            uid = nil
-            userInfo = nil
-            showSignInView = true
-        } catch {
-            print("Error signing out: \(error.localizedDescription)")
+        Task {
+            do {
+                try await AuthenticationManager.shared.signOut()
+                userEmail = nil
+                userName = nil
+                userImage = nil
+                userType = nil
+                uid = nil
+                userInfo = nil
+                showSignInView = true
+            } catch {
+                print("Error signing out: \(error.localizedDescription)")
+            }
         }
     }
 
