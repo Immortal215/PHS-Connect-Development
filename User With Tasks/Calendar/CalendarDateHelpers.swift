@@ -11,11 +11,6 @@ func calendarStartingOnSunday() -> Calendar {
     return calendar
 }
 
-func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
-    let calendar = Calendar.current
-    return calendar.isDate(date1, inSameDayAs: date2)
-}
-
 func roundToNearest15Minutes(date: Date) -> Date {
     let calendar = Calendar.current
     let minuteInterval = 15

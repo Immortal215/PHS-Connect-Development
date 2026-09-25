@@ -3,7 +3,7 @@
 const crypto = require("crypto");
 const {
   HttpError, isAdmin, isAllowedIdentityEmail, isEligibleAuthUser,
-  requireLeader, requireMembership,
+  requireLeader, requireMembership, roleValue, uniqueEmails,
 } = require("./access");
 const {
   addUtcDays,
@@ -15,12 +15,16 @@ const {
   validateMeeting,
   zonedMidnightEpoch,
 } = require("./calendar-core");
-const { loadIndexedMeetings, roleValue } = require("./calendar-service");
+const { loadIndexedMeetings } = require("./calendar-service");
 const { SCHOOL_TIME_ZONE } = require("./constants");
 const { acquireLocks, releaseLocks } = require("./locks");
 const {
-  syncMeetingVisibilityClaims, uniqueSchoolEmails,
+  syncMeetingVisibilityClaims,
 } = require("./meeting-visibility");
+
+const CALENDAR_SYNC_BODY_READ_CONCURRENCY = 8;
+const MEETING_OPERATION_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+const MEETING_JOB_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 function nowSeconds() { return Date.now() / 1000; }
 
@@ -33,7 +37,7 @@ function normalizeVisibility(value) {
   return { mode, uids };
 }
 
-async function resolveMeetingVisibility(admin, input) {
+async function resolveMeetingVisibility(admin, input, emailResolutions = new Map()) {
   const claimsProvided = Array.isArray(input.visibilityEmails);
   const requestedMode = input.visibility?.mode || input.visibilityMode ||
     (Array.isArray(input.visibilityEmails) && input.visibilityEmails.length ? "uids" : "public");
@@ -45,17 +49,24 @@ async function resolveMeetingVisibility(admin, input) {
   }
   const uids = claimsProvided ? {} : { ...(input.visibility?.uids || {}) };
   const claims = [];
-  for (const email of uniqueSchoolEmails(input.visibilityEmails)) {
+  for (const email of uniqueEmails(input.visibilityEmails)) {
     if (!isAllowedIdentityEmail(email)) {
       throw new HttpError(409, `Visibility email is not supported: ${email}`);
     }
-    let uid = null;
-    try {
-      const user = await admin.auth().getUserByEmail(email);
-      if (isEligibleAuthUser(user, email)) uid = user.uid;
-    } catch (error) {
-      if (error?.code !== "auth/user-not-found") throw error;
+    let resolution = emailResolutions.get(email);
+    if (!resolution) {
+      resolution = (async () => {
+        try {
+          const user = await admin.auth().getUserByEmail(email);
+          return isEligibleAuthUser(user, email) ? user.uid : null;
+        } catch (error) {
+          if (error?.code !== "auth/user-not-found") throw error;
+          return null;
+        }
+      })();
+      emailResolutions.set(email, resolution);
     }
+    const uid = await resolution;
     if (uid) uids[uid] = true;
     claims.push({ email, hash: crypto.createHash("sha256").update(email).digest("hex"), uid });
   }
@@ -105,6 +116,12 @@ function canonicalMeeting(input, { meetingID, previous = null, now }) {
 
 function meetingIndexMonths(meeting) { return monthKeys(meeting.startDate, meeting.endDateExclusive); }
 function startSortValue(meeting) { return meeting.fullDay ? meeting.startDate : Number(meeting.startUtc); }
+
+function visibilityFingerprint(value) {
+  const visibility = normalizeVisibility(value);
+  if (visibility.mode !== "uids") return visibility.mode;
+  return `uids:${Object.keys(visibility.uids).sort().join(",")}`;
+}
 
 function occurrenceAssignments(existing, incoming, createID) {
   return incoming.map((input, index) => ({
@@ -213,6 +230,13 @@ async function acquireOperation(db, operationID, actorUID, kind) {
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(operationID || "")) {
     throw new HttpError(400, "A valid operation ID is required.");
   }
+  const expiresAt = operationExpiresAt(operationID);
+  if (expiresAt !== null && Date.now() >= expiresAt) {
+    throw new HttpError(409, "This operation ID expired. Start a new edit.");
+  }
+  if (expiresAt !== null && expiresAt > Date.now() + MEETING_OPERATION_RETENTION_MS + 24 * 60 * 60 * 1000) {
+    throw new HttpError(400, "The operation ID timestamp is too far in the future.");
+  }
   const ref = db.ref(`/internal/meetingOperations/${operationID}`);
   const existing = (await ref.get()).val();
   if (existing && (existing.actorUID !== actorUID || existing.kind !== kind)) {
@@ -232,6 +256,46 @@ async function acquireOperation(db, operationID, actorUID, kind) {
   return { ref, owner };
 }
 
+function operationExpiresAt(operationID) {
+  const match = /^t(\d{13})-[0-9a-fA-F-]{36}$/.exec(String(operationID || ""));
+  return match ? Number(match[1]) + MEETING_OPERATION_RETENTION_MS : null;
+}
+
+function appendOperationExpiration(updates, operationID) {
+  const expiresAt = operationExpiresAt(operationID);
+  if (expiresAt !== null) updates[`internal/meetingOperationExpirations/${operationID}`] = expiresAt;
+}
+
+async function completeMeetingNotificationJob(db, jobID, serverTimestamp) {
+  const updates = {
+    [`internal/meetingNotificationJobs/${jobID}/status`]: "complete",
+    [`internal/meetingNotificationJobs/${jobID}/completedAt`]: serverTimestamp,
+    [`internal/meetingNotificationJobs/${jobID}/owner`]: null,
+    [`internal/meetingNotificationJobs/${jobID}/leaseExpiresAt`]: null,
+    [`internal/meetingNotificationJobExpirations/${jobID}`]: Date.now() + MEETING_JOB_RETENTION_MS,
+  };
+  await db.ref().update(updates);
+}
+
+async function cleanupCompletedMeetingRecords(admin, now = Date.now(), limit = 200) {
+  const db = admin.database();
+  const [operations, jobs] = await Promise.all([
+    db.ref("/internal/meetingOperationExpirations").orderByValue().endAt(now).limitToFirst(limit).get(),
+    db.ref("/internal/meetingNotificationJobExpirations").orderByValue().endAt(now).limitToFirst(limit).get(),
+  ]);
+  const updates = {};
+  for (const operationID of Object.keys(operations.val() || {})) {
+    updates[`internal/meetingOperations/${operationID}`] = null;
+    updates[`internal/meetingOperationExpirations/${operationID}`] = null;
+  }
+  for (const jobID of Object.keys(jobs.val() || {})) {
+    updates[`internal/meetingNotificationJobs/${jobID}`] = null;
+    updates[`internal/meetingNotificationJobExpirations/${jobID}`] = null;
+  }
+  if (Object.keys(updates).length) await db.ref().update(updates);
+  return { operations: operations.numChildren(), jobs: jobs.numChildren() };
+}
+
 async function calendarSequences(db, clubIDs) {
   const values = {};
   for (const clubID of clubIDs) {
@@ -241,13 +305,8 @@ async function calendarSequences(db, clubIDs) {
   return values;
 }
 
-async function appendRSVPRevalidation(db, updates, meeting) {
-  const [responsesSnapshot, membershipsSnapshot] = await Promise.all([
-    db.ref(`/meetingRSVPs/${meeting.meetingID}`).get(),
-    db.ref(`/clubMemberships/${meeting.clubID}`).get(),
-  ]);
-  const responses = responsesSnapshot.val() || {};
-  const memberships = membershipsSnapshot.val() || {};
+async function appendRSVPRevalidation(db, updates, meeting, memberships) {
+  const responses = (await db.ref(`/meetingRSVPs/${meeting.meetingID}`).get()).val() || {};
   for (const [uid, response] of Object.entries(responses)) {
     if (response.active === false) continue;
     if (!canAccessMeeting(meeting, roleValue(memberships[uid]), uid)) {
@@ -317,7 +376,10 @@ async function saveMeetings(admin, decodedToken, body) {
 
     const sequences = await calendarSequences(db, clubIDs);
     const now = nowSeconds();
-    const resolvedIncoming = await Promise.all(incoming.map((item) => resolveMeetingVisibility(admin, item)));
+    const emailResolutions = new Map();
+    const resolvedIncoming = await Promise.all(incoming.map(
+      (item) => resolveMeetingVisibility(admin, item, emailResolutions)
+    ));
     const sortedIncoming = [...resolvedIncoming].sort((a, b) => {
       const av = a.fullDay ? a.startDate : Number(a.startUtc);
       const bv = b.fullDay ? b.startDate : Number(b.startUtc);
@@ -325,6 +387,7 @@ async function saveMeetings(admin, decodedToken, body) {
     });
     const updates = {};
     const saved = [];
+    const membershipSnapshots = new Map();
     const changesByClub = Object.fromEntries(clubIDs.map((id) => [id, []]));
     const assignments = occurrenceAssignments(
       affected,
@@ -350,7 +413,20 @@ async function saveMeetings(admin, decodedToken, body) {
       });
       changesByClub[next.clubID].push(changeMetadata(next, "upsert"));
       if (old && old.clubID !== next.clubID) changesByClub[old.clubID].push(changeMetadata(old, "delete"));
-      await appendRSVPRevalidation(db, updates, next);
+      const accessChanged = old && (
+        old.clubID !== next.clubID ||
+        visibilityFingerprint(old.visibility) !== visibilityFingerprint(next.visibility) ||
+        Boolean(old.cancelled) !== Boolean(next.cancelled)
+      );
+      if (accessChanged) {
+        let memberships = membershipSnapshots.get(next.clubID);
+        if (!memberships) {
+          memberships = db.ref(`/clubMemberships/${next.clubID}`).get()
+            .then((snapshot) => snapshot.val() || {});
+          membershipSnapshots.set(next.clubID, memberships);
+        }
+        await appendRSVPRevalidation(db, updates, next, await memberships);
+      }
       saved.push(next);
     }
     for (const old of affected.slice(sortedIncoming.length)) {
@@ -383,6 +459,7 @@ async function saveMeetings(admin, decodedToken, body) {
     updates[`internal/meetingOperations/${body.operationID}`] = {
       status: "complete", actorUID: decodedToken.uid, kind: "save", completedAt: now, result,
     };
+    appendOperationExpiration(updates, body.operationID);
     updates[`internal/meetingNotificationJobs/${body.operationID}`] = {
       clubID: saved[0].clubID, meetingID: saved[0].meetingID,
       kind: anchor ? "updated" : "created", repeating: Boolean(saved[0].seriesID), createdAt: now,
@@ -461,6 +538,7 @@ async function deleteMeetings(admin, decodedToken, body) {
     updates[`internal/meetingOperations/${body.operationID}`] = {
       status: "complete", actorUID: decodedToken.uid, kind: "delete", completedAt: now, result,
     };
+    appendOperationExpiration(updates, body.operationID);
     await db.ref().update(updates);
     return result;
   } catch (error) {
@@ -562,25 +640,47 @@ async function handleDeletedClub(admin, clubID, deletedClub = {}) {
   }
 }
 
-async function listMeetings(admin, decodedToken, startDate, endDateExclusive) {
-  const db = admin.database();
-  const memberships = (await db.ref(`/userClubMemberships/${decodedToken.uid}`).get()).val() || {};
-  const clubIDs = Object.keys(memberships).filter((id) => ["member", "leader"].includes(roleValue(memberships[id])));
-  const meetings = await loadIndexedMeetings(db, clubIDs, { startDate, endDateExclusive });
-  return meetings.filter((meeting) => !meeting.cancelled && canAccessMeeting(
-    meeting, roleValue(memberships[meeting.clubID]), decodedToken.uid
-  )).sort((a, b) => startSortValue(a) < startSortValue(b) ? -1 : 1).map(clientMeeting);
-}
-
 async function nextPublicMeeting(admin, clubID) {
+  const db = admin.database();
   const today = dateOnlyInTimeZone(new Date());
-  const meetings = await loadIndexedMeetings(admin.database(), [clubID], {
-    startDate: today, endDateExclusive: addUtcDays(today, 367),
-  });
+  const endDateExclusive = addUtcDays(today, 367);
   const now = nowSeconds();
-  return meetings.filter((meeting) => !meeting.cancelled &&
-    (meeting.visibility?.mode || "public") === "public" && rsvpCutoffEpoch(meeting) >= now
-  ).sort((a, b) => startSortValue(a) < startSortValue(b) ? -1 : 1).map(clientMeeting)[0] || null;
+  const seenMeetingIDs = new Set();
+  for (const monthKey of monthKeys(today, endDateExclusive)) {
+    const index = (await db.ref(`/clubCalendars/${clubID}/months/${monthKey}`).get()).val() || {};
+    const meetingIDs = Object.keys(index).filter((meetingID) => !seenMeetingIDs.has(meetingID));
+    const meetings = [];
+    for (let offset = 0; offset < meetingIDs.length; offset += 25) {
+      const chunk = meetingIDs.slice(offset, offset + 25);
+      const values = await Promise.all(chunk.map(async (meetingID) => {
+        const meeting = await readMeeting(db, clubID, meetingID);
+        if (!meeting) throw new Error(`Calendar index points to missing meeting ${meetingID}.`);
+        return meeting;
+      }));
+      meetings.push(...values);
+    }
+    meetings.sort((first, second) => {
+      const firstStart = rsvpCutoffEpoch(first);
+      const secondStart = rsvpCutoffEpoch(second);
+      if (firstStart === secondStart) return String(first.meetingID).localeCompare(String(second.meetingID));
+      return firstStart < secondStart ? -1 : 1;
+    });
+    const monthStart = `${monthKey}-01`;
+    const nextMonthStart = `${addUtcDays(monthStart, 32).slice(0, 7)}-01`;
+    const monthWindow = {
+      startDate: monthStart < today ? today : monthStart,
+      endDateExclusive: nextMonthStart > endDateExclusive ? endDateExclusive : nextMonthStart,
+    };
+    for (const meeting of meetings) {
+      if (!overlapsWindow(meeting, monthWindow)) continue;
+      seenMeetingIDs.add(meeting.meetingID);
+      if (!meeting.cancelled && (meeting.visibility?.mode || "public") === "public" &&
+          rsvpCutoffEpoch(meeting) >= now) {
+        return clientMeeting(meeting);
+      }
+    }
+  }
+  return null;
 }
 
 async function syncClubCalendar(admin, decodedToken, query) {
@@ -610,18 +710,50 @@ async function syncClubCalendar(admin, decodedToken, query) {
   const page = entries.slice(0, limit);
   const collapsed = new Map();
   for (const [, change] of page) for (const item of change.items || []) collapsed.set(item.meetingID, item);
-  const changes = [];
-  for (const item of collapsed.values()) {
-    const meeting = await readMeeting(db, clubID, item.meetingID);
-    if (!meeting || item.operation === "delete" ||
-        !overlapsWindow(meeting, { startDate, endDateExclusive }) ||
-        !canAccessMeeting(meeting, role, decodedToken.uid)) {
-      changes.push({ meetingID: item.meetingID, operation: "delete", meetingRevision: item.meetingRevision });
-    } else {
-      changes.push({
-        meetingID: item.meetingID, operation: meeting.cancelled ? "cancel" : "upsert",
-        meetingRevision: meeting.revision, meeting: clientMeeting(meeting),
-      });
+  const items = Array.from(collapsed.values());
+  const changes = new Array(items.length);
+  const bodyReadIndexes = [];
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    if (item.operation !== "upsert") {
+      changes[index] = {
+        meetingID: item.meetingID,
+        operation: item.operation === "cancel" ? "cancel" : "delete",
+        meetingRevision: item.meetingRevision,
+      };
+      continue;
+    }
+    const hasRangeMetadata = typeof item.startDate === "string" &&
+      typeof item.endDateExclusive === "string";
+    if (hasRangeMetadata &&
+        (item.startDate >= endDateExclusive || item.endDateExclusive <= startDate)) {
+      changes[index] = {
+        meetingID: item.meetingID, operation: "delete", meetingRevision: item.meetingRevision,
+      };
+      continue;
+    }
+    bodyReadIndexes.push(index);
+  }
+  for (let offset = 0; offset < bodyReadIndexes.length;
+    offset += CALENDAR_SYNC_BODY_READ_CONCURRENCY) {
+    const indexes = bodyReadIndexes.slice(offset, offset + CALENDAR_SYNC_BODY_READ_CONCURRENCY);
+    const meetings = await Promise.all(indexes.map((index) =>
+      readMeeting(db, clubID, items[index].meetingID)));
+    for (let index = 0; index < indexes.length; index += 1) {
+      const changeIndex = indexes[index];
+      const item = items[changeIndex];
+      const meeting = meetings[index];
+      if (!meeting || !overlapsWindow(meeting, { startDate, endDateExclusive }) ||
+          !canAccessMeeting(meeting, role, decodedToken.uid)) {
+        changes[changeIndex] = {
+          meetingID: item.meetingID, operation: "delete", meetingRevision: item.meetingRevision,
+        };
+      } else {
+        changes[changeIndex] = {
+          meetingID: item.meetingID, operation: meeting.cancelled ? "cancel" : "upsert",
+          meetingRevision: meeting.revision, meeting: clientMeeting(meeting),
+        };
+      }
     }
   }
   return {
@@ -708,16 +840,23 @@ async function listRSVPs(admin, decodedToken, clubID, meetingID) {
       updates[`${uid}/inactiveAt`] = nowSeconds();
       updates[`${uid}/inactiveReason`] = "access-lost";
     }
-    const name = (await db.ref(`/users/${uid}/userName`).get()).val() || "Student";
-    rows.push({ uid, name, status: value.status, active, updatedAt: value.updatedAt || null });
+    rows.push({ uid, status: value.status, active, updatedAt: value.updatedAt || null });
+  }
+  for (let index = 0; index < rows.length; index += 8) {
+    const batch = rows.slice(index, index + 8);
+    const names = await Promise.all(batch.map(async ({ uid }) =>
+      (await db.ref(`/users/${uid}/userName`).get()).val() || "Student"
+    ));
+    names.forEach((name, offset) => { rows[index + offset].name = name; });
   }
   if (Object.keys(updates).length) await db.ref(`/meetingRSVPs/${meetingID}`).update(updates);
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
+  return rows.sort((a, b) => a.name.localeCompare(b.name) || a.uid.localeCompare(b.uid));
 }
 
 module.exports = {
   acquireLocks, applyMeetingIndexUpdates, canonicalMeeting, clientMeeting, compactCalendarChanges,
-  deleteMeetings, getRSVP, handleDeletedClub, listMeetings,
+  cleanupCompletedMeetingRecords, completeMeetingNotificationJob,
+  deleteMeetings, getRSVP, handleDeletedClub,
   listRSVPs, meetingIndexMonths, nextPublicMeeting, occurrenceAssignments, readMeeting, saveMeetings,
   releaseLocks, sameOccurrenceRevisions, setRSVP, syncClubCalendar,
 };

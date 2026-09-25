@@ -1,4 +1,3 @@
-import FirebaseAuth
 import FirebaseDatabase
 import SwiftUI
 
@@ -438,8 +437,8 @@ final class SchoolScheduleStore: ObservableObject {
         listenForFirebaseUpdates()
     }
 
-    func save(_ draft: SchoolScheduleConfig) async -> Bool {
-        guard isSuperAdminEmail(Auth.auth().currentUser?.email) else {
+    func save(_ draft: SchoolScheduleConfig, isSuperAdmin: Bool) async -> Bool {
+        guard isSuperAdmin else {
             lastError = "Only admins can edit the school schedule."
             dropper(
                 title: "Admin Only",

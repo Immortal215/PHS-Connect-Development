@@ -1,5 +1,11 @@
 import SwiftUI
 
+func usesWideIPadLayout(in viewport: CGSize) -> Bool {
+    UIDevice.current.userInterfaceIdiom == .pad
+        && viewport.width >= 900
+        && viewport.width > viewport.height
+}
+
 struct AppViewportSizeKey: EnvironmentKey {
     static let defaultValue = CGSize(width: 390, height: 844)
 }

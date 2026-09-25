@@ -2,7 +2,6 @@ import CryptoKit
 import FirebaseAuth
 import FirebaseCore
 import Foundation
-import Observation
 import UIKit
 import UserNotifications
 
@@ -37,13 +36,14 @@ private struct NotificationReadStateEnvelope: Decodable {
     var states: [String: NotificationReadState]
 }
 
+private struct NotificationReadAcknowledgment: Decodable {
+    var key: String
+    var state: NotificationReadState
+}
+
 private struct NotificationReadState: Decodable, Sendable {
     var type: String
     var revision: StringOrNumber
-    var chatID: String?
-    var threadName: String?
-    var messageID: String?
-    var meetingID: String?
     var seenAt: Double?
 }
 
@@ -93,7 +93,6 @@ private enum StringOrNumber: Decodable, Sendable {
 }
 
 @MainActor
-@Observable
 final class NotificationRegistrationManager {
     static let shared = NotificationRegistrationManager()
 
@@ -103,7 +102,6 @@ final class NotificationRegistrationManager {
     private var configured = false
     private var registrationInProgress = false
     private var registrationRequestedWhileInProgress = false
-    private var forceRegistrationAfterCurrentRequest = false
 
     private static let registrationRefreshInterval: TimeInterval = 24 * 60 * 60
 
@@ -204,25 +202,20 @@ final class NotificationRegistrationManager {
         Task { await synchronizeRegistration() }
     }
 
-    func synchronizeRegistration(force: Bool = false) async {
+    func synchronizeRegistration() async {
         if registrationInProgress {
             registrationRequestedWhileInProgress = true
-            forceRegistrationAfterCurrentRequest = forceRegistrationAfterCurrentRequest || force
             return
         }
 
         registrationInProgress = true
-        var forceNextRequest = force
         defer {
             registrationInProgress = false
             registrationRequestedWhileInProgress = false
-            forceRegistrationAfterCurrentRequest = false
         }
 
         repeat {
             registrationRequestedWhileInProgress = false
-            forceNextRequest = forceNextRequest || forceRegistrationAfterCurrentRequest
-            forceRegistrationAfterCurrentRequest = false
 
             guard let user = Auth.auth().currentUser,
                   let token = UserDefaults.standard.string(forKey: tokenKey),
@@ -241,7 +234,7 @@ final class NotificationRegistrationManager {
                 successfulAt: now
             )
 
-            if forceNextRequest || !registrationIsFresh(candidate, now: now) {
+            if !registrationIsFresh(candidate, now: now) {
                 let body = NotificationDeviceBody(
                     installationID: installationID,
                     token: token,
@@ -250,7 +243,7 @@ final class NotificationRegistrationManager {
                     appVersion: appVersion
                 )
                 do {
-                    let _: EmptyAPIResponse = try await PHSAPIClient.shared.request(
+                    try await PHSAPIClient.shared.requestNoContent(
                         "PUT", path: "notifications/device", body: body
                     )
                     saveRegistrationReceipt(candidate)
@@ -258,7 +251,6 @@ final class NotificationRegistrationManager {
                     // Do not advance the receipt. Activation or token refresh retries the failed request.
                 }
             }
-            forceNextRequest = false
         } while registrationRequestedWhileInProgress
     }
 
@@ -271,7 +263,7 @@ final class NotificationRegistrationManager {
                 bundleID: nil,
                 appVersion: nil
             )
-            let _: EmptyAPIResponse? = try? await PHSAPIClient.shared.request(
+            try? await PHSAPIClient.shared.requestNoContent(
                 "DELETE", path: "notifications/device", body: body
             )
         }
@@ -309,11 +301,14 @@ final class NotificationRegistrationManager {
     }
 
     private func acknowledge(_ body: NotificationReadBody) async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
         do {
-            let _: EmptyAPIResponse = try await PHSAPIClient.shared.request(
+            let acknowledgment: NotificationReadAcknowledgment = try await PHSAPIClient.shared.request(
                 "POST", path: "notifications/seen", body: body
             )
-            await reconcileDeliveredNotifications()
+            guard Auth.auth().currentUser?.uid == uid else { return }
+            let state = mergeReadState(acknowledgment.state, for: acknowledgment.key)
+            await removeDeliveredNotifications(matching: [acknowledgment.key: state])
         } catch {
             // A visible-content acknowledgment is retried when the content is next visible.
         }
@@ -321,7 +316,24 @@ final class NotificationRegistrationManager {
 
     func handleBackgroundNotification(_ userInfo: [AnyHashable: Any]) async -> Bool {
         guard userInfo["type"] as? String == "notificationReadSync" else { return false }
-        await reconcileDeliveredNotifications()
+        guard let activeUID = Auth.auth().currentUser?.uid else { return true }
+        if let uid = userInfo["uid"] as? String, uid != activeUID { return true }
+        guard let key = userInfo["readStateKey"] as? String,
+              let type = userInfo["readType"] as? String,
+              ["chat", "meeting"].contains(type),
+              let revision = userInfo["revision"] as? String,
+              let seenAt = Double(userInfo["seenAt"] as? String ?? "")
+        else {
+            await reconcileDeliveredNotifications()
+            return true
+        }
+        let incoming = NotificationReadState(
+            type: type,
+            revision: .string(revision),
+            seenAt: seenAt
+        )
+        let state = mergeReadState(incoming, for: key)
+        await removeDeliveredNotifications(matching: [key: state])
         return true
     }
 
@@ -334,29 +346,51 @@ final class NotificationRegistrationManager {
     }
 
     func reconcileDeliveredNotifications() async {
-        guard Auth.auth().currentUser != nil else { return }
+        guard let uid = Auth.auth().currentUser?.uid else { return }
         do {
             let envelope: NotificationReadStateEnvelope = try await PHSAPIClient.shared.request(
                 "GET", path: "notifications/read-state"
             )
+            guard Auth.auth().currentUser?.uid == uid else { return }
+            let previous = readStates
             readStates = envelope.states
-            let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
-            let identifiers = delivered.compactMap { notification -> String? in
-                let info = notification.request.content.userInfo
-                guard let logicalScope = info["logicalScope"] as? String,
-                      let revision = info["readRevision"] as? String,
-                      let state = envelope.states[logicalScope],
-                      isRead(state: state, notificationRevision: revision)
-                else { return nil }
-                return notification.request.identifier
+            for (key, state) in previous {
+                _ = mergeReadState(state, for: key)
             }
-            if !identifiers.isEmpty {
-                UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
-            }
-            let remaining = delivered.count - identifiers.count
-            try? await UNUserNotificationCenter.current().setBadgeCount(max(0, remaining))
+            await removeDeliveredNotifications(matching: readStates)
         } catch {
             // Foreground activation retries; suspended and offline devices remain best effort.
+        }
+    }
+
+    @discardableResult
+    private func mergeReadState(_ incoming: NotificationReadState, for key: String) -> NotificationReadState {
+        guard let current = readStates[key], current.type == incoming.type else {
+            readStates[key] = incoming
+            return incoming
+        }
+        let incomingIsNewer: Bool
+        if incoming.type == "meeting" {
+            incomingIsNewer = incoming.revision.numberValue >= current.revision.numberValue
+        } else {
+            incomingIsNewer = incoming.revision.stringValue.compare(
+                current.revision.stringValue, options: .literal
+            ) != .orderedAscending
+        }
+        var merged = incomingIsNewer ? incoming : current
+        merged.seenAt = max(incoming.seenAt ?? 0, current.seenAt ?? 0)
+        readStates[key] = merged
+        return merged
+    }
+
+    private func removeDeliveredNotifications(matching states: [String: NotificationReadState]) async {
+        await removeDeliveredNotifications { info in
+            guard let logicalScope = info["logicalScope"] as? String,
+                  let revision = info["readRevision"] as? String,
+                  let state = states[logicalScope],
+                  isRead(state: state, notificationRevision: revision)
+            else { return false }
+            return true
         }
     }
 
@@ -374,15 +408,24 @@ final class NotificationRegistrationManager {
     }
 
     private func removePrivateDeliveredNotifications() async {
-        let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
+        await removeDeliveredNotifications { info in
+            info["logicalScope"] != nil
+        }
+    }
+
+    private func removeDeliveredNotifications(
+        where shouldRemove: ([AnyHashable: Any]) -> Bool
+    ) async {
+        let center = UNUserNotificationCenter.current()
+        let delivered = await center.deliveredNotifications()
         let identifiers = delivered.compactMap { notification in
-            notification.request.content.userInfo["logicalScope"] == nil
-                ? nil : notification.request.identifier
+            shouldRemove(notification.request.content.userInfo)
+                ? notification.request.identifier : nil
         }
         if !identifiers.isEmpty {
-            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
+            center.removeDeliveredNotifications(withIdentifiers: identifiers)
         }
-        try? await UNUserNotificationCenter.current().setBadgeCount(
+        try? await center.setBadgeCount(
             max(0, delivered.count - identifiers.count)
         )
     }

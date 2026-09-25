@@ -2,7 +2,6 @@
 
 const crypto = require("crypto");
 const {
-  FEED_LOOKAHEAD_DAYS,
   FEED_LOOKBACK_DAYS,
   SCHOOL_TIME_ZONE,
 } = require("./constants");

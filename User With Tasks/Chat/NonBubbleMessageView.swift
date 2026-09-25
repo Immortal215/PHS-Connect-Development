@@ -773,20 +773,15 @@ struct NonBubbleMessageView: View {
               let chatID = selectedChat?.chatID
         else { return }
 
-        var usersForEmoji = message.reactions?[emoji] ?? []
-
-        if let index = usersForEmoji.firstIndex(of: userID) {
-            usersForEmoji.remove(at: index)
-        } else {
-            usersForEmoji.append(userID)
-        }
+        let isAdding = !(message.reactions?[emoji] ?? []).contains(userID)
 
         Task {
             await updateMessageReaction(
                 chatID: chatID,
                 messageID: message.messageID,
                 emoji: emoji,
-                userIDs: usersForEmoji
+                userID: userID,
+                isAdding: isAdding
             )
         }
     }

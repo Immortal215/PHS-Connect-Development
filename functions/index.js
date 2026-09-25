@@ -8,9 +8,13 @@ const { apiHandler, calendarFeedHandler } = require("./lib/api");
 const { REGION } = require("./lib/constants");
 const { createAdminServices } = require("./lib/firebase-admin-services");
 const {
-  appendLeaderAccessRevision, auditAuthUser, userRSVPInvalidationUpdates,
+  appendLeaderAccessRevision, auditAuthUser, cleanupCompletedClubOperations,
+  userRSVPInvalidationUpdates,
 } = require("./lib/membership-service");
-const { compactCalendarChanges, handleDeletedClub, readMeeting } = require("./lib/meeting-service");
+const {
+  cleanupCompletedMeetingRecords, compactCalendarChanges, completeMeetingNotificationJob,
+  handleDeletedClub, readMeeting,
+} = require("./lib/meeting-service");
 const {
   alreadyRead, chatRecipients, expirationKey, formatMeetingTime, meetingRecipientRegistrations,
   retryNotificationDeliveries, sendReactionNotification, sendToRegistrations, stateKey,
@@ -117,7 +121,7 @@ exports.sendMeetingNotification = onValueCreated({
     const db = admin.database();
     const meeting = await readMeeting(db, job.clubID, job.meetingID);
     if (!meeting || meeting.cancelled) {
-      await jobRef.update({ status: "complete", completedAt: admin.serverTimestamp });
+      await completeMeetingNotificationJob(db, event.params.jobID, admin.serverTimestamp);
       return;
     }
     const clubName = (await db.ref(`/clubs/${job.clubID}/name`).get()).val() || "Meeting Update";
@@ -148,7 +152,7 @@ exports.sendMeetingNotification = onValueCreated({
       },
       apns: { headers: { "apns-collapse-id": stateKey(descriptor.scope) }, payload: { aps: { threadId: `meeting-${meeting.meetingID}` } } },
     }, { deliveryID: `meeting-${event.params.jobID}`, descriptor });
-    await jobRef.update({ status: "complete", completedAt: admin.serverTimestamp, owner: null, leaseExpiresAt: null });
+    await completeMeetingNotificationJob(db, event.params.jobID, admin.serverTimestamp);
   } catch (error) {
     console.error("Meeting notification delivery failed", { jobID: event.params.jobID, error });
     await jobRef.update({ status: "retry", lastErrorAt: admin.serverTimestamp, owner: null, leaseExpiresAt: null });
@@ -186,6 +190,18 @@ exports.cleanupStaleNotificationDevices = onSchedule({
   if (Object.keys(removals).length) await admin.database().ref().update(removals);
 });
 
+exports.cleanupCompletedMeetingRecords = onSchedule({
+  schedule: "every 1 hours", timeZone: "America/Chicago", region: REGION,
+}, async () => {
+  await cleanupCompletedMeetingRecords(admin);
+});
+
+exports.cleanupCompletedClubOperations = onSchedule({
+  schedule: "every 1 hours", timeZone: "America/Chicago", region: REGION,
+}, async () => {
+  await cleanupCompletedClubOperations(admin);
+});
+
 exports.retryNotificationDeliveries = onSchedule({
   schedule: "every 5 minutes", timeZone: "America/Chicago", region: REGION,
 }, async () => retryNotificationDeliveries(admin));
@@ -213,6 +229,7 @@ exports.cleanupDeletedAccount = functionsV1.region(REGION).auth.user().onDelete(
     [`userClubMemberships/${user.uid}`]: null,
     [`notificationDevices/${user.uid}`]: null,
     [`notificationReadState/${user.uid}`]: null,
+    [`internal/notificationReadStatePruneCounters/${user.uid}`]: null,
     [`calendarSubscriptions/${user.uid}`]: null,
   };
   for (const [clubID, membership] of Object.entries(memberships)) {

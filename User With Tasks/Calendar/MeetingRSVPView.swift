@@ -30,10 +30,6 @@ enum MeetingRSVPStatus: String, Codable, CaseIterable, Sendable {
 struct MeetingRSVPRecord: Codable, Equatable, Sendable {
     var status: MeetingRSVPStatus
     var active: Bool?
-    var updatedAt: Double?
-    var meetingRevision: Int?
-    var inactiveAt: Double?
-    var inactiveReason: String?
 }
 
 struct MeetingRSVPListRow: Codable, Identifiable, Sendable {
@@ -41,7 +37,6 @@ struct MeetingRSVPListRow: Codable, Identifiable, Sendable {
     var name: String
     var status: MeetingRSVPStatus
     var active: Bool
-    var updatedAt: Double?
 
     var id: String { uid }
 }
@@ -67,22 +62,9 @@ private actor MeetingRSVPFileStore {
     private let decoder = JSONDecoder()
 
     private func url(uid: String, projectID: String, meetingID: String) throws -> URL {
-        let support = try FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        )
-        let safe: (String) -> String = { value in
-            let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
-            return value.unicodeScalars.map { allowed.contains($0) ? String($0) : "_" }.joined()
-        }
-        return support
-            .appending(path: "PHSConnectCache/v2", directoryHint: .isDirectory)
-            .appending(path: safe(projectID), directoryHint: .isDirectory)
-            .appending(path: safe(uid), directoryHint: .isDirectory)
+        return try privateCacheDirectory(projectID: projectID, uid: uid)
             .appending(path: "rsvps", directoryHint: .isDirectory)
-            .appending(path: "\(safe(meetingID)).json")
+            .appending(path: "\(privateCachePathComponent(meetingID)).json")
     }
 
     func load(uid: String, projectID: String, meetingID: String) -> MeetingRSVPRecord? {
@@ -264,7 +246,7 @@ final class MeetingRSVPModel {
         do {
             let value = try await write(request.scope, status)
             guard isCurrent(request) else { return }
-            response = value.map { MeetingRSVPRecord(status: $0, active: true, updatedAt: Date().timeIntervalSince1970) }
+            response = value.map { MeetingRSVPRecord(status: $0, active: true) }
             await persist(response, request)
             guard isCurrent(request) else { return }
         } catch {

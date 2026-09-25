@@ -62,32 +62,32 @@ func meetingOccurrences(
         return [meeting]
     }
 
-    let calendar = Calendar.current
-    let firstStart = dateFromString(template.startTime)
-    let duration = dateFromString(template.endTime).timeIntervalSince(firstStart)
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+    let firstStart = dateForMeeting(template)
+    let firstEnd = endDateForMeeting(template)
     let lastDay = calendar.startOfDay(for: recurrenceEndDate)
     let recurrenceEndDateString = stringFromDate(lastDay)
     let resolvedSeriesID = seriesID ?? UUID().uuidString
-    var occurrenceStart = firstStart
     var meetings: [Club.MeetingTime] = []
+    var weekOffset = 0
 
-    while calendar.startOfDay(for: occurrenceStart) <= lastDay {
+    while let occurrenceStart = calendar.date(
+        byAdding: .weekOfYear, value: weekOffset, to: firstStart
+    ), calendar.startOfDay(for: occurrenceStart) <= lastDay {
+        guard let occurrenceEnd = calendar.date(
+            byAdding: .weekOfYear, value: weekOffset, to: firstEnd
+        ) else { break }
         var meeting = template
-        meeting.startTime = stringFromDate(occurrenceStart)
-        meeting.endTime = stringFromDate(
-            occurrenceStart.addingTimeInterval(duration)
+        meeting.setDates(
+            start: occurrenceStart, end: occurrenceEnd, allDay: template.fullDay == true
         )
         meeting.seriesID = resolvedSeriesID
         meeting.recurrenceIntervalWeeks = intervalWeeks
         meeting.recurrenceEndDate = recurrenceEndDateString
         meetings.append(meeting)
 
-        guard let nextStart = calendar.date(
-            byAdding: .weekOfYear,
-            value: intervalWeeks,
-            to: occurrenceStart
-        ) else { break }
-        occurrenceStart = nextStart
+        weekOffset += intervalWeeks
     }
 
     return meetings

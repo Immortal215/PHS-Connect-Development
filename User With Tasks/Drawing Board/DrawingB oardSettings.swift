@@ -9,9 +9,7 @@ struct Settinger: View {
     var narrowLayout: Bool { screenWidth < 760 }
     var panelWidth: CGFloat { narrowLayout ? max(1, screenWidth - 32) : screenWidth / 2.1 }
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && screenWidth >= 900
-            && screenWidth > screenHeight
+        usesWideIPadLayout(in: CGSize(width: screenWidth, height: screenHeight))
     }
 
     @AppStorage("duedatesetter") var dueDateSetter = "Two Days"

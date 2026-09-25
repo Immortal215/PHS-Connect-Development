@@ -15,12 +15,10 @@ struct ClubView: View {
     var screenWidth: CGFloat { viewportSize.width }
     var screenHeight: CGFloat { viewportSize.height }
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && screenWidth >= 900
-            && screenWidth > screenHeight
+        usesWideIPadLayout(in: CGSize(width: screenWidth, height: screenHeight))
     }
     @AppStorage("searchText") var searchText: String = ""
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @State var advSearchShown = true
     @State var searchBarExpanded = true
     @AppStorage("tagsExpanded") var tagsExpanded = true

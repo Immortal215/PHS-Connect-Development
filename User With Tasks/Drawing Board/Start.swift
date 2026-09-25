@@ -10,9 +10,7 @@ struct Start: View {
     @Environment(\.appViewportSize) var viewportSize
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && viewportSize.width >= 900
-            && viewportSize.width > viewportSize.height
+        usesWideIPadLayout(in: viewportSize)
     }
 
     var usesPhoneLayout: Bool {

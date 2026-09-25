@@ -14,8 +14,6 @@ struct MeetingView: View {
     var preview: Bool? = false
     var fixedDurationMinutes: Int? = nil
     @State var clubs: [Club]
-    var numOfOverlapping: Int? = 1
-    var hasOverlap: Bool? = false
     @AppStorage("darkMode") var darkMode = false
 
     var usesPhoneLayout: Bool {
@@ -23,8 +21,8 @@ struct MeetingView: View {
     }
 
     var body: some View {
-        let startTime = dateFromString(meeting.startTime)
-        let endTime = dateFromString(meeting.endTime)
+        let startTime = dateForMeeting(meeting)
+        let endTime = endDateForMeeting(meeting)
         let startMinutes =
             Calendar.current.component(.hour, from: startTime) * 60
             + Calendar.current.component(.minute, from: startTime)

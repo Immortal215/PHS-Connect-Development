@@ -11,7 +11,7 @@ import Shimmer
 import SwiftUI
 
 struct SettingsView: View {
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @Binding var userInfo: Personal?
     @Binding var showSignInView: Bool
     @State var favoriteText = ""
@@ -47,9 +47,7 @@ struct SettingsView: View {
     @Environment(\.appViewportSize) var viewportSize
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && viewportSize.width >= 900
-            && viewportSize.width > viewportSize.height
+        usesWideIPadLayout(in: viewportSize)
     }
 
     var usesPhoneLayout: Bool {
@@ -57,7 +55,7 @@ struct SettingsView: View {
     }
 
     var isSuperAdmin: Bool {
-        isSuperAdminEmail(viewModel.userEmail ?? userInfo?.userEmail)
+        viewModel.isSuperAdmin
     }
 
     var body: some View {
@@ -732,33 +730,4 @@ struct SettingsView: View {
         }
     }
 
-    func boolFromGlobalSetting(_ rawValue: Any?) -> Bool? {
-        if let boolValue = rawValue as? Bool {
-            return boolValue
-        }
-
-        if let numberValue = rawValue as? NSNumber {
-            return numberValue.boolValue
-        }
-
-        if let intValue = rawValue as? Int {
-            return intValue != 0
-        }
-
-        if let stringValue = rawValue as? String {
-            let normalized = stringValue.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            ).lowercased()
-            if normalized == "true" || normalized == "1" || normalized == "yes"
-            {
-                return true
-            }
-            if normalized == "false" || normalized == "0" || normalized == "no"
-            {
-                return false
-            }
-        }
-
-        return nil
-    }
 }

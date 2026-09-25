@@ -8,16 +8,12 @@ import UIKit
 private struct SubscriptionStatusResponse: Decodable {
     var active: Bool
     var generation: Int
-    var createdAt: Double?
-    var updatedAt: Double?
-    var revokedAt: Double?
 }
 
 private struct SubscriptionMutationResponse: Decodable {
     var active: Bool
     var url: String?
     var generation: Int
-    var revoked: Bool?
 }
 
 private enum SubscriptionKeychain {

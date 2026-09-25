@@ -13,7 +13,7 @@ const {
   parseLegacyParts,
   strictLegacyDate,
   strictLegacyDateOnly,
-} = require("../lib/legacy-calendar");
+} = require("./lib/legacy-calendar");
 const { acquireLocks, releaseLocks } = require("../lib/locks");
 const { legacyVisibilityClaimUpdates } = require("../lib/meeting-visibility");
 

@@ -1,10 +1,5 @@
-import FirebaseAuth
-import FirebaseCore
 import FirebaseDatabase
-import FirebaseDatabaseInternal
-import GoogleSignIn
-import GoogleSignInSwift
-import SwiftUI
+import Foundation
 
 private struct ClubSaveRequest: Encodable {
     let operationID: String
@@ -45,7 +40,7 @@ func addClub(club: Club, onSaved: (@MainActor (Error?) -> Void)? = nil) {
         do {
             try await saveClubThroughBackend(
                 clubToSave,
-                operationID: UUID().uuidString,
+                operationID: "\(Int(Date().timeIntervalSince1970 * 1000))-\(UUID().uuidString)",
                 expectedLastUpdated: nil
             )
             await onSaved?(nil)
@@ -55,7 +50,7 @@ func addClub(club: Club, onSaved: (@MainActor (Error?) -> Void)? = nil) {
     }
 }
 
-func observeSingleValue(at reference: DatabaseReference) async -> DataSnapshot {
+func observeSingleValue(at reference: DatabaseQuery) async -> DataSnapshot {
     await withCheckedContinuation { continuation in
         reference.observeSingleEvent(of: .value) { snapshot in
             continuation.resume(returning: snapshot)
@@ -73,6 +68,34 @@ func setFirebaseValue(_ value: Any?, at reference: DatabaseReference) async thro
                 continuation.resume()
             }
         }
+    }
+}
+
+func appendUnique(_ value: String, to values: [String]) -> [String] {
+    values.contains(value) ? values : values + [value]
+}
+
+func removeValue(_ value: String, from values: [String]) -> [String] {
+    values.filter { $0 != value }
+}
+
+@discardableResult
+func transactStringArray(
+    at reference: DatabaseReference,
+    update: @escaping ([String]) -> [String]
+) async throws -> Bool {
+    try await withCheckedThrowingContinuation {
+        (continuation: CheckedContinuation<Bool, Error>) in
+        reference.runTransactionBlock({ current in
+            let values = current.value as? [String] ?? []
+            let updated = update(values)
+            guard updated != values else { return TransactionResult.abort() }
+            current.value = updated.isEmpty ? NSNull() : updated
+            return TransactionResult.success(withValue: current)
+        }, andCompletionBlock: { error, committed, _ in
+            if let error { continuation.resume(throwing: error) }
+            else { continuation.resume(returning: committed) }
+        }, withLocalEvents: false)
     }
 }
 
@@ -115,19 +138,12 @@ func addClubToFavorites(for userID: String, clubID: String) {
     )
 
     Task {
-        let snapshot = await observeSingleValue(at: userFavoritesRef)
-        var favorites = snapshot.value as? [String] ?? []
-
-        if !favorites.contains(clubID) {
-            favorites.append(clubID)
-            do {
-                try await setFirebaseValue(favorites, at: userFavoritesRef)
-                print("Club added to favorites successfully")
-            } catch {
-                print("Error adding club to favorites: \(error)")
+        do {
+            try await transactStringArray(at: userFavoritesRef) {
+                appendUnique(clubID, to: $0)
             }
-        } else {
-            print("Club is already in favorites")
+        } catch {
+            print("Error adding club to favorites: \(error)")
         }
     }
 }
@@ -139,27 +155,15 @@ func removeClubFromFavorites(for userID: String, clubID: String) {
     )
 
     Task {
-        let snapshot = await observeSingleValue(at: userFavoritesRef)
-        var favorites = snapshot.value as? [String] ?? []
-
-        if let index = favorites.firstIndex(of: clubID) {
-            favorites.remove(at: index)
-            do {
-                try await setFirebaseValue(favorites, at: userFavoritesRef)
-                print("Club removed from favorites successfully")
-            } catch {
-                print("Error removing club from favorites: \(error)")
+        do {
+            try await transactStringArray(at: userFavoritesRef) { values in
+                let remaining = removeValue(clubID, from: values)
+                return remaining.isEmpty ? [""] : remaining
             }
-        } else {
-            print("Club was not in favorites")
+        } catch {
+            print("Error removing club from favorites: \(error)")
         }
     }
-}
-
-func getClubNameByID(clubID: String) async -> String? {
-    let reference = Database.database().reference().child("clubs").child(clubID).child("name")
-    let snapshot = await observeSingleValue(at: reference)
-    return snapshot.value as? String
 }
 
 func getClubNameByIDWithClubs(clubID: String, clubs: [Club]) -> String {
@@ -211,19 +215,10 @@ func addPersonSeen(announcement: Club.Announcements, memberEmail: String) {
 
     Task {
         let peopleSeenRef = clubRef.child("peopleSeen")
-        let snapshot = await observeSingleValue(at: peopleSeenRef)
-        var peopleSeen = snapshot.value as? [String] ?? []
-
-        if peopleSeen.contains(memberEmail.lowercased()) {
-            print("Error: Member already in the peopleSeen.")
-            return
-        }
-
-        peopleSeen.append(memberEmail.lowercased())
-
         do {
-            try await setFirebaseValue(Array(Set(peopleSeen)), at: peopleSeenRef)
-            print("Member added to peopleseen successfully.")
+            try await transactStringArray(at: peopleSeenRef) {
+                appendUnique(memberEmail.lowercased(), to: $0)
+            }
         } catch {
             print(
                 "Error adding member to peopleseen: \(error.localizedDescription)"
@@ -264,23 +259,13 @@ private struct MeetingWritePayload: Encodable {
             ?? ((meeting.visibleByArray?.isEmpty == false) ? "uids" : "public")
         visibilityEmails = meeting.visibleByArray ?? []
         if fullDay {
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = TimeZone(identifier: "America/Chicago")!
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.calendar = calendar
-            formatter.timeZone = calendar.timeZone
-            formatter.dateFormat = "yyyy-MM-dd"
-            let start = strictDateFromString(meeting.startTime)
-            let end = strictDateFromString(meeting.endTime)
-            startDate = start.map { formatter.string(from: $0) }
-            endDateExclusive = end.flatMap { calendar.date(byAdding: .day, value: 1, to: $0) }
-                .map { formatter.string(from: $0) }
+            startDate = meeting.startDate
+            endDateExclusive = meeting.endDateExclusive
             startUtc = nil
             endUtc = nil
         } else {
-            startUtc = strictDateFromString(meeting.startTime)?.timeIntervalSince1970
-            endUtc = strictDateFromString(meeting.endTime)?.timeIntervalSince1970
+            startUtc = meeting.startUtc
+            endUtc = meeting.endUtc
             startDate = nil
             endDateExclusive = nil
         }
@@ -492,74 +477,53 @@ func meetings(from snapshot: DataSnapshot) -> [Club.MeetingTime] {
     }
 }
 
-func addMemberToClub(clubID: String, memberEmail: String) {
+private func performOwnMembershipAction(
+    clubID: String,
+    action: String,
+    successTitle: String,
+    errorTitle: String
+) {
     Task {
         do {
             let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
                 "POST", path: "membership",
-                body: MembershipMutationRequest(clubID: clubID, action: "join")
+                body: MembershipMutationRequest(clubID: clubID, action: action)
             )
             await MainActor.run {
-                dropper(title: "Joined Club!", subtitle: "", icon: nil)
+                dropper(title: successTitle, subtitle: "", icon: nil)
             }
         } catch {
-            await MainActor.run { dropper(title: "Could Not Join", subtitle: error.localizedDescription, icon: nil) }
+            await MainActor.run {
+                dropper(title: errorTitle, subtitle: error.localizedDescription, icon: nil)
+            }
         }
     }
 }
 
-func removeMemberFromClub(clubID: String, emailToRemove: String) {
-    Task {
-        do {
-            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
-                "POST", path: "membership",
-                body: MembershipMutationRequest(clubID: clubID, action: "leave")
-            )
-            await MainActor.run {
-                dropper(title: "Club Left!", subtitle: "", icon: nil)
-            }
-        } catch {
-            await MainActor.run { dropper(title: "Could Not Leave", subtitle: error.localizedDescription, icon: nil) }
-        }
-    }
+func addMemberToClub(clubID: String) {
+    performOwnMembershipAction(
+        clubID: clubID, action: "join", successTitle: "Joined Club!", errorTitle: "Could Not Join"
+    )
 }
 
-func addPendingMemberRequest(clubID: String, memberEmail: String) {
-    Task {
-        do {
-            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
-                "POST", path: "membership",
-                body: MembershipMutationRequest(clubID: clubID, action: "request")
-            )
-            await MainActor.run {
-                dropper(
-                    title: "Requested Membership!",
-                    subtitle: "",
-                    icon: nil
-                )
-            }
-        } catch {
-            await MainActor.run { dropper(title: "Request Not Sent", subtitle: error.localizedDescription, icon: nil) }
-        }
-    }
+func removeMemberFromClub(clubID: String) {
+    performOwnMembershipAction(
+        clubID: clubID, action: "leave", successTitle: "Club Left!", errorTitle: "Could Not Leave"
+    )
 }
 
-func removePendingMemberRequest(clubID: String, emailToRemove: String) {
-    Task {
-        do {
-            let _: MembershipMutationResponse = try await PHSAPIClient.shared.request(
-                "POST", path: "membership",
-                body: MembershipMutationRequest(clubID: clubID, action: "cancelRequest")
-            )
-            await MainActor.run {
-                dropper(
-                    title: "Join Request Cancelled!", subtitle: "", icon: nil
-                )
-            }
-        } catch {
-            await MainActor.run { dropper(title: "Request Not Cancelled", subtitle: error.localizedDescription, icon: nil) }
-        }
-    }
+func addPendingMemberRequest(clubID: String) {
+    performOwnMembershipAction(
+        clubID: clubID, action: "request", successTitle: "Requested Membership!",
+        errorTitle: "Request Not Sent"
+    )
+}
+
+func removePendingMemberRequest(clubID: String) {
+    performOwnMembershipAction(
+        clubID: clubID, action: "cancelRequest", successTitle: "Join Request Cancelled!",
+        errorTitle: "Request Not Cancelled"
+    )
 }
 
 private struct MembershipMutationRequest: Encodable {
@@ -625,26 +589,32 @@ func addLocationCoords(clubID: String, locationCoords: [Double]) {
     }
 }
 
-func chat(from snapshot: DataSnapshot, chatID: String) -> Chat? {
-    guard let dict = snapshot.value as? [String: Any] else { return nil }
-
+func chat(
+    from messagesSnapshot: DataSnapshot,
+    chatID: String,
+    clubID: String,
+    pinned: [String]?
+) -> Chat? {
     do {
-        var chatDict = dict
-        if let messagesDict = chatDict["messages"] as? [String: Any] {
-            var messagesArray: [[String: Any]] = []
+        var messagesArray: [[String: Any]] = []
+        if let messagesDict = messagesSnapshot.value as? [String: Any] {
             for (_, value) in messagesDict {
                 if let messageData = value as? [String: Any] {
                     messagesArray.append(messageData)
                 }
             }
-            messagesArray.sort {
-                let date1 = $0["date"] as? Double ?? 0
-                let date2 = $1["date"] as? Double ?? 0
-                return date1 < date2
-            }
-            chatDict["messages"] = messagesArray
         }
-
+        messagesArray.sort {
+            let date1 = $0["date"] as? Double ?? 0
+            let date2 = $1["date"] as? Double ?? 0
+            return date1 < date2
+        }
+        let chatDict: [String: Any] = [
+            "chatID": chatID,
+            "clubID": clubID,
+            "messages": messagesArray,
+            "pinned": pinned ?? [],
+        ]
         let jsonData = try JSONSerialization.data(withJSONObject: chatDict)
         return try JSONDecoder().decode(Chat.self, from: jsonData)
     } catch {
@@ -655,12 +625,29 @@ func chat(from snapshot: DataSnapshot, chatID: String) -> Chat? {
 
 func fetchChatsMetaData(chatIds: [String]) async -> [Chat]? {
     let ref = Database.database().reference().child("chats")
+    let uniqueIDs = Array(Set(chatIds)).sorted()
 
     let fetchedChats = await withTaskGroup(of: Chat?.self) { group in
-        for chatID in chatIds {
+        for chatID in uniqueIDs {
             group.addTask {
-                let snapshot = await observeSingleValue(at: ref.child(chatID))
-                return chat(from: snapshot, chatID: chatID)
+                let chatRef = ref.child(chatID)
+                async let club = observeSingleValue(at: chatRef.child("clubID"))
+                async let pinned = observeSingleValue(at: chatRef.child("pinned"))
+                async let messages = observeSingleValue(
+                    at: chatRef.child("messages")
+                        .queryOrdered(byChild: "lastUpdated")
+                        .queryLimited(toLast: 100)
+                )
+                let (clubSnapshot, pinnedSnapshot, messagesSnapshot) = await (
+                    club, pinned, messages
+                )
+                guard let clubID = clubSnapshot.value as? String else { return nil }
+                return chat(
+                    from: messagesSnapshot,
+                    chatID: chatID,
+                    clubID: clubID,
+                    pinned: pinnedSnapshot.value as? [String]
+                )
             }
         }
 
@@ -674,13 +661,10 @@ func fetchChatsMetaData(chatIds: [String]) async -> [Chat]? {
         return chats
     }
 
-    return fetchedChats.isEmpty ? nil : fetchedChats
+    return fetchedChats.isEmpty ? nil : fetchedChats.sorted { $0.chatID < $1.chatID }
 }
 
-func createClubGroupChat(
-    clubId: String,
-    messageTo: String?
-) async -> Chat {
+func createClubGroupChat(clubId: String) async -> Chat {
     let ref = Database.database().reference().child("chats")
     let clubsRef = Database.database().reference().child("clubs").child(clubId)
     let chatID = ref.childByAutoId().key ?? UUID().uuidString
@@ -688,7 +672,6 @@ func createClubGroupChat(
     let newChat = Chat(
         chatID: chatID,
         clubID: clubId,
-        directMessageTo: messageTo,
         messages: []
     )
 
@@ -703,19 +686,17 @@ func createClubGroupChat(
         try await setFirebaseValue(chatDict, at: ref.child(chatID))
         print("Chat created successfully")
 
-        let snapshot = await observeSingleValue(at: clubsRef.child("chatIDs"))
-        var chatIDs = snapshot.value as? [String] ?? []
-        if !chatIDs.contains(chatID) {
-            chatIDs.append(chatID)
-            do {
-                try await setFirebaseValue(chatIDs, at: clubsRef.child("chatIDs"))
+        do {
+            if try await transactStringArray(at: clubsRef.child("chatIDs"), update: {
+                appendUnique(chatID, to: $0)
+            }) {
                 try? await setFirebaseValue(
                     Date().timeIntervalSince1970,
                     at: clubsRef.child("lastUpdated")
                 )
-            } catch {
-                print("Failed to attach chat to club: \(error)")
             }
+        } catch {
+            print("Failed to attach chat to club: \(error)")
         }
     } catch {
         print("Failed to create chat: \(error)")
@@ -760,32 +741,6 @@ func sendMessage(
 
     do {
         try await setFirebaseValue(messageDict, at: messageRef)
-        let chatRef = Database.database().reference().child("chats").child(
-            chatID
-        )
-
-        let snapshot = await observeSingleValue(at: chatRef)
-        var shouldUpdateLastMessage = true
-
-        if let chatDict = snapshot.value as? [String: Any],
-            let lastMessageDict = chatDict["lastMessage"] as? [String: Any],
-            let lastTimestamp = lastMessageDict["date"] as? Double
-        {
-            // Only update if the new message is newer
-            shouldUpdateLastMessage = messageToSend.date >= lastTimestamp  // >= for if editing a message
-        }
-
-        if shouldUpdateLastMessage {
-            do {
-                try await setFirebaseValue(
-                    messageDict,
-                    at: chatRef.child("lastMessage")
-                )
-            } catch {
-                print("Failed to update last message: \(error)")
-            }
-        }
-
         return true
     } catch {
         print("Failed to send message: \(error)")
@@ -798,22 +753,42 @@ func updateMessageReaction(
     chatID: String,
     messageID: String,
     emoji: String,
-    userIDs: [String]
+    userID: String,
+    isAdding: Bool
 ) async -> Bool {
     let messageRef = Database.database().reference().child("chats").child(
         chatID
     ).child("messages").child(messageID)
-
-    do {
-        _ = try await messageRef.updateChildValues([
-            "reactions/\(emoji)": userIDs.isEmpty ? NSNull() : userIDs,
-            "lastUpdated": Date().timeIntervalSince1970,
-        ])
-        return true
-    } catch {
-        print("Failed to update message reaction: \(error)")
-        return false
+    let reactionRef = messageRef.child("reactions").child(emoji)
+    let committed = await withCheckedContinuation {
+        (continuation: CheckedContinuation<Bool, Never>) in
+        reactionRef.runTransactionBlock({ current in
+            let users = current.value as? [String] ?? []
+            let updated = reactionUsers(users, userID: userID, isAdding: isAdding)
+            current.value = updated.isEmpty ? NSNull() : updated
+            return TransactionResult.success(withValue: current)
+        }, andCompletionBlock: { error, committed, _ in
+            if let error { print("Failed to update message reaction: \(error)") }
+            continuation.resume(returning: error == nil && committed)
+        }, withLocalEvents: false)
     }
+    guard committed else { return false }
+    do {
+        try await setFirebaseValue(
+            Date().timeIntervalSince1970,
+            at: messageRef.child("lastUpdated")
+        )
+    } catch {
+        print("Reaction saved, but its update time failed: \(error)")
+    }
+    return true
+}
+
+func reactionUsers(_ users: [String], userID: String, isAdding: Bool) -> [String] {
+    if isAdding {
+        return users.contains(userID) ? users : users + [userID]
+    }
+    return users.filter { $0 != userID }
 }
 
 @discardableResult
@@ -843,24 +818,13 @@ func updateMessagePollVote(
 func removeMessage(chatID: String, messageID: String) async -> Bool {
     let chatRef = Database.database().reference().child("chats").child(chatID)
 
-    async let lastMessageIDSnapshot = observeSingleValue(
-        at: chatRef.child("lastMessage").child("messageID")
-    )
-    async let pinnedSnapshot = observeSingleValue(at: chatRef.child("pinned"))
-
-    let (lastMessageID, pinned) = await (
-        lastMessageIDSnapshot.value as? String,
-        pinnedSnapshot.value as? [String]
-    )
+    let pinnedSnapshot = await observeSingleValue(at: chatRef.child("pinned"))
+    let pinned = pinnedSnapshot.value as? [String]
 
     var updates: [String: Any] = [
         "deletedMessages/\(messageID)": Date().timeIntervalSince1970,
         "messages/\(messageID)": NSNull(),
     ]
-
-    if lastMessageID == messageID {
-        updates["lastMessage"] = NSNull()
-    }
 
     if let pinned, pinned.contains(messageID) {
         let remainingPinned = pinned.filter { $0 != messageID }
@@ -876,32 +840,45 @@ func removeMessage(chatID: String, messageID: String) async -> Bool {
     }
 }
 
+func threadDeletionUpdates(
+    messageIDs: [String], pinned: [String]?, deletedAt: Double
+) -> [String: Any] {
+    var updates: [String: Any] = [:]
+    let deletedIDs = Set(messageIDs)
+    for messageID in deletedIDs {
+        updates["messages/\(messageID)"] = NSNull()
+        updates["deletedMessages/\(messageID)"] = deletedAt
+    }
+    if let pinned {
+        let remaining = pinned.filter { !deletedIDs.contains($0) }
+        if remaining.count != pinned.count {
+            updates["pinned"] = remaining.isEmpty ? NSNull() : remaining
+        }
+    }
+    return updates
+}
+
 func removeThread(chatID: String, threadName: String) {
-    let messagesRef = Database.database().reference().child("chats").child(
-        chatID
-    ).child("messages")
+    let chatRef = Database.database().reference().child("chats").child(chatID)
 
     Task {
-        let snapshot = await observeSingleValue(at: messagesRef)
-        guard let messagesDict = snapshot.value as? [String: [String: Any]]
-        else {
-            print("No messages found for chat \(chatID)")
-            return
-        }
-
-        var updates: [String: Any] = [:]
-        for (messageID, messageData) in messagesDict {
-            if let messageThread = messageData["threadName"] as? String,
-                messageThread == threadName
-            {
-                updates[messageID] = NSNull()
-            }
-        }
-
-        guard !updates.isEmpty else { return }
+        async let matchingSnapshot = observeSingleValue(
+            at: chatRef.child("messages")
+                .queryOrdered(byChild: "threadName")
+                .queryEqual(toValue: threadName)
+        )
+        async let pinnedSnapshot = observeSingleValue(at: chatRef.child("pinned"))
+        let (matching, pinned) = await (matchingSnapshot, pinnedSnapshot)
+        guard let messages = matching.value as? [String: Any],
+              !messages.isEmpty else { return }
+        let updates = threadDeletionUpdates(
+            messageIDs: Array(messages.keys),
+            pinned: pinned.value as? [String],
+            deletedAt: Date().timeIntervalSince1970
+        )
 
         do {
-            _ = try await messagesRef.updateChildValues(updates)
+            _ = try await chatRef.updateChildValues(updates)
             print("Removed thread \(threadName) from chat \(chatID)")
         } catch {
             print("Error removing thread \(threadName): \(error)")

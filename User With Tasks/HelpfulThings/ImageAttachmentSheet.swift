@@ -22,9 +22,7 @@ struct ImageAttachmentSheet: View {
     @State var presentationSize = CGSize(width: 390, height: 600)
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && parentViewportSize.width >= 900
-            && parentViewportSize.width > parentViewportSize.height
+        usesWideIPadLayout(in: parentViewportSize)
     }
 
     var body: some View {

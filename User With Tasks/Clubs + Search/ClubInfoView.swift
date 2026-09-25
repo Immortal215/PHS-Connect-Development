@@ -19,7 +19,7 @@ struct ClubInfoView: View {
     var usesPhoneLayout: Bool {
         UIDevice.current.userInterfaceIdiom == .phone
     }
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @AppStorage("selectedTab") var selectedTab = 3
     @State var createClubToggler = false
     @State var isSearching = false
@@ -89,33 +89,13 @@ struct ClubInfoView: View {
     var presentationContent: some View {
         let clubLeader = isClubLeaderOrSuperAdmin(
             club: club,
-            userEmail: viewModel.userEmail
-        )
-        
-//        var latestAnnouncementMessage: String {
-//            if let announcements = club.announcements {
-//                let sortedAnnouncements = announcements.sorted {
-//                    let date1 = dateFromString($0.value.date)
-//                    let date2 = dateFromString($1.value.date)
-//                    return date1 > date2
-//                }
-//
-//                if let latestAnnouncementDate = sortedAnnouncements.first?.value
-//                    .date,
-//                    Date() > dateFromString(latestAnnouncementDate)
-//                {
-//                    return "Add Announcement +"
-//                } else {
-//                    return "Add Announcement + (Waiting)"
-//                }
-//            } else {
-//                return "Add First Announcement +"
-//            }
-//        }
+            userEmail: viewModel.userEmail,
+            isSuperAdmin: viewModel.isSuperAdmin
+    )
 
-        NavigationView {
+    NavigationView {
 
-            ScrollView {
+      ScrollView {
 
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .center) {
@@ -152,16 +132,12 @@ struct ClubInfoView: View {
                                                     / CGFloat(6 + 0.3)
                                             )
                                             .fixedSize()
-                                        }
+                    }
 
-                                        //                            RoundedRectangle(cornerRadius: 25)
-                                        //   .stroke(.black, lineWidth: 3)
-                                        // .frame(minWidth: screenWidth / 10, minHeight: screenHeight / 10)
-                                    }
-                                    //  .frame(width: screenWidth / CGFloat(imageScaler), height: screenWidth / CGFloat(imageScaler))
-                                },
-                                placeholder: {
-                                    ZStack {
+                  }
+                },
+                placeholder: {
+                  ZStack {
                                         RoundedRectangle(cornerRadius: 25)
                                             .shimmering(
                                                 active: true,
@@ -296,9 +272,7 @@ struct ClubInfoView: View {
                                         meetingInfo: meetingFull,
                                         preview: true,
                                         fixedDurationMinutes: 60,
-                                        clubs: [club],
-                                        numOfOverlapping: 1,
-                                        hasOverlap: true
+                                        clubs: [club]
                                     )
                                     .padding(.vertical)
                                     .frame(
@@ -318,9 +292,7 @@ struct ClubInfoView: View {
                                         meetingInfo: meetingFull,
                                         preview: true,
                                         fixedDurationMinutes: 60,
-                                         clubs: [club],
-                                        numOfOverlapping: 1,
-                                        hasOverlap: true
+                                         clubs: [club]
                                     )
                                     .padding(.vertical)
                                     .frame(
@@ -434,77 +406,12 @@ struct ClubInfoView: View {
                                     }
                                 }
                             }
-                        }
+            }
 
-//                        Button {
-//                            if let announcements = club.announcements {
-//                                let sortedAnnouncements = announcements.sorted {
-//                                    let date1 = dateFromString($0.value.date)
-//                                    let date2 = dateFromString($1.value.date)
-//                                    return date1 > date2
-//                                }
-//
-//                                if let latestAnnouncementDate =
-//                                    sortedAnnouncements.first?.value.date,
-//                                    Date()
-//                                        > dateFromString(latestAnnouncementDate)
-//                                {
-//                                    showAddAnnouncement.toggle()
-//                                } else {
-//                                    dropper(
-//                                        title:
-//                                            "Wait \(Int(oneMinuteAfter.timeIntervalSinceNow)) seconds",
-//                                        subtitle:
-//                                            "One Announcement Per Minute!",
-//                                        icon: UIImage(systemName: "timer")
-//                                    )
-//                                }
-//                            } else {
-//                                showAddAnnouncement.toggle()
-//                            }
-//                        } label: {
-//                            Text(latestAnnouncementMessage)
-//                                .font(.subheadline)
-//                                .foregroundStyle(.blue)
-//                                .padding(6)
-//                                .background(Color.blue.opacity(0.2))
-//                                .cornerRadius(8)
-//                        }
-//                        .sheet(isPresented: $showAddAnnouncement) {
-//                            AddAnnouncementSheet(
-//                                clubName: club.name,
-//                                email: viewModel.userEmail ?? "",
-//                                clubID: club.clubID,
-//                                onSubmit: {
-//                                    oneMinuteAfter = Date().addingTimeInterval(
-//                                        60
-//                                    )
-//                                },
-//                                viewModel: viewModel
-//                            )
-//                            .presentationSizing(.page)
-//                            .presentationDragIndicator(.visible)
-//                            .background(GlassBackground())
-//                        }
-//
-                    }
+          }
 
-//                    if let announcements = club.announcements,
-//                        viewModel.isGuestUser == false
-//                    {
-//                        AnnouncementsView(
-//                            announcements: announcements,
-//                            viewModel: viewModel,
-//                            isClubMember: isClubMemberLeaderOrSuperAdmin(
-//                                club: club,
-//                                userEmail: viewModel.userEmail
-//                            ),
-//                            userInfo: $userInfo
-//                        )
-//                    }
-
-                    Text("Location")
-                        .font(.headline)
+          Text("Location")
+            .font(.headline)
                     HStack {
                         Image(systemName: "arrow.turn.down.right")
 
@@ -594,14 +501,11 @@ struct ClubInfoView: View {
                 .padding()
 
                 Color.clear
-                    .frame(height: screenHeight / 10)
-            }
-            //            .refreshable {
-            //                // so that the other big refresh doesnt over ride
-            //            }
-            .popup(isPresented: $showMap) {
-                ZStack {
-                    Map(position: $cameraPosition, interactionModes: []) {
+          .frame(height: screenHeight / 10)
+      }
+      .popup(isPresented: $showMap) {
+        ZStack {
+          Map(position: $cameraPosition, interactionModes: []) {
                         if club.locationInSchoolCoordinates != nil {
 
                         } else if !mapEditorMode {
@@ -782,18 +686,11 @@ struct ClubInfoView: View {
                         .font(.title)
                         .bold()
                         .foregroundStyle(.primary)
-                        .fixedSize()
-                }
-                //                ToolbarItem(placement: .topBarLeading) {
-                //                    Circle()
-                //                        .font(.title)
-                //                        .bold()
-                //                        .padding(.top)
-                //                        .foregroundStyle(Color(hexadecimal: club.clubColor ?? colorFromClub(club: club).toHexString()))
-                //                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Group {
-                        if clubLeader {
+            .fixedSize()
+        }
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Group {
+            if clubLeader {
                             Button {
                                 Task { await presentClubEditor() }
                             } label: {
@@ -934,9 +831,6 @@ struct ClubInfoView: View {
             pendingEdits.pending?.onRevert = { _ in }
             pendingEdits.resume()
         }
-        .onChange(of: pendingEdits.recoveredClub) { _, updated in
-            if let updated { updateDisplayedClub(updated) }
-        }
         .onChange(of: calendarStore.accessRevision) {
             club = calendarStore.hydrated(club, userEmail: viewModel.userEmail)
         }
@@ -970,12 +864,11 @@ struct ClubInfoView: View {
         .alert("Unable to Open Email", isPresented: $showLeaderMailError) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(leaderMailErrorMessage)
-        }
-        //    .background(colorFromClub(club.clubID).opacity(0.2))
+      Text(leaderMailErrorMessage)
     }
+  }
 
-    var phoneMeetingInfoPresented: Binding<Bool> {
+  var phoneMeetingInfoPresented: Binding<Bool> {
         Binding(
             get: { usesPhoneLayout && meetingFull },
             set: { meetingFull = $0 }

@@ -2,12 +2,10 @@
 
 const { HttpError, verifyRequest } = require("./access");
 const { getCalendarResponse } = require("./calendar-service");
-const { addUtcDays, dateOnlyInTimeZone } = require("./calendar-core");
 const { accessSnapshot, membershipAction, reconcileIdentity, saveClub } = require("./membership-service");
 const {
   deleteMeetings,
   getRSVP,
-  listMeetings,
   listRSVPs,
   nextPublicMeeting,
   saveMeetings,
@@ -39,13 +37,6 @@ function apiHandler(admin) {
     try {
       const decoded = await verifyRequest(admin, req);
       const path = route(req);
-      if (req.method === "GET" && path === "/meetings") {
-        const today = dateOnlyInTimeZone(new Date());
-        const startDate = validatedDate(req.query.start || addUtcDays(today, -30), "start");
-        const endDateExclusive = validatedDate(req.query.end || addUtcDays(today, 366), "end");
-        if (endDateExclusive <= startDate) throw new HttpError(400, "The meeting range is invalid.");
-        return sendJSON(res, 200, { meetings: await listMeetings(admin, decoded, startDate, endDateExclusive) });
-      }
       if (req.method === "POST" && path === "/meetings/save") {
         return sendJSON(res, 200, await saveMeetings(admin, decoded, req.body));
       }

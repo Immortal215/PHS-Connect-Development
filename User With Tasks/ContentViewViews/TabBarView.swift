@@ -32,9 +32,7 @@ struct FloatingTabBar: View {
     @AppStorage("selectedTab") var currentTab = 3
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && screenWidth >= 900
-            && screenWidth > screenHeight
+        usesWideIPadLayout(in: CGSize(width: screenWidth, height: screenHeight))
     }
 
     var usesPhoneTabBar: Bool {
@@ -186,54 +184,7 @@ struct FloatingTabBar: View {
                     }
                 }
             }
-        }
-        .padding(.leading)
-        //        VStack {
-        //            Spacer()
-        //
-        //            ZStack {
-        //                HStack {
-        //                    ForEach(orderedTabs, id: \.self) { tab in
-        //                        if shouldShow(tab) {
-        //                            TabBarButton(image: tab.systemImage, index: tab.index, labelr: tab.name)
-        //                                .padding(.horizontal)
-        //                        }
-        //                    }
-        //
-        //                    if !isConnected {
-        //                        withAnimation(.smooth) {
-        //                            VStack {
-        //                                Image(systemName: "wifi.slash")
-        //                                    .imageScale(.large)
-        //                                Text("No Wifi")
-        //                                    .font(.caption)
-        //                            }
-        //                            .foregroundStyle(.red)
-        //                            .padding(.horizontal)
-        //                        }
-        //                    }
-        //                }
-        //                .frame(width: screenWidth)
-        //                .fixedSize()
-        //                .bold()
-        //            }
-        //        }
-        //  .animation(.easeInOut(duration: 0.2), value: isConnected)
-        //   .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        //   .asymmetricTransition(insertion: .opacity, removal: .opacity)
-        //        .background {
-        //            HStack {
-        //                LinearGradient(
-        //                    gradient: Gradient(colors: [Color.clear, Color(UIColor.systemBackground)]),
-        //                    startPoint: .top,
-        //                    endPoint: .bottom
-        //                )
-        //                .frame(height: screenHeight / 6)
-        //                .edgesIgnoringSafeArea(.all)
-        //            }
-        //            .frame(width: screenWidth, height: screenHeight, alignment: .bottom)
-        //            .allowsHitTesting(false)
-        //            .hidden(selectedTab == 3 || selectedTab == 6)
-        //        }
     }
+    .padding(.leading)
+  }
 }

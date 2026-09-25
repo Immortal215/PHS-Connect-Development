@@ -1,6 +1,6 @@
 "use strict";
 
-const { MEETING_WEB_BASE, SCHOOL_TIME_ZONE } = require("./constants");
+const { meetingWebBase, SCHOOL_TIME_ZONE } = require("./constants");
 
 function escapeText(value) {
   return String(value || "")
@@ -81,7 +81,7 @@ function meetingLines(meeting, clubName) {
   if (meeting.description) lines.push(`DESCRIPTION:${escapeText(meeting.description)}`);
   if (meeting.location) lines.push(`LOCATION:${escapeText(meeting.location)}`);
   if (clubName) lines.push(`CATEGORIES:${escapeText(clubName)}`);
-  lines.push(`URL:${MEETING_WEB_BASE}/${encodeURIComponent(meeting.clubID)}/${encodeURIComponent(meeting.meetingID)}`);
+  lines.push(`URL:${meetingWebBase()}/${encodeURIComponent(meeting.clubID)}/${encodeURIComponent(meeting.meetingID)}`);
   if (meeting.cancelled === true) {
     lines.push("STATUS:CANCELLED");
     lines.push("TRANSP:TRANSPARENT");

@@ -9,9 +9,7 @@ struct Pomo: View {
     var screenHeight: CGFloat { viewportSize.height }
     var narrowLayout: Bool { screenWidth < 900 }
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && screenWidth >= 900
-            && screenWidth > screenHeight
+        usesWideIPadLayout(in: CGSize(width: screenWidth, height: screenHeight))
     }
     var panelWidth: CGFloat {
         if usesLegacyWideIPadLayout { return screenWidth / 2 }

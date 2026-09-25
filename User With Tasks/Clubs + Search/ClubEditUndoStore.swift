@@ -42,9 +42,7 @@ struct PendingClubEdit {
 final class ClubEditUndoStore: ObservableObject {
     @Published var pending: PendingClubEdit?
     @Published var isSaving = false
-    @Published var recoveredClub: Club?
     var ownerID = ""
-    var needsRecovery = false
     var isEditing = false
     var timer: Task<Void, Never>?
 
@@ -75,8 +73,6 @@ final class ClubEditUndoStore: ObservableObject {
         }
         photos.discardUnusedUploads(keeping: after.clubPhoto)
         ownerID = owner
-        needsRecovery = false
-        recoveredClub = nil
         pending = edit
         scheduleSave()
         dropper(title: "Club Edited!", subtitle: after.name, icon: UIImage(systemName: "checkmark.circle"))
@@ -86,7 +82,6 @@ final class ClubEditUndoStore: ObservableObject {
         let photos = ClubPhotoUploadStore()
         photos.uploadedPaths = saved.uploadedPaths
         ownerID = saved.ownerID
-        needsRecovery = true
         pending = PendingClubEdit(
             id: saved.id, before: saved.before, after: saved.after, photos: photos,
             deadline: saved.deadline, onRevert: { _ in }
@@ -135,25 +130,18 @@ final class ClubEditUndoStore: ObservableObject {
         isSaving = true
         Task {
             do {
-                let timestamp = Date().timeIntervalSince1970
                 try ClubEditPersistence.shared.save(SavedClubEdit(
                     id: edit.id, ownerID: ownerID, before: edit.before, after: edit.after,
-                    deadline: edit.deadline, uploadedPaths: edit.photos.uploadedPaths,
-                    submittedAt: timestamp
+                    deadline: edit.deadline, uploadedPaths: edit.photos.uploadedPaths
                 ))
-                if needsRecovery {
-                    // The operation ID is persisted with the edit, so a retry after a crash
-                    // returns the original backend result instead of applying the edit twice.
-                }
                 try await saveClubThroughBackend(
                     edit.after,
-                    operationID: edit.id.uuidString,
+                    operationID: "\(Int(edit.deadline.timeIntervalSince1970 * 1000))-\(edit.id.uuidString)",
                     expectedLastUpdated: edit.before.lastUpdated
                 )
                 try finish(edit, committed: true, keeping: edit.after.clubPhoto)
             } catch {
                 isSaving = false
-                needsRecovery = true
                 timer = nil
                 print("Club edit remains queued: \(error)")
                 dropper(title: "Club Save Pending", subtitle: "The edit is kept on this device and will retry when the app becomes active.", icon: UIImage(systemName: "exclamationmark.triangle"))

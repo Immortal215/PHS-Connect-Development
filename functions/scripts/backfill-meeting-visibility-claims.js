@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { isEligibleAuthUser } = require("../lib/access");
 const { sha256 } = require("../lib/calendar-core");
-const { legacyMeetingID } = require("../lib/legacy-calendar");
+const { legacyMeetingID } = require("./lib/legacy-calendar");
 
 function options(argv) {
   const result = {};

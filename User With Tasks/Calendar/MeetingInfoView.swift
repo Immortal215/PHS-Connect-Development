@@ -4,8 +4,6 @@ import SwiftUIX
 struct MeetingInfoView: View {
     @Environment(CalendarDataStore.self) private var calendarStore
     @Environment(\.appViewportSize) var parentViewportSize
-    var screenWidth: CGFloat { presentationSize.width }
-    var screenHeight: CGFloat { presentationSize.height }
     @State var meeting: Club.MeetingTime
     @State var clubs: [Club]
     @State var openSettings = false
@@ -26,12 +24,8 @@ struct MeetingInfoView: View {
     @State private var deletingMeeting = false
     @State private var showDeleteError = false
 
-    @State var presentationSize = CGSize(width: 390, height: 600)
-
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && parentViewportSize.width >= 900
-            && parentViewportSize.width > parentViewportSize.height
+        usesWideIPadLayout(in: parentViewportSize)
     }
 
     var body: some View {
@@ -40,7 +34,6 @@ struct MeetingInfoView: View {
                 .environment(\.appViewportSize, geometry.size)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { presentationSize = $0 }
         .appPresentationSizing()
         .calendarAdministrativeAccess(
             clubID: meeting.clubID,
@@ -125,7 +118,8 @@ struct MeetingInfoView: View {
 
                         if isClubLeaderOrSuperAdmin(
                             club: club,
-                            userEmail: viewModel?.userEmail
+                            userEmail: viewModel?.userEmail,
+                            isSuperAdmin: viewModel?.isSuperAdmin == true
                         )
                         {
                             VStack {
@@ -365,12 +359,13 @@ struct MeetingInfoView: View {
                 leaderClubs: clubs.filter {
                     isClubLeaderOrSuperAdmin(
                         club: $0,
-                        userEmail: viewModel?.userEmail
+                        userEmail: viewModel?.userEmail,
+                        isSuperAdmin: viewModel?.isSuperAdmin == true
                     )
                 },
                 editScreen: true,
                 selectedDate: selectedDate
-                    ?? dateFromString(meeting.startTime),
+                    ?? dateForMeeting(meeting),
                 userInfo: $userInfo
             )
             .presentationDragIndicator(.visible)
@@ -447,28 +442,19 @@ struct MeetingInfoView: View {
     private var meetingDateDescription: String {
         if meeting.fullDay == true {
             let start = dateForMeeting(meeting)
-            guard let exclusive = meeting.endDateExclusive else {
+            guard meeting.endDateExclusive != nil else {
                 return start.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())
             }
             var calendar = Calendar(identifier: .gregorian)
             calendar.timeZone = TimeZone(identifier: "America/Chicago")!
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.calendar = calendar
-            formatter.timeZone = calendar.timeZone
-            formatter.dateFormat = "yyyy-MM-dd"
-            let finalDay = formatter.date(from: exclusive).flatMap {
-                calendar.date(byAdding: .day, value: -1, to: $0)
-            } ?? start
+            let finalDay = endDateForMeeting(meeting)
             if calendar.isDate(start, inSameDayAs: finalDay) {
                 return "All day • \(start.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))"
             }
             return "All day • \(start.formatted(date: .abbreviated, time: .omitted)) – \(finalDay.formatted(date: .abbreviated, time: .omitted))"
         }
         let start = dateForMeeting(meeting)
-        let end = meeting.endUtc.map { Date(timeIntervalSince1970: $0) }
-            ?? strictDateFromString(meeting.endTime)
-            ?? start
+        let end = endDateForMeeting(meeting)
         return "\(start.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())) from \(start.formatted(date: .omitted, time: .shortened)) to \(end.formatted(date: .omitted, time: .shortened))"
     }
 

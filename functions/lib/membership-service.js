@@ -2,18 +2,35 @@
 
 const crypto = require("crypto");
 const {
-  HttpError, isAdmin, isEligibleAuthUser, isEligibleDecodedIdentity, requireLeader,
+  HttpError, isAdmin, isEligibleAuthUser, isEligibleDecodedIdentity,
+  normalizedEmail, requireLeader, roleValue, uniqueEmails,
 } = require("./access");
 const { canAccessMeeting, sha256 } = require("./calendar-core");
-const { roleValue } = require("./calendar-service");
 const { acquireLocks, releaseLocks } = require("./locks");
 const {
   mergeChanges, publishVisibilityChanges, removeIdentityVisibility, restoreIdentityVisibility,
 } = require("./meeting-visibility");
 
 function nowSeconds() { return Date.now() / 1000; }
-function normalizedEmail(value) { return String(value || "").trim().toLowerCase(); }
-function uniqueEmails(values) { return Array.from(new Set((values || []).map(normalizedEmail).filter(Boolean))); }
+const CLUB_OPERATION_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+function clubOperationIssuedAt(operationID) {
+  const match = /^(\d{13})-[A-Za-z0-9_-]+$/.exec(operationID);
+  return match ? Number(match[1]) : null;
+}
+
+async function cleanupCompletedClubOperations(admin, now = Date.now(), limit = 200) {
+  const db = admin.database();
+  const expired = await db.ref("/internal/clubOperationExpirations")
+    .orderByChild("expiresAt").endAt(now).limitToFirst(limit).get();
+  const updates = {};
+  for (const [operationID, record] of Object.entries(expired.val() || {})) {
+    if (record?.uid) updates[`internal/clubOperations/${record.uid}/${operationID}`] = null;
+    updates[`internal/clubOperationExpirations/${operationID}`] = null;
+  }
+  if (Object.keys(updates).length) await db.ref().update(updates);
+  return expired.numChildren();
+}
 async function resolveEmails(admin, emails) {
   const requestedEmails = uniqueEmails(emails);
   const resolved = [];
@@ -24,46 +41,25 @@ async function resolveEmails(admin, emails) {
   // Resolve large club rosters in bounded batches instead of issuing one
   // network request per email; a metadata-only club edit must not time out
   // simply because that club has a long legacy member list.
-  if (typeof auth.getUsers === "function") {
-    const usersByEmail = new Map();
-    for (let offset = 0; offset < requestedEmails.length; offset += 100) {
-      const batch = requestedEmails.slice(offset, offset + 100);
-      const result = await auth.getUsers(batch.map((email) => ({ email })));
-      for (const user of result.users || []) {
-        const email = normalizedEmail(user.email);
-        if (email) usersByEmail.set(email, user);
-      }
+  const usersByEmail = new Map();
+  for (let offset = 0; offset < requestedEmails.length; offset += 100) {
+    const batch = requestedEmails.slice(offset, offset + 100);
+    const result = await auth.getUsers(batch.map((email) => ({ email })));
+    for (const user of result.users || []) {
+      const email = normalizedEmail(user.email);
+      if (email) usersByEmail.set(email, user);
     }
-    for (const email of requestedEmails) {
-      const user = usersByEmail.get(email);
-      if (!user) {
-        unresolved.push({ email, reason: "auth/user-not-found" });
-      } else if (!isEligibleAuthUser(user, email)) {
-        const reason = user.disabled ? "auth/user-disabled" :
-          !user.emailVerified ? "auth/email-not-verified" : "auth/unsupported-email";
-        unresolved.push({ email, reason });
-      } else {
-        resolved.push({ uid: user.uid, email });
-      }
-    }
-    return { resolved, unresolved };
   }
-
-  // Keep the narrow fallback for test doubles and older administrative
-  // adapters. Production Firebase Admin 14 uses the batched path above.
   for (const email of requestedEmails) {
-    try {
-      const user = await auth.getUserByEmail(email);
-      if (!isEligibleAuthUser(user, email)) {
-        const reason = user.disabled ? "auth/user-disabled" :
-          !user.emailVerified ? "auth/email-not-verified" : "auth/unsupported-email";
-        unresolved.push({ email, reason });
-      } else {
-        resolved.push({ uid: user.uid, email });
-      }
-    } catch (error) {
-      if (error?.code === "auth/user-not-found") unresolved.push({ email, reason: "auth/user-not-found" });
-      else throw error;
+    const user = usersByEmail.get(email);
+    if (!user) {
+      unresolved.push({ email, reason: "auth/user-not-found" });
+    } else if (!isEligibleAuthUser(user, email)) {
+      const reason = user.disabled ? "auth/user-disabled" :
+        !user.emailVerified ? "auth/email-not-verified" : "auth/unsupported-email";
+      unresolved.push({ email, reason });
+    } else {
+      resolved.push({ uid: user.uid, email });
     }
   }
   return { resolved, unresolved };
@@ -213,6 +209,11 @@ async function saveClub(admin, decodedToken, request) {
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(operationID)) {
     throw new HttpError(400, "A valid club operation ID is required.");
   }
+  const issuedAt = clubOperationIssuedAt(operationID);
+  if (issuedAt !== null && (issuedAt > Date.now() + 24 * 60 * 60 * 1000
+      || issuedAt + CLUB_OPERATION_RETENTION_MS <= Date.now())) {
+    throw new HttpError(409, "This club edit is too old to retry. Reopen the club and save it again.");
+  }
   const clubID = String(incomingClub?.clubID || "").trim();
   if (/[.#$\[\]\/]/.test(clubID)) throw new HttpError(400, "Club ID contains unsupported characters.");
   if (!clubID || !incomingClub?.name?.trim()) throw new HttpError(400, "Club ID and name are required.");
@@ -275,6 +276,11 @@ async function saveClub(admin, decodedToken, request) {
     updates[`internal/clubOperations/${decodedToken.uid}/${operationID}`] = {
       clubID, completedAt: nowSeconds(), result: response,
     };
+    if (issuedAt !== null) {
+      updates[`internal/clubOperationExpirations/${operationID}`] = {
+        uid: decodedToken.uid, expiresAt: issuedAt + CLUB_OPERATION_RETENTION_MS,
+      };
+    }
     await db.ref().update(updates);
     return response;
   } finally {
@@ -608,12 +614,14 @@ async function auditAuthUser(admin, user) {
       const timestamp = admin.serverTimestamp;
       updates[`notificationDevices/${user.uid}`] = null;
       updates[`notificationReadState/${user.uid}`] = null;
+      updates[`internal/notificationReadStatePruneCounters/${user.uid}`] = null;
       updates[`calendarSubscriptions/${user.uid}/tokenHash`] = null;
       updates[`calendarSubscriptions/${user.uid}/revoked`] = true;
       updates[`calendarSubscriptions/${user.uid}/generation`] = Number(subscription.generation || 0) + 1;
       updates[`calendarSubscriptions/${user.uid}/updatedAt`] = timestamp;
       updates[`calendarSubscriptions/${user.uid}/revokedAt`] = timestamp;
       updates[`calendarSubscriptions/${user.uid}/cache`] = null;
+      updates[`calendarSubscriptions/${user.uid}/cacheDays`] = null;
       if (subscription.tokenHash) {
         updates[`calendarTokens/${subscription.tokenHash}/valid`] = false;
         updates[`calendarTokens/${subscription.tokenHash}/revokedAt`] = timestamp;
@@ -638,7 +646,8 @@ function expirationKeyForIdentity(uid, installationID) {
 
 module.exports = {
   accessSnapshot, appendLeaderAccessRevision, auditAuthUser, invalidateUserRSVPs,
-  membershipAction, normalizedEmail,
-  reconcileIdentity, replaceMembershipIndexes, resolveEmails, saveClub, uniqueEmails,
+  cleanupCompletedClubOperations, clubOperationIssuedAt,
+  membershipAction,
+  reconcileIdentity, replaceMembershipIndexes, resolveEmails, saveClub,
   userRSVPInvalidationUpdates,
 };

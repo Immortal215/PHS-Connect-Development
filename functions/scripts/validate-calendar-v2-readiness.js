@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { monthKeys, sha256 } = require("../lib/calendar-core");
 const { createAdminServices } = require("../lib/firebase-admin-services");
-const { legacyMeetingID } = require("../lib/legacy-calendar");
+const { legacyMeetingID } = require("./lib/legacy-calendar");
 const { offlineDatabase } = require("./migrate-calendar-v2");
 
 function parseArguments(argv) {

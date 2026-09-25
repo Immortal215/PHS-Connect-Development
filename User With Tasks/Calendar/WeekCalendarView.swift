@@ -3,7 +3,7 @@ import SwiftUI
 struct WeekCalendarView: View {
     var meetingIndex: CalendarMeetingIndex
     @Binding var selectedDate: Date
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     @State var currentWeek: Date = Date()
     @State var addMeetingTimeView = false
@@ -18,9 +18,7 @@ struct WeekCalendarView: View {
 
     var narrowCalendarLayout: Bool { viewportSize.width < 700 }
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && viewportSize.width >= 900
-            && viewportSize.width > viewportSize.height
+        usesWideIPadLayout(in: viewportSize)
     }
 
     var body: some View {
@@ -221,7 +219,8 @@ struct WeekCalendarView: View {
                     leaderClubs: clubs.filter {
                         isClubLeaderOrSuperAdmin(
                             club: $0,
-                            userEmail: viewModel.userEmail
+                            userEmail: viewModel.userEmail,
+                            isSuperAdmin: viewModel.isSuperAdmin
                         )
                     },
                     selectedDate: selectedDate,
@@ -272,7 +271,8 @@ struct WeekCalendarView: View {
         if clubs.contains(where: {
             isClubLeaderOrSuperAdmin(
                 club: $0,
-                userEmail: viewModel.userEmail
+                userEmail: viewModel.userEmail,
+                isSuperAdmin: viewModel.isSuperAdmin
             )
         }) {
             Button {

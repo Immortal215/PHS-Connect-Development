@@ -107,7 +107,7 @@ struct SearchClubView: View {
     var screenHeight: CGFloat { viewportSize.height }
     @AppStorage("shownInfo") var shownInfo = -1
     @AppStorage("searchText") var searchText: String = ""
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @State var isSearching = false
     @AppStorage("searchingBy") var currentSearchingBy = "Name"
     @State var createClubToggler = false
@@ -116,6 +116,8 @@ struct SearchClubView: View {
     @State var sortingMenu = false
     @AppStorage("ascendingStyle") var ascendingStyle = true
     @State var filteredItems: [Club] = []
+    @State private var appliedSearchText: String?
+    @State private var scrollToTopRevision = 0
     @AppStorage("sharedGenre") var sharedGenre = ""
     @State var selectedGenres: [String] = []
     @AppStorage("darkMode") var darkMode = false
@@ -129,9 +131,7 @@ struct SearchClubView: View {
     @State var isAdaptingViewport = false
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && screenWidth > screenHeight
-            && screenWidth >= 900
+        usesWideIPadLayout(in: CGSize(width: screenWidth, height: screenHeight))
     }
     var columnCount: Int {
         usesLegacyWideIPadLayout
@@ -425,14 +425,6 @@ struct SearchClubView: View {
                                                 )
 
 
-                                                .onAppear {
-                                                    DispatchQueue.main
-                                                        .asyncAfter(
-                                                            deadline: .now() + 1
-                                                        ) {
-                                                            loadingClubs = false
-                                                        }
-                                                }
                                             }
                                         }
                                         .animation(.smooth, value: loadingClubs)
@@ -516,54 +508,16 @@ struct SearchClubView: View {
                                         }
                                     }
                                     .onChange(of: selectedGenres) {
-
-                                        let selectedGenresBuffer =
-                                            selectedGenres
-                                        loadingClubs = true
-                                        DispatchQueue.main.asyncAfter(
-                                            deadline: .now() + 1
-                                        ) {
-                                            if selectedGenresBuffer
-                                                == selectedGenres
-                                            {
-                                                filteredItems =
-                                                    calculateFiltered()
-                                                loadingClubs = false
-                                                proxy.scrollTo(1, anchor: .top)
-                                            }
-                                        }
+                                        filteredItems = calculateFiltered()
+                                        proxy.scrollTo(1, anchor: .top)
                                     }
-                                    .onChange(of: searchText) {
-                                        let searchTextBuffer = searchText
-                                        loadingClubs = true
-                                        DispatchQueue.main.asyncAfter(
-                                            deadline: .now() + 1
-                                        ) {
-                                            if searchTextBuffer == searchText {
-                                                filteredItems =
-                                                    calculateFiltered()
-                                                loadingClubs = false
-                                                proxy.scrollTo(1, anchor: .top)
-                                            }
-                                        }
+                                    .onChange(of: scrollToTopRevision) {
+                                        proxy.scrollTo(1, anchor: .top)
                                     }
                                     .onChange(
                                         of: userInfo?.favoritedClubs ?? []
                                     ) {
-                                        let favClubsBuffer =
-                                            userInfo?.favoritedClubs ?? []
-                                        loadingClubs = true
-                                        DispatchQueue.main.asyncAfter(
-                                            deadline: .now() + 1
-                                        ) {
-                                            if favClubsBuffer == userInfo?
-                                                .favoritedClubs ?? []
-                                            {
-                                                filteredItems =
-                                                    calculateFiltered()
-                                                loadingClubs = false
-                                            }
-                                        }
+                                        filteredItems = calculateFiltered()
                                     }
                                     }
                                     .transition(.opacity)
@@ -571,10 +525,6 @@ struct SearchClubView: View {
                             }
                     }
                     .animation(.smooth, value: filteredItems)
-                }
-                .onAppear {
-                    filteredItems = calculateFiltered()
-
                 }
                 .padding()
 
@@ -588,9 +538,6 @@ struct SearchClubView: View {
                 isAscending: $ascendingStyle,
                 onSubmit: {
                     filteredItems = calculateFiltered()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        loadingClubs = false
-                    }
                 }
             )
             .padding(.top, 100)
@@ -604,11 +551,23 @@ struct SearchClubView: View {
                 .closeOnTap(false)
         }
         .task(id: displayedClubs) {
+            if appliedSearchText == nil { appliedSearchText = searchText }
+            filteredItems = calculateFiltered()
+        }
+        .task(id: searchText) {
+            guard let appliedSearchText else {
+                self.appliedSearchText = searchText
+                return
+            }
+            guard appliedSearchText != searchText else { return }
             loadingClubs = true
             do { try await Task.sleep(for: .seconds(1)) }
             catch { return }
+            guard !Task.isCancelled else { return }
+            self.appliedSearchText = searchText
             filteredItems = calculateFiltered()
             loadingClubs = false
+            scrollToTopRevision += 1
         }
         .task(id: viewportSize) {
             guard UIDevice.current.userInterfaceIdiom == .pad else { return }
@@ -635,17 +594,12 @@ struct SearchClubView: View {
         .onDisappear {
             previousViewportSize = viewportSize
             isAdaptingViewport = false
+            loadingClubs = false
         }
         .onChange(of: sharedGenre) {
             if !sharedGenre.isEmpty {
                 selectedGenres = [sharedGenre]
                 sharedGenre = ""
-            }
-        }
-        .onAppear {
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                filteredItems = calculateFiltered()
             }
         }
         .animation(.smooth, value: currentSearchingBy)
@@ -800,73 +754,57 @@ struct SearchClubView: View {
     }
 
     func calculateFiltered() -> [Club] {
-        loadingClubs = true
-        if searchText.isEmpty {
-            return
-                displayedClubs
-                .filter { club in
-                    if let genres = club.genres {
-                        return selectedGenres.allSatisfy { keyword in
-                            genres.contains(keyword)
-                        }  // satisfies that all tags are in genres
-                    }
-                    return false
+        Self.filterClubs(
+            displayedClubs,
+            searchText: appliedSearchText ?? searchText,
+            selectedGenres: selectedGenres,
+            ascending: ascendingStyle,
+            userEmail: viewModel.userEmail,
+            favoriteIDs: Set(userInfo?.favoritedClubs ?? [])
+        )
+    }
+
+    static func filterClubs(
+        _ clubs: [Club],
+        searchText: String,
+        selectedGenres: [String],
+        ascending: Bool,
+        userEmail: String?,
+        favoriteIDs: Set<String>
+    ) -> [Club] {
+        let email = userEmail ?? ""
+        return clubs
+            .filter { club in
+                guard let genres = club.genres,
+                    selectedGenres.allSatisfy(genres.contains)
+                else { return false }
+                return searchText.isEmpty
+                    || club.description.localizedCaseInsensitiveContains(searchText)
+                    || club.abstract.localizedCaseInsensitiveContains(searchText)
+                    || club.name.localizedCaseInsensitiveContains(searchText)
+            }
+            .sorted { first, second in
+                let firstPriority = (
+                    favoriteIDs.contains(first.clubID) ? 1 : 0,
+                    first.leaders.contains(email) ? 1 : 0,
+                    first.members.contains(email) ? 1 : 0
+                )
+                let secondPriority = (
+                    favoriteIDs.contains(second.clubID) ? 1 : 0,
+                    second.leaders.contains(email) ? 1 : 0,
+                    second.members.contains(email) ? 1 : 0
+                )
+                if firstPriority != secondPriority {
+                    return firstPriority > secondPriority
                 }
-                .sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name)
-                        == (ascendingStyle
-                            ? .orderedAscending : .orderedDescending)
+                let nameOrder = first.name.localizedCaseInsensitiveCompare(second.name)
+                if nameOrder != .orderedSame {
+                    return ascending
+                        ? nameOrder == .orderedAscending
+                        : nameOrder == .orderedDescending
                 }
-                .sorted {
-                    ($0.members.contains(viewModel.userEmail ?? "")
-                        && !($1.members.contains(viewModel.userEmail ?? "")))
-                }
-                .sorted {
-                    ($0.leaders.contains(viewModel.userEmail ?? "")
-                        && !($1.leaders.contains(viewModel.userEmail ?? "")))
-                }
-                .sorted {
-                    userInfo?.favoritedClubs.contains($0.clubID) ?? false
-                        && !(userInfo?.favoritedClubs.contains($1.clubID)
-                            ?? false)
-                }
-        } else {
-            return
-                displayedClubs
-                .filter { club in
-                    if let genres = club.genres {
-                        return selectedGenres.allSatisfy { keyword in
-                            genres.contains(keyword)
-                        }  // satisfies that all tags are in genres
-                    }
-                    return false
-                }
-                .filter {
-                    $0.description.localizedCaseInsensitiveContains(searchText)
-                        || $0.abstract.localizedCaseInsensitiveContains(
-                            searchText
-                        )
-                        || $0.name.localizedCaseInsensitiveContains(searchText)
-                }
-                .sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name)
-                        == (ascendingStyle
-                            ? .orderedAscending : .orderedDescending)
-                }
-                .sorted {
-                    ($0.members.contains(viewModel.userEmail ?? "")
-                        && !($1.members.contains(viewModel.userEmail ?? "")))
-                }
-                .sorted {
-                    ($0.leaders.contains(viewModel.userEmail ?? "")
-                        && !($1.leaders.contains(viewModel.userEmail ?? "")))
-                }
-                .sorted {
-                    userInfo?.favoritedClubs.contains($0.clubID) ?? false
-                        && !(userInfo?.favoritedClubs.contains($1.clubID)
-                            ?? false)
-                }
-        }
+                return first.clubID < second.clubID
+            }
     }
 
     func positionOfClub(clubID: String) -> CGFloat {

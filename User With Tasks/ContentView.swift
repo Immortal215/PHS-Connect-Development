@@ -1,15 +1,8 @@
-import CUIExpandableButton
 import Drops
 import Foundation
-import FirebaseAuth
 import FirebaseCore
-import FirebaseDatabaseInternal
-import FirebaseFirestore
-import GoogleSignIn
-import GoogleSignInSwift
-import SDWebImageSwiftUI
+import FirebaseDatabase
 import SwiftUI
-import SwiftUIX
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -17,7 +10,6 @@ struct ContentView: View {
     @State var showSignInView = true
     @AppStorage("selectedTab") var selectedTab = 3
     @StateObject var networkMonitor = NetworkMonitor()
-    @State var expanded = false
     @State var advSearchShown = false
     @AppStorage("searchText") var searchText: String = ""
     @AppStorage("userEmail") var userEmail: String?
@@ -29,7 +21,6 @@ struct ContentView: View {
     @State var userInfo: Personal? = nil
     @StateObject var schoolScheduleStore = SchoolScheduleStore()
     @State private var calendarStore = CalendarDataStore()
-    @AppStorage("calendarScale") var scale = 0.7
     @AppStorage("calendarPoint") var calendarScrollPoint = 6
     @ObservedObject var keyboardResponder = KeyboardResponder()
     @AppStorage("darkMode") var darkMode = false
@@ -86,7 +77,10 @@ struct ContentView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await reconcileCachedClubIDs() }
+                Task {
+                    await viewModel.refreshSuperAdminClaim()
+                    await reconcileCachedClubIDs()
+                }
             }
         }
         .environment(calendarStore)
@@ -323,7 +317,7 @@ struct ContentView: View {
         .onChange(of: tabsCache) {
             let cache = TabsCache()
             cache.save(
-                tabPrefrences: tabsCache
+                tabPreferences: tabsCache
                     ?? UserTabPreferences(order: [], hidden: Set())
             )
         }

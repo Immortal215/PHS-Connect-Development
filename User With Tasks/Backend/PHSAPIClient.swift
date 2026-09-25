@@ -22,8 +22,6 @@ private struct APIErrorEnvelope: Decodable {
     let error: String
 }
 
-struct EmptyAPIResponse: Decodable {}
-
 final class PHSAPIClient: Sendable {
     static let shared = PHSAPIClient()
 
@@ -41,10 +39,49 @@ final class PHSAPIClient: Sendable {
     func request<Response: Decodable>(
         _ method: String,
         path: String,
-        query: [URLQueryItem] = [],
-        body: (any Encodable)? = nil,
-        response: Response.Type = Response.self
+        query: [URLQueryItem] = []
     ) async throws -> Response {
+        let data = try await perform(method, path: path, query: query)
+        return try JSONDecoder().decode(Response.self, from: data)
+    }
+
+    func request<Body: Encodable, Response: Decodable>(
+        _ method: String,
+        path: String,
+        query: [URLQueryItem] = [],
+        body: Body
+    ) async throws -> Response {
+        let data = try await perform(method, path: path, query: query) {
+            try JSONEncoder().encode(body)
+        }
+        return try JSONDecoder().decode(Response.self, from: data)
+    }
+
+    func requestNoContent(
+        _ method: String,
+        path: String,
+        query: [URLQueryItem] = []
+    ) async throws {
+        _ = try await perform(method, path: path, query: query)
+    }
+
+    func requestNoContent<Body: Encodable>(
+        _ method: String,
+        path: String,
+        query: [URLQueryItem] = [],
+        body: Body
+    ) async throws {
+        _ = try await perform(method, path: path, query: query) {
+            try JSONEncoder().encode(body)
+        }
+    }
+
+    private func perform(
+        _ method: String,
+        path: String,
+        query: [URLQueryItem],
+        encodeBody: (() throws -> Data)? = nil
+    ) async throws -> Data {
         guard let user = Auth.auth().currentUser else { throw PHSAPIError.signedOut }
         guard let baseURL else { throw PHSAPIError.configuration }
         let token = try await user.getIDToken()
@@ -59,8 +96,8 @@ final class PHSAPIClient: Sendable {
         request.timeoutInterval = 30
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        if let body {
-            request.httpBody = try JSONEncoder().encode(AnyEncodable(body))
+        if let encodeBody {
+            request.httpBody = try encodeBody()
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         let (data, urlResponse) = try await session.data(for: request)
@@ -70,21 +107,6 @@ final class PHSAPIClient: Sendable {
                 ?? HTTPURLResponse.localizedString(forStatusCode: http.statusCode)
             throw PHSAPIError.server(status: http.statusCode, message: message)
         }
-        if Response.self == EmptyAPIResponse.self, data.isEmpty {
-            return EmptyAPIResponse() as! Response
-        }
-        return try JSONDecoder().decode(Response.self, from: data)
-    }
-}
-
-private struct AnyEncodable: Encodable {
-    private let encodeBody: (Encoder) throws -> Void
-
-    init(_ value: any Encodable) {
-        encodeBody = value.encode
-    }
-
-    func encode(to encoder: Encoder) throws {
-        try encodeBody(encoder)
+        return data
     }
 }

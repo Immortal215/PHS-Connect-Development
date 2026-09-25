@@ -70,9 +70,11 @@
 
 ### 2. **Backend**
 
+Start with the [data editing guide](docs/DATA_EDITING_GUIDE.md) before changing Firebase paths or their writers.
+
 - **Firebase Realtime Database:**
-  - Securely stores club and user data.
-  - Ensures pulled updates for club information such as announcements, meeting times, schoology codes, etc. 
+  - Stores public club details, membership, meetings, and RSVPs in separate paths.
+  - The app refreshes changed clubs and meetings from Firebase without downloading every meeting on each update.
 ---
 
 ## Repurpose for your own school!
@@ -83,6 +85,15 @@
 - Swift 6 
 - Firebase SDK
 - Google Sign-In configuration
+- Node 22 for Functions and Firebase predeploy (`.nvmrc`)
+
+On this Mac, check the backend entry-point syntax and Node version with Node 22 first on `PATH`:
+
+```sh
+PATH="/opt/homebrew/opt/node@22/bin:$PATH" npm --prefix functions run check
+```
+
+The same `PATH` must be active for a Firebase Functions deploy. The check stops immediately with a version error if another Node major is selected. Automated test suites were removed at the owner's request; build and manually verify affected flows before release.
 
 ### Installation
 
@@ -103,4 +114,3 @@
 ## Contact
 
 For questions or suggestions, please reach out to the development team | sharulshah@icloud.com
-

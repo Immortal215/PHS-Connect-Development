@@ -16,7 +16,7 @@ struct ClubCard: View {
     var screenHeight: CGFloat
     var usesLegacyWideLayout: Bool
     @State var imageScaler: Double
-    @State var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @AppStorage("shownInfo") var shownInfo = -1
     @Binding var userInfo: Personal?
     @State var youSureYouWantToLeave = false
@@ -30,7 +30,7 @@ struct ClubCard: View {
         self.screenHeight = screenHeight
         self.usesLegacyWideLayout = usesLegacyWideLayout
         _imageScaler = State(initialValue: imageScaler)
-        _viewModel = State(initialValue: viewModel)
+        _viewModel = ObservedObject(wrappedValue: viewModel)
         _shownInfo = AppStorage(wrappedValue: shownInfo, "shownInfo")
         _userInfo = userInfo
         _selectedGenres = selectedGenres
@@ -151,7 +151,8 @@ struct ClubCard: View {
                     Image(
                         systemName: isClubLeaderOrSuperAdmin(
                             club: club,
-                            userEmail: viewModel.userEmail
+                            userEmail: viewModel.userEmail,
+                            isSuperAdmin: viewModel.isSuperAdmin
                         ) ? "pencil" : "info.circle"
                     )
                     .allowsHitTesting(false)
@@ -212,7 +213,8 @@ struct ClubCard: View {
                         Button(
                             isClubLeaderOrSuperAdmin(
                                 club: club,
-                                userEmail: viewModel.userEmail
+                                userEmail: viewModel.userEmail,
+                                isSuperAdmin: viewModel.isSuperAdmin
                             )
                                 ? "Leader"
                                 : club.members.contains(
@@ -229,7 +231,8 @@ struct ClubCard: View {
                             if let email = viewModel.userEmail {
                                 guard !isClubLeaderOrSuperAdmin(
                                     club: club,
-                                    userEmail: email
+                                    userEmail: email,
+                                    isSuperAdmin: viewModel.isSuperAdmin
                                 ) else { return }
 
                                 if club.requestNeeded != nil {  // if you need to request to join
@@ -244,14 +247,12 @@ struct ClubCard: View {
                                             cluber.insert(email)
                                             club.pendingMemberRequests = cluber
                                             addPendingMemberRequest(
-                                                clubID: club.clubID,
-                                                memberEmail: email
+                                                clubID: club.clubID
                                             )
                                         } else {  // if the club does not have a pending member requets
                                             club.pendingMemberRequests = [email]
                                             addPendingMemberRequest(
-                                                clubID: club.clubID,
-                                                memberEmail: email
+                                                clubID: club.clubID
                                             )
                                         }
                                     } else if !club.members.contains(email)
@@ -263,8 +264,7 @@ struct ClubCard: View {
                                             email
                                         )
                                         removePendingMemberRequest(
-                                            clubID: club.clubID,
-                                            emailToRemove: email
+                                            clubID: club.clubID
                                         )
                                     } else {  // leave club if you are member
                                         if club.members.count != 1
@@ -280,8 +280,7 @@ struct ClubCard: View {
                                     {
                                         club.members.append(email)
                                         addMemberToClub(
-                                            clubID: club.clubID,
-                                            memberEmail: email
+                                            clubID: club.clubID
                                         )
                                     } else {
                                         if club.members.count != 1
@@ -301,7 +300,8 @@ struct ClubCard: View {
                         .tint(
                             isClubLeaderOrSuperAdmin(
                                 club: club,
-                                userEmail: viewModel.userEmail
+                                userEmail: viewModel.userEmail,
+                                isSuperAdmin: viewModel.isSuperAdmin
                             )
                                 ? .purple
                                 : club.members.contains(
@@ -326,15 +326,13 @@ struct ClubCard: View {
                                                 )!
                                             )
                                             removeMemberFromClub(
-                                                clubID: club.clubID,
-                                                emailToRemove: email
+                                                clubID: club.clubID
                                             )
                                             club.pendingMemberRequests?.remove(
                                                 email
                                             )
                                             removePendingMemberRequest(
-                                                clubID: club.clubID,
-                                                emailToRemove: email
+                                                clubID: club.clubID
                                             )
                                         }
                                     }
@@ -362,7 +360,8 @@ struct ClubCard: View {
                 notificationCount > 0
                     && isClubMemberLeaderOrSuperAdmin(
                         club: club,
-                        userEmail: viewModel.userEmail
+                        userEmail: viewModel.userEmail,
+                        isSuperAdmin: viewModel.isSuperAdmin
                     )
             {
                 Color.black.opacity(0.2)

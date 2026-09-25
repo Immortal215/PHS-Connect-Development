@@ -1,10 +1,24 @@
 import FirebaseAuth
-import FirebaseCore
 import FirebaseDatabase
-import FirebaseDatabaseInternal
 import GoogleSignIn
-import GoogleSignInSwift
 import SwiftUI
+
+func missingUserProfileUpdates(
+    presentFields: Set<String>,
+    userID: String,
+    email: String,
+    image: String,
+    name: String
+) -> [String: Any] {
+    let defaults: [String: Any] = [
+        "userID": userID,
+        "userEmail": email,
+        "userImage": image,
+        "userName": name,
+        "favoritedClubs": [""],
+    ]
+    return defaults.filter { !presentFields.contains($0.key) }
+}
 
 @MainActor
 final class AuthenticationViewModel: ObservableObject {
@@ -14,10 +28,8 @@ final class AuthenticationViewModel: ObservableObject {
     @AppStorage("isGuestUser") var isGuestUser = true
     @AppStorage("userType") var userType: String?
     @AppStorage("uid") var uid: String?
-
-    var isSuperAdmin: Bool {
-        isSuperAdminEmail(userEmail)
-    }
+    @Published private(set) var isSuperAdmin = false
+    private var authHandle: AuthStateDidChangeListenerHandle?
 
     init() {
         if let user = Auth.auth().currentUser {
@@ -26,6 +38,35 @@ final class AuthenticationViewModel: ObservableObject {
             self.userImage = user.photoURL?.absoluteString
             self.isGuestUser = false
             self.uid = user.uid
+        }
+        authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.isSuperAdmin = false
+                await self.refreshSuperAdminClaim()
+            }
+        }
+    }
+
+    deinit {
+        if let authHandle {
+            Auth.auth().removeStateDidChangeListener(authHandle)
+        }
+    }
+
+    func refreshSuperAdminClaim() async {
+        guard !isGuestUser, let user = Auth.auth().currentUser else {
+            isSuperAdmin = false
+            return
+        }
+        do {
+            let token = try await user.getIDTokenResult(forcingRefresh: true)
+            guard Auth.auth().currentUser?.uid == user.uid else { return }
+            isSuperAdmin = token.claims["phsSuperAdmin"] as? Bool == true
+        } catch {
+            if Auth.auth().currentUser?.uid == user.uid {
+                isSuperAdmin = false
+            }
         }
     }
 
@@ -39,48 +80,37 @@ final class AuthenticationViewModel: ObservableObject {
         let userReference = reference.child("users").child(userID)
 
         Task {
-            let snapshot = await observeSingleValue(at: userReference)
-            if !snapshot.exists()
-                || ((snapshot.value as? [String: Any])?["userImage"] == nil)
-            {
-                guard let currentUser = Auth.auth().currentUser else { return }
-
-                let newUser = Personal(
-                    userID: currentUser.uid,
-                    favoritedClubs: [""],
-                    userEmail: currentUser.email!,
-                    userImage: currentUser.photoURL?.absoluteString ?? "",
-                    userName: currentUser.displayName ?? "",
-                    fcmToken: nil
-                )
-
-                // Encode the struct into a dictionary
-                do {
-                    let data = try JSONEncoder().encode(newUser)
-                    if let json = try JSONSerialization.jsonObject(with: data)
-                        as? [String: Any]
-                    {
-                        do {
-                            // Field-level rules intentionally reject replacing the
-                            // whole user record so legacy clients cannot recreate a
-                            // publicly readable fcmToken. The permitted profile
-                            // fields are still committed together.
-                            _ = try await userReference.updateChildValues(json)
-                            print("User node created successfully")
-                        } catch {
-                            print("Error creating user node: \(error)")
-                        }
-                    }
-                } catch {
-                    print("Error encoding user: \(error)")
-                }
-            } else {
-                print("User node already exists")
+            async let id = observeSingleValue(at: userReference.child("userID"))
+            async let email = observeSingleValue(at: userReference.child("userEmail"))
+            async let image = observeSingleValue(at: userReference.child("userImage"))
+            async let name = observeSingleValue(at: userReference.child("userName"))
+            async let favorites = observeSingleValue(at: userReference.child("favoritedClubs"))
+            let snapshots = await [id, email, image, name, favorites]
+            guard let currentUser = Auth.auth().currentUser,
+                  currentUser.uid == userID,
+                  let currentEmail = currentUser.email else { return }
+            let fields = ["userID", "userEmail", "userImage", "userName", "favoritedClubs"]
+            let present = Set(zip(fields, snapshots).compactMap { field, snapshot in
+                snapshot.exists() ? field : nil
+            })
+            let updates = missingUserProfileUpdates(
+                presentFields: present,
+                userID: userID,
+                email: currentEmail,
+                image: currentUser.photoURL?.absoluteString ?? "",
+                name: currentUser.displayName ?? ""
+            )
+            guard !updates.isEmpty else { return }
+            do {
+                _ = try await userReference.updateChildValues(updates)
+            } catch {
+                print("Error creating user node: \(error)")
             }
         }
     }
 
     func signInAsGuest() {
+        isSuperAdmin = false
         self.userName = "Guest Account"
         self.userEmail = "Explore!"
         self.userImage = nil
@@ -124,5 +154,6 @@ final class AuthenticationViewModel: ObservableObject {
                 ? (email.contains("stu.d214.org")
                     ? "D214 Student" : "D214 Teacher") : "Non D214 User"
         }
+        await refreshSuperAdminClaim()
     }
 }

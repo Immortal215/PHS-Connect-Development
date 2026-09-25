@@ -67,3 +67,32 @@ func ensureURL(from string: String) -> String {
         return modifiedString
     }
 }
+
+// nil means there was no usable range; false means the range selected no text.
+func editMarkdown(
+    _ text: inout String,
+    selectedRange: inout NSRange?,
+    value: String,
+    asLink: Bool = false
+) -> Bool? {
+    guard let range = selectedRange, let textRange = Range(range, in: text) else {
+        return nil
+    }
+    let selectedText = String(text[textRange])
+    guard !selectedText.isEmpty else {
+        selectedRange = nil
+        return false
+    }
+
+    let replacement: String
+    if asLink {
+        replacement = "[\(selectedText.trimmingCharacters(in: .whitespaces))](\(ensureURL(from: value)))"
+    } else if selectedText.components(separatedBy: value).count - 1 == 2 {
+        replacement = selectedText.replacingOccurrences(of: value, with: "")
+    } else {
+        replacement = "\(value)\(selectedText.trimmingCharacters(in: .whitespaces))\(value)"
+    }
+    text.replaceSubrange(textRange, with: replacement)
+    selectedRange = nil
+    return true
+}

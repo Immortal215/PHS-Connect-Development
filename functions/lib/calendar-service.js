@@ -1,9 +1,10 @@
 "use strict";
 
 const crypto = require("crypto");
-const { isEligibleAuthUser } = require("./access");
+const { isEligibleAuthUser, normalizedEmail, roleValue } = require("./access");
 const {
   canAccessMeeting,
+  addUtcDays,
   dependencyFingerprint,
   fixedFeedWindow,
   monthKeys,
@@ -12,10 +13,6 @@ const {
 } = require("./calendar-core");
 const { FEED_LOCK_SECONDS } = require("./constants");
 const { generateCalendar } = require("./ical");
-
-function roleValue(value) {
-  return typeof value === "string" ? value : value?.role;
-}
 
 async function readClubDependencies(db, clubIDs) {
   const pairs = await Promise.all(clubIDs.map(async (clubID) => {
@@ -34,11 +31,11 @@ async function readClubDependencies(db, clubIDs) {
 async function readDependencyState(db, uid, dayKey, verifiedEmail) {
   const membershipsSnapshot = await db.ref(`/userClubMemberships/${uid}`).get();
   const memberships = membershipsSnapshot.val() || {};
-  const normalizedEmail = String(verifiedEmail || "").trim().toLowerCase();
+  const email = normalizedEmail(verifiedEmail);
   const clubIDs = Object.keys(memberships).filter((clubID) => {
     const membership = memberships[clubID];
     return ["member", "leader"].includes(roleValue(membership)) &&
-      String(membership?.email || "").trim().toLowerCase() === normalizedEmail;
+      normalizedEmail(membership?.email) === email;
   });
   const authorizedMemberships = Object.fromEntries(clubIDs.map((id) => [id, memberships[id]]));
   const dependencies = await readClubDependencies(db, clubIDs);
@@ -132,13 +129,6 @@ async function resolveToken(admin, rawToken) {
   const tokenSnapshot = await db.ref(`/calendarTokens/${tokenHash}`).get();
   const token = tokenSnapshot.val();
   if (!token?.uid || token.valid !== true) return null;
-  const [stateHash, revoked, generation] = await Promise.all([
-    db.ref(`/calendarSubscriptions/${token.uid}/tokenHash`).get(),
-    db.ref(`/calendarSubscriptions/${token.uid}/revoked`).get(),
-    db.ref(`/calendarSubscriptions/${token.uid}/generation`).get(),
-  ]);
-  if (revoked.val() === true || stateHash.val() !== tokenHash ||
-      Number(generation.val() || 0) !== Number(token.generation || 0)) return null;
   let user;
   try {
     user = await admin.auth().getUser(token.uid);
@@ -183,12 +173,26 @@ async function getCalendarResponse(admin, rawToken, requestHeaders = {}) {
       throw new Error("Calendar dependencies changed during feed generation.");
     }
     const { body, ...meta } = rebuilt;
-    await cacheRef.set({ meta, body });
-    const cacheParent = db.ref(`/calendarSubscriptions/${resolved.uid}/cache`);
-    const cacheKeys = Object.keys((await cacheParent.get()).val() || {}).sort().reverse();
-    if (cacheKeys.length > 3) {
-      const removals = Object.fromEntries(cacheKeys.slice(3).map((key) => [key, null]));
-      await cacheParent.update(removals);
+    const subscriptionPath = `calendarSubscriptions/${resolved.uid}`;
+    const trackedDays = (await db.ref(`/${subscriptionPath}/cacheDays`).get()).val();
+    if (!Array.isArray(trackedDays)) {
+      // Replace pre-tracking caches without downloading their calendar bodies.
+      await db.ref().update({
+        [`${subscriptionPath}/cache`]: { [window.dayKey]: { meta, body } },
+        [`${subscriptionPath}/cacheDays`]: [window.dayKey],
+      });
+    } else {
+      const keptDays = [...new Set([...trackedDays, window.dayKey])]
+        .filter((day) => day >= addUtcDays(window.dayKey, -2) && day <= window.dayKey)
+        .sort();
+      const updates = {
+        [`${subscriptionPath}/cache/${window.dayKey}`]: { meta, body },
+        [`${subscriptionPath}/cacheDays`]: keptDays,
+      };
+      for (const day of trackedDays) {
+        if (!keptDays.includes(day)) updates[`${subscriptionPath}/cache/${day}`] = null;
+      }
+      await db.ref().update(updates);
     }
     return { status: 200, cacheHit: false, cache: rebuilt };
   } finally {
@@ -203,5 +207,4 @@ module.exports = {
   readDependencyState,
   readClubDependencies,
   resolveToken,
-  roleValue,
 };

@@ -2,17 +2,10 @@
 
 const { monthKeys } = require("./calendar-core");
 const { sha256 } = require("./calendar-core");
-
-function normalizedEmail(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function uniqueSchoolEmails(values) {
-  return Array.from(new Set((values || []).map(normalizedEmail).filter(Boolean)));
-}
+const { normalizedEmail, uniqueEmails } = require("./access");
 
 function legacyVisibilityClaimUpdates(updates, meetingID, clubID, emails, emailToUID, timestamp) {
-  for (const email of uniqueSchoolEmails(emails)) {
+  for (const email of uniqueEmails(emails)) {
     const hash = sha256(email);
     updates[`internal/meetingVisibilityClaims/${hash}/${meetingID}`] = {
       clubID,
@@ -156,10 +149,8 @@ async function publishVisibilityChanges(db, updates, changesByClub, operationPre
 module.exports = {
   legacyVisibilityClaimUpdates,
   mergeChanges,
-  normalizedEmail,
   publishVisibilityChanges,
   removeIdentityVisibility,
   restoreIdentityVisibility,
   syncMeetingVisibilityClaims,
-  uniqueSchoolEmails,
 };

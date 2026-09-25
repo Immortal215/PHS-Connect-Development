@@ -270,16 +270,11 @@ struct ClubMembersEditorView: View {
     }
 
     func addMembers() {
-        let entries = emailDraft.split(omittingEmptySubsequences: true) {
-            $0 == "," || $0 == ";" || $0.isNewline
-        }
-        let emails = entries.map(extractEmail)
-        let validEmails = emails.filter(isAllowedMemberEmail)
-        let invalidCount = emails.count - validEmails.count
+        let parsed = parseClubEmails(emailDraft)
         var existingEmails = Set(members.map { $0.lowercased() })
         var addedEmails: [String] = []
 
-        for email in validEmails where !existingEmails.contains(email) {
+        for email in parsed.valid where !existingEmails.contains(email) {
             existingEmails.insert(email)
             addedEmails.append(email)
         }
@@ -291,10 +286,10 @@ struct ClubMembersEditorView: View {
 
         if !addedEmails.isEmpty {
             emailDraft = ""
-            feedbackIsError = invalidCount > 0
+            feedbackIsError = parsed.invalidCount > 0
             feedbackMessage = "Added \(addedEmails.count) member\(addedEmails.count == 1 ? "" : "s")"
-                + (invalidCount > 0 ? "; skipped \(invalidCount) invalid email\(invalidCount == 1 ? "" : "s")." : ".")
-        } else if invalidCount > 0 {
+                + (parsed.invalidCount > 0 ? "; skipped \(parsed.invalidCount) invalid email\(parsed.invalidCount == 1 ? "" : "s")." : ".")
+        } else if parsed.invalidCount > 0 {
             feedbackIsError = true
             feedbackMessage = "Enter a d214.org or gmail.com email address."
         } else {
@@ -303,28 +298,4 @@ struct ClubMembersEditorView: View {
         }
     }
 
-    func extractEmail(from entry: Substring) -> String {
-        let value = String(entry).trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let start = value.firstIndex(of: "<"),
-            let end = value[start...].firstIndex(of: ">"),
-            start < end
-        {
-            return String(value[value.index(after: start)..<end])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-        }
-
-        return value.replacingOccurrences(of: " ", with: "").lowercased()
-    }
-
-    func isAllowedMemberEmail(_ email: String) -> Bool {
-        let parts = email.split(separator: "@", omittingEmptySubsequences: false)
-        guard parts.count == 2, !parts[0].isEmpty else { return false }
-
-        let domain = parts[1].lowercased()
-        return domain == "gmail.com"
-            || domain == "d214.org"
-            || domain.hasSuffix(".d214.org")
-    }
 }

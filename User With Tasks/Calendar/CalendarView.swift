@@ -8,18 +8,15 @@ enum ClubCalendarDisplayMode: String {
 struct CalendarView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @ObservedObject var schoolScheduleStore: SchoolScheduleStore
     var calendarStore: CalendarDataStore
     @Environment(\.appViewportSize) var viewportSize
-    var screenWidth: CGFloat { viewportSize.width }
     var screenHeight: CGFloat { viewportSize.height }
 
     @AppStorage("selectedDate") var selectedDate : Date = Date()
     @AppStorage("firstCalendarAppearance") var firstCalendarAppearance = false
     @AppStorage("calendarScale") var scale = 0.7
-    @AppStorage("calendarPoint") var calendarScrollPoint = 6
-    @State var offset: CGSize = .zero
     @State private var subscriptionPresented = false
     @State private var notificationMeeting: Club.MeetingTime?
     @State private var notificationMeetingPresented = false

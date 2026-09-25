@@ -3,12 +3,14 @@
 const crypto = require("crypto");
 const { HttpError } = require("./access");
 const { randomToken, sha256 } = require("./calendar-core");
-const { REGION } = require("./constants");
+const { configuredURL, REGION, runtimeProjectID } = require("./constants");
 
-const DEFAULT_PROJECT = "user-with-personal-tasks";
-const projectID = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || DEFAULT_PROJECT;
-const FEED_URL = process.env.CALENDAR_FEED_URL ||
-  `https://${REGION}-${projectID}.cloudfunctions.net/calendarFeed`;
+function calendarFeedURL(env = process.env) {
+  if (env.CALENDAR_FEED_URL) {
+    return configuredURL(env.CALENDAR_FEED_URL, env, "CALENDAR_FEED_URL");
+  }
+  return `https://${REGION}-${runtimeProjectID(env)}.cloudfunctions.net/calendarFeed`;
+}
 
 async function withSubscriptionLock(db, uid, operation) {
   const owner = crypto.randomUUID();
@@ -40,6 +42,7 @@ async function subscriptionStatus(admin, uid) {
 }
 
 async function rotateSubscription(admin, uid) {
+  const feedURL = calendarFeedURL();
   const db = admin.database();
   return withSubscriptionLock(db, uid, async () => {
     const state = (await db.ref(`/calendarSubscriptions/${uid}`).get()).val() || {};
@@ -54,6 +57,7 @@ async function rotateSubscription(admin, uid) {
       [`calendarSubscriptions/${uid}/updatedAt`]: timestamp,
       [`calendarSubscriptions/${uid}/revokedAt`]: null,
       [`calendarSubscriptions/${uid}/cache`]: null,
+      [`calendarSubscriptions/${uid}/cacheDays`]: null,
       [`calendarTokens/${tokenHash}`]: { uid, generation, valid: true, createdAt: timestamp },
     };
     if (!state.createdAt) updates[`calendarSubscriptions/${uid}/createdAt`] = timestamp;
@@ -62,7 +66,7 @@ async function rotateSubscription(admin, uid) {
       updates[`calendarTokens/${state.tokenHash}/revokedAt`] = timestamp;
     }
     await db.ref().update(updates);
-    return { active: true, url: `${FEED_URL}?token=${encodeURIComponent(rawToken)}`, generation };
+    return { active: true, url: `${feedURL}?token=${encodeURIComponent(rawToken)}`, generation };
   });
 }
 
@@ -79,6 +83,7 @@ async function revokeSubscription(admin, uid) {
       [`calendarSubscriptions/${uid}/updatedAt`]: timestamp,
       [`calendarSubscriptions/${uid}/revokedAt`]: timestamp,
       [`calendarSubscriptions/${uid}/cache`]: null,
+      [`calendarSubscriptions/${uid}/cacheDays`]: null,
     };
     if (state.tokenHash) {
       updates[`calendarTokens/${state.tokenHash}/valid`] = false;
@@ -89,4 +94,4 @@ async function revokeSubscription(admin, uid) {
   });
 }
 
-module.exports = { FEED_URL, revokeSubscription, rotateSubscription, subscriptionStatus };
+module.exports = { calendarFeedURL, revokeSubscription, rotateSubscription, subscriptionStatus };

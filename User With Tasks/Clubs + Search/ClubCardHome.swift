@@ -14,7 +14,7 @@ struct ClubCardHome: View {
     var screenWidth: CGFloat
     var screenHeight: CGFloat
     @State var imageScaler: Double
-    @State var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @AppStorage("shownInfo") var shownInfo = -1
     @State var infoRelativeIndex: Int
     @Binding var userInfo: Personal?
@@ -80,7 +80,8 @@ struct ClubCardHome: View {
 
                         if isClubLeaderOrSuperAdmin(
                             club: club,
-                            userEmail: viewModel.userEmail
+                            userEmail: viewModel.userEmail,
+                            isSuperAdmin: viewModel.isSuperAdmin
                         ) {
                             Image(systemName: "crown")
                                 .imageScale(.large)

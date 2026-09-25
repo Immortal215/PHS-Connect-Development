@@ -7,26 +7,24 @@ class HttpError extends Error {
   }
 }
 
-const DEFAULT_ADMIN_EMAILS = new Set([
-  "frank.mirandola@d214.org",
-  "sharul.shah2008@gmail.com",
-  "devin.t.ramirez@gmail.com",
-]);
+function normalizedEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
 
-function adminEmails() {
-  const configured = String(process.env.PHS_ADMIN_EMAILS || "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-  return new Set([...DEFAULT_ADMIN_EMAILS, ...configured]);
+function uniqueEmails(values) {
+  return Array.from(new Set((values || []).map(normalizedEmail).filter(Boolean)));
+}
+
+function roleValue(value) {
+  return typeof value === "string" ? value : value?.role;
 }
 
 function isAdmin(decodedToken) {
-  return Boolean(decodedToken?.email && adminEmails().has(decodedToken.email.toLowerCase()));
+  return decodedToken?.phsSuperAdmin === true;
 }
 
 function isAllowedIdentityEmail(value) {
-  const email = String(value || "").trim().toLowerCase();
+  const email = normalizedEmail(value);
   const parts = email.split("@");
   if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
   const domain = parts[1];
@@ -59,13 +57,9 @@ async function getMembership(db, clubID, uid) {
   return (await db.ref(`/clubMemberships/${clubID}/${uid}`).get()).val() || null;
 }
 
-async function getRole(db, clubID, uid) {
-  return (await getMembership(db, clubID, uid))?.role || null;
-}
-
 function identityMatchesMembership(membership, decodedToken) {
-  const membershipEmail = String(membership?.email || "").trim().toLowerCase();
-  const tokenEmail = String(decodedToken?.email || "").trim().toLowerCase();
+  const membershipEmail = normalizedEmail(membership?.email);
+  const tokenEmail = normalizedEmail(decodedToken?.email);
   return Boolean(membershipEmail && tokenEmail && decodedToken?.email_verified === true &&
     membershipEmail === tokenEmail);
 }
@@ -90,13 +84,15 @@ async function requireLeader(db, clubID, decodedToken) {
 module.exports = {
   HttpError,
   getMembership,
-  getRole,
   identityMatchesMembership,
   isAllowedIdentityEmail,
   isAdmin,
   isEligibleAuthUser,
   isEligibleDecodedIdentity,
+  normalizedEmail,
   requireLeader,
   requireMembership,
+  roleValue,
+  uniqueEmails,
   verifyRequest,
 };

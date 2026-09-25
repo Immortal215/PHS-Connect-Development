@@ -1,7 +1,7 @@
 "use strict";
 
-const { addUtcDays, monthKeys, sha256 } = require("./calendar-core");
-const { SCHOOL_TIME_ZONE } = require("./constants");
+const { addUtcDays, monthKeys, sha256 } = require("../../lib/calendar-core");
+const { SCHOOL_TIME_ZONE } = require("../../lib/constants");
 
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();

@@ -24,28 +24,32 @@ extension View {
     }
 }
 
-let superAdminEmails: Set<String> = [
-    "sharul.shah2008@gmail.com",
-    "frank.mirandola@d214.org",
-    "devin.t.ramirez@gmail.com",
-]
-
 func normalizedEmail(_ email: String?) -> String {
     email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
 }
 
-func isSuperAdminEmail(_ email: String?) -> Bool {
-    superAdminEmails.contains(normalizedEmail(email))
+func boolFromGlobalSetting(_ rawValue: Any?) -> Bool? {
+    if let value = rawValue as? Bool { return value }
+    if let value = rawValue as? NSNumber { return value.boolValue }
+    if let value = rawValue as? Int { return value != 0 }
+    if let value = rawValue as? String {
+        switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "true", "1", "yes": return true
+        case "false", "0", "no": return false
+        default: return nil
+        }
+    }
+    return nil
 }
 
-func isClubLeaderOrSuperAdmin(club: Club, userEmail: String?) -> Bool {
+func isClubLeaderOrSuperAdmin(club: Club, userEmail: String?, isSuperAdmin: Bool) -> Bool {
     let email = normalizedEmail(userEmail)
-    return isSuperAdminEmail(email) || club.leaders.contains(email)
+    return isSuperAdmin || club.leaders.contains(email)
 }
 
-func isClubMemberLeaderOrSuperAdmin(club: Club, userEmail: String?) -> Bool {
+func isClubMemberLeaderOrSuperAdmin(club: Club, userEmail: String?, isSuperAdmin: Bool) -> Bool {
     let email = normalizedEmail(userEmail)
-    return isSuperAdminEmail(email) || club.leaders.contains(email)
+    return isSuperAdmin || club.leaders.contains(email)
         || club.members.contains(email)
 }
 

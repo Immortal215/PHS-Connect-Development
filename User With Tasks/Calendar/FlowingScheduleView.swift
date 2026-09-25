@@ -171,7 +171,9 @@ struct FlowingScheduleView: View {
         .appSheet(isPresented: $showSchoolScheduleEditor) {
             SchoolScheduleEditorView(config: schoolScheduleStore.config) {
                 updatedConfig in
-                await schoolScheduleStore.save(updatedConfig)
+                await schoolScheduleStore.save(
+                    updatedConfig, isSuperAdmin: viewModel?.isSuperAdmin == true
+                )
             }
             .presentationDetents([.large])
         }
@@ -205,7 +207,7 @@ struct FlowingScheduleView: View {
     }
 
     var scrollTargetHour: Int {
-        let timelineStarts = meetings.map { dateFromString($0.startTime) }
+        let timelineStarts = meetings.map(dateForMeeting)
         let schoolStarts = schoolEvents
             .compactMap(\.startDate)
             .filter { Calendar.current.isDate($0, inSameDayAs: selectedDate) }

@@ -229,19 +229,13 @@ struct AnnouncementMessageCard: View {
 
     func toggleReaction(_ emoji: String, users: [String]) {
         guard let userID = userInfo?.userID else { return }
-        var updatedUsers = users
-        if let index = updatedUsers.firstIndex(of: userID) {
-            updatedUsers.remove(at: index)
-        } else {
-            updatedUsers.append(userID)
-        }
-
         Task {
             await updateMessageReaction(
                 chatID: chatID,
                 messageID: message.messageID,
                 emoji: emoji,
-                userIDs: updatedUsers
+                userID: userID,
+                isAdding: !users.contains(userID)
             )
         }
     }

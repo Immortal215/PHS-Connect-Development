@@ -35,30 +35,6 @@ struct TabBarButton: View {
     }
 }
 
-struct Box: View {
-    let text: String
-
-    init(_ text: String) {
-        self.text = text
-    }
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 15)
-                .foregroundColor(.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(.black, lineWidth: 3)
-                )
-                .shadow(radius: 5)
-                .scaleEffect(0.9)
-
-            Text(text)
-                .padding()
-        }
-    }
-}
-
 struct CodeSnippetView: View {
     @State var code: String = ""
     @State var clicked = false

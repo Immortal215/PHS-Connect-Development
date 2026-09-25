@@ -70,11 +70,10 @@ Use Node 22, which is required by Admin 14 and supported by both the Gen2 backen
 ```sh
 cd /Users/sharulshah/Documents/PHS-Connect-Development/functions
 npm ci
-npm test
-npm run test:rules
+npm run check
 ```
 
-`test:rules` requires a Java runtime for the Firebase RTDB emulator. A missing Java runtime is a test-environment failure, not a passing rules test.
+Automated app, backend, and rules test suites were removed at the owner's request. `npm run check` validates Node 22 and backend entry-point syntax only. Build the app and manually verify the staging flows below, including authorization, before rollout.
 
 ## Backup and dry run
 
@@ -181,7 +180,7 @@ Previous app versions are unsupported. Keep the existing update-required gate, b
 
 ## Post-cutover verification
 
-- Repeat `npm test` and `npm run test:rules` against the release artifact.
+- Repeat `npm run check`, build the release app, and manually verify the staging flows above against the release artifact.
 - Confirm an unchanged conditional feed returns 304 after authorization/dependency checks and performs no meeting-body read.
 - Confirm a warm 200 reads the private cached body, while a post-calendar-edit request rebuilds from bounded month indexes.
 - Confirm notification routing reads message/chat scalars, `/clubMemberships/{clubID}`, targeted user preferences, and `/notificationDevices/{uid}`—never the full chat or `/users`.

@@ -1411,16 +1411,6 @@ struct Notebook: View {
     }
 }
 
-struct OutlinedTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding()
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(.white, lineWidth: 5)
-            }
-    }
-}
 struct RoundedTextFieldStyle: TextFieldStyle {
 
     @State var icon: Image?

@@ -24,15 +24,12 @@ struct AddMeetingView: View {
     @State var meetingFull = false
     @State var linkr: String?
     @State var linkAsk = false
-    @State var linkText: String?
     @State var selectedRange: NSRange?
     @State var isEditMenuVisible = false
-    @State var showHelp = false
     @State var startMinutes = 0
     @State var endMinutes = 60
     @State var visibleBy: [String] = []
     @State var visibleByWho = "Everyone"
-    @State var refresher = false
     @State var recurrence = MeetingRecurrenceOption.never
     @State var recurrenceEndDate =
         phsSchoolCalendar.date(byAdding: .month, value: 3, to: Date()) ?? Date()
@@ -53,13 +50,6 @@ struct AddMeetingView: View {
 
     @State var leaderClubs: [Club] = []
 
-    @State var meetingTimeForInfo = Club.MeetingTime(
-        clubID: "",
-        startTime: "",
-        endTime: "",
-        title: ""
-    )
-
     var editScreen: Bool? = false
 
     var selectedDate: Date
@@ -69,9 +59,7 @@ struct AddMeetingView: View {
     @State var presentationSize = CGSize(width: 390, height: 600)
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && parentViewportSize.width >= 900
-            && parentViewportSize.width > parentViewportSize.height
+        usesWideIPadLayout(in: parentViewportSize)
     }
 
     var usesPhoneLayout: Bool {
@@ -282,9 +270,7 @@ struct AddMeetingView: View {
                         )
 
                         Button {
-                            addInfoToHelper()
                             meetingFull.toggle()
-                            refresher.toggle()
                         } label: {
                             previewMeeting
                                 .frame(maxWidth: .infinity)
@@ -294,9 +280,7 @@ struct AddMeetingView: View {
                         .padding(.horizontal, 20)
                     } else {
                         Button {
-                            addInfoToHelper()
                             meetingFull.toggle()
-                            refresher.toggle()
                         } label: {
                             previewMeeting
                                 .padding()
@@ -334,9 +318,9 @@ struct AddMeetingView: View {
                     location = CreatedMeetingTime.location ?? ""
                     description = CreatedMeetingTime.description ?? ""
 
-                    startTime = dateFromString(CreatedMeetingTime.startTime)
+                    startTime = dateForMeeting(CreatedMeetingTime)
                     timeDifference = abs(
-                        dateFromString(CreatedMeetingTime.endTime).distance(
+                        endDateForMeeting(CreatedMeetingTime).distance(
                             to: startTime
                         )
                     )
@@ -406,8 +390,6 @@ struct AddMeetingView: View {
                     ) ?? startTime
                 }
 
-                //  addInfoToMeetingChild()
-                addInfoToHelper()
             }
             .onChange(of: startTime) {
                 if recurrenceEndDate
@@ -419,7 +401,6 @@ struct AddMeetingView: View {
                         to: startTime
                     ) ?? startTime
                 }
-                addInfoToHelper()
                 startMinutes =
                     phsSchoolCalendar.component(.hour, from: startTime) * 60
                     + phsSchoolCalendar.component(.minute, from: startTime)
@@ -428,7 +409,6 @@ struct AddMeetingView: View {
                     + phsSchoolCalendar.component(.minute, from: endTime)
             }
             .onChange(of: endTime) {
-                addInfoToHelper()
                 startMinutes =
                     phsSchoolCalendar.component(.hour, from: startTime) * 60
                     + phsSchoolCalendar.component(.minute, from: startTime)
@@ -436,25 +416,10 @@ struct AddMeetingView: View {
                     phsSchoolCalendar.component(.hour, from: endTime) * 60
                     + phsSchoolCalendar.component(.minute, from: endTime)
             }
-            .onChange(of: location) {
-                addInfoToHelper()
-            }
-            .onChange(of: visibleBy) {
-                addInfoToHelper()
-            }
-            .onChange(of: title) {
-                addInfoToHelper()
-            }
-            .onChange(of: description) {
-                addInfoToHelper()
-            }
-            .onChange(of: clubId) {
-                addInfoToHelper()
-            }
         }
         .popup(isPresented: $meetingFull) {
             MeetingInfoView(
-                meeting: meetingTimeForInfo,
+                meeting: draftMeeting(preview: true),
                 clubs: leaderClubs,
                 userInfo: $userInfo
             )
@@ -523,10 +488,8 @@ struct AddMeetingView: View {
     }
 
     func completeMeeting() {
+        let meetings = meetingsToSave(from: draftMeeting(preview: false))
         if editScreen != true {
-            addInfoToMeetingChild()
-            let meetings = meetingsToSave(from: CreatedMeetingTime)
-
             if meetings.count == 1 {
                 addMeeting(meeting: meetings[0], intent: saveIntent, calendarStore: calendarStore) { saved in
                     finishSave(saved)
@@ -537,9 +500,6 @@ struct AddMeetingView: View {
                 }
             }
         } else {
-            addInfoToHelper()
-            let meetings = meetingsToSave(from: meetingTimeForInfo)
-
             if editsThisAndFuture {
                 replaceMeetingAndFuture(
                     oldMeeting: CreatedMeetingTime,
@@ -849,29 +809,16 @@ struct AddMeetingView: View {
         }
     }
 
-    @ViewBuilder
     var previewMeeting: some View {
-        if refresher {
-            MeetingView(
-                meeting: meetingTimeForInfo,
-                scale: 1.0,
-                hourHeight: 60,
-                meetingInfo: meetingFull,
-                preview: true,
-                clubs: leaderClubs
-            )
-            .foregroundStyle(.primary)
-        } else {
-            MeetingView(
-                meeting: meetingTimeForInfo,
-                scale: 1.0,
-                hourHeight: 60,
-                meetingInfo: meetingFull,
-                preview: true,
-                clubs: leaderClubs
-            )
-            .foregroundStyle(.primary)
-        }
+        MeetingView(
+            meeting: draftMeeting(preview: true),
+            scale: 1.0,
+            hourHeight: 60,
+            meetingInfo: meetingFull,
+            preview: true,
+            clubs: leaderClubs
+        )
+        .foregroundStyle(.primary)
     }
 
     var editsOnlyThisMeeting: Bool {
@@ -904,92 +851,59 @@ struct AddMeetingView: View {
         )
     }
 
-    func addInfoToMeetingChild() {
-        CreatedMeetingTime.title = title
-        CreatedMeetingTime.clubID = clubId
-        CreatedMeetingTime.startTime = stringFromDate(startTime)
-        CreatedMeetingTime.endTime = stringFromDate(endTime)
-        CreatedMeetingTime.fullDay = fullDay
-        CreatedMeetingTime.visibility = .init(
-            mode: visibleByWho == "Only Leaders" ? "leaders" : (visibleByWho == "Custom" ? "uids" : "public"),
-            uids: nil
+    func draftMeeting(preview: Bool) -> Club.MeetingTime {
+        // Preview must not carry a persisted ID into MeetingInfoView's RSVP task.
+        let base = preview
+            ? Club.MeetingTime(clubID: "", startTime: "", endTime: "", title: "")
+            : CreatedMeetingTime
+        return Self.buildMeeting(
+            from: base,
+            title: title,
+            clubID: clubId,
+            startTime: startTime,
+            endTime: endTime,
+            fullDay: fullDay,
+            description: description,
+            location: location,
+            visibleBy: visibleBy,
+            visibleByWho: visibleByWho,
+            preview: preview
         )
-
-        if !location.isEmpty {
-            CreatedMeetingTime.location = location
-        } else {
-            CreatedMeetingTime.location = nil
-        }
-
-        if !visibleBy.isEmpty {
-            CreatedMeetingTime.visibleByArray = visibleBy
-        } else {
-            CreatedMeetingTime.visibleByArray = nil
-        }
-
-        if !description.isEmpty {
-            CreatedMeetingTime.description = description
-        } else {
-            CreatedMeetingTime.description = nil
-        }
     }
 
-    func addInfoToHelper() {
-        meetingTimeForInfo.clubID = clubId
-        meetingTimeForInfo.endTime = stringFromDate(endTime)
-        meetingTimeForInfo.startTime = stringFromDate(startTime)
-        meetingTimeForInfo.fullDay = fullDay
-        meetingTimeForInfo.visibility = .init(
-            mode: visibleByWho == "Only Leaders" ? "leaders" : (visibleByWho == "Custom" ? "uids" : "public"),
+    static func buildMeeting(
+        from original: Club.MeetingTime,
+        title: String,
+        clubID: String,
+        startTime: Date,
+        endTime: Date,
+        fullDay: Bool,
+        description: String,
+        location: String,
+        visibleBy: [String],
+        visibleByWho: String,
+        preview: Bool
+    ) -> Club.MeetingTime {
+        var meeting = original
+        meeting.title = preview && title.isEmpty ? "Title" : title
+        meeting.clubID = clubID
+        meeting.setDates(start: startTime, end: endTime, allDay: fullDay)
+        meeting.description = description.isEmpty ? nil : description
+        meeting.location = location.isEmpty ? nil : location
+        meeting.visibleByArray = visibleBy.isEmpty ? nil : visibleBy
+        meeting.visibility = .init(
+            mode: visibleByWho == "Only Leaders" ? "leaders"
+                : (visibleByWho == "Custom" ? "uids" : "public"),
             uids: nil
         )
-
-        if title != "" {
-            meetingTimeForInfo.title = title
-        } else {
-            meetingTimeForInfo.title = "Title"
-        }
-
-        if !visibleBy.isEmpty {
-            meetingTimeForInfo.visibleByArray = visibleBy
-        } else {
-            meetingTimeForInfo.visibleByArray = nil
-        }
-
-        if !location.isEmpty {
-            meetingTimeForInfo.location = location
-        } else {
-            meetingTimeForInfo.location = nil
-        }
-
-        if !description.isEmpty {
-            meetingTimeForInfo.description = description
-        } else {
-            meetingTimeForInfo.description = nil
-        }
+        return meeting
     }
 
     func applyMarkdownStyle(_ markdownSyntax: String) {
-        guard let range = selectedRange,
-            let textRange = Range(range, in: description)
-        else { return }
-
-        var selectedText =
-            description[textRange].components(separatedBy: markdownSyntax).count
-                - 1 == 2
-            ? description[textRange].replacing(markdownSyntax, with: "")
-            : description[textRange]
-
-        // .count(where: { $0 == "*"}) >= 6 ? description[textRange].replacingOccurrences(of: markdownSyntax, with: "") : description[textRange]
-        // try later for managing too much markdown
-
-        if selectedText != "" {
-            if selectedText == description[textRange] {
-                selectedText =
-                    "\(markdownSyntax)\(selectedText.trimmingCharacters(in: .whitespaces))\(markdownSyntax)"
-            }
-            description.replaceSubrange(textRange, with: selectedText)
-        } else {
+        guard let edited = editMarkdown(
+            &description, selectedRange: &selectedRange, value: markdownSyntax
+        ) else { return }
+        if !edited {
             dropper(
                 title: "Please select text to markdown",
                 subtitle: "",
@@ -997,30 +911,20 @@ struct AddMeetingView: View {
             )
         }
 
-        selectedRange = nil
         isEditMenuVisible = false
     }
 
     func applyMarkdownStyleLink(_ link: String) {
-        guard let range = selectedRange,
-            let textRange = Range(range, in: description)
-        else { return }
-
-        let selectedText = description[textRange]
-        if selectedText != "" {
-            let linkr = ensureURL(from: link)
-            let modifiedText =
-                "[\(selectedText.trimmingCharacters(in: .whitespaces))](\(linkr))"
-
-            description.replaceSubrange(textRange, with: modifiedText)
-        } else {
+        guard let edited = editMarkdown(
+            &description, selectedRange: &selectedRange, value: link, asLink: true
+        ) else { return }
+        if !edited {
             dropper(
                 title: "Please select text to markdown",
                 subtitle: "",
                 icon: nil
             )
         }
-        selectedRange = nil
         isEditMenuVisible = false
     }
 

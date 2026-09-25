@@ -1,11 +1,11 @@
 "use strict";
 
 const crypto = require("crypto");
-const { HttpError } = require("./access");
+const { HttpError, roleValue } = require("./access");
 const { addUtcDays, canAccessMeeting } = require("./calendar-core");
-const { roleValue } = require("./calendar-service");
 
 const READ_STATE_LIMIT = 500;
+const READ_STATE_PRUNE_INTERVAL = 25;
 const currentProjectID = () => process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "";
 
 function safeInstallationID(value) {
@@ -353,15 +353,45 @@ async function alreadyRead(db, uid, descriptor) {
 }
 
 async function pruneReadState(db, uid) {
-  const snapshot = await db.ref(`/notificationReadState/${uid}`)
-    .orderByChild("seenAt").limitToFirst(READ_STATE_LIMIT + 25).get();
-  if (snapshot.numChildren() <= READ_STATE_LIMIT) return;
-  const removals = {};
-  let remaining = snapshot.numChildren() - READ_STATE_LIMIT;
-  snapshot.forEach((child) => {
-    if (remaining > 0) { removals[child.key] = null; remaining -= 1; }
-  });
-  await db.ref(`/notificationReadState/${uid}`).update(removals);
+  const ref = db.ref(`/notificationReadState/${uid}`);
+  const target = READ_STATE_LIMIT - READ_STATE_PRUNE_INTERVAL;
+  // A legacy account may already exceed one query page; keep each read bounded.
+  while (true) {
+    const snapshot = await ref.orderByChild("seenAt").limitToFirst(READ_STATE_LIMIT + READ_STATE_PRUNE_INTERVAL).get();
+    if (snapshot.numChildren() <= target) return;
+    const removals = {};
+    let remaining = snapshot.numChildren() - target;
+    snapshot.forEach((child) => {
+      if (remaining > 0) { removals[child.key] = null; remaining -= 1; }
+    });
+    await ref.update(removals);
+  }
+}
+
+async function recordNewReadScope(db, uid) {
+  const ref = db.ref(`/internal/notificationReadStatePruneCounters/${uid}`);
+  const owner = crypto.randomUUID();
+  const now = Date.now();
+  const claim = await ref.transaction((current) => {
+    if (!current || (current.owner && Number(current.leaseExpiresAt || 0) <= now)) {
+      return { created: 0, owner, leaseExpiresAt: now + 60000 };
+    }
+    const created = Number(current.created || 0) + 1;
+    return created >= READ_STATE_PRUNE_INTERVAL && !current.owner
+      ? { created: 0, owner, leaseExpiresAt: now + 60000 }
+      : { ...current, created };
+  }, undefined, false);
+  if (!claim.committed || claim.snapshot.val()?.owner !== owner) return;
+  while (true) {
+    await pruneReadState(db, uid);
+    const completion = await ref.transaction((current) => {
+      if (current?.owner !== owner) return;
+      return Number(current.created || 0) > 0
+        ? { created: 0, owner, leaseExpiresAt: Date.now() + 60000 }
+        : { created: 0, owner: null, leaseExpiresAt: null };
+    }, undefined, false);
+    if (!completion.committed || completion.snapshot.val()?.owner !== owner) return;
+  }
 }
 
 async function acknowledgeNotification(admin, decodedToken, body) {
@@ -387,15 +417,17 @@ async function acknowledgeNotification(admin, decodedToken, body) {
   }, undefined, false);
   const saved = result.snapshot.val();
   const sourceInstallationID = String(body?.installationID || "");
-  const registrations = (await registrationsForUID(db, decodedToken.uid))
-    .filter((item) => item.installationID !== sourceInstallationID);
-  if (result.committed && registrations.length) {
-    await sendToRegistrations(admin, registrations, {
+  if (result.committed) {
+    const registrations = (await registrationsForUID(db, decodedToken.uid))
+      .filter((item) => item.installationID !== sourceInstallationID);
+    if (registrations.length) await sendToRegistrations(admin, registrations, {
       data: {
         type: "notificationReadSync",
+        uid: decodedToken.uid,
         readStateKey: key,
         readType: descriptor.type,
         revision: String(saved.revision),
+        seenAt: String(saved.seenAt || 0),
         chatID: saved.chatID || "",
         threadName: saved.threadName || "",
         messageID: saved.messageID || "",
@@ -405,9 +437,9 @@ async function acknowledgeNotification(admin, decodedToken, body) {
     });
   }
   if (result.committed && createdNewScope) {
-    await pruneReadState(db, decodedToken.uid);
+    await recordNewReadScope(db, decodedToken.uid);
   }
-  return { acknowledged: true, state: saved };
+  return { acknowledged: true, key, state: saved };
 }
 
 async function notificationReadStates(admin, decodedToken) {

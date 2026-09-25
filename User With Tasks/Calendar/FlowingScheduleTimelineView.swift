@@ -140,7 +140,8 @@ struct FlowingScheduleTimelineView: View {
         else { return false }
         return isClubLeaderOrSuperAdmin(
             club: club,
-            userEmail: viewModel?.userEmail
+            userEmail: viewModel?.userEmail,
+            isSuperAdmin: viewModel?.isSuperAdmin == true
         )
     }
 
@@ -193,27 +194,20 @@ struct FlowingScheduleTimelineView: View {
     ) -> Club.MeetingTime {
         var newMeeting = meeting
         let roundedStartTime = roundToNearest15Minutes(
-            date: dateFromString(meeting.startTime)
+            date: dateForMeeting(meeting)
         )
         let roundedEndTime = roundToNearest15Minutes(
-            date: dateFromString(meeting.endTime)
+            date: endDateForMeeting(meeting)
         )
         let intervalsMoved = Int(verticalOffset / (scale * 15))
 
-        newMeeting.startTime = stringFromDate(
-            Calendar.current.date(
-                byAdding: .minute,
-                value: intervalsMoved * 15,
-                to: roundedStartTime
-            )!
-        )
-        newMeeting.endTime = stringFromDate(
-            Calendar.current.date(
-                byAdding: .minute,
-                value: intervalsMoved * 15,
-                to: roundedEndTime
-            )!
-        )
+        let movedStart = Calendar.current.date(
+            byAdding: .minute, value: intervalsMoved * 15, to: roundedStartTime
+        ) ?? roundedStartTime
+        let movedEnd = Calendar.current.date(
+            byAdding: .minute, value: intervalsMoved * 15, to: roundedEndTime
+        ) ?? roundedEndTime
+        newMeeting.setDates(start: movedStart, end: movedEnd, allDay: meeting.fullDay == true)
 
         return newMeeting
     }
@@ -222,15 +216,15 @@ struct FlowingScheduleTimelineView: View {
         let sortedMeetings =
             meetings
             .sorted {
-                dateFromString($0.startTime) < dateFromString($1.startTime)
+                dateForMeeting($0) < dateForMeeting($1)
             }
 
         var columnAssignments: [FlowingScheduleMeetingColumn] = []
         var activeColumns: [(endTime: Date, column: Int)] = []
 
         for meeting in sortedMeetings {
-            let startTime = dateFromString(meeting.startTime)
-            let endTime = dateFromString(meeting.endTime)
+            let startTime = dateForMeeting(meeting)
+            let endTime = endDateForMeeting(meeting)
 
             activeColumns.removeAll { $0.endTime <= startTime }
 
@@ -322,9 +316,7 @@ struct FlowingScheduleMeetingCard: View {
             scale: scale,
             hourHeight: hourHeight,
             meetingInfo: selectedMeeting == meetingColumn.meeting && meetingInfo,
-            clubs: clubs,
-            numOfOverlapping: maxColumns,
-            hasOverlap: hasOverlap
+            clubs: clubs
         )
         .zIndex(selectedMeeting == meetingColumn.meeting && meetingInfo ? 1 : 0)
         .opacity(draggedMeeting == meetingColumn.meeting ? 0.0 : 1.0)
@@ -339,16 +331,16 @@ enum FlowingScheduleOverlapHelper {
         meeting: Club.MeetingTime,
         otherMeetings: [Club.MeetingTime]
     ) -> Bool {
-        let meetingStart = dateFromString(meeting.startTime)
-        let meetingEnd = dateFromString(meeting.endTime)
+        let meetingStart = dateForMeeting(meeting)
+        let meetingEnd = endDateForMeeting(meeting)
 
         for otherMeeting in otherMeetings {
             if meeting == otherMeeting {
                 continue
             }
 
-            let otherStart = dateFromString(otherMeeting.startTime)
-            let otherEnd = dateFromString(otherMeeting.endTime)
+            let otherStart = dateForMeeting(otherMeeting)
+            let otherEnd = endDateForMeeting(otherMeeting)
 
             if meetingStart < otherEnd && otherStart < meetingEnd {
                 return true
@@ -368,7 +360,7 @@ struct FlowingScheduleDraggedMeetingPreview: View {
     var dragOffset: CGSize
 
     var roundedStartTime: Date {
-        roundToNearest15Minutes(date: dateFromString(meeting.startTime))
+        roundToNearest15Minutes(date: dateForMeeting(meeting))
     }
 
     var formattedTime: String {
@@ -392,13 +384,13 @@ struct FlowingScheduleDraggedMeetingPreview: View {
     }
 
     var startMinutes: Int {
-        let startTime = dateFromString(meeting.startTime)
+        let startTime = dateForMeeting(meeting)
         return Calendar.current.component(.hour, from: startTime) * 60
             + Calendar.current.component(.minute, from: startTime)
     }
 
     var endMinutes: Int {
-        let endTime = dateFromString(meeting.endTime)
+        let endTime = endDateForMeeting(meeting)
         return Calendar.current.component(.hour, from: endTime) * 60
             + Calendar.current.component(.minute, from: endTime)
     }
@@ -413,9 +405,7 @@ struct FlowingScheduleDraggedMeetingPreview: View {
             scale: scale,
             hourHeight: hourHeight,
             meetingInfo: true,
-            clubs: clubs,
-            numOfOverlapping: 1,
-            hasOverlap: false
+            clubs: clubs
         )
         .opacity(0.7)
         .offset(x: totalWidth, y: dragOffset.height)

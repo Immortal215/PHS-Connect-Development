@@ -4,29 +4,29 @@
     ".write": false,
     "clubs": {
       ".read": true,
-      ".indexOn": ["lastUpdated", "name"],
+      ".indexOn": ["lastUpdated"],
       "$club_id": {
         "announcements": {
           "$announcement_id": {
-            ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')",
+            ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader' || auth.token.phsSuperAdmin === true)",
             "peopleSeen": {
               ".write": "auth != null"
             }
           }
         },
         "chatIDs": {
-          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')"
+          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true)"
         },
         "chatEnabled": {
-          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')",
+          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader' || auth.token.phsSuperAdmin === true)",
           ".validate": "newData.isBoolean()"
         },
         "locationInSchoolCoordinates": {
-          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')",
+          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader' || auth.token.phsSuperAdmin === true)",
           ".validate": "newData.hasChildren(['0', '1']) && newData.child('0').isNumber() && newData.child('1').isNumber()"
         },
         "lastUpdated": {
-          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com') && newData.isNumber()"
+          ".write": "auth != null && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true) && newData.isNumber()"
         },
         "meetingTimes": { ".write": false },
         "members": { ".write": false },
@@ -95,7 +95,7 @@
       ".write": false,
       "$club_id": {
         "latestChange": {
-          ".read": "auth != null && (auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com' || (auth.token.email_verified === true && auth.token.email != null && root.child('clubMemberships').child($club_id).child(auth.uid).child('email').val() === auth.token.email.toLowerCase() && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'member' || root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader')))"
+          ".read": "auth != null && (auth.token.phsSuperAdmin === true || (auth.token.email_verified === true && auth.token.email != null && root.child('clubMemberships').child($club_id).child(auth.uid).child('email').val() === auth.token.email.toLowerCase() && (root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'member' || root.child('clubMemberships').child($club_id).child(auth.uid).child('role').val() === 'leader')))"
         }
       }
     },
@@ -114,19 +114,22 @@
     "internal": {
       ".read": false,
       ".write": false,
+      "clubOperationExpirations": { ".indexOn": ["expiresAt"] },
+      "meetingOperationExpirations": { ".indexOn": ".value" },
+      "meetingNotificationJobExpirations": { ".indexOn": ".value" },
       "notificationRetryJobs": { ".indexOn": ["nextAttempt"] }
     },
     "chats": {
       ".read": true,
       "$chat_id": {
-        ".write": "!data.exists() && auth != null && newData.child('clubID').isString() && !newData.child('messages').exists() && (root.child('clubMemberships').child(newData.child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')",
+        ".write": "!data.exists() && auth != null && newData.child('clubID').isString() && !newData.child('messages').exists() && (root.child('clubMemberships').child(newData.child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true)",
         "messages": {
-          ".indexOn": ["time", "lastUpdated", "threadName"],
+          ".indexOn": ["lastUpdated", "threadName"],
           "$message_id": {
-            ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com') && ((data.child('threadName').val() !== 'announcements' && newData.child('threadName').val() !== 'announcements') || root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')",
+            ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true) && ((data.child('threadName').val() !== 'announcements' && newData.child('threadName').val() !== 'announcements') || root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.phsSuperAdmin === true)",
             "reactions": {
               "$emoji": {
-                ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')"
+                ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true)"
               }
             },
             "poll": {
@@ -137,32 +140,26 @@
               }
             },
             "lastUpdated": {
-              ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com') && newData.isNumber()"
+              ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.phsSuperAdmin === true) && newData.isNumber()"
             }
           }
         },
         "deletedMessages": {
           ".indexOn": ".value",
           "$message_id": {
-            ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com') && (root.child('chats').child($chat_id).child('messages').child($message_id).child('threadName').val() !== 'announcements' || root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')",
+            ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true) && (root.child('chats').child($chat_id).child('messages').child($message_id).child('threadName').val() !== 'announcements' || root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.phsSuperAdmin === true)",
             ".validate": "newData.isNumber()"
           }
         },
-        "lastMessage": {
-          ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com') && ((data.child('threadName').val() !== 'announcements' && newData.child('threadName').val() !== 'announcements') || root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').val() === 'leader' || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')"
-        },
-        "typingUsers": {
-          ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')"
-        },
         "pinned": {
-          ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')"
+          ".write": "auth != null && (root.child('clubMemberships').child(root.child('chats').child($chat_id).child('clubID').val()).child(auth.uid).child('role').exists() || auth.token.phsSuperAdmin === true)"
         }
       }
     },
     "global": {
       ".read": true,
       ".indexOn": ["lastUpdated"],
-      ".write": "auth != null && auth.token.email != null && (auth.token.email === 'frank.mirandola@d214.org' || auth.token.email === 'sharul.shah2008@gmail.com' || auth.token.email === 'devin.t.ramirez@gmail.com')"
+      ".write": "auth != null && auth.token.phsSuperAdmin === true"
     }
   }
 }

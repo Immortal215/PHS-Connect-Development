@@ -27,7 +27,8 @@ final class MeetingMutationIntent {
                   let request = pending.body as? Request else { throw PHSAPIError.signedOut }
             return request
         }
-        let request = make(UUID().uuidString)
+        let issuedAt = Int(Date().timeIntervalSince1970 * 1000)
+        let request = make("t\(issuedAt)-\(UUID().uuidString)")
         pending = (scope, path, request)
         return request
     }

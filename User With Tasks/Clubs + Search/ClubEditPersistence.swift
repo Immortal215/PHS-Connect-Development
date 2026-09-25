@@ -10,7 +10,6 @@ struct SavedClubEdit: Codable {
     var after: Club
     var deadline: Date
     var uploadedPaths: Set<String>
-    var submittedAt: Double?
 }
 
 struct ClubPhotoCleanup: Codable {
@@ -35,21 +34,11 @@ final class ClubEditPersistence: ObservableObject {
     var cleaning = false
 
     private static func safe(_ value: String) -> String {
-        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
-        return value.unicodeScalars.map { allowed.contains($0) ? String($0) : "_" }.joined()
+        privateCachePathComponent(value)
     }
 
     private func scopedFileURL(ownerID: String, project: String) throws -> URL {
-        let support = try FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        )
-        return support
-            .appending(path: "PHSConnectCache/v2", directoryHint: .isDirectory)
-            .appending(path: Self.safe(project), directoryHint: .isDirectory)
-            .appending(path: Self.safe(ownerID), directoryHint: .isDirectory)
+        return try privateCacheDirectory(projectID: project, uid: ownerID)
             .appending(path: "club-edits.json")
     }
 

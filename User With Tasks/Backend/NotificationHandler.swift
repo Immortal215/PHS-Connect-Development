@@ -37,14 +37,6 @@ final class NotificationOpenRouter {
         return (chatID, thread, messageID)
     }
 
-    func consumePendingMeeting() -> String? {
-        guard let meetingID = UserDefaults.standard.string(forKey: meetingKey),
-              !meetingID.isEmpty
-        else { return nil }
-        UserDefaults.standard.removeObject(forKey: meetingKey)
-        return meetingID
-    }
-
     var pendingMeetingID: String? {
         UserDefaults.standard.string(forKey: meetingKey)
     }

@@ -24,10 +24,14 @@ struct MessageScrollView: View {
     @Binding var isReactionListPresented: Bool
     @Binding var selectedReactionListMessage: Chat.ChatMessage?
     @State var clubsLeaderIn: [Club]
+    let isSuperAdmin: Bool
     let currentThreadName: String
     let messageRenderItems: [ChatMessageRenderItem]
     let messageLookup: [String: Chat.ChatMessage]
     let messageVersion: Int
+    let canLoadOlderMessages: Bool
+    let isLoadingOlderMessages: Bool
+    let loadOlderMessages: () -> Void
     @State var loadingUsers: Set<String> = []
     @State var expandedURLPreviewMessageID: String? = nil
     @State var lastVisibleMessageID: String?
@@ -49,7 +53,7 @@ struct MessageScrollView: View {
 
     var canManageAnnouncements: Bool {
         guard let clubID = selectedChat?.clubID else { return false }
-        return isSuperAdminEmail(userInfo?.userEmail)
+        return isSuperAdmin
             || clubsLeaderIn.contains(where: { $0.clubID == clubID })
     }
 
@@ -60,6 +64,19 @@ struct MessageScrollView: View {
                     LazyVStack(spacing: bubbles ? nil : 0) {  // not 0 by default!
                         if let selectedChat {
                             Group {
+                                if canLoadOlderMessages {
+                                    Button {
+                                        loadOlderMessages()
+                                    } label: {
+                                        if isLoadingOlderMessages {
+                                            ProgressView()
+                                        } else {
+                                            Text("Load earlier messages")
+                                        }
+                                    }
+                                    .disabled(isLoadingOlderMessages)
+                                    .padding(.vertical, 12)
+                                }
                                 if currentThreadName == "announcements" {
                                     if announcementRenderItems.isEmpty {
                                         ContentUnavailableView(
@@ -184,20 +201,13 @@ struct MessageScrollView: View {
                         let chatID = selectedChat?.chatID
                     else { return }
 
-                    var users = message.reactions?[emoji.emoji] ?? []
-
-                    if let index = users.firstIndex(of: userID) {
-                        users.remove(at: index)
-                    } else {
-                        users.append(userID)
-                    }
-
                     Task {
                         await updateMessageReaction(
                             chatID: chatID,
                             messageID: message.messageID,
                             emoji: emoji.emoji,
-                            userIDs: users
+                            userID: userID,
+                            isAdding: !(message.reactions?[emoji.emoji] ?? []).contains(userID)
                         )
                     }
 
@@ -891,14 +901,11 @@ struct MessageScrollView: View {
                         )
                     }
                     .emojiPicker(
-                        isPresented: $isEmojiPickerPresented,
-                        selectedEmoji: $selectedEmoji
-                            // detents: [.large] // Specify which presentation detents to use for the slide sheet (Optional)
-                            // configuration: ElegantConfiguration(showRandom: false), // Pass configuration (Optional)
-                            // localization: ElegantLocalization(searchFieldPlaceholder: "Find your emoji...") // Pass localization (Optional)
-                    )
-                } else {  // another persons message
-                    VStack(alignment: .leading) {
+            isPresented: $isEmojiPickerPresented,
+            selectedEmoji: $selectedEmoji
+          )
+        } else {  // another persons message
+          VStack(alignment: .leading) {
                         if previousMessage?.sender != message.sender {
                             Text(
                                 users[message.sender]?.userName.capitalized
@@ -1243,46 +1250,11 @@ struct MessageScrollView: View {
                                                                 "info.circle"
                                                         )
                                                     }
-                                                }
-                                            }
-                                            //                                            WebImage(url: URL(string: message.attachmentURL ?? "")) { phase in
-                                            //                                                switch phase {
-                                            //                                                case .success(let image):
-                                            //                                                    image
-                                            //                                                        .resizable()
-                                            //                                                        .scaledToFit()
-                                            //                                                        .clipShape(
-                                            //                                                            UnevenRoundedRectangle(
-                                            //                                                                topLeadingRadius: (previousMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourPreviousMessage && message.replyTo == previousMessage?.replyTo && !(previousMessage?.systemGenerated ?? false)) ? 8 : 25,
-                                            //                                                                bottomLeadingRadius: nextMessage?.sender ?? "" == message.sender && !calendarTimeIsNotSameByHourNextMessage && message.replyTo == nextMessage?.replyTo ? 8 : 25,
-                                            //                                                                bottomTrailingRadius: 25,
-                                            //                                                                topTrailingRadius: 25
-                                            //                                                            )
-                                            //                                                        )
-                                            //                                                        .overlay(alignment: .bottomTrailing) {
-                                            //                                                            Button {
-                                            //                                                                if let url = URL(string: message.attachmentURL ?? "") {
-                                            //                                                                    openURL(url)
-                                            //                                                                }
-                                            //                                                            } label: {
-                                            //                                                                Image(systemName: "safari")
-                                            //                                                            }
-                                            //                                                            .buttonStyle(.glass)
-                                            //                                                        }
-                                            //                                                        .overlay(alignment: .topTrailing) {
-                                            //                                                            reactionOverlay(message: message)
-                                            //                                                                .offset(x: 12, y: -12)
-                                            //                                                        }
-                                            //                                                        .frame(maxWidth: screenWidth * 0.5 - 100)
-                                            //                                                case .failure:
-                                            //                                                    ProgressView()
-                                            //                                                case .empty:
-                                            //                                                    Color.clear
-                                            //                                                }
-                                            //                                            }
+                        }
+                      }
 
-                                        } else {
-                                            if let url = normalizedURL(
+                    } else {
+                      if let url = normalizedURL(
                                                 message.message
                                             ) {
                                                 VStack {
@@ -1817,14 +1789,11 @@ struct MessageScrollView: View {
                         }
                     }
                     .emojiPicker(
-                        isPresented: $isEmojiPickerPresented,
-                        selectedEmoji: $selectedEmoji
-                            // detents: [.large] // Specify which presentation detents to use for the slide sheet (Optional)
-                            // configuration: ElegantConfiguration(showRandom: false), // Pass configuration (Optional)
-                            // localization: ElegantLocalization(searchFieldPlaceholder: "Find your emoji...") // Pass localization (Optional)
-                    )
+            isPresented: $isEmojiPickerPresented,
+            selectedEmoji: $selectedEmoji
+          )
 
-                }
+        }
             } else {  // non-bubble mode
                 NonBubbleMessageView(
                     message: message,
@@ -1952,20 +1921,13 @@ struct MessageScrollView: View {
                             let chatID = selectedChat?.chatID
                         else { return }
 
-                        var usersForEmoji = message.reactions?[emoji] ?? []
-
-                        if let index = usersForEmoji.firstIndex(of: userID) {
-                            usersForEmoji.remove(at: index)
-                        } else {
-                            usersForEmoji.append(userID)
-                        }
-
                         Task {
                             await updateMessageReaction(
                                 chatID: chatID,
                                 messageID: message.messageID,
                                 emoji: emoji,
-                                userIDs: usersForEmoji
+                                userID: userID,
+                                isAdding: !(message.reactions?[emoji] ?? []).contains(userID)
                             )
                         }
                     }

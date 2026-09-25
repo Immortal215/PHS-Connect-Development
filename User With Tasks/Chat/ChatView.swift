@@ -3,10 +3,7 @@ import CommonSwiftUI
 import FirebaseAuth
 import FirebaseCore
 import FirebaseDatabase
-import FirebaseDatabaseInternal
 import FirebaseStorage
-import GoogleSignIn
-import GoogleSignInSwift
 import PhotosUI
 import Pow
 import SDWebImageSwiftUI
@@ -36,6 +33,7 @@ struct ThreadMessageIndex {
     var messages: [Chat.ChatMessage] = []
     var lookup: [String: Chat.ChatMessage] = [:]
     var renderItems: [ChatMessageRenderItem] = []
+    var revision: Int?
     var version = 0
 }
 
@@ -43,8 +41,6 @@ final class ChatMessageRemovalBatcher: ObservableObject {
     var messageIDsByChatID: [String: Set<String>] = [:]
     var latestDeletionTimestampByChatID: [String: Double] = [:]
     var workItemsByChatID: [String: DispatchWorkItem] = [:]
-    var deletionCursors = ChatDeletionCursorCache().load()
-    let deletionCursorCache = ChatDeletionCursorCache()
 }
 
 enum ChatLoadingState: Equatable {
@@ -174,16 +170,13 @@ struct CompactChatColumnsLayout: Layout {
 struct ChatView: View {
     @Binding var clubs: [Club]
     @Binding var userInfo: Personal?
-    var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @Environment(\.appViewportSize) var viewportSize
     var screenWidth: CGFloat { viewportSize.width }
     var screenHeight: CGFloat { viewportSize.height }
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("Animations+") var animationsPlus = false
     @AppStorage("selectedTab") var selectedTab = 3
-    @AppStorage("muted") var mutedThreads: String = ""  // comma-separated (chatID.thread)
-    @AppStorage("readMessages") var lastReadMessages: String = ""  // comma-separated (chatID.thread:messageID)
-
     @State var chats: [Chat] = []
     @State var selectedChatID: String?
     @StateObject private var chatObservers = ChatObserverRegistry()
@@ -191,7 +184,7 @@ struct ChatView: View {
     @State private var chatSessionScope: ChatObserverRegistry.Scope?
     @State private var chatAuthHandle: AuthStateDidChangeListenerHandle?
     @State var users: [String: Personal] = [:]  // UserID : UserStruct
-    @AppStorage("cachedChatIDs") var cachedChatIDs: String = ""  // comma-separated chatIDs
+    @State private var chatLocalState = ChatLocalState()
     @State var composerFocusRequestID = 0
     @State var composerDismissRequestID = 0
     @State var selectedClub: Club?
@@ -228,6 +221,8 @@ struct ChatView: View {
     @State var cachedThreadSidebarInfoByChatID:
         [String: ChatThreadSidebarInfo] = [:]
     @State var messageIndexByChatID: [String: [String: ThreadMessageIndex]] = [:]
+    @State private var loadingOlderChatIDs: Set<String> = []
+    @State private var exhaustedChatHistoryIDs: Set<String> = []
     @StateObject var messageRemovalBatcher = ChatMessageRemovalBatcher()
     let loadingOverlayHoldTime = 0.12
     let joinRequestsThreadKey = "__joinRequests"
@@ -240,7 +235,10 @@ struct ChatView: View {
 
     var clubsLeaderIn: [Club] {
         return clubs.filter {
-            isClubLeaderOrSuperAdmin(club: $0, userEmail: userInfo?.userEmail)
+            isClubLeaderOrSuperAdmin(
+                club: $0, userEmail: userInfo?.userEmail,
+                isSuperAdmin: viewModel.isSuperAdmin
+            )
         }
     }
 
@@ -264,7 +262,8 @@ struct ChatView: View {
             guard
                 isClubMemberLeaderOrSuperAdmin(
                     club: club,
-                    userEmail: email
+                    userEmail: email,
+                    isSuperAdmin: viewModel.isSuperAdmin
                 )
             else { return nil }
 
@@ -577,12 +576,11 @@ struct ChatView: View {
                                                             chatID: selected
                                                                 .chatID,
                                                             style: .none
-                                                        )
-                                                    }
-                                                    // Button("Mentions") { updateNotifStyle(chatID: selected.chatID, style: "mentions") }
-                                                } label: {
-                                                    Label(
-                                                        currentStyleLabel,
+                                )
+                              }
+                            } label: {
+                              Label(
+                                currentStyleLabel,
                                                         systemImage: "bell"
                                                     )
                                                 }
@@ -1298,16 +1296,11 @@ struct ChatView: View {
                                                                         .chatID,
                                                                     threadName:
                                                                         thread
-                                                                )
-                                                            }
-                                                            //                                                            if mutedThreads.contains(selected.chatID + "." + thread) {
-                                                            //                                                                mutedThreads = mutedThreads.replacingOccurrences(of: selected.chatID + "." + thread + ",", with: "")
-                                                            //                                                            } else {
-                                                            //                                                                mutedThreads.append(selected.chatID + "." + thread + ",")
-                                                            //                                                            }
-                                                        })
-                                                        .contentTransition(
-                                                            .symbolEffect(
+                                    )
+                                  }
+                                })
+                                .contentTransition(
+                                  .symbolEffect(
                                                                 .replace
                                                             )
                                                         )
@@ -1324,12 +1317,11 @@ struct ChatView: View {
                             }
                             .frame(width: compact ? nil : 240)
                             .background {
-                                GlassBackground()
-                            }
-                           // .clipped()
-                            .allowsHitTesting(chatsEnabled)
-                            }
-                        }
+                  GlassBackground()
+                }
+                .allowsHitTesting(chatsEnabled)
+              }
+            }
                     }
                     .layoutValue(key: ChatColumnLayoutValueKey.self, value: .threads)
                     .opacity(!compact || visibleCompactPage == .browser ? 1 : 0)
@@ -1558,7 +1550,7 @@ struct ChatView: View {
         .onChange(of: chatSidebarSignature) {
             refreshChatSidebarCache()
         }
-        .onChange(of: lastReadMessages) {
+        .onChange(of: chatLocalState.lastReadByChatID) {
             refreshChatSidebarCache()
         }
         .onChange(of: userInfo?.userID) {
@@ -1677,7 +1669,8 @@ struct ChatView: View {
                     }),
                         isClubLeaderOrSuperAdmin(
                             club: club,
-                            userEmail: userInfo?.userEmail
+                            userEmail: userInfo?.userEmail,
+                            isSuperAdmin: viewModel.isSuperAdmin
                         )
                     {
                         ChatJoinRequestsView(
@@ -1730,10 +1723,15 @@ struct ChatView: View {
                         selectedReactionListMessage:
                             $selectedReactionListMessage,
                         clubsLeaderIn: clubsLeaderIn,
+                        isSuperAdmin: viewModel.isSuperAdmin,
                         currentThreadName: currentThread,
                         messageRenderItems: messageIndex.renderItems,
                         messageLookup: messageIndex.lookup,
                         messageVersion: messageIndex.version,
+                        canLoadOlderMessages: !(selected.messages ?? []).isEmpty
+                            && !exhaustedChatHistoryIDs.contains(selected.chatID),
+                        isLoadingOlderMessages: loadingOlderChatIDs.contains(selected.chatID),
+                        loadOlderMessages: { loadOlderMessages(for: selected.chatID) },
                         openMessageIDFromNotification:
                             $openMessageIDFromNotification
                     )
@@ -1764,7 +1762,8 @@ struct ChatView: View {
                                 updateUnreadIndicator()
                             }
                         },
-                        clubsLeaderIn: clubsLeaderIn
+                        clubsLeaderIn: clubsLeaderIn,
+                        isSuperAdmin: viewModel.isSuperAdmin
                     )
                 }
             }
@@ -1792,7 +1791,8 @@ struct ChatView: View {
         }),
             isClubLeaderOrSuperAdmin(
                 club: updatedClub,
-                userEmail: userInfo?.userEmail
+                userEmail: userInfo?.userEmail,
+                isSuperAdmin: viewModel.isSuperAdmin
             ),
             updatedClub.pendingMemberRequests?.contains(email) == true
         else { return }
@@ -1824,10 +1824,7 @@ struct ChatView: View {
                 rebuildThreadMessageIndex(for: newChat)
                 refreshChatSidebarCache()
                 Task {
-                    let chat = await createClubGroupChat(
-                        clubId: club.clubID,
-                        messageTo: nil
-                    )
+                    let chat = await createClubGroupChat(clubId: club.clubID)
                     await MainActor.run {
                         if let chatIndex = chats.firstIndex(where: {
                             $0.chatID == newChat.chatID
@@ -1856,7 +1853,8 @@ struct ChatView: View {
                             })
                             showCompactChatBrowser()
 
-                            cachedChatIDs.append(chat.chatID + ",")
+                            chatLocalState.cachedChatIDs.insert(chat.chatID)
+                            saveChatLocalStateAsync()
 
                             settings = false
 
@@ -1958,28 +1956,9 @@ struct ChatView: View {
         }
     }
 
-    func parsedLastReadMessagesByChat() -> [String: [String: String]] {
-        var result: [String: [String: String]] = [:]
-        for i in lastReadMessages.split(separator: ",") {
-            let parts = i.split(separator: ":")
-            guard parts.count == 2 else { continue }
-
-            let left = parts[0].split(separator: ".")
-            guard left.count == 2 else { continue }
-
-            let chatID = String(left[0])
-            let thread = String(left[1])
-            let messageID = String(parts[1])
-
-            result[chatID, default: [:]][thread] = messageID
-        }
-
-        return result
-    }
-
     func refreshChatSidebarCache(chatsOverride: [Chat]? = nil) {
         let sourceChats = chatsOverride ?? chats
-        let lastReadByChat = parsedLastReadMessagesByChat()
+        let lastReadByChat = chatLocalState.lastReadByChatID
         var unreadSet = Set<String>()
         var threadInfoByChatID: [String: ChatThreadSidebarInfo] = [:]
 
@@ -2071,99 +2050,72 @@ struct ChatView: View {
             return
         }
 
-        // filter clubs where user is leader or member and has chatIDs
         let relevantClubs = clubs.filter { club in
-            isClubMemberLeaderOrSuperAdmin(club: club, userEmail: email)
-                && !(club.chatIDs?.isEmpty ?? true)  // ensures the chatIds exist in the club
+            isClubMemberLeaderOrSuperAdmin(
+                club: club, userEmail: email,
+                isSuperAdmin: viewModel.isSuperAdmin
+            )
+                && !(club.chatIDs?.isEmpty ?? true)
         }
-        let cachedChatIDsSnapshot = Set(
-            cachedChatIDs.split(separator: ",").map(String.init)
+        let chatIDs = Array(Set(relevantClubs.flatMap { $0.chatIDs ?? [] })).sorted()
+        let cachedChatIDsSnapshot = chatLocalState.cachedChatIDs
+        let cacheDirectory = chatPrivateDirectory(
+            projectID: scope.projectID, uid: scope.uid
         )
         let previousMessageIndexByChatID = messageIndexByChatID
         if showLoader {
             chatLoadingState = .preparingChats
         }
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            // load cached chats off main thread
-            var loadedChats: [Chat] = []
-            for club in relevantClubs {
-                for chatID in club.chatIDs ?? [] {
-                    if cachedChatIDsSnapshot.contains(chatID) {
-                        let cache = ChatCache(chatID: chatID)
+        Task {
+            let loadedChats: [Chat] = await withCheckedContinuation { continuation in
+                cacheWriteQueue.async {
+                    var loaded: [Chat] = []
+                    for chatID in chatIDs where cachedChatIDsSnapshot.contains(chatID) {
+                        let cache = ChatCache(chatID: chatID, directoryURL: cacheDirectory)
                         if let cachedChat = cache.load() {
-                            loadedChats.append(cachedChat)
+                            loaded.append(cachedChat)
                         }
                     }
+                    continuation.resume(returning: loaded)
                 }
             }
-
             let loadedMessageIndexByChatID = buildThreadMessageIndexes(
                 for: loadedChats,
                 previousIndexes: previousMessageIndexByChatID
             )
-
-            DispatchQueue.main.async {
-                guard chatViewActive, currentChatScope == scope, chatLoadGeneration == loadGeneration else { return }
-
+            let stillCurrent = await MainActor.run { () -> Bool in
+                guard chatViewActive, currentChatScope == scope,
+                      chatLoadGeneration == loadGeneration else { return false }
                 chats = loadedChats
                 messageIndexByChatID = loadedMessageIndexByChatID
                 refreshChatSidebarCache(chatsOverride: loadedChats)
+                return true
+            }
+            guard stillCurrent else { return }
 
-                // chatIds to fetch
-                var chatIDsToFetch: [String] = []
-                for club in relevantClubs {
-                    let uncached = (club.chatIDs ?? []).filter {
-                        !cachedChatIDsSnapshot.contains($0)
+            let loadedIDs = Set(loadedChats.map(\.chatID))
+            let missingIDs = chatIDs.filter { !loadedIDs.contains($0) }
+            let fetchedChats = missingIDs.isEmpty ? nil
+                : await fetchChatsMetaData(chatIds: missingIDs)
+
+            await MainActor.run {
+                guard !Task.isCancelled, chatViewActive,
+                      currentChatScope == scope,
+                      chatLoadGeneration == loadGeneration else { return }
+                if let fetchedChats {
+                    for chat in fetchedChats {
+                        chats.append(chat)
+                        rebuildThreadMessageIndex(for: chat)
+                        saveChatToCacheAsync(chat)
                     }
-                    chatIDsToFetch.append(contentsOf: uncached)
+                    chatLocalState.cachedChatIDs.formUnion(fetchedChats.map(\.chatID))
+                    saveChatLocalStateAsync()
+                    refreshChatSidebarCache()
                 }
-
-                if chatIDsToFetch.isEmpty {
-                    chatLoadingState = .hidden
-                    if let selectedChatID { setupMessagesListener(for: selectedChatID) }
-                    attemptOpenChatFromNotification()
-                    return
-                }
-
-                // fetch metadata for uncached chatIDs
-                Task {
-                    let fetchedChats = await fetchChatsMetaData(
-                        chatIds: chatIDsToFetch
-                    )
-
-                    await MainActor.run {
-                        guard !Task.isCancelled else { return }
-                        guard chatViewActive, currentChatScope == scope, chatLoadGeneration == loadGeneration else { return }
-
-                        if let fetched = fetchedChats {
-                            for chat in fetched {
-                                // update local list of chats
-                                if let index = chats.firstIndex(where: {
-                                    $0.chatID == chat.chatID
-                                }) {
-                                    chats[index] = chat
-                                } else {
-                                    chats.append(chat)
-                                }
-                                rebuildThreadMessageIndex(for: chat)
-
-                                // save to ChatCache
-                                saveChatToCacheAsync(chat)
-
-                                // update AppStorage cache
-                                if !cachedChatIDs.contains(chat.chatID) {
-                                    cachedChatIDs.append(chat.chatID + ",")
-                                }
-                            }
-                            refreshChatSidebarCache()
-                        }
-
-                        chatLoadingState = .hidden
-                        if let selectedChatID { setupMessagesListener(for: selectedChatID) }
-                        attemptOpenChatFromNotification()
-                    }
-                }
+                chatLoadingState = .hidden
+                if let selectedChatID { setupMessagesListener(for: selectedChatID) }
+                attemptOpenChatFromNotification()
             }
         }
     }
@@ -2199,7 +2151,10 @@ struct ChatView: View {
 
     var accessibleChatIDs: Set<String> {
         Set(clubs.filter {
-            isClubMemberLeaderOrSuperAdmin(club: $0, userEmail: userInfo?.userEmail)
+            isClubMemberLeaderOrSuperAdmin(
+                club: $0, userEmail: userInfo?.userEmail,
+                isSuperAdmin: viewModel.isSuperAdmin
+            )
         }.flatMap { $0.chatIDs ?? [] })
     }
 
@@ -2212,12 +2167,28 @@ struct ChatView: View {
 
     func resetChatSession() {
         chatSessionScope = currentChatScope
+        if let scope = chatSessionScope {
+            ChatLocalStateCache.discardLegacyFiles()
+            for key in ["cachedChatIDs", "readMessages", "muted"] {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+            let directory = chatPrivateDirectory(
+                projectID: scope.projectID, uid: scope.uid
+            )
+            chatLocalState = cacheWriteQueue.sync {
+                ChatLocalStateCache(directoryURL: directory).load()
+            }
+        } else {
+            chatLocalState = ChatLocalState()
+        }
         chatLoadGeneration += 1
         chatObservers.stop()
         cancelMessageRemovals()
         chats = []
         users = [:]
         messageIndexByChatID = [:]
+        loadingOlderChatIDs = []
+        exhaustedChatHistoryIDs = []
         selectedChatID = nil
         selectedClub = nil
         selectedThread = [:]
@@ -2238,6 +2209,8 @@ struct ChatView: View {
         }
         chats.removeAll { !allowed.contains($0.chatID) }
         messageIndexByChatID = messageIndexByChatID.filter { allowed.contains($0.key) }
+        loadingOlderChatIDs.formIntersection(allowed)
+        exhaustedChatHistoryIDs.formIntersection(allowed)
         if let selectedChatID, !allowed.contains(selectedChatID) {
             self.selectedChatID = nil
             selectedClub = nil
@@ -2291,18 +2264,10 @@ struct ChatView: View {
         observe(databaseRef.child("messages"), .childRemoved) { snapshot in
             queueMessageRemoval(snapshot.key, for: chatID)
         }
-        let deletionCursor = messageRemovalBatcher.deletionCursors.lastProcessedAtByChatID[chatID] ?? -0.001
+        let deletionCursor = chatLocalState.lastProcessedAtByChatID[chatID] ?? -0.001
         observe(databaseRef.child("deletedMessages").queryOrderedByValue().queryStarting(atValue: deletionCursor), .childAdded) { snapshot in
             guard let deletedAt = (snapshot.value as? NSNumber)?.doubleValue else { return }
             queueMessageRemoval(snapshot.key, for: chatID, deletedAt: deletedAt)
-        }
-        observe(databaseRef.child("typingUsers"), .value) { snapshot in
-            guard let typing = snapshot.value as? [String],
-                  let index = chats.firstIndex(where: { $0.chatID == chatID }) else { return }
-            if chats[index].typingUsers != typing {
-                chats[index].typingUsers = typing
-                saveChatToCacheAsync(chats[index])
-            }
         }
         observe(databaseRef.child("pinned"), .value) { snapshot in
             let pinned = ChatMessageStartup.pinnedIDs(snapshot.value)
@@ -2310,6 +2275,54 @@ struct ChatView: View {
             if chats[index].pinned != pinned {
                 chats[index].pinned = pinned
                 saveChatToCacheAsync(chats[index])
+            }
+        }
+    }
+
+    func loadOlderMessages(for chatID: String) {
+        guard chatViewActive, accessibleChatIDs.contains(chatID),
+              let scope = currentChatScope,
+              !loadingOlderChatIDs.contains(chatID),
+              !exhaustedChatHistoryIDs.contains(chatID),
+              let currentChat = chats.first(where: { $0.chatID == chatID }),
+              let oldest = currentChat.messages?.min(by: {
+                  let first = $0.lastUpdated ?? 0
+                  let second = $1.lastUpdated ?? 0
+                  return first == second
+                      ? $0.messageID < $1.messageID : first < second
+              }) else { return }
+        loadingOlderChatIDs.insert(chatID)
+        let boundary: Any = oldest.lastUpdated.map { $0 as Any } ?? NSNull()
+        let query = Database.database().reference().child("chats")
+            .child(chatID).child("messages")
+            .queryOrdered(byChild: "lastUpdated")
+            .queryEnding(atValue: boundary, childKey: oldest.messageID)
+            .queryLimited(toLast: 101)
+
+        Task {
+            let snapshot = await observeSingleValue(at: query)
+            await MainActor.run {
+                loadingOlderChatIDs.remove(chatID)
+                guard chatViewActive, currentChatScope == scope,
+                      accessibleChatIDs.contains(chatID),
+                      let index = chats.firstIndex(where: { $0.chatID == chatID }),
+                      let page = chat(
+                        from: snapshot, chatID: chatID,
+                        clubID: chats[index].clubID, pinned: nil
+                      )?.messages else { return }
+                var messages = chats[index].messages ?? []
+                let knownIDs = Set(messages.map(\.messageID))
+                let older = page.filter { !knownIDs.contains($0.messageID) }
+                for message in older { insertMessageSorted(message, into: &messages) }
+                if !older.isEmpty {
+                    chats[index].messages = messages
+                    rebuildThreadMessageIndex(for: chats[index])
+                    refreshChatSidebarCache()
+                    saveChatToCacheAsync(chats[index])
+                }
+                if page.count < 101 || older.isEmpty {
+                    exhaustedChatHistoryIDs.insert(chatID)
+                }
             }
         }
     }
@@ -2372,16 +2385,11 @@ struct ChatView: View {
 
     func saveDeletionCursorAsync(chatID: String, deletedAt: Double?) {
         guard let deletedAt else { return }
-        let currentCursor = messageRemovalBatcher.deletionCursors
-            .lastProcessedAtByChatID[chatID] ?? -0.001
+        let currentCursor = chatLocalState.lastProcessedAtByChatID[chatID] ?? -0.001
         guard deletedAt > currentCursor else { return }
 
-        messageRemovalBatcher.deletionCursors.lastProcessedAtByChatID[chatID] =
-            deletedAt
-        let cursors = messageRemovalBatcher.deletionCursors
-        cacheWriteQueue.async {
-            messageRemovalBatcher.deletionCursorCache.save(cursors)
-        }
+        chatLocalState.lastProcessedAtByChatID[chatID] = deletedAt
+        saveChatLocalStateAsync()
     }
 
     func insertMessageSorted(
@@ -2405,7 +2413,8 @@ struct ChatView: View {
             club.chatEnabled ?? true,
             isClubLeaderOrSuperAdmin(
                 club: club,
-                userEmail: userInfo?.userEmail
+                userEmail: userInfo?.userEmail,
+                isSuperAdmin: viewModel.isSuperAdmin
             ),
             messageIndexByChatID[chatID]?["announcements"] == nil
         else { return }
@@ -2430,7 +2439,8 @@ struct ChatView: View {
         guard let club = clubs.first(where: { $0.clubID == clubID }),
             isClubLeaderOrSuperAdmin(
                 club: club,
-                userEmail: userInfo?.userEmail
+                userEmail: userInfo?.userEmail,
+                isSuperAdmin: viewModel.isSuperAdmin
             )
         else { return }
 
@@ -2444,13 +2454,6 @@ struct ChatView: View {
                 print("Failed to update club chat setting: \(error)")
             }
         }
-    }
-
-    func rebuildThreadMessageIndexes(for chats: [Chat]) {
-        messageIndexByChatID = buildThreadMessageIndexes(
-            for: chats,
-            previousIndexes: messageIndexByChatID
-        )
     }
 
     func rebuildThreadMessageIndex(for chat: Chat) {
@@ -2481,6 +2484,7 @@ struct ChatView: View {
         previousIndexByThread: [String: ThreadMessageIndex]
     ) -> [String: ThreadMessageIndex] {
         var indexByThread: [String: ThreadMessageIndex] = [:]
+        var revisionHashers: [String: Hasher] = [:]
 
         for message in chat.messages ?? [] {
             let thread = message.threadName ?? "general"
@@ -2488,6 +2492,11 @@ struct ChatView: View {
             index.messages.append(message)
             index.lookup[message.messageID] = message
             indexByThread[thread] = index
+
+            var hasher = revisionHashers[thread] ?? Hasher()
+            hasher.combine(message.messageID)
+            hasher.combine(message.lastUpdated ?? message.date)
+            revisionHashers[thread] = hasher
         }
 
         let allThreads = Set(previousIndexByThread.keys)
@@ -2498,11 +2507,10 @@ struct ChatView: View {
             let previousIndex = previousIndexByThread[thread]
             let previousMessages = previousIndex?.messages ?? []
 
-            let messageSignatureChanged = messageSignature(previousMessages)
-                != messageSignature(index.messages)
+            index.revision = revisionHashers[thread]?.finalize()
             let messagesChanged = previousMessages != index.messages
 
-            if messageSignatureChanged {
+            if index.revision != previousIndex?.revision {
                 index.version = (previousIndex?.version ?? 0) + 1
             } else {
                 index.version = previousIndex?.version ?? 0
@@ -2566,24 +2574,26 @@ struct ChatView: View {
         }
     }
 
-    func messageSignature(_ messages: [Chat.ChatMessage]) -> String {
-        messages.map {
-            "\($0.messageID):\($0.lastUpdated ?? $0.date)"
-        }
-        .joined(separator: "|")
-    }
-
     func saveChatToCacheAsync(_ chat: Chat) {
+        guard let scope = currentChatScope else { return }
+        let directory = chatPrivateDirectory(
+            projectID: scope.projectID, uid: scope.uid
+        )
         cacheWriteQueue.async {
-            let cache = ChatCache(chatID: chat.chatID)
+            let cache = ChatCache(chatID: chat.chatID, directoryURL: directory)
             cache.save(chat)
         }
     }
 
-    func decodeMessageDict(_ dict: [String: Any]) throws -> Chat.ChatMessage?
-    {  // initial messages fetch decode
-        let jsonData = try JSONSerialization.data(withJSONObject: dict)
-        return try JSONDecoder().decode(Chat.ChatMessage.self, from: jsonData)
+    func saveChatLocalStateAsync() {
+        guard let scope = currentChatScope else { return }
+        let directory = chatPrivateDirectory(
+            projectID: scope.projectID, uid: scope.uid
+        )
+        let state = chatLocalState
+        cacheWriteQueue.async {
+            ChatLocalStateCache(directoryURL: directory).save(state)
+        }
     }
 
     func decodeMessage(from snapshot: DataSnapshot) -> Chat.ChatMessage? {
@@ -2656,26 +2666,9 @@ struct ChatView: View {
                 .messageID
         else { return }
 
-        let key = chat.chatID + "." + thread
-        let entries = lastReadMessages.split(separator: ",")
-
-        if entries.contains(where: { $0.hasPrefix(key + ":") }) {
-            lastReadMessages =
-                entries
-                .map { entry in
-                    let parts = entry.split(
-                        separator: ":",
-                        maxSplits: 1,
-                        omittingEmptySubsequences: false
-                    )
-                    return String(parts.first ?? "") == key
-                        ? key + ":" + lastMessageInThread : String(entry)
-                }
-                .joined(separator: ",") + ","
-        } else {
-            lastReadMessages.append(key + ":" + lastMessageInThread + ",")
-        }
-
+        chatLocalState.lastReadByChatID[chat.chatID, default: [:]][thread] =
+            lastMessageInThread
+        saveChatLocalStateAsync()
         refreshChatSidebarCache()
     }
 
@@ -2754,36 +2747,6 @@ struct ChatView: View {
         }
         globalChatsHandle = nil
         globalChatsRef = nil
-    }
-
-    func boolFromGlobalSetting(_ rawValue: Any?) -> Bool? {
-        if let boolValue = rawValue as? Bool {
-            return boolValue
-        }
-
-        if let numberValue = rawValue as? NSNumber {
-            return numberValue.boolValue
-        }
-
-        if let intValue = rawValue as? Int {
-            return intValue != 0
-        }
-
-        if let stringValue = rawValue as? String {
-            let normalized = stringValue.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            ).lowercased()
-            if normalized == "true" || normalized == "1" || normalized == "yes"
-            {
-                return true
-            }
-            if normalized == "false" || normalized == "0" || normalized == "no"
-            {
-                return false
-            }
-        }
-
-        return nil
     }
 
 }
@@ -2981,6 +2944,7 @@ struct ChatComposer: View {
     @State var uploadError: String?
     @State var isDropTargeted = false
     @State var clubsLeaderIn: [Club]
+    let isSuperAdmin: Bool
     @State var includesPoll = false
     @State var pollOptions = ChatPollDraftOption.emptyPair
     @State var isAnnouncementComposerExpanded = false
@@ -2997,7 +2961,7 @@ struct ChatComposer: View {
     }
 
     var isLeaderInSelectedClub: Bool {
-        isSuperAdminEmail(userInfo?.userEmail)
+        isSuperAdmin
             || clubsLeaderIn.contains(where: {
                 $0.clubID == selectedChat?.clubID
             })
@@ -3008,7 +2972,7 @@ struct ChatComposer: View {
     }
 
     var canSendMessages: Bool {
-        isSuperAdminEmail(userInfo?.userEmail)
+        isSuperAdmin
             || (isD214User
                 && (!isAnnouncementsThread || isLeaderInSelectedClub))
     }

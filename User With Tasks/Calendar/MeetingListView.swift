@@ -29,13 +29,13 @@ struct MeetingListView: View {
 
     var groupedMeetings: [(date: Date, meetings: [Club.MeetingTime])] {
         Dictionary(grouping: filteredMeetings) {
-            Calendar.current.startOfDay(for: dateFromString($0.startTime))
+            Calendar.current.startOfDay(for: dateForMeeting($0))
         }
         .map { date, meetings in
             (
                 date: date,
                 meetings: meetings.sorted {
-                    dateFromString($0.startTime) < dateFromString($1.startTime)
+                    dateForMeeting($0) < dateForMeeting($1)
                 }
             )
         }
@@ -155,7 +155,7 @@ struct MeetingListView: View {
                     meeting: selectedMeeting,
                     clubs: clubs,
                     viewModel: viewModel,
-                    selectedDate: dateFromString(selectedMeeting.startTime),
+                    selectedDate: dateForMeeting(selectedMeeting),
                     userInfo: $userInfo,
                     onDelete: { _ in
                         self.selectedMeeting = nil
@@ -232,7 +232,7 @@ struct MeetingListView: View {
                 meeting: selectedMeeting,
                 clubs: clubs,
                 viewModel: viewModel,
-                selectedDate: dateFromString(selectedMeeting.startTime),
+                selectedDate: dateForMeeting(selectedMeeting),
                 userInfo: $userInfo,
                 onDelete: { _ in
                     self.selectedMeeting = nil
@@ -269,7 +269,7 @@ struct MeetingListRow: View {
 
     var backgroundOpacity: Double {
         if isSelected { return 10 }
-        return dateFromString(meeting.endTime) <= Date() ? 0.3 : 1
+        return endDateForMeeting(meeting) <= Date() ? 0.3 : 1
     }
 
     var body: some View {
@@ -296,7 +296,7 @@ struct MeetingListRow: View {
                 .foregroundStyle(isSelected ? .white : accentColor.opacity(backgroundOpacity))
 
                 Label(
-                    "\(dateFromString(meeting.startTime).formatted(date: .omitted, time: .shortened)) - \(dateFromString(meeting.endTime).formatted(date: .omitted, time: .shortened))",
+                    "\(dateForMeeting(meeting).formatted(date: .omitted, time: .shortened)) - \(endDateForMeeting(meeting).formatted(date: .omitted, time: .shortened))",
                     systemImage: "clock"
                 )
 

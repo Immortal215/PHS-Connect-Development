@@ -102,19 +102,11 @@ struct AddAnnouncementSheet: View {
                         }
                     }
 
-                } label: {
-                    VStack(alignment: .leading) {
-                        //                        Image(systemName: "questionmark.circle")
-                        //                            .foregroundColor(.blue)
-                        //                            .onTapGesture {
-                        //                                areUSure = false
-                        //                                showHelp = true
-                        //
-                        //                            }
-                        //                            .padding(.bottom)
+        } label: {
+          VStack(alignment: .leading) {
 
-                        Text("Announcement Description")
-                            .padding(.bottom)
+            Text("Announcement Description")
+              .padding(.bottom)
                         Text(
                             .init(
                                 """
@@ -185,12 +177,11 @@ struct AddAnnouncementSheet: View {
                             }
                         }
 
-                    }
-                    .fixedSize()
-                    // bring back if needed
+          }
+          .fixedSize()
 
-                }
-                .padding()
+        }
+        .padding()
 
                 Text("Preview:")
                     .font(.headline)
@@ -314,26 +305,10 @@ struct AddAnnouncementSheet: View {
     }
 
     func applyMarkdownStyle(_ markdownSyntax: String) {
-        guard let range = selectedRange,
-            let textRange = Range(range, in: announcementBody)
-        else { return }
-
-        var selectedText =
-            announcementBody[textRange].components(separatedBy: markdownSyntax)
-                .count - 1 == 2
-            ? announcementBody[textRange].replacing(markdownSyntax, with: "")
-            : announcementBody[textRange]
-
-        // .count(where: { $0 == "*"}) >= 6 ? announcementBody[textRange].replacingOccurrences(of: markdownSyntax, with: "") : announcementBody[textRange]
-        // try later for managing too much markdown
-
-        if selectedText != "" {
-            if selectedText == announcementBody[textRange] {
-                selectedText =
-                    "\(markdownSyntax)\(selectedText.trimmingCharacters(in: .whitespaces))\(markdownSyntax)"
-            }
-            announcementBody.replaceSubrange(textRange, with: selectedText)
-        } else {
+        guard let edited = editMarkdown(
+            &announcementBody, selectedRange: &selectedRange, value: markdownSyntax
+        ) else { return }
+        if !edited {
             dropper(
                 title: "Please select text to markdown",
                 subtitle: "",
@@ -341,30 +316,20 @@ struct AddAnnouncementSheet: View {
             )
         }
 
-        selectedRange = nil
         isEditMenuVisible = false
     }
 
     func applyMarkdownStyleLink(_ link: String) {
-        guard let range = selectedRange,
-            let textRange = Range(range, in: announcementBody)
-        else { return }
-
-        let selectedText = announcementBody[textRange]
-        if selectedText != "" {
-            let linkr = ensureURL(from: link)
-            let modifiedText =
-                "[\(selectedText.trimmingCharacters(in: .whitespaces))](\(linkr))"
-
-            announcementBody.replaceSubrange(textRange, with: modifiedText)
-        } else {
+        guard let edited = editMarkdown(
+            &announcementBody, selectedRange: &selectedRange, value: link, asLink: true
+        ) else { return }
+        if !edited {
             dropper(
                 title: "Please select text to markdown",
                 subtitle: "",
                 icon: nil
             )
         }
-        selectedRange = nil
         isEditMenuVisible = false
     }
 }
@@ -377,7 +342,6 @@ struct SelectedAnnouncement: Identifiable {
 struct AnnouncementsView: View {
     @State var showAllAnnouncements = false
     @State var announcements: [String: Club.Announcements]
-    @State var clubNames: [String: String] = [:]
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
     @State var viewModel: AuthenticationViewModel
     @State var isClubMember: Bool
@@ -399,7 +363,9 @@ struct AnnouncementsView: View {
                         }).prefix(limitingPrefix!),
                         id: \.key
                     ) { (key, announcement) in
-                        if let clubName = clubNames[announcement.clubID] {
+                        let clubName = clubs.first(where: {
+                            $0.clubID == announcement.clubID
+                        })?.name ?? "Unknown Club"
                             Button {
                                 selectedAnnouncement = SelectedAnnouncement(
                                     id: key,
@@ -419,9 +385,9 @@ struct AnnouncementsView: View {
                             }
                             .appSheet(item: $selectedAnnouncement) { selected in
                                 SingleAnnouncementView(
-                                    clubName: clubNames[
-                                        selected.announcement.clubID
-                                    ] ?? "Unknown Club",
+                                    clubName: clubs.first(where: {
+                                        $0.clubID == selected.announcement.clubID
+                                    })?.name ?? "Unknown Club",
                                     announcement: Binding(
                                         get: { announcements[selected.id]! },
                                         set: { announcements[selected.id] = $0 }
@@ -468,20 +434,6 @@ struct AnnouncementsView: View {
                                 .cornerRadius(25)
 
                             }
-                        } else {
-                            Text("")
-                                .onAppear {
-                                    Task {
-                                        let name = await getClubNameByID(
-                                            clubID: announcement.clubID
-                                        )
-                                        await MainActor.run {
-                                            clubNames[announcement.clubID] =
-                                                name ?? "Unknown Club"
-                                        }
-                                    }
-                                }
-                        }
 
                         Spacer()
                     }
@@ -549,7 +501,6 @@ struct AnnouncementsView: View {
 struct AllAnnouncementsView: View {
     @Environment(\.appViewportSize) var viewportSize
     @State var announcements: [String: Club.Announcements]
-    @State var clubNames: [String: String] = [:]
     @State var selectedAnnouncement: SelectedAnnouncement? = nil
     @State var viewModel: AuthenticationViewModel
     @State var isClubMember: Bool
@@ -559,9 +510,7 @@ struct AllAnnouncementsView: View {
     @State var isTheHomeScreenClubView = false
 
     var usesLegacyWideIPadLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-            && viewportSize.width >= 900
-            && viewportSize.width > viewportSize.height
+        usesWideIPadLayout(in: viewportSize)
     }
 
     var body: some View {
@@ -572,7 +521,9 @@ struct AllAnnouncementsView: View {
             }),
             id: \.key
         ) { (key, announcement) in
-            if let clubName = clubNames[announcement.clubID] {
+            let clubName = clubs.first(where: {
+                $0.clubID == announcement.clubID
+            })?.name ?? "Unknown Club"
                 Button {
                     selectedAnnouncement = SelectedAnnouncement(
                         id: key,
@@ -600,8 +551,9 @@ struct AllAnnouncementsView: View {
                 .padding(.horizontal, isTheHomeScreenClubView ? 0 : 16)
                 .appSheet(item: $selectedAnnouncement) { selected in
                     SingleAnnouncementView(
-                        clubName: clubNames[selected.announcement.clubID]
-                            ?? "Unknown Club",
+                        clubName: clubs.first(where: {
+                            $0.clubID == selected.announcement.clubID
+                        })?.name ?? "Unknown Club",
                         announcement: Binding(
                             get: { announcements[selected.id]! },
                             set: { announcements[selected.id] = $0 }
@@ -641,20 +593,6 @@ struct AllAnnouncementsView: View {
                     .cornerRadius(25)
 
                 }
-            } else {
-                Text("")
-                    .onAppear {
-                        Task {
-                            let name = await getClubNameByID(
-                                clubID: announcement.clubID
-                            )
-                            await MainActor.run {
-                                clubNames[announcement.clubID] =
-                                    name ?? "Unknown Club"
-                            }
-                        }
-                    }
-            }
 
             Spacer()
         }

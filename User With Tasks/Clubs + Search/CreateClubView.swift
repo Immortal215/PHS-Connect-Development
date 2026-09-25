@@ -32,9 +32,6 @@ struct CreateClubView: View {
     @State var normalMeet = ""
     @State var addLeaderText = ""
     @State var leaderTextShake = false
-    @State var memberDisclosureExpanded = false
-    @State var leaderDisclosureExpanded = false
-    @State var genreDisclosureExpanded = false
     @State var clubType = "Course"
     @State var selectedLeaders: Set<String> = []
     @State var selectedGenres: Set<String> = []
@@ -1022,84 +1019,42 @@ struct CreateClubView: View {
 
 
     func addLeaderFunc() {
-        addLeaderText = addLeaderText.replacingOccurrences(of: " ", with: "")
-        if (addLeaderText.contains("d214.org")
-            || addLeaderText.contains("gmail.com"))
-            && leaders.contains(addLeaderText) == false
-        {
-            if addLeaderText.contains("<") && addLeaderText.contains(">") {
-
-                // below code splits emails if it looks like this :
-                // Pryncess Butler <pbutler5545@stu.d214.org>, Destani Cross <dcross6555@stu.d214.org>, Makaylah Mosby <mmosby5290@stu.d214.org>
-
-                var splitLeaders: [Substring] = []
-
-                for entry in addLeaderText.split(separator: ",") {
-                    let trimmedEntry = entry.trimmingCharacters(
-                        in: .whitespacesAndNewlines
-                    )
-
-                    if let start = trimmedEntry.firstIndex(of: "<"),
-                        let end = trimmedEntry.firstIndex(of: ">")
-                    {
-                        let email = String(
-                            trimmedEntry[trimmedEntry.index(after: start)..<end]
-                        )
-                        splitLeaders.append(Substring(email))
-                    }
-                }
-
-                addLeaderHelpperFunc(splitLeaders: splitLeaders)
-
-            } else if addLeaderText.contains(",") {
-                addLeaderHelpperFunc(
-                    splitLeaders: addLeaderText.split(separator: ",")
-                )
-
-            } else if addLeaderText.contains("/") {
-                addLeaderHelpperFunc(
-                    splitLeaders: addLeaderText.split(separator: "/")
-                )
-
-            } else if addLeaderText.contains(";") {
-                addLeaderHelpperFunc(
-                    splitLeaders: addLeaderText.split(separator: ";")
-                )
-
-            } else if addLeaderText.contains("-") {
-                addLeaderHelpperFunc(
-                    splitLeaders: addLeaderText.split(separator: "-")
-                )
-            } else {
-                leaders.append(addLeaderText.lowercased())
-                addLeaderText = ""
-            }
-        } else {
+        let parsed = parseClubEmails(addLeaderText)
+        guard !parsed.valid.isEmpty else {
             leaderTextShake.toggle()
             dropper(
                 title: "Enter a correct email!",
-                subtitle: "Use the d214.org ending!",
+                subtitle: "Use a d214.org or gmail.com address!",
                 icon: UIImage(systemName: "trash")
             )
+            return
         }
-    }
-
-    func addLeaderHelpperFunc(splitLeaders: [Substring]) {
-        for i in splitLeaders {
-            if leaders.contains(String(i)) == false {
-                if leaders.count < 6 {
-                    leaders.append(String(i).lowercased())
-                } else {
-                    dropper(
-                        title: "Too Many Leaders",
-                        subtitle: "Max 6",
-                        icon: nil
-                    )
-                    break
-                }
+        var existing = Set(leaders.map { $0.lowercased() })
+        var reachedLimit = false
+        var added = false
+        for email in parsed.valid where !existing.contains(email) {
+            guard leaders.count < 6 else {
+                reachedLimit = true
+                break
             }
+            leaders.append(email)
+            existing.insert(email)
+            added = true
         }
-        addLeaderText = ""
+        if added { addLeaderText = "" }
+        if reachedLimit {
+            dropper(title: "Too Many Leaders", subtitle: "Max 6", icon: nil)
+        } else if parsed.invalidCount > 0 {
+            leaderTextShake.toggle()
+            dropper(
+                title: "Enter a correct email!",
+                subtitle: "Skipped \(parsed.invalidCount) invalid email\(parsed.invalidCount == 1 ? "" : "s").",
+                icon: UIImage(systemName: "trash")
+            )
+        } else if !added {
+            leaderTextShake.toggle()
+            dropper(title: "Leader already added", subtitle: "", icon: nil)
+        }
     }
 
 }

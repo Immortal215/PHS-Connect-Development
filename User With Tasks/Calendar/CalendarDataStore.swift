@@ -166,7 +166,6 @@ struct CalendarDiskSnapshot: Sendable {
     var manifest: CalendarCacheManifest
     var meetings: [Club.MeetingTime]
     var clubFiles: [String: CachedClubFile]
-    var repairedClubIDs: Set<String>
 }
 
 struct CachedClubFile: Codable, Sendable {
@@ -198,27 +197,24 @@ actor CalendarFileCache {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private var manifest: CalendarCacheManifest
+    private var meetingsByClubID: [String: [String: Club.MeetingTime]] = [:]
+    private var clubFiles: [String: CachedClubFile] = [:]
+    private var activeSyncGenerations: [String: (session: Int, club: Int)] = [:]
+    private var isLoaded = false
+    private(set) var fullDiskLoadCount = 0
 
     init(uid: String, projectID: String, supportDirectory: URL? = nil) throws {
         self.uid = uid
         self.projectID = projectID
-        let support = try supportDirectory ?? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
+        root = try privateCacheDirectory(
+            projectID: projectID, uid: uid, supportDirectory: supportDirectory
         )
-        root = support
-            .appending(path: "PHSConnectCache/v2", directoryHint: .isDirectory)
-            .appending(path: Self.safe(projectID), directoryHint: .isDirectory)
-            .appending(path: Self.safe(uid), directoryHint: .isDirectory)
         manifest = CalendarCacheManifest(uid: uid, projectID: projectID)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
 
     private static func safe(_ value: String) -> String {
-        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
-        return value.unicodeScalars.map { allowed.contains($0) ? String($0) : "_" }.joined()
+        privateCachePathComponent(value)
     }
 
     private var manifestURL: URL { root.appending(path: "manifest.json") }
@@ -233,11 +229,6 @@ actor CalendarFileCache {
     private func meetingURL(clubID: String, meetingID: String) -> URL {
         meetingDirectory(clubID).appending(path: "\(Self.safe(meetingID)).json")
     }
-    private func rsvpURL(meetingID: String) -> URL {
-        root.appending(path: "rsvps", directoryHint: .isDirectory)
-            .appending(path: "\(Self.safe(meetingID)).json")
-    }
-
     private func atomicWrite<T: Encodable>(_ value: T, to url: URL) throws {
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(), withIntermediateDirectories: true
@@ -245,11 +236,50 @@ actor CalendarFileCache {
         try encoder.encode(value).write(to: url, options: [.atomic, .completeFileProtection])
     }
 
-    private func saveManifest() throws {
-        try atomicWrite(manifest, to: manifestURL)
+    private func atomicWrite(_ data: Data, to url: URL) throws {
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        try data.write(to: url, options: [.atomic, .completeFileProtection])
+    }
+
+    private func writeManifest(_ value: CalendarCacheManifest) throws {
+        try atomicWrite(value, to: manifestURL)
+    }
+
+    func beginSync(clubID: String, sessionGeneration: Int, clubGeneration: Int) -> Bool {
+        guard !Task.isCancelled else { return false }
+        if let active = activeSyncGenerations[clubID] {
+            guard sessionGeneration > active.session
+                    || (sessionGeneration == active.session && clubGeneration >= active.club)
+            else { return false }
+        }
+        activeSyncGenerations[clubID] = (sessionGeneration, clubGeneration)
+        return true
+    }
+
+    private func validateSync(
+        clubID: String,
+        sessionGeneration: Int?,
+        clubGeneration: Int?
+    ) async throws {
+        await Task.yield()
+        try Task.checkCancellation()
+        guard let sessionGeneration, let clubGeneration else {
+            guard sessionGeneration == nil, clubGeneration == nil else {
+                throw CancellationError()
+            }
+            return
+        }
+        guard let active = activeSyncGenerations[clubID],
+              active.session == sessionGeneration,
+              active.club == clubGeneration
+        else { throw CancellationError() }
     }
 
     func load() throws -> CalendarDiskSnapshot {
+        if isLoaded { return currentSnapshot() }
+        fullDiskLoadCount += 1
         do {
             let data = FileManager.default.fileExists(atPath: manifestURL.path)
                 ? try Data(contentsOf: manifestURL)
@@ -266,20 +296,21 @@ actor CalendarFileCache {
                 }
             }
             manifest = CalendarCacheManifest(uid: uid, projectID: projectID)
-            try saveManifest()
-            return CalendarDiskSnapshot(
-                manifest: manifest, meetings: [], clubFiles: [:], repairedClubIDs: []
-            )
+            meetingsByClubID = [:]
+            clubFiles = [:]
+            try writeManifest(manifest)
+            isLoaded = true
+            return currentSnapshot()
         }
-        var meetings: [Club.MeetingTime] = []
-        var clubFiles: [String: CachedClubFile] = [:]
+        var loadedMeetings: [String: [String: Club.MeetingTime]] = [:]
+        var loadedClubFiles: [String: CachedClubFile] = [:]
         var repaired: Set<String> = []
         for (clubID, state) in manifest.clubs {
             if let value = try? decoder.decode(
                 CachedClubFile.self,
                 from: Data(contentsOf: clubURL(clubID))
             ) {
-                clubFiles[clubID] = value
+                loadedClubFiles[clubID] = value
             }
             for meetingID in state.allMeetingIDs {
                 do {
@@ -287,7 +318,7 @@ actor CalendarFileCache {
                         Club.MeetingTime.self,
                         from: Data(contentsOf: meetingURL(clubID: clubID, meetingID: meetingID))
                     )
-                    meetings.append(value)
+                    loadedMeetings[clubID, default: [:]][meetingID] = value
                 } catch {
                     repaired.insert(clubID)
                 }
@@ -295,15 +326,24 @@ actor CalendarFileCache {
         }
         for clubID in repaired {
             manifest.clubs[clubID]?.repair(availableMeetingIDs: Set(
-                meetings.filter { $0.clubID == clubID }.compactMap(\.meetingID)
+                loadedMeetings[clubID]?.keys.map { $0 } ?? []
             ))
         }
-        if !repaired.isEmpty { try saveManifest() }
-        return CalendarDiskSnapshot(
+        if !repaired.isEmpty { try writeManifest(manifest) }
+        meetingsByClubID = loadedMeetings
+        clubFiles = loadedClubFiles
+        isLoaded = true
+        return currentSnapshot()
+    }
+
+    private func currentSnapshot() -> CalendarDiskSnapshot {
+        CalendarDiskSnapshot(
             manifest: manifest,
-            meetings: meetings,
-            clubFiles: clubFiles,
-            repairedClubIDs: repaired
+            meetings: meetingsByClubID.keys.sorted().flatMap { clubID in
+                let values = meetingsByClubID[clubID] ?? [:]
+                return values.keys.sorted().compactMap { values[$0] }
+            },
+            clubFiles: clubFiles
         )
     }
 
@@ -314,10 +354,13 @@ actor CalendarFileCache {
         membership: ClubMembershipRecord,
         access: ClubAccessEnvelope?
     ) throws {
+        if !isLoaded { _ = try load() }
+        let value = CachedClubFile(membership: membership, access: access)
         try atomicWrite(
-            CachedClubFile(membership: membership, access: access),
+            value,
             to: clubURL(clubID)
         )
+        clubFiles[clubID] = value
     }
 
     func applySnapshot(
@@ -325,24 +368,38 @@ actor CalendarFileCache {
         role: String,
         cursor: String,
         window: CalendarSyncWindow,
-        meetings: [Club.MeetingTime]
-    ) throws -> CalendarDiskSnapshot {
-        let directory = meetingDirectory(clubID)
+        meetings: [Club.MeetingTime],
+        sessionGeneration: Int? = nil,
+        clubGeneration: Int? = nil
+    ) async throws -> CalendarDiskSnapshot {
+        if !isLoaded { _ = try load() }
         var state = manifest.clubs[clubID] ?? CachedClubState(
             role: role, cursor: "", rangeStart: "", rangeEndExclusive: "", meetingIDs: []
         )
+        var stagedMeetings = meetingsByClubID[clubID] ?? [:]
         if state.role != role {
-            try? FileManager.default.removeItem(at: directory)
             state = CachedClubState(
                 role: role, cursor: "", rangeStart: "", rangeEndExclusive: "", meetingIDs: []
             )
+            stagedMeetings = [:]
         }
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var ids: Set<String> = []
+        var stagedWrites: [(meetingID: String, meeting: Club.MeetingTime, data: Data)] = []
         for meeting in meetings {
             guard let meetingID = meeting.meetingID else { continue }
-            try atomicWrite(meeting, to: meetingURL(clubID: clubID, meetingID: meetingID))
+            stagedWrites.append((meetingID, meeting, try encoder.encode(meeting)))
             ids.insert(meetingID)
+        }
+        for write in stagedWrites {
+            try await validateSync(
+                clubID: clubID,
+                sessionGeneration: sessionGeneration,
+                clubGeneration: clubGeneration
+            )
+            try atomicWrite(
+                write.data, to: meetingURL(clubID: clubID, meetingID: write.meetingID)
+            )
+            stagedMeetings[write.meetingID] = write.meeting
         }
         let replacedIDs = state.segment(for: window)?.meetingIDs ?? []
         state.role = role
@@ -355,13 +412,26 @@ actor CalendarFileCache {
             ),
             for: window
         )
-        for meetingID in replacedIDs.subtracting(state.allMeetingIDs) {
+        stagedMeetings = stagedMeetings.filter { state.allMeetingIDs.contains($0.key) }
+        var stagedManifest = manifest
+        stagedManifest.clubs[clubID] = state
+        stagedManifest.lastSuccessfulSync = Date().timeIntervalSince1970
+        try await validateSync(
+            clubID: clubID,
+            sessionGeneration: sessionGeneration,
+            clubGeneration: clubGeneration
+        )
+        try writeManifest(stagedManifest)
+
+        let staleIDs = Set(meetingsByClubID[clubID]?.keys.map { $0 } ?? [])
+            .subtracting(stagedMeetings.keys)
+            .union(replacedIDs.subtracting(state.allMeetingIDs))
+        for meetingID in staleIDs {
             try? FileManager.default.removeItem(at: meetingURL(clubID: clubID, meetingID: meetingID))
         }
-        manifest.clubs[clubID] = state
-        manifest.lastSuccessfulSync = Date().timeIntervalSince1970
-        try saveManifest()
-        return try load()
+        manifest = stagedManifest
+        meetingsByClubID[clubID] = stagedMeetings
+        return currentSnapshot()
     }
 
     func applyDelta(
@@ -369,32 +439,52 @@ actor CalendarFileCache {
         role: String,
         cursor: String,
         window: CalendarSyncWindow,
-        changes: [CalendarSyncEnvelope.Change]
-    ) throws -> CalendarDiskSnapshot {
+        changes: [CalendarSyncEnvelope.Change],
+        sessionGeneration: Int? = nil,
+        clubGeneration: Int? = nil
+    ) async throws -> CalendarDiskSnapshot {
+        if !isLoaded { _ = try load() }
         var state = manifest.clubs[clubID] ?? CachedClubState(
             role: role, cursor: "", rangeStart: "",
             rangeEndExclusive: "", meetingIDs: []
         )
+        var stagedMeetings = meetingsByClubID[clubID] ?? [:]
         if state.role != role {
-            try? FileManager.default.removeItem(at: meetingDirectory(clubID))
             state = CachedClubState(
                 role: role, cursor: "", rangeStart: "", rangeEndExclusive: "", meetingIDs: []
             )
+            stagedMeetings = [:]
         }
         var segment = state.segment(for: window) ?? CachedCalendarSegment(
             cursor: "", rangeStart: window.start,
             rangeEndExclusive: window.endExclusive, meetingIDs: []
         )
         var deletedIDs: Set<String> = []
+        var stagedWrites: [(meetingID: String, meeting: Club.MeetingTime, data: Data)] = []
         for change in changes {
-            let url = meetingURL(clubID: clubID, meetingID: change.meetingID)
+            guard change.operation != "delete", change.operation != "cancel",
+                  let meeting = change.meeting
+            else { continue }
+            stagedWrites.append((change.meetingID, meeting, try encoder.encode(meeting)))
+        }
+        for write in stagedWrites {
+            try await validateSync(
+                clubID: clubID,
+                sessionGeneration: sessionGeneration,
+                clubGeneration: clubGeneration
+            )
+            try atomicWrite(
+                write.data, to: meetingURL(clubID: clubID, meetingID: write.meetingID)
+            )
+        }
+        for change in changes {
             if change.operation == "delete" || change.operation == "cancel"
                 || change.meeting == nil
             {
                 deletedIDs.insert(change.meetingID)
                 segment.meetingIDs.remove(change.meetingID)
             } else if let meeting = change.meeting {
-                try atomicWrite(meeting, to: url)
+                stagedMeetings[change.meetingID] = meeting
                 segment.meetingIDs.insert(change.meetingID)
             }
         }
@@ -403,39 +493,50 @@ actor CalendarFileCache {
         segment.rangeStart = window.start
         segment.rangeEndExclusive = window.endExclusive
         state.setSegment(segment, for: window)
-        for meetingID in deletedIDs.subtracting(state.allMeetingIDs) {
+        stagedMeetings = stagedMeetings.filter { state.allMeetingIDs.contains($0.key) }
+        var stagedManifest = manifest
+        stagedManifest.clubs[clubID] = state
+        stagedManifest.lastSuccessfulSync = Date().timeIntervalSince1970
+        try await validateSync(
+            clubID: clubID,
+            sessionGeneration: sessionGeneration,
+            clubGeneration: clubGeneration
+        )
+        try writeManifest(stagedManifest)
+
+        let staleIDs = Set(meetingsByClubID[clubID]?.keys.map { $0 } ?? [])
+            .subtracting(stagedMeetings.keys)
+            .union(deletedIDs.subtracting(state.allMeetingIDs))
+        for meetingID in staleIDs {
             try? FileManager.default.removeItem(at: meetingURL(clubID: clubID, meetingID: meetingID))
         }
-        manifest.clubs[clubID] = state
-        manifest.lastSuccessfulSync = Date().timeIntervalSince1970
-        try saveManifest()
-        return try load()
+        manifest = stagedManifest
+        meetingsByClubID[clubID] = stagedMeetings
+        return currentSnapshot()
     }
 
-    func removeClub(_ clubID: String) throws -> CalendarDiskSnapshot {
+    func removeClub(
+        _ clubID: String,
+        sessionGeneration: Int? = nil,
+        clubGeneration: Int? = nil
+    ) async throws -> CalendarDiskSnapshot {
+        if !isLoaded { _ = try load() }
+        var stagedManifest = manifest
+        stagedManifest.clubs.removeValue(forKey: clubID)
+        try await validateSync(
+            clubID: clubID,
+            sessionGeneration: sessionGeneration,
+            clubGeneration: clubGeneration
+        )
+        try writeManifest(stagedManifest)
         try? FileManager.default.removeItem(at: meetingDirectory(clubID))
         try? FileManager.default.removeItem(at: clubURL(clubID))
-        manifest.clubs.removeValue(forKey: clubID)
-        try saveManifest()
-        return try load()
+        manifest = stagedManifest
+        meetingsByClubID[clubID] = nil
+        clubFiles[clubID] = nil
+        return currentSnapshot()
     }
 
-    func saveRSVP<T: Encodable & Sendable>(_ value: T, meetingID: String) throws {
-        try atomicWrite(value, to: rsvpURL(meetingID: meetingID))
-    }
-}
-
-private actor CalendarCacheRegistry {
-    static let shared = CalendarCacheRegistry()
-    private var caches: [String: CalendarFileCache] = [:]
-
-    func cache(uid: String, projectID: String) throws -> CalendarFileCache {
-        let key = "\(projectID)\u{0}\(uid)"
-        if let existing = caches[key] { return existing }
-        let value = try CalendarFileCache(uid: uid, projectID: projectID)
-        caches[key] = value
-        return value
-    }
 }
 
 @MainActor
@@ -463,6 +564,7 @@ final class CalendarDataStore {
     private var foregroundObserver: NSObjectProtocol?
     private var cache: CalendarFileCache?
     private var syncTasks: [String: Task<Void, Never>] = [:]
+    private var clubSyncGenerations: [String: Int] = [:]
 
     var statusText: String {
         if let syncError { return "Cached meetings • \(syncError)" }
@@ -523,6 +625,7 @@ final class CalendarDataStore {
             detachCalendarCursorObserver(for: clubID)
             syncTasks[clubID]?.cancel()
             syncTasks[clubID] = nil
+            clubSyncGenerations[clubID, default: 0] += 1
             rosterEmails[clubID] = nil
             pendingEmails[clubID] = nil
             if let cache {
@@ -546,7 +649,7 @@ final class CalendarDataStore {
     private func initializeCache(uid: String, project: String, generation currentGeneration: Int) {
         Task {
             do {
-                let fileCache = try await CalendarCacheRegistry.shared.cache(
+                let fileCache = try CalendarFileCache(
                     uid: uid,
                     projectID: project
                 )
@@ -569,7 +672,7 @@ final class CalendarDataStore {
                         )
                     }
                 }
-                let _: EmptyAPIResponse? = try? await PHSAPIClient.shared.request(
+                try? await PHSAPIClient.shared.requestNoContent(
                     "POST", path: "identity/reconcile"
                 )
             } catch {
@@ -597,6 +700,7 @@ final class CalendarDataStore {
         foregroundObserver = nil
         syncTasks.values.forEach { $0.cancel() }
         syncTasks.removeAll()
+        clubSyncGenerations.removeAll()
         generation += 1
         uid = nil
         projectID = nil
@@ -675,10 +779,6 @@ final class CalendarDataStore {
         return ClubMembershipRecord(
             role: "leader",
             email: nil,
-            emailHash: nil,
-            joinedAt: nil,
-            updatedAt: nil,
-            calendarCursor: nil,
             accessRevision: nil
         )
     }
@@ -766,10 +866,6 @@ final class CalendarDataStore {
             next[clubID] = ClubMembershipRecord(
                 role: role,
                 email: value["email"] as? String,
-                emailHash: value["emailHash"] as? String,
-                joinedAt: value["joinedAt"] as? Double,
-                updatedAt: value["updatedAt"] as? Double,
-                calendarCursor: nil,
                 accessRevision: value["accessRevision"] as? Double
             )
         }
@@ -792,6 +888,7 @@ final class CalendarDataStore {
             } else {
                 syncTasks[clubID]?.cancel()
                 syncTasks[clubID] = nil
+                clubSyncGenerations[clubID, default: 0] += 1
                 rosterEmails[clubID] = nil
                 pendingEmails[clubID] = nil
                 if let cache {
@@ -831,8 +928,15 @@ final class CalendarDataStore {
         let taskGeneration = generation
         let observedCursor = calendarCursors.cursor(for: clubID)
         syncTasks[clubID]?.cancel()
+        let clubGeneration = (clubSyncGenerations[clubID] ?? 0) + 1
+        clubSyncGenerations[clubID] = clubGeneration
         syncTasks[clubID] = Task {
             do {
+                guard await cache.beginSync(
+                    clubID: clubID,
+                    sessionGeneration: taskGeneration,
+                    clubGeneration: clubGeneration
+                ) else { return }
                 let state = await cache.state(for: clubID)
                 let window = CalendarSyncWindowPlanner.window(including: requestedDate)
                 let segment = state?.segment(for: window)
@@ -856,9 +960,17 @@ final class CalendarDataStore {
                     let response: CalendarSyncEnvelope = try await PHSAPIClient.shared.request(
                         "GET", path: "calendar/sync", query: query
                     )
-                    guard !Task.isCancelled, self.generation == taskGeneration, self.uid == uid else { return }
+                    guard !Task.isCancelled,
+                          self.generation == taskGeneration,
+                          self.uid == uid,
+                          self.clubSyncGenerations[clubID] == clubGeneration
+                    else { return }
                     guard self.calendarAccessIsCurrent(clubID: clubID, membership: membership) else {
-                        if let sanitized = try? await cache.removeClub(clubID) {
+                        if let sanitized = try? await cache.removeClub(
+                            clubID,
+                            sessionGeneration: taskGeneration,
+                            clubGeneration: clubGeneration
+                        ) {
                             apply(sanitized, cached: false)
                         }
                         return
@@ -869,10 +981,21 @@ final class CalendarDataStore {
                         snapshot = try await cache.applySnapshot(
                             clubID: clubID, role: membership.role,
                             cursor: response.latestChange, window: window,
-                            meetings: response.meetings ?? []
+                            meetings: response.meetings ?? [],
+                            sessionGeneration: taskGeneration,
+                            clubGeneration: clubGeneration
                         )
+                        guard !Task.isCancelled,
+                              self.generation == taskGeneration,
+                              self.uid == uid,
+                              self.clubSyncGenerations[clubID] == clubGeneration
+                        else { return }
                         guard self.calendarAccessIsCurrent(clubID: clubID, membership: membership) else {
-                            if let sanitized = try? await cache.removeClub(clubID) {
+                            if let sanitized = try? await cache.removeClub(
+                                clubID,
+                                sessionGeneration: taskGeneration,
+                                clubGeneration: clubGeneration
+                            ) {
                                 apply(sanitized, cached: false)
                             }
                             return
@@ -884,10 +1007,21 @@ final class CalendarDataStore {
                     snapshot = try await cache.applyDelta(
                         clubID: clubID, role: membership.role,
                         cursor: committedCursor, window: window,
-                        changes: response.changes ?? []
+                        changes: response.changes ?? [],
+                        sessionGeneration: taskGeneration,
+                        clubGeneration: clubGeneration
                     )
+                    guard !Task.isCancelled,
+                          self.generation == taskGeneration,
+                          self.uid == uid,
+                          self.clubSyncGenerations[clubID] == clubGeneration
+                    else { return }
                     guard self.calendarAccessIsCurrent(clubID: clubID, membership: membership) else {
-                        if let sanitized = try? await cache.removeClub(clubID) {
+                        if let sanitized = try? await cache.removeClub(
+                            clubID,
+                            sessionGeneration: taskGeneration,
+                            clubGeneration: clubGeneration
+                        ) {
                             apply(sanitized, cached: false)
                         }
                         return
@@ -907,7 +1041,9 @@ final class CalendarDataStore {
                 }
             } catch is CancellationError {
             } catch {
-                guard self.generation == taskGeneration else { return }
+                guard self.generation == taskGeneration,
+                      self.clubSyncGenerations[clubID] == clubGeneration
+                else { return }
                 syncError = error.localizedDescription
                 isShowingCachedData = true
             }
@@ -1002,13 +1138,19 @@ final class CalendarDataStore {
 
 func dateForMeeting(_ meeting: Club.MeetingTime) -> Date {
     if meeting.fullDay == true, let date = meeting.startDate {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(identifier: "America/Chicago")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: date) ?? .distantPast
+        return SharedDateFormatter.chicagoDateOnly.date(from: date) ?? .distantPast
     }
     if let startUtc = meeting.startUtc { return Date(timeIntervalSince1970: startUtc) }
     return strictDateFromString(meeting.startTime) ?? .distantPast
+}
+
+func endDateForMeeting(_ meeting: Club.MeetingTime) -> Date {
+    if meeting.fullDay == true, let exclusive = meeting.endDateExclusive,
+       let end = SharedDateFormatter.chicagoDateOnly.date(from: exclusive) {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+        return calendar.date(byAdding: .day, value: -1, to: end) ?? .distantPast
+    }
+    if let endUtc = meeting.endUtc { return Date(timeIntervalSince1970: endUtc) }
+    return strictDateFromString(meeting.endTime) ?? .distantPast
 }
