@@ -763,6 +763,54 @@ async function syncClubCalendar(admin, decodedToken, query) {
   };
 }
 
+async function extendClubCalendar(admin, decodedToken, body) {
+  const db = admin.database();
+  const clubID = String(body?.clubID || "");
+  const role = isAdmin(decodedToken) ? "leader" : await requireMembership(db, clubID, decodedToken);
+  const startDate = String(body?.start || "");
+  const endDateExclusive = String(body?.end || "");
+  const after = String(body?.after || "");
+  const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
+    new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+  if (!isDate(startDate) || !isDate(endDateExclusive) ||
+      endDateExclusive <= startDate ||
+      monthKeys(startDate, endDateExclusive).length !== 1) {
+    throw new HttpError(400, "The calendar extension must fit in one month.");
+  }
+  if (!Array.isArray(body?.knownMeetingIDs) || body.knownMeetingIDs.length > 10000 ||
+      body.knownMeetingIDs.some((id) => typeof id !== "string" || !id || id.length > 256)) {
+    throw new HttpError(400, "Invalid cached meeting IDs.");
+  }
+  const cursorRef = db.ref(`/clubCalendars/${clubID}/latestChange`);
+  if (((await cursorRef.get()).val() || "") !== after) {
+    throw new HttpError(409, "Calendar changed while extending the cache.");
+  }
+  const knownIDs = new Set(body.knownMeetingIDs);
+  const monthKey = startDate.slice(0, 7);
+  const index = (await db.ref(`/clubCalendars/${clubID}/months/${monthKey}`).get()).val() || {};
+  const missingIDs = Object.keys(index).filter((meetingID) => !knownIDs.has(meetingID));
+  const meetings = [];
+  for (let offset = 0; offset < missingIDs.length;
+    offset += CALENDAR_SYNC_BODY_READ_CONCURRENCY) {
+    const ids = missingIDs.slice(offset, offset + CALENDAR_SYNC_BODY_READ_CONCURRENCY);
+    const candidates = await Promise.all(ids.map((meetingID) => readMeeting(db, clubID, meetingID)));
+    for (let index = 0; index < candidates.length; index += 1) {
+      const meeting = candidates[index];
+      if (!meeting) throw new Error(`Calendar index points to missing meeting ${ids[index]}.`);
+      if (!meeting.cancelled &&
+          overlapsWindow(meeting, { startDate, endDateExclusive }) &&
+          canAccessMeeting(meeting, role, decodedToken.uid)) {
+        meetings.push(clientMeeting(meeting));
+      }
+    }
+  }
+  if (((await cursorRef.get()).val() || "") !== after) {
+    throw new HttpError(409, "Calendar changed while extending the cache.");
+  }
+  return { latestChange: after, meetings };
+}
+
 async function assertMeetingAccess(db, decodedToken, meeting) {
   const role = await requireMembership(db, meeting.clubID, decodedToken);
   if (!canAccessMeeting(meeting, role, decodedToken.uid)) throw new HttpError(403, "You cannot respond to this meeting.");
@@ -858,5 +906,5 @@ module.exports = {
   cleanupCompletedMeetingRecords, completeMeetingNotificationJob,
   deleteMeetings, getRSVP, handleDeletedClub,
   listRSVPs, meetingIndexMonths, nextPublicMeeting, occurrenceAssignments, readMeeting, saveMeetings,
-  releaseLocks, sameOccurrenceRevisions, setRSVP, syncClubCalendar,
+  extendClubCalendar, releaseLocks, sameOccurrenceRevisions, setRSVP, syncClubCalendar,
 };

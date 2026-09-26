@@ -43,42 +43,57 @@ struct AdministrativeCalendarAccessRegistry {
 }
 
 private struct CalendarAdministrativeAccessModifier: ViewModifier {
-    @Environment(CalendarDataStore.self) private var calendarStore
-    let clubID: String?
+    @Environment(CalendarDataStore.self) var calendarStore
+    let clubIDs: Set<String>
     let enabled: Bool
-    @State private var leaseID: UUID?
-    @State private var leasedClubID: String?
+    let retainsCacheOnDisappear: Bool
+    @State var isVisible = false
+    @State var leases: [String: UUID] = [:]
 
     func body(content: Content) -> some View {
         content
-            .onAppear { updateLease() }
-            .onChange(of: clubID) { _, _ in updateLease() }
-            .onChange(of: enabled) { _, _ in updateLease() }
-            .onDisappear { releaseLease() }
+            .onAppear {
+                isVisible = true
+                updateLeases()
+            }
+            .onChange(of: clubIDs) { _, _ in updateLeases() }
+            .onChange(of: enabled) { _, _ in updateLeases() }
+            .onDisappear {
+                isVisible = false
+                updateLeases(preservingCache: retainsCacheOnDisappear && enabled)
+            }
     }
 
-    private func updateLease() {
-        let requestedClubID = enabled ? clubID?.nilIfEmpty : nil
-        guard requestedClubID != leasedClubID else { return }
-        releaseLease()
-        guard let requestedClubID else { return }
-        leaseID = calendarStore.beginAdministrativeAccess(for: requestedClubID)
-        leasedClubID = requestedClubID
-    }
-
-    private func releaseLease() {
-        if let leaseID { calendarStore.endAdministrativeAccess(leaseID) }
-        leaseID = nil
-        leasedClubID = nil
+    func updateLeases(preservingCache: Bool = false) {
+        let requested = isVisible && enabled ? Set(clubIDs.filter { !$0.isEmpty }) : []
+        for clubID in Set(leases.keys).subtracting(requested) {
+            if let leaseID = leases.removeValue(forKey: clubID) {
+                calendarStore.endAdministrativeAccess(leaseID, preserveCache: preservingCache)
+            }
+        }
+        var acquired = false
+        for clubID in requested.subtracting(leases.keys).sorted() {
+            leases[clubID] = calendarStore.beginAdministrativeAccess(for: clubID)
+            acquired = true
+        }
+        if acquired { calendarStore.restoreCachedAdministrativeMeetings() }
     }
 }
 
 extension View {
     func calendarAdministrativeAccess(clubID: String?, enabled: Bool) -> some View {
-        modifier(CalendarAdministrativeAccessModifier(clubID: clubID, enabled: enabled))
+        calendarAdministrativeAccess(
+            clubIDs: clubID.map { Set([$0]) } ?? [], enabled: enabled
+        )
     }
-}
 
-private extension String {
-    var nilIfEmpty: String? { isEmpty ? nil : self }
+    func calendarAdministrativeAccess(
+        clubIDs: Set<String>, enabled: Bool, retainsCacheOnDisappear: Bool = false
+    ) -> some View {
+        modifier(CalendarAdministrativeAccessModifier(
+            clubIDs: clubIDs,
+            enabled: enabled,
+            retainsCacheOnDisappear: retainsCacheOnDisappear
+        ))
+    }
 }

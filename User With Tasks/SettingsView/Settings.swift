@@ -44,6 +44,7 @@ struct SettingsView: View {
     @State var globalChatsRef: DatabaseReference?
     @State var globalChatsHandle: DatabaseHandle?
     @State var isSavingGlobalChatsSetting = false
+    @State private var isAdminManagementShown = false
     @Environment(\.appViewportSize) var viewportSize
 
     var usesLegacyWideIPadLayout: Bool {
@@ -127,6 +128,33 @@ struct SettingsView: View {
             Divider()
 
             if isSuperAdmin {
+                Button {
+                    isAdminManagementShown = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.2.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Administrators")
+                                .font(.headline)
+                            Text("Add or remove admin accounts")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(12)
+                    .background(Color.systemBackground, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+                .sheet(isPresented: $isAdminManagementShown) {
+                    AdminManagementView(viewModel: viewModel)
+                }
+
                 HStack(spacing: 12) {
                     Image(
                         systemName: globalChatsEnabled
@@ -730,4 +758,172 @@ struct SettingsView: View {
         }
     }
 
+}
+
+private struct AdminAccount: Decodable, Identifiable {
+    let uid: String
+    let email: String?
+    let disabled: Bool
+    let emailVerified: Bool
+
+    var id: String { uid }
+}
+
+private struct AdminEmailRequest: Encodable {
+    let email: String
+}
+
+private struct AdminUIDRequest: Encodable {
+    let uid: String
+}
+
+private struct AdminManagementView: View {
+    @ObservedObject var viewModel: AuthenticationViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var admins: [AdminAccount] = []
+    @State private var email = ""
+    @State private var isLoading = false
+    @State private var isSaving = false
+    @State private var removal: AdminAccount?
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Administrators") {
+                    if isLoading {
+                        ProgressView("Loading administrators")
+                    } else if admins.isEmpty {
+                        Text("No administrators found.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(admins) { admin in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(admin.email ?? admin.uid)
+                                    if admin.disabled || !admin.emailVerified {
+                                        Text(admin.disabled ? "Disabled account" : "Unverified email")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Button(role: .destructive) {
+                                    removal = admin
+                                } label: {
+                                    Image(systemName: "minus.circle")
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Remove \(admin.email ?? admin.uid) as administrator")
+                                .disabled(isSaving)
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    TextField("Email address", text: $email)
+                        .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    Button("Add Administrator") {
+                        Task { await addAdmin() }
+                    }
+                    .disabled(isLoading || isSaving || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                } footer: {
+                    Text("The person must already have an enabled account with a verified email. Changes appear on their device after its sign-in token refreshes.")
+                }
+            }
+            .navigationTitle("Administrators")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Refresh", systemImage: "arrow.clockwise") {
+                        Task { await loadAdmins() }
+                    }
+                    .disabled(isLoading || isSaving)
+                }
+            }
+            .task { await loadAdmins() }
+            .onChange(of: viewModel.isSuperAdmin) { _, isAdmin in
+                if !isAdmin { dismiss() }
+            }
+            .confirmationDialog(
+                "Remove administrator?",
+                isPresented: Binding(
+                    get: { removal != nil },
+                    set: { if !$0 { removal = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                if let removal {
+                    Button("Remove \(removal.email ?? removal.uid)", role: .destructive) {
+                        Task { await removeAdmin(removal) }
+                    }
+                }
+            } message: {
+                Text("This account will lose administrator access after its sign-in token refreshes.")
+            }
+            .alert("Administrator request failed", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Please try again.")
+            }
+        }
+    }
+
+    @MainActor
+    private func loadAdmins() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            admins = try await PHSAPIClient.admins.request("GET", path: "/admins")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func addAdmin() async {
+        let address = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !address.isEmpty else { return }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let granted: AdminAccount = try await PHSAPIClient.admins.request(
+                "PUT", path: "/admins", body: AdminEmailRequest(email: address)
+            )
+            admins.removeAll { $0.uid == granted.uid }
+            admins.append(granted)
+            admins.sort { ($0.email ?? $0.uid) < ($1.email ?? $1.uid) }
+            email = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func removeAdmin(_ admin: AdminAccount) async {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await PHSAPIClient.admins.requestNoContent(
+                "DELETE", path: "/admins", body: AdminUIDRequest(uid: admin.uid)
+            )
+            admins.removeAll { $0.uid == admin.uid }
+            removal = nil
+            if admin.uid == Auth.auth().currentUser?.uid {
+                await viewModel.refreshSuperAdminClaim()
+                dismiss()
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }

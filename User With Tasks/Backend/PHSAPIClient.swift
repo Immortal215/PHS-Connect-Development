@@ -24,16 +24,19 @@ private struct APIErrorEnvelope: Decodable {
 
 final class PHSAPIClient: Sendable {
     static let shared = PHSAPIClient()
+    static let admins = PHSAPIClient(functionName: "phsAdmin")
 
     private let session: URLSession
+    private let functionName: String
 
-    init(session: URLSession = .shared) {
+    init(session: URLSession = .shared, functionName: String = "phsApi") {
         self.session = session
+        self.functionName = functionName
     }
 
     private var baseURL: URL? {
         guard let projectID = FirebaseApp.app()?.options.projectID else { return nil }
-        return URL(string: "https://us-central1-\(projectID).cloudfunctions.net/phsApi")
+        return URL(string: "https://us-central1-\(projectID).cloudfunctions.net/\(functionName)")
     }
 
     func request<Response: Decodable>(

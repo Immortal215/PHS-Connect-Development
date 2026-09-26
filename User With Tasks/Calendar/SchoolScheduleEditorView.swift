@@ -11,6 +11,243 @@ struct SchoolScheduleBreakDraft: Identifiable {
     }
 }
 
+struct SchoolScheduleCustomEventDraft: Identifiable {
+    let id = UUID()
+    var event: SchoolScheduleSpecialEvent
+}
+
+struct SchoolScheduleCustomDayDraft: Identifiable {
+    let id = UUID()
+    var date: Date
+    var invalidOriginalDate: String?
+    var label: String
+    var labelWasAbsent: Bool
+    var note: String
+    var badgeText: String
+    var events: [SchoolScheduleCustomEventDraft]
+    var eventsWereAbsent: Bool
+
+    init(_ day: SchoolScheduleSpecialDayOverride) {
+        let parsedDate = schoolScheduleDate(from: day.date)
+        date = parsedDate ?? Date()
+        invalidOriginalDate = parsedDate == nil ? day.date : nil
+        label = day.label ?? "Special Schedule"
+        labelWasAbsent = day.label == nil
+        note = day.note ?? ""
+        badgeText = day.badgeText ?? ""
+        events = (day.events ?? []).map { SchoolScheduleCustomEventDraft(event: $0) }
+        eventsWereAbsent = day.events == nil
+    }
+
+    static func empty() -> Self {
+        Self(SchoolScheduleSpecialDayOverride(
+            date: schoolScheduleDateString(from: Date()),
+            kind: .custom,
+            label: "Special Schedule",
+            note: nil
+        ))
+    }
+
+    var specialDay: SchoolScheduleSpecialDayOverride {
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBadge = badgeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return SchoolScheduleSpecialDayOverride(
+            date: schoolScheduleDateString(from: date),
+            kind: .custom,
+            label: labelWasAbsent && label == "Special Schedule"
+                ? nil : label.trimmingCharacters(in: .whitespacesAndNewlines),
+            note: trimmedNote.isEmpty ? nil : trimmedNote,
+            badgeText: trimmedBadge.isEmpty ? nil : trimmedBadge,
+            events: eventsWereAbsent && events.isEmpty ? nil : events.map(\.event)
+        )
+    }
+}
+
+private struct SchoolScheduleCustomDayRow: View {
+    @Binding var day: SchoolScheduleCustomDayDraft
+    let onRemove: () -> Void
+    @State private var isExpanded = false
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            VStack(alignment: .leading, spacing: 12) {
+                DatePicker(
+                    "Date",
+                    selection: Binding(
+                        get: { day.date },
+                        set: { day.date = $0; day.invalidOriginalDate = nil }
+                    ),
+                    displayedComponents: [.date]
+                )
+                if let invalidDate = day.invalidOriginalDate {
+                    Text("Invalid saved date: \(invalidDate)")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                TextField("Name (e.g. Assembly Day)", text: $day.label)
+                TextField("Badge (optional)", text: $day.badgeText)
+                TextField("Note (optional)", text: $day.note, axis: .vertical)
+
+                ForEach($day.events) { $draft in
+                    let eventID = draft.id
+                    Divider()
+                    SchoolScheduleCustomEventRow(event: $draft.event) {
+                        day.events.removeAll { $0.id == eventID }
+                    }
+                }
+
+                Button {
+                    day.events.append(SchoolScheduleCustomEventDraft(
+                        event: SchoolScheduleSpecialEvent(
+                            id: UUID().uuidString,
+                            kind: "period",
+                            title: "New Event",
+                            timeLabel: "8:00 AM – 8:45 AM",
+                            detail: nil,
+                            startHour: 8,
+                            startMinute: 0,
+                            endHour: 8,
+                            endMinute: 45,
+                            accentColor: nil,
+                            isAllDay: false
+                        )
+                    ))
+                } label: {
+                    Label("Add Event", systemImage: "plus")
+                }
+
+                Button(role: .destructive, action: onRemove) {
+                    Label("Remove Custom Day", systemImage: "trash")
+                }
+            }
+            .padding(.vertical, 8)
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(day.label.isEmpty ? "Custom Day" : day.label)
+                    .font(.headline)
+                Text(day.date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct SchoolScheduleCustomEventRow: View {
+    @Binding var event: SchoolScheduleSpecialEvent
+    let onRemove: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Event Name", text: $event.title)
+                .font(.headline)
+            Picker("Type", selection: $event.kind) {
+                Text("Period").tag("period")
+                Text("Support").tag("support")
+                Text("Zero Hour").tag("zeroHour")
+                if !["period", "support", "zeroHour"].contains(event.kind) {
+                    Text(event.kind).tag(event.kind)
+                }
+            }
+            Picker("Color", selection: Binding(
+                get: { event.accentColor ?? "automatic" },
+                set: { event.accentColor = $0 == "automatic" ? nil : $0 }
+            )) {
+                Text("Automatic").tag("automatic")
+                Text("Navy").tag("navy")
+                Text("Columbia").tag("columbia")
+                Text("Red").tag("red")
+                if let color = event.accentColor,
+                    !["navy", "columbia", "red", "automatic"].contains(color)
+                {
+                    Text(color).tag(color)
+                }
+            }
+            Toggle("All Day", isOn: Binding(
+                get: { event.isAllDay ?? false },
+                set: { value in
+                    event.isAllDay = value
+                    if value { event.timeLabel = "All Day" }
+                    else if event.startHour != nil && event.endHour != nil {
+                        updateTimeLabel()
+                    } else if event.timeLabel == "All Day" {
+                        event.timeLabel = "Time TBD"
+                    }
+                }
+            ))
+
+            if !(event.isAllDay ?? false) {
+                Toggle("Show on Timeline", isOn: Binding(
+                    get: { event.startHour != nil && event.endHour != nil },
+                    set: { value in
+                        if value {
+                            event.startHour = event.startHour ?? 8
+                            event.startMinute = event.startMinute ?? 0
+                            event.endHour = event.endHour ?? 8
+                            event.endMinute = event.endMinute ?? 45
+                            updateTimeLabel()
+                        } else {
+                            event.startHour = nil
+                            event.startMinute = nil
+                            event.endHour = nil
+                            event.endMinute = nil
+                            event.timeLabel = "Time TBD"
+                        }
+                    }
+                ))
+                if event.startHour != nil && event.endHour != nil {
+                    DatePicker("Start", selection: startTime, displayedComponents: [.hourAndMinute])
+                    DatePicker("End", selection: endTime, displayedComponents: [.hourAndMinute])
+                }
+                TextField("Displayed Time", text: $event.timeLabel)
+            }
+            TextField("Details (optional)", text: Binding(
+                get: { event.detail ?? "" },
+                set: { event.detail = $0.isEmpty ? nil : $0 }
+            ), axis: .vertical)
+            Button(role: .destructive, action: onRemove) {
+                Label("Remove Event", systemImage: "trash")
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    var startTime: Binding<Date> {
+        Binding(
+            get: { time(hour: event.startHour ?? 8, minute: event.startMinute ?? 0) },
+            set: {
+                event.startHour = Calendar.current.component(.hour, from: $0)
+                event.startMinute = Calendar.current.component(.minute, from: $0)
+                updateTimeLabel()
+            }
+        )
+    }
+
+    var endTime: Binding<Date> {
+        Binding(
+            get: { time(hour: event.endHour ?? 8, minute: event.endMinute ?? 45) },
+            set: {
+                event.endHour = Calendar.current.component(.hour, from: $0)
+                event.endMinute = Calendar.current.component(.minute, from: $0)
+                updateTimeLabel()
+            }
+        )
+    }
+
+    func time(hour: Int, minute: Int) -> Date {
+        Calendar.current.date(
+            bySettingHour: hour, minute: minute, second: 0, of: Date()
+        ) ?? Date()
+    }
+
+    func updateTimeLabel() {
+        guard let startHour = event.startHour, let endHour = event.endHour else { return }
+        let start = time(hour: startHour, minute: event.startMinute ?? 0)
+        let end = time(hour: endHour, minute: event.endMinute ?? 0)
+        event.timeLabel = "\(start.formatted(date: .omitted, time: .shortened)) – \(end.formatted(date: .omitted, time: .shortened))"
+    }
+}
+
 struct SchoolScheduleEditorView: View {
     @Environment(\.dismiss) var dismiss
     @State var semester1StartDate: Date
@@ -19,13 +256,15 @@ struct SchoolScheduleEditorView: View {
     @State var semester2EndDate: Date
     @State var nextSchoolYearStartDate: Date
     @State var breakDrafts: [SchoolScheduleBreakDraft]
+    @State var customDayDrafts: [SchoolScheduleCustomDayDraft]
     @State var isSaving = false
+    let originalConfig: SchoolScheduleConfig
     
-    let onSave: (SchoolScheduleConfig) async -> Bool
+    let onSave: (SchoolScheduleConfig, SchoolScheduleConfig) async -> Bool
     
     init(
         config: SchoolScheduleConfig,
-        onSave: @escaping (SchoolScheduleConfig) async -> Bool
+        onSave: @escaping (SchoolScheduleConfig, SchoolScheduleConfig) async -> Bool
     ) {
         _semester1StartDate = State(
             initialValue: schoolScheduleDate(from: config.semester1StartDate)
@@ -60,6 +299,10 @@ struct SchoolScheduleEditorView: View {
                 )
             }
         )
+        _customDayDrafts = State(initialValue: config.specialDays
+            .filter { $0.kind == .custom }
+            .map(SchoolScheduleCustomDayDraft.init))
+        originalConfig = config
         self.onSave = onSave
     }
     
@@ -176,9 +419,28 @@ struct SchoolScheduleEditorView: View {
                     Text("Add holidays, institute days, or other no-school stretches. Winter and summer are handled above.")
                 }
 
-                if let dateValidationMessage {
+                Section {
+                    ForEach($customDayDrafts) { $day in
+                        let dayID = day.id
+                        SchoolScheduleCustomDayRow(day: $day) {
+                            customDayDrafts.removeAll { $0.id == dayID }
+                        }
+                    }
+
+                    Button {
+                        customDayDrafts.append(.empty())
+                    } label: {
+                        Label("Add Custom Day", systemImage: "plus")
+                    }
+                } header: {
+                    Text("Custom Days")
+                } footer: {
+                    Text("Assembly and other special days replace the regular schedule for their date. They do not advance the A/B rotation.")
+                }
+
+                if let validationMessage {
                     Section {
-                        Label(dateValidationMessage, systemImage: "exclamationmark.triangle.fill")
+                        Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
                     } header: {
                         Text("Fix Dates Before Saving")
@@ -209,7 +471,7 @@ struct SchoolScheduleEditorView: View {
                             Text("Save")
                         }
                     }
-                    .disabled(isSaving || dateValidationMessage != nil)
+                    .disabled(isSaving || validationMessage != nil)
                 }
             }
         }
@@ -260,6 +522,37 @@ struct SchoolScheduleEditorView: View {
         return nil
     }
 
+    var validationMessage: String? {
+        if let dateValidationMessage { return dateValidationMessage }
+        let dates = customDayDrafts.map { schoolScheduleDateString(from: $0.date) }
+        if Set(dates).count != dates.count {
+            return "Each custom day needs a different date."
+        }
+        for day in customDayDrafts {
+            if let invalidDate = day.invalidOriginalDate {
+                return "Fix the invalid saved custom date: \(invalidDate)."
+            }
+            if day.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return "Give every custom day a name."
+            }
+            for draft in day.events {
+                let event = draft.event
+                if event.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return "Give every custom event a title."
+                }
+                if !(event.isAllDay ?? false),
+                    let startHour = event.startHour,
+                    let endHour = event.endHour,
+                    endHour * 60 + (event.endMinute ?? 0)
+                        <= startHour * 60 + (event.startMinute ?? 0)
+                {
+                    return "A custom event must end after it starts."
+                }
+            }
+        }
+        return nil
+    }
+
     @ViewBuilder
     func automaticBreakRow(label: String) -> some View {
         if let range = previewConfig.automaticBreakRanges.first(where: {
@@ -305,7 +598,7 @@ struct SchoolScheduleEditorView: View {
     }
 
     func save() {
-        guard dateValidationMessage == nil else { return }
+        guard validationMessage == nil else { return }
         isSaving = true
         
         let breakRanges = breakDrafts.map { draft -> SchoolBreakRange in
@@ -332,11 +625,12 @@ struct SchoolScheduleEditorView: View {
                 from: nextSchoolYearStartDate
             ),
             breakRanges: breakRanges,
-            lastUpdated: nil
+            customSpecialDays: customDayDrafts.map(\.specialDay),
+            lastUpdated: originalConfig.lastUpdated
         )
         
         Task {
-            let success = await onSave(updatedConfig)
+            let success = await onSave(updatedConfig, originalConfig)
             await MainActor.run {
                 isSaving = false
                 if success {

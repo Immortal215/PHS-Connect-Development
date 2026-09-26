@@ -175,6 +175,7 @@ struct SchoolScheduleConfig: Codable, Equatable {
         semester2EndDate: String,
         nextSchoolYearStartDate: String,
         breakRanges: [SchoolBreakRange],
+        customSpecialDays: [SchoolScheduleSpecialDayOverride] = [],
         lastUpdated: Double?
     ) {
         self.semester1StartDate = semester1StartDate
@@ -187,12 +188,15 @@ struct SchoolScheduleConfig: Codable, Equatable {
             after: semester1StartDate,
             excluding: breakRanges
         )
+        let customDays = customSpecialDays.filter { $0.kind == .custom }
+        let customDates = Set(customDays.map(\.date))
         self.specialDays = Self.automaticSpecialDays(
             semester1StartDate: semester1StartDate,
             semester1EndDate: semester1EndDate,
             semester2StartDate: semester2StartDate,
             semester2EndDate: semester2EndDate
-        )
+        ).filter { !customDates.contains($0.date) } + customDays
+        self.specialDays.sort { $0.date < $1.date }
         self.lastUpdated = lastUpdated
     }
 
@@ -437,7 +441,11 @@ final class SchoolScheduleStore: ObservableObject {
         listenForFirebaseUpdates()
     }
 
-    func save(_ draft: SchoolScheduleConfig, isSuperAdmin: Bool) async -> Bool {
+    func save(
+        _ draft: SchoolScheduleConfig,
+        expectedConfig: SchoolScheduleConfig,
+        isSuperAdmin: Bool
+    ) async -> Bool {
         guard isSuperAdmin else {
             lastError = "Only admins can edit the school schedule."
             dropper(
@@ -451,7 +459,10 @@ final class SchoolScheduleStore: ObservableObject {
         isSaving = true
 
         var scheduleToSave = draft
-        scheduleToSave.lastUpdated = Date().timeIntervalSince1970
+        scheduleToSave.lastUpdated = max(
+            Date().timeIntervalSince1970,
+            (expectedConfig.lastUpdated ?? 0) + 0.001
+        )
 
         do {
             let data = try JSONEncoder().encode(scheduleToSave)
@@ -473,7 +484,41 @@ final class SchoolScheduleStore: ObservableObject {
                 .child("global")
                 .child("schoolSchedule")
 
-            try await setFirebaseValue(dictionary, at: reference)
+            // Prime the local transaction state with the current server schedule.
+            _ = try await reference.getData()
+            let committed = try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Bool, Error>) in
+                reference.runTransactionBlock({ current in
+                    let stored = current.value as? [String: Any]
+                    if let stored {
+                        guard let storedData = try? JSONSerialization.data(
+                            withJSONObject: stored
+                        ),
+                            let storedConfig = try? JSONDecoder().decode(
+                                SchoolScheduleConfig.self, from: storedData
+                            ),
+                            storedConfig == expectedConfig
+                        else { return TransactionResult.abort() }
+                    } else if expectedConfig.lastUpdated != nil {
+                        return TransactionResult.abort()
+                    }
+                    current.value = dictionary
+                    return TransactionResult.success(withValue: current)
+                }, andCompletionBlock: { error, committed, _ in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume(returning: committed) }
+                }, withLocalEvents: false)
+            }
+            guard committed else {
+                isSaving = false
+                lastError = "The school schedule changed while you were editing. Reopen the editor to see the latest version."
+                dropper(
+                    title: "Schedule Changed",
+                    subtitle: lastError ?? "Reopen the editor and try again.",
+                    icon: UIImage(systemName: "arrow.clockwise")
+                )
+                return false
+            }
             isSaving = false
             config = scheduleToSave
             cache.save(scheduleToSave)
@@ -1093,9 +1138,13 @@ final class SchoolScheduleStore: ObservableObject {
     }
 
     func isCountedSchoolDay(_ date: Date) -> Bool {
-        !Calendar.current.isDateInWeekend(date)
-            && breakRange(containing: date) == nil
-            && specialDay(containing: date) == nil
+        guard !Calendar.current.isDateInWeekend(date),
+            breakRange(containing: date) == nil
+        else { return false }
+
+        // A custom bell schedule replaces the usual A/B schedule, but still
+        // uses that school day's place in the rotation.
+        return specialDay(containing: date).map { $0.kind == .custom } ?? true
     }
 
     func breakRange(containing date: Date) -> SchoolBreakRange? {

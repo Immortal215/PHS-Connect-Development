@@ -1,10 +1,12 @@
 "use strict";
 
 const { HttpError, verifyRequest } = require("./access");
+const { grantAdmin, listAdmins, revokeAdmin } = require("./admin-management");
 const { getCalendarResponse } = require("./calendar-service");
 const { accessSnapshot, membershipAction, reconcileIdentity, saveClub } = require("./membership-service");
 const {
   deleteMeetings,
+  extendClubCalendar,
   getRSVP,
   listRSVPs,
   nextPublicMeeting,
@@ -48,6 +50,12 @@ function apiHandler(admin) {
         const end = validatedDate(String(req.query.end || ""), "end");
         if (end <= start) throw new HttpError(400, "The meeting range is invalid.");
         return sendJSON(res, 200, await syncClubCalendar(admin, decoded, { ...req.query, start, end }));
+      }
+      if (req.method === "POST" && path === "/calendar/extend") {
+        const start = validatedDate(String(req.body?.start || ""), "start");
+        const end = validatedDate(String(req.body?.end || ""), "end");
+        if (end <= start) throw new HttpError(400, "The meeting range is invalid.");
+        return sendJSON(res, 200, await extendClubCalendar(admin, decoded, { ...req.body, start, end }));
       }
       if (req.method === "GET" && path === "/clubs/next-meeting") {
         return sendJSON(res, 200, { meeting: await nextPublicMeeting(admin, String(req.query.clubID || "")) });
@@ -107,6 +115,29 @@ function apiHandler(admin) {
   };
 }
 
+function adminManagementHandler(admin) {
+  return async (req, res) => {
+    try {
+      const decoded = await verifyRequest(admin, req);
+      const path = route(req);
+      if (req.method === "GET" && path === "/admins") {
+        return sendJSON(res, 200, await listAdmins(admin, decoded));
+      }
+      if (req.method === "PUT" && path === "/admins") {
+        return sendJSON(res, 200, await grantAdmin(admin, decoded, req.body));
+      }
+      if (req.method === "DELETE" && path === "/admins") {
+        return sendJSON(res, 200, await revokeAdmin(admin, decoded, req.body));
+      }
+      throw new HttpError(404, "Endpoint not found.");
+    } catch (error) {
+      const status = error instanceof HttpError ? error.status : 500;
+      if (status === 500) console.error("Administrator API request failed", { path: req.path, method: req.method, error });
+      return sendJSON(res, status, { error: status === 500 ? "The request could not be completed." : error.message });
+    }
+  };
+}
+
 function calendarFeedHandler(admin) {
   return async (req, res) => {
     if (req.method !== "GET") return res.status(405).set("Allow", "GET").end();
@@ -136,4 +167,4 @@ function calendarFeedHandler(admin) {
   };
 }
 
-module.exports = { apiHandler, calendarFeedHandler };
+module.exports = { adminManagementHandler, apiHandler, calendarFeedHandler };

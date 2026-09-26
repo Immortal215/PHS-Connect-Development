@@ -35,7 +35,13 @@ struct CalendarView: View {
     }
 
     var body: some View {
-        let meetingIndex = CalendarMeetingIndex(meetings: calendarStore.meetings)
+        let accessibleMeetings = calendarStore.meetings.filter {
+            viewModel.isSuperAdmin || calendarStore.isMember(of: $0.clubID)
+        }
+        let meetingIndex = CalendarMeetingIndex(meetings: accessibleMeetings)
+        let administrativeClubIDs = Set(
+            clubs.map(\.clubID).filter { !calendarStore.isMember(of: $0) }
+        )
 
         VStack {
             HStack(spacing: 10) {
@@ -122,11 +128,19 @@ struct CalendarView: View {
                 )
             }
         }
+        .calendarAdministrativeAccess(
+            clubIDs: administrativeClubIDs,
+            enabled: viewModel.isSuperAdmin,
+            retainsCacheOnDisappear: true
+        )
     }
 
     private func openPendingMeetingIfAvailable() {
         guard let meetingID = NotificationOpenRouter.shared.pendingMeetingID,
-              let meeting = calendarStore.meetings.first(where: { $0.meetingID == meetingID }),
+              let meeting = calendarStore.meetings.first(where: {
+                  $0.meetingID == meetingID
+                      && (viewModel.isSuperAdmin || calendarStore.isMember(of: $0.clubID))
+              }),
               clubs.contains(where: { $0.clubID == meeting.clubID })
         else { return }
         notificationMeeting = meeting

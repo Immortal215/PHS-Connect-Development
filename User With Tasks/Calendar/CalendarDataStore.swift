@@ -31,8 +31,12 @@ enum CalendarSyncWindowPlanner {
 
         let today = calendar.startOfDay(for: now)
         let rollingStart = calendar.date(byAdding: .day, value: -30, to: today)!
-        let rollingYear = calendar.date(byAdding: .year, value: 1, to: today)!
-        let rollingEnd = calendar.date(byAdding: .day, value: 1, to: rollingYear)!
+        let currentMonth = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: today)
+        )!
+        // Keep the one-year horizon through the end of its last month. Its
+        // boundary changes monthly, so an unchanged calendar needs no daily read.
+        let rollingEnd = calendar.date(byAdding: .month, value: 13, to: currentMonth)!
         let rolling = CalendarSyncWindow(
             kind: .rolling,
             start: formatter.string(from: rollingStart),
@@ -53,6 +57,29 @@ enum CalendarSyncWindowPlanner {
             start: requestedStartText,
             endExclusive: requestedEndText
         )
+    }
+
+    static func enteringMonths(from oldEnd: String, through newEnd: String) -> [CalendarSyncWindow]? {
+        let formatter = SharedDateFormatter.chicagoDateOnly
+        guard var cursor = formatter.date(from: oldEnd),
+              let end = formatter.date(from: newEnd), cursor <= end
+        else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+        var result: [CalendarSyncWindow] = []
+        while cursor < end {
+            guard result.count < 24,
+                  let month = calendar.dateInterval(of: .month, for: cursor)
+            else { return nil }
+            let next = min(month.end, end)
+            result.append(CalendarSyncWindow(
+                kind: .historical,
+                start: formatter.string(from: cursor),
+                endExclusive: formatter.string(from: next)
+            ))
+            cursor = next
+        }
+        return result
     }
 }
 
@@ -188,6 +215,19 @@ struct CalendarSyncEnvelope: Codable, Sendable {
     var changes: [Change]?
     var hasMore: Bool?
     var nextCursor: String?
+}
+
+private struct CalendarExtensionRequest: Encodable {
+    let clubID: String
+    let start: String
+    let end: String
+    let after: String
+    let knownMeetingIDs: [String]
+}
+
+private struct CalendarExtensionResponse: Decodable {
+    let latestChange: String
+    let meetings: [Club.MeetingTime]
 }
 
 actor CalendarFileCache {
@@ -515,6 +555,91 @@ actor CalendarFileCache {
         return currentSnapshot()
     }
 
+    private func meetingOverlaps(_ meeting: Club.MeetingTime, window: CalendarSyncWindow) -> Bool {
+        if let start = meeting.startDate, let end = meeting.endDateExclusive {
+            return start < window.endExclusive && end > window.start
+        }
+        let formatter = SharedDateFormatter.chicagoDateOnly
+        guard let startBoundary = formatter.date(from: window.start),
+              let endBoundary = formatter.date(from: window.endExclusive)
+        else { return true }
+        let start = dateForMeeting(meeting)
+        let end = endDateForMeeting(meeting)
+        guard start != .distantPast, end != .distantPast else { return true }
+        return start < endBoundary && (meeting.fullDay == true
+            ? end >= startBoundary : end > startBoundary)
+    }
+
+    func extendRollingWindow(
+        clubID: String,
+        role: String,
+        expectedCursor: String,
+        extensionWindow: CalendarSyncWindow,
+        newStart: String,
+        meetings: [Club.MeetingTime],
+        sessionGeneration: Int,
+        clubGeneration: Int
+    ) async throws -> CalendarDiskSnapshot {
+        if !isLoaded { _ = try load() }
+        guard var state = manifest.clubs[clubID], state.role == role,
+              state.cursor == expectedCursor,
+              state.rangeEndExclusive == extensionWindow.start,
+              extensionWindow.start < extensionWindow.endExclusive,
+              newStart >= state.rangeStart,
+              newStart < extensionWindow.endExclusive
+        else { throw CancellationError() }
+
+        var stagedMeetings = meetingsByClubID[clubID] ?? [:]
+        var stagedWrites: [(meetingID: String, meeting: Club.MeetingTime, data: Data)] = []
+        for meeting in meetings {
+            guard meeting.clubID == clubID, let meetingID = meeting.meetingID else {
+                throw CocoaError(.coderInvalidValue)
+            }
+            stagedWrites.append((meetingID, meeting, try encoder.encode(meeting)))
+        }
+        for write in stagedWrites {
+            try await validateSync(
+                clubID: clubID,
+                sessionGeneration: sessionGeneration,
+                clubGeneration: clubGeneration
+            )
+            try atomicWrite(write.data, to: meetingURL(clubID: clubID, meetingID: write.meetingID))
+            stagedMeetings[write.meetingID] = write.meeting
+        }
+
+        let nextWindow = CalendarSyncWindow(
+            kind: .rolling, start: newStart, endExclusive: extensionWindow.endExclusive
+        )
+        let rollingIDs = Set(stagedMeetings.compactMap { meetingID, meeting in
+            meetingOverlaps(meeting, window: nextWindow) ? meetingID : nil
+        })
+        state.setSegment(CachedCalendarSegment(
+            cursor: expectedCursor,
+            rangeStart: nextWindow.start,
+            rangeEndExclusive: nextWindow.endExclusive,
+            meetingIDs: rollingIDs
+        ), for: nextWindow)
+        stagedMeetings = stagedMeetings.filter { state.allMeetingIDs.contains($0.key) }
+        var stagedManifest = manifest
+        stagedManifest.clubs[clubID] = state
+        stagedManifest.lastSuccessfulSync = Date().timeIntervalSince1970
+        try await validateSync(
+            clubID: clubID,
+            sessionGeneration: sessionGeneration,
+            clubGeneration: clubGeneration
+        )
+        try writeManifest(stagedManifest)
+
+        let staleIDs = Set(meetingsByClubID[clubID]?.keys.map { $0 } ?? [])
+            .subtracting(stagedMeetings.keys)
+        for meetingID in staleIDs {
+            try? FileManager.default.removeItem(at: meetingURL(clubID: clubID, meetingID: meetingID))
+        }
+        manifest = stagedManifest
+        meetingsByClubID[clubID] = stagedMeetings
+        return currentSnapshot()
+    }
+
     func removeClub(
         _ clubID: String,
         sessionGeneration: Int? = nil,
@@ -613,7 +738,38 @@ final class CalendarDataStore {
         return acquisition.id
     }
 
-    func endAdministrativeAccess(_ leaseID: UUID) {
+    func restoreCachedAdministrativeMeetings() {
+        guard let cache, !administrativeClubIDs.isEmpty else { return }
+        let currentGeneration = generation
+        Task {
+            while !Task.isCancelled, currentGeneration == generation,
+                  !administrativeClubIDs.isEmpty {
+                guard let snapshot = try? await cache.load() else { return }
+                if (snapshot.manifest.lastSuccessfulSync ?? 0)
+                    < (lastSuccessfulSync?.timeIntervalSince1970 ?? 0) {
+                    await Task.yield()
+                    continue
+                }
+                let cachedMeetings = snapshot.meetings.filter {
+                    $0.cancelled != true
+                        && administrativeClubIDs.contains($0.clubID)
+                        && snapshot.manifest.clubs[$0.clubID]?.role == "admin"
+                }
+                for meeting in cachedMeetings where !meetings.contains(where: {
+                    $0.clubID == meeting.clubID && $0.meetingID == meeting.meetingID
+                }) {
+                    meetings.append(meeting)
+                }
+                if !cachedMeetings.isEmpty {
+                    meetings.sort { dateForMeeting($0) < dateForMeeting($1) }
+                    isShowingCachedData = true
+                }
+                return
+            }
+        }
+    }
+
+    func endAdministrativeAccess(_ leaseID: UUID, preserveCache: Bool = false) {
         guard let release = administrativeAccess.release(leaseID),
               release.deactivatedClub
         else { return }
@@ -628,6 +784,7 @@ final class CalendarDataStore {
             clubSyncGenerations[clubID, default: 0] += 1
             rosterEmails[clubID] = nil
             pendingEmails[clubID] = nil
+            if preserveCache { return }
             if let cache {
                 let currentGeneration = generation
                 Task {
@@ -777,7 +934,7 @@ final class CalendarDataStore {
     private func administrativeAccess(for clubID: String) -> ClubMembershipRecord? {
         guard administrativeClubIDs.contains(clubID) else { return nil }
         return ClubMembershipRecord(
-            role: "leader",
+            role: "admin",
             email: nil,
             accessRevision: nil
         )
@@ -940,20 +1097,40 @@ final class CalendarDataStore {
                 let state = await cache.state(for: clubID)
                 let window = CalendarSyncWindowPlanner.window(including: requestedDate)
                 let segment = state?.segment(for: window)
-                let rangeChanged = segment?.rangeStart != window.start
-                    || segment?.rangeEndExclusive != window.endExclusive
-                if !forceSnapshot, !rangeChanged, let state, let observedCursor,
-                   state.role == membership.role, segment?.cursor == observedCursor {
-                    return
-                }
-                let needsSnapshot = forceSnapshot || rangeChanged || state?.role != membership.role
+                let isRolling = window.kind == .rolling
+                let reusableRollingRange = isRolling && segment?.rangeStart.isEmpty == false
+                    && segment?.rangeEndExclusive.isEmpty == false
+                    && segment!.rangeStart <= window.start
+                    && segment!.rangeEndExclusive > window.start
+                    && segment!.rangeEndExclusive <= window.endExclusive
+                let enteringMonths = reusableRollingRange
+                    ? CalendarSyncWindowPlanner.enteringMonths(
+                        from: segment!.rangeEndExclusive, through: window.endExclusive
+                    ) : nil
+                let needsSnapshot = forceSnapshot || state?.role != membership.role
+                    || (isRolling ? !reusableRollingRange || enteringMonths == nil
+                        : segment?.rangeStart != window.start
+                            || segment?.rangeEndExclusive != window.endExclusive)
+                let syncWindow = isRolling && !needsSnapshot
+                    ? CalendarSyncWindow(
+                        kind: .rolling,
+                        start: segment!.rangeStart,
+                        endExclusive: segment!.rangeEndExclusive
+                    ) : window
+                // A warm rolling cache waits for the initial latestChange value.
+                // Starting an HTTP sync before that listener fires would make
+                // every app open perform a redundant calendar request.
+                if isRolling && !needsSnapshot && observedCursor == nil { return }
+                let needsCursorSync = needsSnapshot || observedCursor == nil
+                    || segment?.cursor != observedCursor
+                if !needsCursorSync && (enteringMonths?.isEmpty ?? true) { return }
                 var after = needsSnapshot ? "" : (segment?.cursor ?? "")
                 var target: String? = observedCursor?.isEmpty == false ? observedCursor : nil
-                while !Task.isCancelled {
+                while needsCursorSync && !Task.isCancelled {
                     var query = [
                         URLQueryItem(name: "clubID", value: clubID),
-                        URLQueryItem(name: "start", value: window.start),
-                        URLQueryItem(name: "end", value: window.endExclusive),
+                        URLQueryItem(name: "start", value: syncWindow.start),
+                        URLQueryItem(name: "end", value: syncWindow.endExclusive),
                         URLQueryItem(name: "after", value: after),
                     ]
                     if let target { query.append(URLQueryItem(name: "target", value: target)) }
@@ -980,7 +1157,7 @@ final class CalendarDataStore {
                     if response.mode == "snapshot" {
                         snapshot = try await cache.applySnapshot(
                             clubID: clubID, role: membership.role,
-                            cursor: response.latestChange, window: window,
+                            cursor: response.latestChange, window: syncWindow,
                             meetings: response.meetings ?? [],
                             sessionGeneration: taskGeneration,
                             clubGeneration: clubGeneration
@@ -1001,12 +1178,12 @@ final class CalendarDataStore {
                             return
                         }
                         apply(snapshot, cached: false)
-                        return
+                        break
                     }
                     let committedCursor = response.nextCursor ?? after
                     snapshot = try await cache.applyDelta(
                         clubID: clubID, role: membership.role,
-                        cursor: committedCursor, window: window,
+                        cursor: committedCursor, window: syncWindow,
                         changes: response.changes ?? [],
                         sessionGeneration: taskGeneration,
                         clubGeneration: clubGeneration
@@ -1036,8 +1213,83 @@ final class CalendarDataStore {
                             target = response.latestChange
                             continue
                         }
+                        break
+                    }
+                }
+                guard !Task.isCancelled else { return }
+                if needsSnapshot { return }
+                for (index, month) in (enteringMonths ?? []).enumerated() {
+                    guard let current = await cache.state(for: clubID),
+                          current.role == membership.role,
+                          current.rangeEndExclusive == month.start
+                    else { throw CancellationError() }
+                    let extensionResponse: CalendarExtensionResponse
+                    do {
+                        extensionResponse = try await PHSAPIClient.shared.request(
+                            "POST", path: "calendar/extend",
+                            body: CalendarExtensionRequest(
+                                clubID: clubID,
+                                start: month.start,
+                                end: month.endExclusive,
+                                after: current.cursor,
+                                knownMeetingIDs: current.allMeetingIDs.sorted()
+                            )
+                        )
+                    } catch PHSAPIError.server(let status, _) where status == 409 {
+                        guard self.generation == taskGeneration,
+                              self.uid == uid,
+                              self.clubSyncGenerations[clubID] == clubGeneration
+                        else { return }
+                        self.scheduleSync(
+                            clubID: clubID, membership: membership,
+                            forceSnapshot: true, including: requestedDate
+                        )
                         return
                     }
+                    guard !Task.isCancelled,
+                          self.generation == taskGeneration,
+                          self.uid == uid,
+                          self.clubSyncGenerations[clubID] == clubGeneration
+                    else { return }
+                    guard self.calendarAccessIsCurrent(clubID: clubID, membership: membership) else {
+                        if let sanitized = try? await cache.removeClub(
+                            clubID,
+                            sessionGeneration: taskGeneration,
+                            clubGeneration: clubGeneration
+                        ) {
+                            apply(sanitized, cached: false)
+                        }
+                        return
+                    }
+                    guard extensionResponse.latestChange == current.cursor else {
+                        throw CancellationError()
+                    }
+                    let newStart = index == enteringMonths!.count - 1
+                        ? window.start : current.rangeStart
+                    let extended = try await cache.extendRollingWindow(
+                        clubID: clubID, role: membership.role,
+                        expectedCursor: current.cursor,
+                        extensionWindow: month, newStart: newStart,
+                        meetings: extensionResponse.meetings,
+                        sessionGeneration: taskGeneration,
+                        clubGeneration: clubGeneration
+                    )
+                    guard !Task.isCancelled,
+                          self.generation == taskGeneration,
+                          self.uid == uid,
+                          self.clubSyncGenerations[clubID] == clubGeneration
+                    else { return }
+                    guard self.calendarAccessIsCurrent(clubID: clubID, membership: membership) else {
+                        if let sanitized = try? await cache.removeClub(
+                            clubID,
+                            sessionGeneration: taskGeneration,
+                            clubGeneration: clubGeneration
+                        ) {
+                            apply(sanitized, cached: false)
+                        }
+                        return
+                    }
+                    apply(extended, cached: false)
                 }
             } catch is CancellationError {
             } catch {
@@ -1126,7 +1378,12 @@ final class CalendarDataStore {
                 }
             }
         }
-        meetings = snapshot.meetings.filter { $0.cancelled != true }.sorted {
+        meetings = snapshot.meetings.filter {
+            $0.cancelled != true && (
+                snapshot.manifest.clubs[$0.clubID]?.role != "admin"
+                    || administrativeClubIDs.contains($0.clubID)
+            )
+        }.sorted {
             dateForMeeting($0) < dateForMeeting($1)
         }
         lastSuccessfulSync = snapshot.manifest.lastSuccessfulSync.map { Date(timeIntervalSince1970: $0) }

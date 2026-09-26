@@ -3,6 +3,8 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "check": "node scripts/assert-node-version.js && node --check index.js",
+    "pretest": "node scripts/assert-node-version.js",
+    "test": "node --test test/*.test.js",
     "validate:calendar-v2": "node scripts/validate-calendar-v2-readiness.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",

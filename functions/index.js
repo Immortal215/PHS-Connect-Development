@@ -4,7 +4,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { onValueCreated, onValueDeleted, onValueWritten } = require("firebase-functions/v2/database");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const functionsV1 = require("firebase-functions/v1");
-const { apiHandler, calendarFeedHandler } = require("./lib/api");
+const { adminManagementHandler, apiHandler, calendarFeedHandler } = require("./lib/api");
 const { REGION } = require("./lib/constants");
 const { createAdminServices } = require("./lib/firebase-admin-services");
 const {
@@ -23,6 +23,7 @@ const {
 const admin = createAdminServices();
 
 exports.phsApi = onRequest({ region: REGION, cors: false }, apiHandler(admin));
+exports.phsAdmin = onRequest({ region: REGION, cors: false }, adminManagementHandler(admin));
 exports.calendarFeed = onRequest({ region: REGION, cors: false }, calendarFeedHandler(admin));
 
 exports.compactCalendarChangeLog = onValueWritten({

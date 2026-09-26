@@ -170,9 +170,11 @@ struct FlowingScheduleView: View {
         }
         .appSheet(isPresented: $showSchoolScheduleEditor) {
             SchoolScheduleEditorView(config: schoolScheduleStore.config) {
-                updatedConfig in
+                updatedConfig, originalConfig in
                 await schoolScheduleStore.save(
-                    updatedConfig, isSuperAdmin: viewModel?.isSuperAdmin == true
+                    updatedConfig,
+                    expectedConfig: originalConfig,
+                    isSuperAdmin: viewModel?.isSuperAdmin == true
                 )
             }
             .presentationDetents([.large])
