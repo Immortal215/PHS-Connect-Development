@@ -36,7 +36,7 @@ struct SchoolScheduleEventCardView: View {
                     
                     Text(event.timeLabel)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(event.accentColor)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                 }
                 
@@ -198,8 +198,8 @@ struct SchoolScheduleSectionView: View {
         .background(
             LinearGradient(
                 colors: [
+                    SchoolSchedulePalette.navy.opacity(darkMode ? 0.20 : 0.08),
                     Color.white.opacity(darkMode ? 0.06 : 0.95),
-                    SchoolSchedulePalette.navy.opacity(darkMode ? 0.20 : 0.08)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing

@@ -2,7 +2,7 @@ import FirebaseDatabase
 import SwiftUI
 
 enum SchoolSchedulePalette {
-    static let navy = Color(red: 0.07, green: 0.11, blue: 0.35)
+    static let navy = Color(red: 0.10, green: 0.18, blue: 0.50)
     static let columbia = Color(red: 0.20, green: 0.63, blue: 0.88)
     static let breakRed = Color(red: 0.92, green: 0.18, blue: 0.18)
     static let weekend = Color(red: 0.55, green: 0.55, blue: 0.58)
