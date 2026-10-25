@@ -1,116 +1,101 @@
-# PHS Connect Development - SwiftUI
+# PHS Connect
+
+Built by Prospect High School students, PHS Connect helps students find clubs, keep track of meetings, and stay in touch with their club members. It also includes the school schedule, flashcards, and a drawing board.
 
 > [!IMPORTANT]
-> This is the development github for PHS Connect, you will not find the production code here. 
-## Overview
-### Every Element of This App Was Fully Created By Prospect Students
+> This is the **development repository** for PHS Connect. Features here may differ from the released app.
+
+[Find clubs](#find-clubs) · [Chat](#club-chats) · [Calendar](#meetings-and-school-schedules) · [Memory Cards](#memory-cards) · [Leader tools](#for-club-leaders)
+
+## Find clubs
+
+Browse clubs or search by name and interest tags. Open a club’s page to see its description, meeting information, location, leaders, and available Schoology or Instagram details.
+
+- Favorite clubs you want to keep track of.
+- Join directly or send a request if the club requires approval.
+- Email a leader from the club’s page.
+- Read announcements from clubs you’ve joined.
+
+## Club chats
+
+Clubs have their own chats, with separate threads to keep conversations organized.
+
+- Send messages, images, and attachments.
+- Reply to messages and react with emoji.
+- Edit or delete your own messages.
+- Read announcements and vote in announcement polls.
+- Choose notifications for the whole club chat, individual threads, or neither.
+
+## Meetings and school schedules
+
+See your club meetings alongside the school schedule.
+
+- Switch between a daily timeline and a meeting list.
+- Browse dates and check the school’s day rotation and period times.
+- Open a meeting for its time, location, notes, and repeat schedule.
+- RSVP **Going**, **Maybe**, or **Not going** for eligible meetings.
+- Receive notifications when meetings are created, changed, or canceled.
+
+### Use your own calendar
+
+Subscribe to your accessible club meetings in [Apple Calendar](https://support.apple.com/guide/iphone/use-multiple-calendars-iph3d1110d4/ios) or [Google Calendar](https://calendar.google.com/) using a private, read-only subscription link.
+
 > [!NOTE]
-> PHS Connect is designed to provide a structured and interactive platform for students @ Prospect HS to discover, join, and manage clubs. 🎉 With features like personalized club recommendations, custom calendars, and streamlined communication tools, the app empowers students to engage more effectively in extracurricular activities.
+> Apple and Google control when subscriptions refresh. Meeting and membership changes may take time to appear.
 
----
+## Memory Cards
 
-## Features
+Create flashcard decks for whatever you’re learning.
 
-### 1. **Club Management**
+- Add and edit terms and definitions.
+- Copy cards or paste several at once using the app’s import format.
+- Set a target study date.
+- Use **Casual Study** to review shuffled cards from selected decks.
+- Review cards that are due and rate how well you remembered them to schedule future practice.
 
-> [!NOTE]
->  **Manage clubs effortlessly** 🛠️
+## Make it yours
 
-- **Leaders :**
-  - Club leaders can manage members, make announcements, set meeting times, and fully edit their clubs.
-- **Enrolling in Clubs:**
-  - Users can request to join clubs, pending approval from leaders.
+- **Customize tabs:** reorder tabs and hide the ones you don’t use.
+- **Change appearance:** choose light or dark mode, or follow your device’s settings.
+- **Adjust animations:** choose basic or enhanced animations.
+- **Use the Drawing Board:** a comprehensive to-do list with in-built scheduling and focus timers.
+- **Keep up with changes:** read release notes, report problems, and suggest features.
+  
+## For club leaders
 
-### 2. **User Profiles**
+Manage your club from inside the app:
 
-- Personalized profiles store:
-  - Favorited clubs
-  - Subject preferences
+- Update club details, photos, links, and meeting information.
+- Manage members and review requests to join.
+- Post announcements and add polls.
+- Create chat threads and turn club chat on or off.
+- Schedule one-time, repeating, or all-day meetings.
+- Choose who can see a meeting.
+- Edit or cancel individual meetings or future meetings in a series.
+- View meeting RSVP responses.
 
-### 3. **Club Discovery**
+## For administrators
 
-- Users can:
-  - Browse and search through clubs using descriptive words and or "tags"(genres). 
-  - View a lot of information and links pertaining to clubs to make informed decisions about joining.
+Administrators have additional tools to:
 
-### 4. **Custom Calendar View** 
+- Create and manage clubs.
+- Maintain the school schedule.
+- View meetings across clubs.
+- Manage administrator access.
+- Enable or disable chat across the app.
 
- 📅 **Stay organized with our unique calendar feature!**
+## Getting started
 
-- A unique calendar displays meeting times for enrolled clubs, independent of Apple’s system calendars.
+Sign in with **Google** to join clubs and use club chat and calendars. You can also **continue as a guest** to browse clubs and try features that don’t require an account.
 
-### 5. **Announcements**
+The app includes layouts for **iPhone and iPad**.
 
-- Leaders can post announcements to keep members informed.
+## About the project
 
-### 6. **Google Login**
+PHS Connect is built with **SwiftUI**, with **Firebase** and **Google Sign-In** supporting accounts, shared club data, and notifications.
 
-- Secure and convenient authentication using Google accounts.
+Working on the backend? Read the [data editing guide](docs/DATA_EDITING_GUIDE.md) before changing how app data is stored or updated.
 
-### 7. **Firebase Integration**
+## Questions or suggestions?
 
-- Data pulling powered by Firebase Realtime Database ensures full access to club information and editing of said information. 
-- Firebase Rules safeguards against unauthorized database changes! 👾👾👾
----
-
-## Technical Details
-
-> [!IMPORTANT]
->  **Dive into the technical backbone** 🧑‍💻
-
-### 1. **Custom UI Components**
-
-- **Custom Calendar View :**
-  - Built using SwiftUI to show meeting times on a calendar for enrolled clubs.
-
-- **Custom Chat View :**
-  - Built using SwiftUI to allow students to chat with one another in their own clubs. 
-    
-- **Lots more!**
-
-### 2. **Backend**
-
-Start with the [data editing guide](docs/DATA_EDITING_GUIDE.md) before changing Firebase paths or their writers.
-
-- **Firebase Realtime Database:**
-  - Stores public club details, membership, meetings, and RSVPs in separate paths.
-  - The app refreshes changed clubs and meetings from Firebase without downloading every meeting on each update.
----
-
-## Repurpose for your own school!
-
-### Prerequisites
-
-- Xcode 26 or later
-- Swift 6 
-- Firebase SDK
-- Google Sign-In configuration
-- Node 22 for Functions and Firebase predeploy (`.nvmrc`)
-
-On this Mac, check the backend entry-point syntax and Node version with Node 22 first on `PATH`:
-
-```sh
-PATH="/opt/homebrew/opt/node@22/bin:$PATH" npm --prefix functions run check
-```
-
-The same `PATH` must be active for a Firebase Functions deploy. The check stops immediately with a version error if another Node major is selected. Automated test suites were removed at the owner's request; build and manually verify affected flows before release.
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Immortal215/PHS-Connect-Development.git
-   ```
-2. Open the `.xcodeproj` file in Xcode.
-3. Install dependencies via Swift Package Manager.
-4. Configure Firebase by adding your `GoogleService-Info.plist` file to the project.
-5. Make sure you do not share this file and add it to your .gitignore
-
-### Running the App
-
-1. Connect an iPad (optimized for Gen 10).
-2. Build and run the app on your connected device or simulator.
-
-## Contact
-
-For questions or suggestions, please reach out to the development team | sharulshah@icloud.com
+Contact the development team at [sharulshah@icloud.com](mailto:sharulshah@icloud.com).
